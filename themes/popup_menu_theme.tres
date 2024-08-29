@@ -1,0 +1,5 @@
+[gd_resource type="Theme" format=3 uid="uid://diypk7yex32r5"]
+
+[resource]
+default_font_size = 12
+PopupMenu/constants/icon_max_width = 12

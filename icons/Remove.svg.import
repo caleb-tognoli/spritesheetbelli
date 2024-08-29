@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dpug7pmdl061p"
-path="res://.godot/imported/ControlAlignBottomWide.svg-1e5c527d3facab9e8da4c18bbd8749d8.ctex"
+uid="uid://btxmpestt217a"
+path="res://.godot/imported/Remove.svg-235bb63fe9d30d51ba429283810d8502.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://icons/ControlAlignBottomWide.svg"
-dest_files=["res://.godot/imported/ControlAlignBottomWide.svg-1e5c527d3facab9e8da4c18bbd8749d8.ctex"]
+source_file="res://icons/Remove.svg"
+dest_files=["res://.godot/imported/Remove.svg-235bb63fe9d30d51ba429283810d8502.ctex"]
 
 [params]
 

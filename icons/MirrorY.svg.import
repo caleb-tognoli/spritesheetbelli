@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ccbk42v4552oh"
-path="res://.godot/imported/ControlAlignRightWide.svg-db318d4bb6f29636110f4754305acc1c.ctex"
+uid="uid://5nc14njj5uk"
+path="res://.godot/imported/MirrorY.svg-9c8ecee8d503864740a498b512671e5e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://icons/ControlAlignRightWide.svg"
-dest_files=["res://.godot/imported/ControlAlignRightWide.svg-db318d4bb6f29636110f4754305acc1c.ctex"]
+source_file="res://icons/MirrorY.svg"
+dest_files=["res://.godot/imported/MirrorY.svg-9c8ecee8d503864740a498b512671e5e.ctex"]
 
 [params]
 

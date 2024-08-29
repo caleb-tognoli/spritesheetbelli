@@ -13,7 +13,6 @@ const MIN_ZOOM := 0.02
 @onready var camera: Camera2D = $Camera2D
 @onready var frames: Node2D = $Frames
 
-
 var spritesheet: Spritesheet = Spritesheet.new():
 	set(v):
 		spritesheet = v 
@@ -61,7 +60,7 @@ func _draw() -> void:
 
 func update_preview() -> void:
 	for child in frames.get_children():
-		child.queue_free()
+		child.free()
 	
 	for img_coord in spritesheet.frames:
 		var frame: SpritesheetPreviewFrame = FRAME_SCENE.instantiate()

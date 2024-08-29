@@ -84,7 +84,7 @@ func get_free_space(_add_mode: AddMode = AddMode.FIRST_FREE_IN_LAST_ROW_WITH_FRA
 
 
 func add_sprites(paths: PackedStringArray, add_mode: AddMode = AddMode.FIRST_FREE_IN_LAST_ROW_WITH_FRAMES) -> void:
-	if is_empty():
+	if is_empty() and grid_size == Vector2i.ZERO:
 		grid_size = Vector2i.ONE
 	
 	for path: String in paths:

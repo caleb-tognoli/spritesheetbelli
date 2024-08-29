@@ -1,10 +1,16 @@
-[gd_scene load_steps=9 format=3 uid="uid://dr85rkajtgbvy"]
+[gd_scene load_steps=15 format=3 uid="uid://dr85rkajtgbvy"]
 
 [ext_resource type="Theme" uid="uid://cnu73lcdoioiq" path="res://themes/preview_area_theme.tres" id="1_4ihnc"]
 [ext_resource type="Script" path="res://spritesheet_preview/preview_area.gd" id="2_olheg"]
+[ext_resource type="Theme" uid="uid://diypk7yex32r5" path="res://themes/popup_menu_theme.tres" id="3_3bjsy"]
 [ext_resource type="Script" path="res://spritesheet_preview/spritesheet_preview.gd" id="3_ejlv6"]
 [ext_resource type="Texture2D" uid="uid://2awyv2ldg0y5" path="res://icons/CenterView.svg" id="4_eb4du"]
+[ext_resource type="Texture2D" uid="uid://hmd7ygrmk3ri" path="res://icons/RotateRight.svg" id="4_tx38g"]
+[ext_resource type="Texture2D" uid="uid://2in7dx83swk0" path="res://icons/MirrorX.svg" id="4_xa2f7"]
+[ext_resource type="Texture2D" uid="uid://5nc14njj5uk" path="res://icons/MirrorY.svg" id="5_mjnyr"]
+[ext_resource type="Texture2D" uid="uid://b2bob1fhbqpjn" path="res://icons/RotateLeft.svg" id="5_o17jl"]
 [ext_resource type="Script" path="res://spritesheet_preview/center_view.gd" id="5_p2elb"]
+[ext_resource type="Texture2D" uid="uid://btxmpestt217a" path="res://icons/Remove.svg" id="8_wte55"]
 
 [sub_resource type="Theme" id="Theme_kqwoj"]
 default_font_size = 11
@@ -27,6 +33,26 @@ grow_vertical = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_4ihnc")
 script = ExtResource("2_olheg")
+
+[node name="OptionsMenu" type="PopupMenu" parent="."]
+auto_translate_mode = 1
+size = Vector2i(200, 113)
+theme = ExtResource("3_3bjsy")
+item_count = 5
+item_0/text = "Flip H"
+item_0/icon = ExtResource("4_xa2f7")
+item_1/text = "Flip V"
+item_1/icon = ExtResource("5_mjnyr")
+item_1/id = 1
+item_2/text = "Rotate 90° CW"
+item_2/icon = ExtResource("4_tx38g")
+item_2/id = 2
+item_3/text = "Rotate 90° CCW"
+item_3/icon = ExtResource("5_o17jl")
+item_3/id = 3
+item_4/text = "Delete"
+item_4/icon = ExtResource("8_wte55")
+item_4/id = 4
 
 [node name="PreviewContainer" type="SubViewportContainer" parent="."]
 layout_mode = 1
