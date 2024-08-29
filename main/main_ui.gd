@@ -13,6 +13,7 @@ extends Control
 @onready var add_sprites: Button = %AddSprites
 @onready var export_sprites: Button = %ExportSprites
 @onready var export_spritesheet: Button = %ExportSpritesheet
+@onready var print_selected: Button = %PrintSelected
 @onready var spritesheet_width: Label = %SpritesheetWidth
 @onready var spritesheet_height: Label = %SpritesheetHeight
 
@@ -47,6 +48,11 @@ func _ready() -> void:
 			var height: int = int(str_height)
 			var width: int = (Global.spritesheet.sprite_size.x * height) / Global.spritesheet.sprite_size.y
 			Global.spritesheet.resize_frames(Vector2i(width, height))
+	)
+	
+	print_selected.pressed.connect(
+		func():
+			print(preview_area.spritesheet_preview.get_selected_frames().keys())
 	)
 
 

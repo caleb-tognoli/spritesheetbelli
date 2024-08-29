@@ -1,10 +1,13 @@
-[gd_scene load_steps=8 format=3 uid="uid://dr85rkajtgbvy"]
+[gd_scene load_steps=9 format=3 uid="uid://dr85rkajtgbvy"]
 
 [ext_resource type="Theme" uid="uid://cnu73lcdoioiq" path="res://themes/preview_area_theme.tres" id="1_4ihnc"]
 [ext_resource type="Script" path="res://spritesheet_preview/preview_area.gd" id="2_olheg"]
 [ext_resource type="Script" path="res://spritesheet_preview/spritesheet_preview.gd" id="3_ejlv6"]
 [ext_resource type="Texture2D" uid="uid://2awyv2ldg0y5" path="res://icons/CenterView.svg" id="4_eb4du"]
 [ext_resource type="Script" path="res://spritesheet_preview/center_view.gd" id="5_p2elb"]
+
+[sub_resource type="Theme" id="Theme_kqwoj"]
+default_font_size = 11
 
 [sub_resource type="InputEventKey" id="InputEventKey_ee6yd"]
 device = -1
@@ -47,34 +50,68 @@ script = ExtResource("3_ejlv6")
 [node name="Camera2D" type="Camera2D" parent="PreviewContainer/SubViewport/SpritesheetPreview"]
 position = Vector2(-50, -50)
 anchor_mode = 0
+editor_draw_screen = false
 
-[node name="Sprites" type="Node2D" parent="PreviewContainer/SubViewport/SpritesheetPreview"]
+[node name="Frames" type="Node2D" parent="PreviewContainer/SubViewport/SpritesheetPreview"]
 z_index = -10
 texture_filter = 1
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = -31.0
-offset_bottom = 17.0
-grow_horizontal = 0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 2
 theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 8
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="SelectionOptions" type="HBoxContainer" parent="MarginContainer"]
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+theme = SubResource("Theme_kqwoj")
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/SelectionOptions"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SelectAll" type="Button" parent="MarginContainer/SelectionOptions/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "Select All"
+
+[node name="SelectNone" type="Button" parent="MarginContainer/SelectionOptions/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "Select None"
+
+[node name="NumSelected" type="Label" parent="MarginContainer/SelectionOptions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 selected"
+vertical_alignment = 1
+
+[node name="CameraOptions" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
 theme_override_constants/separation = 10
 alignment = 2
 
-[node name="Zoom" type="Label" parent="MarginContainer/HBoxContainer"]
+[node name="Zoom" type="Label" parent="MarginContainer/CameraOptions"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "100%
 "
 
-[node name="CenterView" type="TextureButton" parent="MarginContainer/HBoxContainer" node_paths=PackedStringArray("camera")]
+[node name="CenterView" type="TextureButton" parent="MarginContainer/CameraOptions" node_paths=PackedStringArray("camera")]
 layout_mode = 2
 shortcut = SubResource("Shortcut_fwngg")
 texture_normal = ExtResource("4_eb4du")

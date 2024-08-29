@@ -1,16 +1,20 @@
 class_name SpritesheetPreview
 extends Node2D
 
+
+signal preview_updated
+
 const FRAME_SCENE := preload("res://spritesheet_preview/frame/frame.tscn")
+const GRID_COLOR := Color(Color.LIGHT_GRAY, 0.8)
 const MOUSE_WHEEL_ZOOM_FORCE := 0.2
 const MAX_ZOOM := 10
 const MIN_ZOOM := 0.02
 
 @onready var camera: Camera2D = $Camera2D
-@onready var sprites: Node2D = $Sprites
+@onready var frames: Node2D = $Frames
 
 
-var spritesheet: Spritesheet:
+var spritesheet: Spritesheet = Spritesheet.new():
 	set(v):
 		spritesheet = v 
 		v.updated.connect(update_preview)
@@ -44,24 +48,34 @@ func _draw() -> void:
 		draw_line(
 			Vector2(0, row * spritesheet.sprite_size.y), 
 			Vector2(spritesheet.grid_size.x * spritesheet.sprite_size.x, row * spritesheet.sprite_size.y),
-			Color.WHITE,
+			GRID_COLOR,
 		)
 	
 	for column in spritesheet.grid_size.x + 1:
 		draw_line(
 			Vector2(column * spritesheet.sprite_size.x, 0), 
 			Vector2(column * spritesheet.sprite_size.x, spritesheet.grid_size.y * spritesheet.sprite_size.y),
-			Color.WHITE,
+			GRID_COLOR,
 		)
 
 
 func update_preview() -> void:
-	for child in sprites.get_children():
+	for child in frames.get_children():
 		child.queue_free()
 	
 	for img_coord in spritesheet.frames:
 		var frame: SpritesheetPreviewFrame = FRAME_SCENE.instantiate()
 		frame.setup(spritesheet, img_coord)
-		sprites.add_child(frame)
+		frame.selection_updated.connect(preview_updated.emit)
+		frames.add_child(frame)
 	
 	queue_redraw()
+	preview_updated.emit()
+
+
+func get_selected_frames() -> Dictionary:
+	var frames_dict: Dictionary = {}
+	for frame: SpritesheetPreviewFrame in frames.get_children():
+		if frame.selected:
+			frames_dict[frame.coordinate_in_spritesheet] = frame.img
+	return frames_dict
