@@ -109,7 +109,16 @@ func save_sprites(folder: String):
 	var sprites := Global.spritesheet.frames.values()
 	var i := 0
 	while i < sprites.size():
-		sprites[i].save_png(folder + "\\" + str(i) + ".png")
+		var filename := folder + "\\" + str(i)
+		var extension := ".png"
+		
+		if FileAccess.file_exists(filename + extension):
+			var j := 1
+			while FileAccess.file_exists(filename + "(%d)" % j + extension):
+				j += 1
+			filename += "(%d)" % j
+		
+		sprites[i].save_png(filename + extension)
 		i += 1
 	show_notification_dialog(
 		"Saved successfully",
