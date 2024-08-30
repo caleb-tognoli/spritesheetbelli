@@ -60,14 +60,18 @@ func options_menu_item_pressed(id: int):
 		1:
 			for frame: Image in selected_frames.values():
 				frame.flip_y()
-		2:
+		2, 3:
+			var max_sprite_size: Vector2i = spritesheet_preview.spritesheet.sprite_size
 			for frame: Image in selected_frames.values():
-				frame.rotate_90(CLOCKWISE)
-			spritesheet_preview.spritesheet.sprite_size = selected_frames.values()[0].get_size()
-		3:
-			for frame: Image in selected_frames.values():
-				frame.rotate_90(COUNTERCLOCKWISE)
-			spritesheet_preview.spritesheet.sprite_size = selected_frames.values()[0].get_size()
+				if id == 2:
+					frame.rotate_90(CLOCKWISE)
+				else:
+					frame.rotate_90(COUNTERCLOCKWISE)
+				var frame_new_size := frame.get_size()
+				max_sprite_size.x = max(max_sprite_size.x, frame_new_size.x)
+				max_sprite_size.y = max(max_sprite_size.y, frame_new_size.y)
+			spritesheet_preview.spritesheet.sprite_size = max_sprite_size
+			spritesheet_preview.spritesheet.pad_frames_to_sprite_size()
 		4:
 			for coord: Vector2i in selected_frames:
 				spritesheet_preview.spritesheet.frames.erase(coord)
