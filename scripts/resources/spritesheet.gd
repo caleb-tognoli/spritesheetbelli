@@ -59,21 +59,23 @@ func resize_frames(size: Vector2i):
 
 
 func get_free_space(free_space_mode: FreeSpace = FreeSpace.AT_END) -> Vector2i:
+	#print("setup")
 	if is_empty():
-		#print("setup")
 		return Vector2i(0, 0)
-	
 	var last_row_with_frames := get_first_free_row() - 1
 	
+	#print("last row still has space")
 	if free_space_mode in [FreeSpace.AT_END]:
+		var last_frame_column: int = 0
 		for column in grid_size.x:
-			if not frames.has(Vector2i(column, last_row_with_frames)):
-				#print("last row still has space")
-				return Vector2i(column, last_row_with_frames)
+			if frames.has(Vector2i(column, last_row_with_frames)):
+				last_frame_column = column
+		if last_frame_column + 1 < grid_size.x:
+			return Vector2i(last_frame_column + 1, last_row_with_frames)
 	
+	#print("only 1 row, add a column")
 	if free_space_mode in [FreeSpace.AT_END]:
 		if grid_size.y == 1:
-			#print("only 1 row, add a column")
 			return Vector2i(grid_size.x, 0)
 	
 	#print("free row at end")
