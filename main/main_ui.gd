@@ -1,6 +1,7 @@
 extends Control
 
 
+@onready var open_file_dialog: FileDialog = $OpenFileDialog
 @onready var save_sprites_dialog: FileDialog = $SaveSpritesDialog
 @onready var save_spritesheet_dialog: FileDialog = $SaveSpritesheetDialog
 @onready var notification_dialog: AcceptDialog = $NotificationDialog
@@ -24,6 +25,7 @@ func _ready() -> void:
 	
 	Global.spritesheet.updated.connect(set_text_params.bind(Global.spritesheet))
 	Global.spritesheet.updated.connect(disable_if_empty)
+	add_sprites.pressed.connect(add_sprites_pressed)
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
 	export_sprites.pressed.connect(save_sprites_dialog.popup)
@@ -48,6 +50,11 @@ func _ready() -> void:
 			var width: int = (Global.spritesheet.sprite_size.x * height) / Global.spritesheet.sprite_size.y
 			Global.spritesheet.resize_frames(Vector2i(width, height))
 	)
+
+
+func add_sprites_pressed():
+	open_file_dialog.files_selected.connect(Global.spritesheet.add_sprites, CONNECT_ONE_SHOT)
+	open_file_dialog.popup()
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:

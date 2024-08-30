@@ -1,10 +1,9 @@
-[gd_scene load_steps=14 format=3 uid="uid://byoh7fhk7x54x"]
+[gd_scene load_steps=13 format=3 uid="uid://byoh7fhk7x54x"]
 
 [ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://themes/main_theme.tres" id="1_cqlxd"]
 [ext_resource type="Script" path="res://main/main_ui.gd" id="1_o3sot"]
 [ext_resource type="Theme" uid="uid://boqntmvqibtxh" path="res://themes/top_row_theme.tres" id="1_pgjiq"]
 [ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_numbers_only_component.gd" id="2_qfp4s"]
-[ext_resource type="Script" path="res://main/buttons/add_sprite_button.gd" id="3_3paem"]
 [ext_resource type="Theme" uid="uid://byp010118e18q" path="res://themes/dialog_theme.tres" id="3_px7nh"]
 [ext_resource type="Script" path="res://scripts/components/accept_dialog/accept_dialog_center_text_component.gd" id="3_wj0uo"]
 [ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://themes/left_bar_theme.tres" id="5_itfh2"]
@@ -26,7 +25,7 @@ grow_vertical = 2
 theme = ExtResource("1_cqlxd")
 script = ExtResource("1_o3sot")
 
-[node name="AddSpriteDialog" type="FileDialog" parent="."]
+[node name="OpenFileDialog" type="FileDialog" parent="."]
 title = "Open File(s)"
 size = Vector2i(312, 175)
 ok_button_text = "Open"
@@ -106,7 +105,7 @@ layout_mode = 2
 theme = ExtResource("1_pgjiq")
 theme_override_constants/separation = 20
 
-[node name="AddSprites" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer" node_paths=PackedStringArray("open_file_dialog")]
+[node name="AddSprites" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 30)
 layout_mode = 2
@@ -114,8 +113,6 @@ size_flags_vertical = 4
 text = "Add Sprite(s)
 "
 icon = ExtResource("5_x1m0q")
-script = ExtResource("3_3paem")
-open_file_dialog = NodePath("../../../../../AddSpriteDialog")
 
 [node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2
