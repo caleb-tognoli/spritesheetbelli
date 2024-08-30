@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://byoh7fhk7x54x"]
+[gd_scene load_steps=15 format=3 uid="uid://byoh7fhk7x54x"]
 
 [ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://themes/main_theme.tres" id="1_cqlxd"]
 [ext_resource type="Script" path="res://main/main_ui.gd" id="1_o3sot"]
@@ -7,8 +7,10 @@
 [ext_resource type="Theme" uid="uid://byp010118e18q" path="res://themes/dialog_theme.tres" id="3_px7nh"]
 [ext_resource type="Script" path="res://scripts/components/accept_dialog/accept_dialog_center_text_component.gd" id="3_wj0uo"]
 [ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://themes/left_bar_theme.tres" id="5_itfh2"]
+[ext_resource type="PackedScene" uid="uid://d2j21cyiaw56v" path="res://add_spritesheet/add_spritesheet_window.tscn" id="5_waa3t"]
 [ext_resource type="Texture2D" uid="uid://dkerv3ip4g7lj" path="res://icons/Add.svg" id="5_x1m0q"]
 [ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://spritesheet_preview/preview_area.tscn" id="6_q2y6a"]
+[ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://icons/SpriteSheet.svg" id="7_wpt02"]
 [ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_submit_on_focus_exit_component.gd" id="8_ej51d"]
 [ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_set_default_on_empty_submit_component.gd" id="9_hy223"]
 
@@ -67,6 +69,8 @@ theme = ExtResource("3_px7nh")
 [node name="AcceptDialogCenterTextComponent" type="Node" parent="ConfirmationDialog"]
 script = ExtResource("3_wj0uo")
 
+[node name="AddSpritesheetWindow" parent="." instance=ExtResource("5_waa3t")]
+
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -113,6 +117,15 @@ size_flags_vertical = 4
 text = "Add Sprite(s)
 "
 icon = ExtResource("5_x1m0q")
+
+[node name="AddSpritesheet" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 30)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Add Spritesheet
+"
+icon = ExtResource("7_wpt02")
 
 [node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2

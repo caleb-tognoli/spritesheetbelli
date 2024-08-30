@@ -15,7 +15,8 @@ const MIN_ZOOM := 0.02
 
 var spritesheet: Spritesheet = Spritesheet.new():
 	set(v):
-		spritesheet = v 
+		spritesheet = v
+		update_preview()
 		v.updated.connect(update_preview)
 var start_drag_position := Vector2.ZERO
 var start_camera_position := Vector2.ZERO

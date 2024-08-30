@@ -4,11 +4,15 @@ extends Resource
 
 signal updated
 
-
 enum ImageFormats {PNG, JPG, WEBP}
+enum FreeSpace {
+	AT_END,
+	FREE_ROW_AT_END,
+}
 enum AddMode {
-	FIRST_FREE_IN_LAST_ROW_WITH_FRAMES
-} 
+	SINGLE_SPRITE,
+	ROW
+}
 
 var grid_size: Vector2i = Vector2i.ZERO:
 	set = set_grid_size
@@ -54,58 +58,70 @@ func resize_frames(size: Vector2i):
 	updated.emit()
 
 
-func get_free_space(_add_mode: AddMode = AddMode.FIRST_FREE_IN_LAST_ROW_WITH_FRAMES) -> Vector2i:
+func get_free_space(free_space_mode: FreeSpace = FreeSpace.AT_END) -> Vector2i:
+	if is_empty():
+		#print("setup")
+		return Vector2i(0, 0)
+	
+	var last_row_with_frames := get_first_free_row() - 1
+	
+	if free_space_mode in [FreeSpace.AT_END]:
+		for column in grid_size.x:
+			if not frames.has(Vector2i(column, last_row_with_frames)):
+				#print("last row still has space")
+				return Vector2i(column, last_row_with_frames)
+	
+	if free_space_mode in [FreeSpace.AT_END]:
+		if grid_size.y == 1:
+			#print("only 1 row, add a column")
+			return Vector2i(grid_size.x, 0)
+	
+	#print("free row at end")
+	return Vector2i(0, last_row_with_frames + 1)
+
+
+func get_first_free_row() -> int:
 	var last_row_with_frames := -1
 	for coord in frames:
 		last_row_with_frames = max(coord.y, last_row_with_frames)
-	
-	if last_row_with_frames == -1:
-		#print("first row is empty")
-		return Vector2i(0, 0)
-	
-	for column in grid_size.x:
-		if not frames.has(Vector2i(column, last_row_with_frames)):
-			#print("last row still has space")
-			return Vector2i(column, last_row_with_frames)
-	
-	if (last_row_with_frames + 1 < grid_size.y 
-			and not frames.has(Vector2(0, last_row_with_frames + 1))):
-		#print("Went to free row")
-		return Vector2i(0, last_row_with_frames + 1)
-	
-	if grid_size.y == 1:
-		#print("only 1 row, add a column")
-		add_columns(1)
-		return Vector2i(grid_size.x - 1, 0)
-	
-	#print("new row")
-	add_rows(1)
-	return Vector2i(0, grid_size.y - 1)
+	return last_row_with_frames + 1
 
 
-func add_sprites(paths: PackedStringArray, add_mode: AddMode = AddMode.FIRST_FREE_IN_LAST_ROW_WITH_FRAMES) -> void:
-	if is_empty() and grid_size == Vector2i.ZERO:
-		grid_size = Vector2i.ONE
-	
-	for path: String in paths:
-		var img := Image.new()
-		img.load(path)
-		img.convert(Image.FORMAT_RGBA8)
-		
-		var img_size: Vector2i = img.get_size()
-		sprite_size.x = max(img_size.x, sprite_size.x)
-		sprite_size.y = max(img_size.y, sprite_size.y)
-		
-		var end_space := get_free_space(add_mode)
-		frames[end_space] = img
-		
-	for frame_coord in frames:
-		var sprite := Image.create_empty(sprite_size.x, sprite_size.y, false, Image.FORMAT_RGBA8)
-		var center := Rect2i(Vector2i.ZERO, frames[frame_coord].get_size())
-		sprite.blend_rect(frames[frame_coord], center, (sprite.get_size() - frames[frame_coord].get_size()) / 2)
-		frames[frame_coord] = sprite
+func add_frames(imgs: Array[Image], add_mode: AddMode = AddMode.SINGLE_SPRITE) -> void:
+	match add_mode:
+		AddMode.SINGLE_SPRITE:
+			for img: Image in imgs:
+				var free_space := get_free_space(FreeSpace.AT_END)
+				add_frame_at_coordinate(img, free_space)
+		AddMode.ROW:
+			var free_space := get_free_space(FreeSpace.FREE_ROW_AT_END)
+			for img: Image in imgs: 
+				add_frame_at_coordinate(img, free_space)
+				free_space.x += 1
 
+
+func add_frame_at_coordinate(img: Image, coordinate: Vector2i):
+	var max_coord_x: int = max(coordinate.x + 1, grid_size.x)
+	var max_coord_y: int = max(coordinate.y + 1, grid_size.y)
+	grid_size = Vector2i(max_coord_x, max_coord_y)
+	
+	img.convert(Image.FORMAT_RGBA8)
+	var img_size: Vector2i = img.get_size()
+	sprite_size.x = max(img_size.x, sprite_size.x)
+	sprite_size.y = max(img_size.y, sprite_size.y)
+	
+	frames[coordinate] = img
+	pad_frames_to_sprite_size()
 	updated.emit()
+
+
+func pad_frames_to_sprite_size():
+	for frame_coord in frames:
+		if frames[frame_coord].get_size() < sprite_size:
+			var img := Image.create_empty(sprite_size.x, sprite_size.y, false, Image.FORMAT_RGBA8)
+			var center := Rect2i(Vector2i.ZERO, frames[frame_coord].get_size())
+			img.blend_rect(frames[frame_coord], center, (img.get_size() - frames[frame_coord].get_size()) / 2)
+			frames[frame_coord] = img
 
 
 func get_subviewport() -> SubViewport:

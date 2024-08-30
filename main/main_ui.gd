@@ -6,12 +6,14 @@ extends Control
 @onready var save_spritesheet_dialog: FileDialog = $SaveSpritesheetDialog
 @onready var notification_dialog: AcceptDialog = $NotificationDialog
 @onready var confirmation_dialog: ConfirmationDialog = $ConfirmationDialog
+@onready var add_spritesheet_window: AddSpritesheetWindow = $AddSpritesheetWindow
 @onready var preview_area: Control = %PreviewArea
 @onready var grid_rows: LineEdit = %GridRows
 @onready var grid_columns: LineEdit = %GridColumns
 @onready var sprite_width: LineEdit = %SpriteWidth
 @onready var sprite_height: LineEdit = %SpriteHeight
-@onready var add_sprites: Button = %AddSprites
+@onready var add_sprites_btn: Button = %AddSprites
+@onready var add_spritesheet_btn: Button = %AddSpritesheet
 @onready var export_sprites: Button = %ExportSprites
 @onready var export_spritesheet: Button = %ExportSpritesheet
 @onready var spritesheet_width: Label = %SpritesheetWidth
@@ -25,7 +27,8 @@ func _ready() -> void:
 	
 	Global.spritesheet.updated.connect(set_text_params.bind(Global.spritesheet))
 	Global.spritesheet.updated.connect(disable_if_empty)
-	add_sprites.pressed.connect(add_sprites_pressed)
+	add_sprites_btn.pressed.connect(add_sprites_pressed)
+	add_spritesheet_btn.pressed.connect(add_spritesheet_pressed)
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
 	export_sprites.pressed.connect(save_sprites_dialog.popup)
@@ -53,7 +56,33 @@ func _ready() -> void:
 
 
 func add_sprites_pressed():
-	open_file_dialog.files_selected.connect(Global.spritesheet.add_sprites, CONNECT_ONE_SHOT)
+	open_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILES
+	
+	var add_sprites_from_paths: Callable = (
+		func(paths: PackedStringArray):
+			var imgs: Array[Image] = []
+			for path in paths:
+				imgs.append(Image.load_from_file(path))
+			Global.spritesheet.add_frames(imgs)
+	)
+	
+	open_file_dialog.files_selected.connect(add_sprites_from_paths, CONNECT_ONE_SHOT)
+	if not open_file_dialog.canceled.is_connected(open_file_dialog.files_selected.disconnect.bind(add_sprites_from_paths)):
+		open_file_dialog.canceled.connect(
+			open_file_dialog.files_selected.disconnect.bind(add_sprites_from_paths), 
+			CONNECT_ONE_SHOT
+		)
+	open_file_dialog.popup()
+
+
+func add_spritesheet_pressed():
+	open_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	open_file_dialog.file_selected.connect(show_add_spritesheet_window, CONNECT_ONE_SHOT)
+	if not open_file_dialog.canceled.is_connected(open_file_dialog.file_selected.disconnect.bind(show_add_spritesheet_window)):
+		open_file_dialog.canceled.connect(
+			open_file_dialog.file_selected.disconnect.bind(show_add_spritesheet_window), 
+			CONNECT_ONE_SHOT
+		)
 	open_file_dialog.popup()
 
 
@@ -74,6 +103,11 @@ func disable_if_empty():
 	grid_columns.editable = not is_empty
 	sprite_width.editable = not is_empty
 	sprite_height.editable = not is_empty
+
+
+func show_add_spritesheet_window(spritesheet_path: String) -> void:
+	add_spritesheet_window.setup(Image.load_from_file(spritesheet_path))
+	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
 func show_notification_dialog(title: String, dialog_text: String):

@@ -1,0 +1,141 @@
+[gd_scene load_steps=9 format=3 uid="uid://d2j21cyiaw56v"]
+
+[ext_resource type="Script" path="res://add_spritesheet/add_spritesheet_window.gd" id="1_03ua1"]
+[ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://themes/main_theme.tres" id="1_6ilyc"]
+[ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://spritesheet_preview/preview_area.tscn" id="1_625nm"]
+[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_numbers_only_component.gd" id="3_0mbrd"]
+[ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://themes/left_bar_theme.tres" id="3_6ejyu"]
+[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_submit_on_focus_exit_component.gd" id="4_rprxi"]
+[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_set_default_on_empty_submit_component.gd" id="5_mjx14"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8faui"]
+bg_color = Color(0, 0, 0, 1)
+
+[node name="AddSpritesheetWindow" type="Window"]
+title = "Add Spritesheet"
+position = Vector2i(0, 36)
+size = Vector2i(500, 500)
+visible = false
+transient = true
+exclusive = true
+popup_window = true
+force_native = true
+theme = ExtResource("1_6ilyc")
+script = ExtResource("1_03ua1")
+
+[node name="BG" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_8faui")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("3_6ejyu")
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="GridSize" type="VBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize"]
+layout_mode = 2
+text = "Grid size:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 10
+
+[node name="GridColumns" type="LineEdit" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Columns"
+placeholder_text = "x"
+select_all_on_focus = true
+
+[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridColumns"]
+script = ExtResource("3_0mbrd")
+
+[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridColumns"]
+script = ExtResource("4_rprxi")
+
+[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridColumns"]
+script = ExtResource("5_mjx14")
+default_value = "0"
+
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="GridRows" type="LineEdit" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Rows"
+placeholder_text = "y"
+select_all_on_focus = true
+
+[node name="LineEditNumbersOnlyComponent" type="Node" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridRows"]
+script = ExtResource("3_0mbrd")
+
+[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridRows"]
+script = ExtResource("4_rprxi")
+
+[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridRows"]
+script = ExtResource("5_mjx14")
+default_value = "0"
+
+[node name="PreviewArea" parent="VBoxContainer" instance=ExtResource("1_625nm")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer2" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("3_6ejyu")
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/PanelContainer2"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer2/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="AddSelectedFrames" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+text = "Add Selected Frames (0)"
+
+[node name="AddSpritesheet" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+text = "Add Spritesheet"

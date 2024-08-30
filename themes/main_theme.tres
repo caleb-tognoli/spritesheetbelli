@@ -5,3 +5,4 @@ bg_color = Color(0.14902, 0.14902, 0.14902, 1)
 
 [resource]
 Panel/styles/panel = SubResource("StyleBoxFlat_5vnqv")
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_5vnqv")
