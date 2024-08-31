@@ -29,7 +29,8 @@ func _gui_input(event: InputEvent) -> void:
 			if options_menu.visible:
 				options_menu.visible = false
 			else:
-				options_menu.popup(Rect2i(Vector2i(event.global_position), Vector2i.ZERO))
+				options_menu.position = get_window().position + Vector2i(event.global_position)
+				options_menu.show()
 
 
 func update_ui() -> void:

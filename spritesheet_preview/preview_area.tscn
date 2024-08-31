@@ -36,7 +36,7 @@ script = ExtResource("2_olheg")
 
 [node name="OptionsMenu" type="PopupMenu" parent="."]
 auto_translate_mode = 1
-size = Vector2i(200, 113)
+size = Vector2i(122, 113)
 theme = ExtResource("3_3bjsy")
 item_count = 5
 item_0/text = "Flip H"
