@@ -26,7 +26,14 @@ func _input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("ui_drag"):
 		start_drag_position = get_viewport().get_mouse_position()
 		start_camera_position = camera.position
-	if Input.is_action_pressed("ui_drag"):
+		Input.set_default_cursor_shape(Input.CURSOR_DRAG)
+		for frame: Control in frames.get_children():
+			frame.set_default_cursor_shape(Control.CURSOR_DRAG)
+	elif Input.is_action_just_released("ui_drag"):
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+		for frame: Control in frames.get_children():
+			frame.set_default_cursor_shape(Control.CURSOR_ARROW)
+	elif Input.is_action_pressed("ui_drag"):
 		camera.position = (
 			+ start_camera_position 
 			- (get_viewport().get_mouse_position() - start_drag_position)
