@@ -88,18 +88,12 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="Panel" parent="VBoxContainer"]
+[node name="Panel" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/Panel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 20
@@ -191,7 +185,7 @@ text = "Export Spritesheet"
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ToolBar" type="Panel" parent="VBoxContainer/HBoxContainer"]
+[node name="ToolBar" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(180, 0)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -199,8 +193,6 @@ theme = ExtResource("5_itfh2")
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/ToolBar"]
 layout_mode = 2
-offset_right = 180.0
-offset_bottom = 584.0
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 15
@@ -221,12 +213,12 @@ text = "Grid size:"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize"]
 layout_mode = 2
-size_flags_horizontal = 0
 theme_override_constants/separation = 10
 
 [node name="GridColumns" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Columns"
 placeholder_text = "x"
@@ -249,6 +241,7 @@ text = "×"
 [node name="GridRows" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Rows"
 placeholder_text = "y"
@@ -274,12 +267,12 @@ text = "Sprite size:"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize"]
 layout_mode = 2
-size_flags_horizontal = 0
 theme_override_constants/separation = 10
 
 [node name="SpriteWidth" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Length"
 placeholder_text = "x"
@@ -302,6 +295,7 @@ text = "×"
 [node name="SpriteHeight" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Height"
 placeholder_text = "y"
