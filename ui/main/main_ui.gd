@@ -168,23 +168,12 @@ func save_sprites(folder: String):
 
 
 func save_spritesheet(path: String):
-	var svp = Global.spritesheet.get_subviewport()
-	var popup := Popup.new()
-	var svp_container := SubViewportContainer.new()
-	popup.size = svp.size
-	svp_container.add_child(svp)
-	popup.add_child(svp_container)
-	popup.position = svp.size * -2
-	add_child(popup)
-	popup.visible = true
+	var spritesheet_image := Global.spritesheet.get_image()
 	
-	await RenderingServer.frame_post_draw
-	
-	var spritesheet_image := svp.get_texture().get_image()
-	if not spritesheet_image:
+	if spritesheet_image.get_size() == Vector2i.ZERO:
 		show_notification_dialog(
 			"Error",
-			"The maximum image size is 16384×16384 pixels due to graphics hardware limitations. Larger images may fail to process.",
+			"The maximum image size is 16777216×16777216 pixels due to graphics hardware limitations. Larger images may fail to process.",
 		)
 		return
 	
@@ -197,7 +186,6 @@ func save_spritesheet(path: String):
 		"webp":
 			spritesheet_image.save_webp(path)
 	
-	popup.queue_free()
 	show_notification_dialog(
 		"Saved successfully",
 		"Saved spritesheet to %s." % [path.get_base_dir().get_file()]

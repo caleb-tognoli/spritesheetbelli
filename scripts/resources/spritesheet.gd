@@ -126,26 +126,21 @@ func pad_frames_to_sprite_size():
 			frames[frame_coord] = img
 
 
-func get_subviewport() -> SubViewport:
-	var spritesheet_vp = SubViewport.new()
-	spritesheet_vp.transparent_bg = true
-	spritesheet_vp.size = Vector2(
-		sprite_size.x * grid_size.x,
-		sprite_size.y * grid_size.y
+func get_image() -> Image:
+	var img := Image.create_empty(
+		sprite_size.x * grid_size.x, 
+		sprite_size.y * grid_size.y,
+		false,
+		Image.Format.FORMAT_RGBA8
 	)
-	spritesheet_vp.render_target_clear_mode = SubViewport.UPDATE_ALWAYS
-	spritesheet_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	
-	var sprites := Node2D.new()
-	for img_coord in frames:
-		var texture := ImageTexture.new()
-		texture.set_image(frames[img_coord])
-		var sprite := Sprite2D.new()
-		sprite.texture = texture
-		sprite.position.x = sprite_size.x * img_coord.x
-		sprite.position.y = sprite_size.y * img_coord.y
-		sprites.add_child(sprite)
+	if img.get_size() == Vector2i.ZERO:
+		return img
 	
-	sprites.position = sprite_size / 2
-	spritesheet_vp.add_child(sprites)
-	return spritesheet_vp
+	for frame_coord in frames:
+		img.blend_rect(
+			frames[frame_coord],
+			Rect2i(Vector2i.ZERO, sprite_size),
+			sprite_size * frame_coord
+		)
+	return img
