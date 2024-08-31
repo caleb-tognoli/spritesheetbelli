@@ -1,10 +1,10 @@
 [gd_scene load_steps=9 format=3 uid="uid://d2j21cyiaw56v"]
 
-[ext_resource type="Script" path="res://add_spritesheet/add_spritesheet_window.gd" id="1_03ua1"]
-[ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://themes/main_theme.tres" id="1_6ilyc"]
-[ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://spritesheet_preview/preview_area.tscn" id="1_625nm"]
+[ext_resource type="Script" path="res://ui/add_spritesheet/add_spritesheet_window.gd" id="1_03ua1"]
+[ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://resources/themes/main_theme.tres" id="1_6ilyc"]
+[ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="1_625nm"]
 [ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_numbers_only_component.gd" id="3_0mbrd"]
-[ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://themes/left_bar_theme.tres" id="3_6ejyu"]
+[ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://resources/themes/left_bar_theme.tres" id="3_6ejyu"]
 [ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_submit_on_focus_exit_component.gd" id="4_rprxi"]
 [ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_set_default_on_empty_submit_component.gd" id="5_mjx14"]
 

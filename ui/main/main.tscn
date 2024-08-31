@@ -1,0 +1,316 @@
+[gd_scene load_steps=15 format=3 uid="uid://byoh7fhk7x54x"]
+
+[ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://resources/themes/main_theme.tres" id="1_cqlxd"]
+[ext_resource type="Script" path="res://ui/main/main_ui.gd" id="1_o3sot"]
+[ext_resource type="Theme" uid="uid://boqntmvqibtxh" path="res://resources/themes/top_row_theme.tres" id="1_pgjiq"]
+[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_numbers_only_component.gd" id="2_qfp4s"]
+[ext_resource type="Theme" uid="uid://byp010118e18q" path="res://resources/themes/dialog_theme.tres" id="3_px7nh"]
+[ext_resource type="Script" path="res://scripts/components/accept_dialog/accept_dialog_center_text_component.gd" id="3_wj0uo"]
+[ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://resources/themes/left_bar_theme.tres" id="5_itfh2"]
+[ext_resource type="PackedScene" uid="uid://d2j21cyiaw56v" path="res://ui/add_spritesheet/add_spritesheet_window.tscn" id="5_waa3t"]
+[ext_resource type="Texture2D" uid="uid://dkerv3ip4g7lj" path="res://assets/icons/Add.svg" id="5_x1m0q"]
+[ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="6_q2y6a"]
+[ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://assets/icons/SpriteSheet.svg" id="7_wpt02"]
+[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_submit_on_focus_exit_component.gd" id="8_ej51d"]
+[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_set_default_on_empty_submit_component.gd" id="9_hy223"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qlfvo"]
+bg_color = Color(0, 0, 0, 1)
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_cqlxd")
+script = ExtResource("1_o3sot")
+
+[node name="OpenFileDialog" type="FileDialog" parent="."]
+title = "Open File(s)"
+size = Vector2i(312, 175)
+ok_button_text = "Open"
+file_mode = 1
+access = 2
+filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
+use_native_dialog = true
+
+[node name="SaveSpritesDialog" type="FileDialog" parent="."]
+title = "Open a Directory"
+size = Vector2i(454, 175)
+ok_button_text = "Select Current Folder"
+file_mode = 2
+access = 2
+use_native_dialog = true
+
+[node name="SaveSpritesheetDialog" type="FileDialog" parent="."]
+auto_translate_mode = 1
+size = Vector2i(454, 175)
+ok_button_text = "Save"
+access = 2
+filters = PackedStringArray("*.png; PNG Images", "*.jpg, *.jpeg, *.jpe; JPEG Images", "*.webp; WebP Images")
+use_native_dialog = true
+
+[node name="NotificationDialog" type="AcceptDialog" parent="."]
+title = "Saved"
+size = Vector2i(400, 90)
+unresizable = true
+dialog_autowrap = true
+
+[node name="AcceptDialogCenterTextComponent" type="Node" parent="NotificationDialog"]
+script = ExtResource("3_wj0uo")
+
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="."]
+position = Vector2i(0, 36)
+size = Vector2i(400, 90)
+theme = ExtResource("3_px7nh")
+
+[node name="AcceptDialogCenterTextComponent" type="Node" parent="ConfirmationDialog"]
+script = ExtResource("3_wj0uo")
+
+[node name="AddSpritesheetWindow" parent="." instance=ExtResource("5_waa3t")]
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_qlfvo")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/Panel/MarginContainer"]
+layout_mode = 2
+theme = ExtResource("1_pgjiq")
+theme_override_constants/separation = 20
+
+[node name="AddSprites" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 30)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Add Sprite(s)
+"
+icon = ExtResource("5_x1m0q")
+
+[node name="AddSpritesheet" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 30)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Add Spritesheet
+"
+icon = ExtResource("7_wpt02")
+
+[node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+alignment = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Label" type="Label" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer"]
+layout_mode = 2
+text = "Spritesheet size:"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="SpritesheetWidth" type="Label" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 "
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="X" type="Label" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="SpritesheetHeight" type="Label" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 "
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Buttons" type="HBoxContainer" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="ExportSprites" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "Export Sprites"
+
+[node name="ExportSpritesheet" type="Button" parent="VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "Export Spritesheet"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ToolBar" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme = ExtResource("5_itfh2")
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/ToolBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="GridSize" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize"]
+layout_mode = 2
+text = "Grid size:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="GridColumns" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+tooltip_text = "Columns"
+placeholder_text = "x"
+select_all_on_focus = true
+
+[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer/GridColumns"]
+script = ExtResource("2_qfp4s")
+
+[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer/GridColumns"]
+script = ExtResource("8_ej51d")
+
+[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer/GridColumns"]
+script = ExtResource("9_hy223")
+default_value = "0"
+
+[node name="X" type="Label" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="GridRows" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+tooltip_text = "Rows"
+placeholder_text = "y"
+select_all_on_focus = true
+
+[node name="LineEditNumbersOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer/GridRows"]
+script = ExtResource("2_qfp4s")
+
+[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer/GridRows"]
+script = ExtResource("8_ej51d")
+
+[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/GridSize/HBoxContainer/GridRows"]
+script = ExtResource("9_hy223")
+default_value = "0"
+
+[node name="SpriteSize" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize"]
+layout_mode = 2
+text = "Sprite size:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SpriteWidth" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+tooltip_text = "Length"
+placeholder_text = "x"
+editable = false
+
+[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer/SpriteWidth"]
+script = ExtResource("2_qfp4s")
+
+[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer/SpriteWidth"]
+script = ExtResource("8_ej51d")
+
+[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer/SpriteWidth"]
+script = ExtResource("9_hy223")
+default_value = "0"
+
+[node name="X" type="Label" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="SpriteHeight" type="LineEdit" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+tooltip_text = "Height"
+placeholder_text = "y"
+editable = false
+
+[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer/SpriteHeight"]
+script = ExtResource("2_qfp4s")
+
+[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer/SpriteHeight"]
+script = ExtResource("8_ej51d")
+
+[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer/SpriteSize/HBoxContainer/SpriteHeight"]
+script = ExtResource("9_hy223")
+default_value = "0"
+
+[node name="PreviewArea" parent="VBoxContainer/HBoxContainer" instance=ExtResource("6_q2y6a")]
+unique_name_in_owner = true
+layout_mode = 2

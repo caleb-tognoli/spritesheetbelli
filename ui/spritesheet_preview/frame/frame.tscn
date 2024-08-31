@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://csfu10ulogvu8"]
 
 [ext_resource type="Texture2D" uid="uid://yfnqdhn1ala3" path="res://icon.svg" id="1_dbl23"]
-[ext_resource type="Script" path="res://spritesheet_preview/frame/frame.gd" id="2_3soor"]
+[ext_resource type="Script" path="res://ui/spritesheet_preview/frame/frame.gd" id="2_3soor"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ub8xi"]
 bg_color = Color(0.0768359, 0.0768358, 0.0768358, 0.764706)

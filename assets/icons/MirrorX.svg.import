@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chq2yry3hpy6c"
-path="res://.godot/imported/SpriteSheet.svg-193346a5323e8fb144fc27f30f201db4.ctex"
+uid="uid://2in7dx83swk0"
+path="res://.godot/imported/MirrorX.svg-af26af8fce4b4ec150148037ccd0895a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://icons/SpriteSheet.svg"
-dest_files=["res://.godot/imported/SpriteSheet.svg-193346a5323e8fb144fc27f30f201db4.ctex"]
+source_file="res://assets/icons/MirrorX.svg"
+dest_files=["res://.godot/imported/MirrorX.svg-af26af8fce4b4ec150148037ccd0895a.ctex"]
 
 [params]
 

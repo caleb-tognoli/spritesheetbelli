@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2awyv2ldg0y5"
-path="res://.godot/imported/CenterView.svg-609e7a0fb9a4753d25759ea7995eaf49.ctex"
+uid="uid://chq2yry3hpy6c"
+path="res://.godot/imported/SpriteSheet.svg-91e0c0b3049d30c303db8dd345663eb2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://icons/CenterView.svg"
-dest_files=["res://.godot/imported/CenterView.svg-609e7a0fb9a4753d25759ea7995eaf49.ctex"]
+source_file="res://assets/icons/SpriteSheet.svg"
+dest_files=["res://.godot/imported/SpriteSheet.svg-91e0c0b3049d30c303db8dd345663eb2.ctex"]
 
 [params]
 

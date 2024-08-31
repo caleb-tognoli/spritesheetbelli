@@ -4,7 +4,7 @@ extends Node2D
 
 signal preview_updated
 
-const FRAME_SCENE := preload("res://spritesheet_preview/frame/frame.tscn")
+const FRAME_SCENE := preload("res://ui/spritesheet_preview/frame/frame.tscn")
 const GRID_COLOR := Color(Color.LIGHT_GRAY, 0.8)
 const MOUSE_WHEEL_ZOOM_FORCE := 0.2
 const MAX_ZOOM := 10

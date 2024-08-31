@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2in7dx83swk0"
-path="res://.godot/imported/MirrorX.svg-e3373363d82e3e16ca2c8c6e71345405.ctex"
+uid="uid://2awyv2ldg0y5"
+path="res://.godot/imported/CenterView.svg-5fa0be61a9e690715ba77aca0d864391.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://icons/MirrorX.svg"
-dest_files=["res://.godot/imported/MirrorX.svg-e3373363d82e3e16ca2c8c6e71345405.ctex"]
+source_file="res://assets/icons/CenterView.svg"
+dest_files=["res://.godot/imported/CenterView.svg-5fa0be61a9e690715ba77aca0d864391.ctex"]
 
 [params]
 
