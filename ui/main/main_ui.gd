@@ -72,6 +72,7 @@ func add_sprites_pressed():
 			open_file_dialog.files_selected.disconnect.bind(add_sprites_from_paths), 
 			CONNECT_ONE_SHOT
 		)
+	open_file_dialog.title = "Add sprite(s)"
 	open_file_dialog.popup()
 
 
@@ -83,6 +84,7 @@ func add_spritesheet_pressed():
 			open_file_dialog.file_selected.disconnect.bind(show_add_spritesheet_window), 
 			CONNECT_ONE_SHOT
 		)
+	open_file_dialog.title = "Add spritesheet"
 	open_file_dialog.popup()
 
 
