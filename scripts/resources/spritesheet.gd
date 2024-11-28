@@ -103,6 +103,9 @@ func add_frames(imgs: Array[Image], add_mode: AddMode = AddMode.SINGLE_SPRITE) -
 
 
 func add_frame_at_coordinate(img: Image, coordinate: Vector2i):
+	if img.is_empty():
+		return
+	
 	var max_coord_x: int = max(coordinate.x + 1, grid_size.x)
 	var max_coord_y: int = max(coordinate.y + 1, grid_size.y)
 	grid_size = Vector2i(max_coord_x, max_coord_y)

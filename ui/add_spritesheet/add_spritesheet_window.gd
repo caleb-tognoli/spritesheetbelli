@@ -72,6 +72,8 @@ func add_spritesheet_to_global():
 		for column in spritesheet.grid_size.x:
 			if spritesheet.frames.has(Vector2i(column, row)):
 				rows_images[row].append(spritesheet.frames[Vector2i(column, row)])
+			else:
+				rows_images[row].append(Image.new())
 	for row_images in rows_images:
 		var frames: Array[Image] = []
 		frames.assign(row_images)
