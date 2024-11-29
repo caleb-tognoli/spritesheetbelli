@@ -12,23 +12,22 @@ var is_locked: bool = false: set = set_is_locked
 
 
 func _draw() -> void:
-	const BASE_SIZE_LENGTH := 200
-	var line_amount: int = int(size.length() * 1 / BASE_SIZE_LENGTH)
-	var line_spacing_x := size.x / line_amount
-	var line_spacing_y := size.y / line_amount
+	const LINE_AMOUNT := 5
+	const LINE_COLOR := Color.LIGHT_GRAY
 	
-	var line_color := Color.LIGHT_GRAY
+	var line_spacing_x := size.x / LINE_AMOUNT
+	var line_spacing_y := size.y / LINE_AMOUNT
 	
-	for i in line_amount:
+	for i in LINE_AMOUNT:
 		draw_line(
 			Vector2(line_spacing_x * i, size.y),
-			Vector2(0, line_spacing_y * (line_amount - i)), 
-			line_color
+			Vector2(0, line_spacing_y * (LINE_AMOUNT - i)), 
+			LINE_COLOR
 		)
 		draw_line(
 			Vector2(line_spacing_x * i, 0),
-			Vector2(size.x, line_spacing_y * (line_amount - i)), 
-			line_color
+			Vector2(size.x, line_spacing_y * (LINE_AMOUNT - i)), 
+			LINE_COLOR
 		)
 
 
