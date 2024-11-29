@@ -68,7 +68,8 @@ func resize_frames(size: Vector2i):
 func get_free_space(free_space_mode: FreeSpace = FreeSpace.AT_END) -> Vector2i:
 	#print("setup")
 	if is_empty():
-		return Vector2i(0, 0)
+		return get_first_unlocked_space()
+	
 	var last_row_with_frames := get_first_free_row() - 1
 	
 	#print("last row still has space")
@@ -91,7 +92,7 @@ func get_free_space(free_space_mode: FreeSpace = FreeSpace.AT_END) -> Vector2i:
 	return get_first_unlocked_space(Vector2i(0, last_row_with_frames + 1))
 
 
-func get_first_unlocked_space(from: Vector2i) -> Vector2i:
+func get_first_unlocked_space(from: Vector2i = Vector2i.ZERO) -> Vector2i:
 	while from in locked_coordinates:
 		if from.x < grid_size.x - 1:
 			from.x += 1
