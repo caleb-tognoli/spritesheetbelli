@@ -5,6 +5,7 @@ extends Node2D
 signal preview_updated
 
 const FRAME_SCENE := preload("res://ui/spritesheet_preview/frame/frame.tscn")
+const EMPTY_SPACE_SCENE := preload("res://ui/spritesheet_preview/empty_space/empty_space.tscn")
 const GRID_COLOR := Color(Color.LIGHT_GRAY, 0.8)
 const MOUSE_WHEEL_ZOOM_FORCE := 0.2
 const MAX_ZOOM := 10
@@ -12,6 +13,9 @@ const MIN_ZOOM := 0.02
 
 @onready var camera: Camera2D = $Camera2D
 @onready var frames: Node2D = $Frames
+@onready var empty_spaces: Node2D = $EmptySpaces
+
+@export var able_to_lock_spaces := true
 
 var spritesheet: Spritesheet = Spritesheet.new():
 	set(v):
@@ -69,12 +73,26 @@ func _draw() -> void:
 func update_preview() -> void:
 	for child in frames.get_children():
 		child.free()
+	for child in empty_spaces.get_children():
+		child.free()
 	
-	for img_coord in spritesheet.frames:
-		var frame: SpritesheetPreviewFrame = FRAME_SCENE.instantiate()
-		frame.setup(spritesheet, img_coord)
-		frame.selection_updated.connect(preview_updated.emit)
-		frames.add_child(frame)
+	for row in spritesheet.grid_size.y:
+		for column in spritesheet.grid_size.x:
+			var coord := Vector2i(column, row)
+			
+			if coord in spritesheet.frames:
+				var frame: SpritesheetPreviewFrame = FRAME_SCENE.instantiate()
+				frame.setup(spritesheet, coord)
+				frame.selection_updated.connect(preview_updated.emit)
+				frames.add_child(frame)
+			elif able_to_lock_spaces:
+				var empty_space: SpritesheetPreviewEmptySpace = EMPTY_SPACE_SCENE.instantiate()
+				empty_space.setup(spritesheet, coord)
+				empty_space.lock_updated.connect(
+					set_locked_coordinate_in_spritesheet.bind(coord)
+				)
+				empty_space.set_is_locked(coord in spritesheet.locked_coordinates)
+				empty_spaces.add_child(empty_space)
 	
 	queue_redraw()
 	preview_updated.emit()
@@ -86,3 +104,10 @@ func get_selected_frames() -> Dictionary:
 		if frame.selected:
 			frames_dict[frame.coordinate_in_spritesheet] = frame.img
 	return frames_dict
+
+
+func set_locked_coordinate_in_spritesheet(lock: bool, coord: Vector2i):
+	if lock and not spritesheet.locked_coordinates.has(coord):
+		spritesheet.locked_coordinates.append(coord)
+	elif not lock and spritesheet.locked_coordinates.has(coord):
+		spritesheet.locked_coordinates.erase(coord)

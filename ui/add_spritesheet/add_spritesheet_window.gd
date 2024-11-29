@@ -29,6 +29,8 @@ func _ready() -> void:
 		func(rows_str: String):
 			update_grid_size(spritesheet.grid_size.x, int(rows_str))
 	)
+	
+	preview_area.spritesheet_preview.able_to_lock_spaces = false
 
 
 func setup(img: Image):

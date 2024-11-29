@@ -82,6 +82,10 @@ editor_draw_screen = false
 z_index = -10
 texture_filter = 1
 
+[node name="EmptySpaces" type="Node2D" parent="PreviewContainer/SubViewport/SpritesheetPreview"]
+z_index = -10
+texture_filter = 1
+
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15

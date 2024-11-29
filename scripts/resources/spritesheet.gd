@@ -18,6 +18,7 @@ var grid_size: Vector2i = Vector2i.ZERO:
 	set = set_grid_size
 var sprite_size: Vector2i = Vector2i.ZERO
 var frames: Dictionary = {} #Frame coordinate -> image
+var locked_coordinates: Array[Vector2i] = []
 
 
 func is_empty() -> bool:
