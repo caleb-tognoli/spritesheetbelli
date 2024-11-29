@@ -42,6 +42,12 @@ func set_grid_size(size: Vector2i):
 		if frame_coords.x >= grid_size.x or frame_coords.y >= grid_size.y:
 			frames.erase(frame_coords)
 	
+	var locked_coordinates_in_grid: Array[Vector2i] = []
+	for space_coord in locked_coordinates:
+		if space_coord.x < grid_size.x and space_coord.y < grid_size.y:
+			locked_coordinates_in_grid.append(space_coord)
+	locked_coordinates = locked_coordinates_in_grid
+	
 	updated.emit()
 
 
