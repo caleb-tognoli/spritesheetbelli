@@ -6,6 +6,7 @@ signal updated
 
 enum ImageFormats {PNG, JPG, WEBP}
 enum FreeSpace {
+	FIRST_FREE,
 	AT_END,
 	FREE_ROW_AT_END,
 }
@@ -65,35 +66,33 @@ func resize_frames(size: Vector2i):
 	updated.emit()
 
 
-func get_free_space(free_space_mode: FreeSpace = FreeSpace.AT_END) -> Vector2i:
-	#print("setup")
+func get_free_space(free_space_mode: FreeSpace = FreeSpace.FIRST_FREE) -> Vector2i:
 	if is_empty():
-		return get_first_unlocked_space()
+		return get_first_free_unlocked_space()
 	
 	var last_row_with_frames := get_first_free_row() - 1
 	
-	#print("last row still has space")
+	if free_space_mode in [FreeSpace.FREE_ROW_AT_END]:
+		return Vector2i(0, last_row_with_frames + 1)
+	
 	if free_space_mode in [FreeSpace.AT_END]:
 		var last_frame_column: int = 0
 		for column in grid_size.x:
 			if frames.has(Vector2i(column, last_row_with_frames)):
 				last_frame_column = column
 		if last_frame_column + 1 < grid_size.x:
-			return get_first_unlocked_space(
+			return get_first_free_unlocked_space(
 				Vector2i(last_frame_column + 1, last_row_with_frames)
 			)
 	
-	#print("only 1 row, add a column")
-	if free_space_mode in [FreeSpace.AT_END]:
-		if grid_size.y == 1:
-			return get_first_unlocked_space(Vector2i(grid_size.x, 0))
-	
-	#print("free row at end")
-	return get_first_unlocked_space(Vector2i(0, last_row_with_frames + 1))
+	if grid_size.y == 1:
+		return Vector2i(grid_size.x, 0)
+	else:
+		return get_first_free_unlocked_space()
 
 
-func get_first_unlocked_space(from: Vector2i = Vector2i.ZERO) -> Vector2i:
-	while from in locked_coordinates:
+func get_first_free_unlocked_space(from: Vector2i = Vector2i.ZERO) -> Vector2i:
+	while from in locked_coordinates or from in frames:
 		if from.x < grid_size.x - 1:
 			from.x += 1
 		else:
@@ -113,7 +112,7 @@ func add_frames(imgs: Array[Image], add_mode: AddMode = AddMode.SINGLE_SPRITE) -
 	match add_mode:
 		AddMode.SINGLE_SPRITE:
 			for img: Image in imgs:
-				var free_space := get_free_space(FreeSpace.AT_END)
+				var free_space := get_free_space()
 				add_frame_at_coordinate(img, free_space)
 		AddMode.ROW:
 			var free_space := get_free_space(FreeSpace.FREE_ROW_AT_END)
