@@ -78,15 +78,27 @@ func get_free_space(free_space_mode: FreeSpace = FreeSpace.AT_END) -> Vector2i:
 			if frames.has(Vector2i(column, last_row_with_frames)):
 				last_frame_column = column
 		if last_frame_column + 1 < grid_size.x:
-			return Vector2i(last_frame_column + 1, last_row_with_frames)
+			return get_first_unlocked_space(
+				Vector2i(last_frame_column + 1, last_row_with_frames)
+			)
 	
 	#print("only 1 row, add a column")
 	if free_space_mode in [FreeSpace.AT_END]:
 		if grid_size.y == 1:
-			return Vector2i(grid_size.x, 0)
+			return get_first_unlocked_space(Vector2i(grid_size.x, 0))
 	
 	#print("free row at end")
-	return Vector2i(0, last_row_with_frames + 1)
+	return get_first_unlocked_space(Vector2i(0, last_row_with_frames + 1))
+
+
+func get_first_unlocked_space(from: Vector2i) -> Vector2i:
+	while from in locked_coordinates:
+		if from.x < grid_size.x - 1:
+			from.x += 1
+		else:
+			from.y += 1
+			from.x = 0
+	return from
 
 
 func get_first_free_row() -> int:
@@ -112,6 +124,9 @@ func add_frames(imgs: Array[Image], add_mode: AddMode = AddMode.SINGLE_SPRITE) -
 func add_frame_at_coordinate(img: Image, coordinate: Vector2i):
 	if img.is_empty():
 		return
+	
+	if coordinate in locked_coordinates:
+		locked_coordinates.erase(coordinate)
 	
 	var max_coord_x: int = max(coordinate.x + 1, grid_size.x)
 	var max_coord_y: int = max(coordinate.y + 1, grid_size.y)
