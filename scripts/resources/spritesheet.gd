@@ -142,6 +142,14 @@ func add_frame_at_coordinate(img: Image, coordinate: Vector2i):
 	updated.emit()
 
 
+func lock_all_free_spaces():
+	var free_space := get_first_free_unlocked_space()
+	while free_space.x < grid_size.x and free_space.y < grid_size.y:
+		locked_coordinates.append(free_space)
+		free_space = get_first_free_unlocked_space(free_space)
+	updated.emit()
+
+
 func pad_frames_to_sprite_size():
 	for frame_coord in frames:
 		if frames[frame_coord].get_size() < sprite_size:

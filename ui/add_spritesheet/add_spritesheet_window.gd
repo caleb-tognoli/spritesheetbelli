@@ -80,6 +80,7 @@ func add_spritesheet_to_global():
 		var frames: Array[Image] = []
 		frames.assign(row_images)
 		Global.spritesheet.add_frames(frames, Spritesheet.AddMode.ROW)
+	Global.spritesheet.lock_all_free_spaces()
 	close_requested.emit()
 
 
