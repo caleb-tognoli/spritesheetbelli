@@ -35,7 +35,10 @@ func _ready() -> void:
 
 func setup(img: Image):
 	spritesheet_image = img
-	update_grid_size(3, 3)
+	
+	var guessed_size := guess_grid_size(img.get_size())
+	update_grid_size(guessed_size.x, guessed_size.y)
+	
 	preview_area.spritesheet_preview.camera.zoom = Vector2.ONE
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
 
@@ -90,3 +93,11 @@ func add_selected_frames_to_global():
 	selected_frames_imgs.assign(selected_frames.values())
 	Global.spritesheet.add_frames(selected_frames_imgs)
 	close_requested.emit()
+
+
+static func guess_grid_size(spritesheet_size: Vector2i) -> Vector2i:
+	var gcd := Math.gcd(spritesheet_size.x, spritesheet_size.y)
+	if gcd != 1:
+		return spritesheet_size / gcd
+	else:
+		return Vector2i(3, 3)
