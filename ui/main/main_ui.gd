@@ -1,7 +1,8 @@
 extends Control
 
 
-@onready var open_file_dialog: FileDialog = $OpenFileDialog
+@onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
+@onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
 @onready var save_sprites_dialog: FileDialog = $SaveSpritesDialog
 @onready var save_spritesheet_dialog: FileDialog = $SaveSpritesheetDialog
 @onready var notification_dialog: AcceptDialog = $NotificationDialog
@@ -27,8 +28,9 @@ func _ready() -> void:
 	
 	Global.spritesheet.updated.connect(set_text_params.bind(Global.spritesheet))
 	Global.spritesheet.updated.connect(disable_if_empty)
-	add_sprites_btn.pressed.connect(add_sprites_pressed)
-	add_spritesheet_btn.pressed.connect(add_spritesheet_pressed)
+	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
+	add_sprites_btn.pressed.connect(open_sprites_dialog.popup)
+	add_spritesheet_btn.pressed.connect(open_spritesheet_dialog.popup)
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
 	export_sprites.pressed.connect(save_sprites_dialog.popup)
@@ -53,39 +55,13 @@ func _ready() -> void:
 			var width: int = (Global.spritesheet.sprite_size.x * height) / Global.spritesheet.sprite_size.y
 			Global.spritesheet.resize_frames(Vector2i(width, height))
 	)
-
-
-func add_sprites_pressed():
-	open_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILES
-	
-	var add_sprites_from_paths: Callable = (
+	open_sprites_dialog.files_selected.connect(
 		func(paths: PackedStringArray):
 			var imgs: Array[Image] = []
 			for path in paths:
 				imgs.append(Image.load_from_file(path))
 			Global.spritesheet.add_frames(imgs)
 	)
-	
-	open_file_dialog.files_selected.connect(add_sprites_from_paths, CONNECT_ONE_SHOT)
-	if not open_file_dialog.canceled.is_connected(open_file_dialog.files_selected.disconnect.bind(add_sprites_from_paths)):
-		open_file_dialog.canceled.connect(
-			open_file_dialog.files_selected.disconnect.bind(add_sprites_from_paths), 
-			CONNECT_ONE_SHOT
-		)
-	open_file_dialog.title = "Add sprite(s)"
-	open_file_dialog.popup()
-
-
-func add_spritesheet_pressed():
-	open_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
-	open_file_dialog.file_selected.connect(show_add_spritesheet_window, CONNECT_ONE_SHOT)
-	if not open_file_dialog.canceled.is_connected(open_file_dialog.file_selected.disconnect.bind(show_add_spritesheet_window)):
-		open_file_dialog.canceled.connect(
-			open_file_dialog.file_selected.disconnect.bind(show_add_spritesheet_window), 
-			CONNECT_ONE_SHOT
-		)
-	open_file_dialog.title = "Add spritesheet"
-	open_file_dialog.popup()
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:
