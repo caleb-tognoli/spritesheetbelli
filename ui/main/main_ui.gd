@@ -1,13 +1,13 @@
 extends Control
 
 
+@onready var add_spritesheet_window: AddSpritesheetWindow = $AddSpritesheetWindow
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
 @onready var save_sprites_dialog: FileDialog = $SaveSpritesDialog
 @onready var save_spritesheet_dialog: FileDialog = $SaveSpritesheetDialog
 @onready var notification_dialog: AcceptDialog = $NotificationDialog
 @onready var confirmation_dialog: ConfirmationDialog = $ConfirmationDialog
-@onready var add_spritesheet_window: AddSpritesheetWindow = $AddSpritesheetWindow
 @onready var preview_area: Control = %PreviewArea
 @onready var grid_rows: LineEdit = %GridRows
 @onready var grid_columns: LineEdit = %GridColumns
@@ -15,10 +15,10 @@ extends Control
 @onready var sprite_height: LineEdit = %SpriteHeight
 @onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
-@onready var export_sprites: Button = %ExportSprites
-@onready var export_spritesheet: Button = %ExportSpritesheet
 @onready var spritesheet_width: Label = %SpritesheetWidth
 @onready var spritesheet_height: Label = %SpritesheetHeight
+
+var set_filepath_when_opening_spritesheet: bool = false
 
 
 func _ready() -> void:
@@ -33,8 +33,6 @@ func _ready() -> void:
 	add_spritesheet_btn.pressed.connect(open_spritesheet_dialog.popup)
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
-	export_sprites.pressed.connect(save_sprites_dialog.popup)
-	export_spritesheet.pressed.connect(save_spritesheet_dialog.popup)
 	grid_rows.text_submitted.connect(
 		func(str_rows):
 			set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(str_rows))
@@ -45,12 +43,16 @@ func _ready() -> void:
 	)
 	sprite_width.text_submitted.connect(
 		func(str_width):
+			if Global.spritesheet.sprite_size.x <= 0:
+				return
 			var width: int = int(str_width)
 			var height: int = (Global.spritesheet.sprite_size.y * width) / Global.spritesheet.sprite_size.x
 			Global.spritesheet.resize_frames(Vector2i(width, height))
 	)
 	sprite_height.text_submitted.connect(
 		func(str_height):
+			if Global.spritesheet.sprite_size.y <= 0:
+				return
 			var height: int = int(str_height)
 			var width: int = (Global.spritesheet.sprite_size.x * height) / Global.spritesheet.sprite_size.y
 			Global.spritesheet.resize_frames(Vector2i(width, height))
@@ -75,8 +77,6 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 
 func disable_if_empty():
 	var is_empty := Global.spritesheet.is_empty()
-	export_sprites.disabled = is_empty
-	export_spritesheet.disabled = is_empty
 	grid_rows.editable = not is_empty
 	grid_columns.editable = not is_empty
 	sprite_width.editable = not is_empty
@@ -84,6 +84,9 @@ func disable_if_empty():
 
 
 func show_add_spritesheet_window(spritesheet_path: String) -> void:
+	if set_filepath_when_opening_spritesheet:
+		Global.filepath = spritesheet_path
+		set_filepath_when_opening_spritesheet = false
 	add_spritesheet_window.setup(Image.load_from_file(spritesheet_path))
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
@@ -168,3 +171,30 @@ func save_spritesheet(path: String):
 		"Saved successfully",
 		"Saved spritesheet to %s." % [path.get_base_dir().get_file()]
 	)
+	Global.filepath = path
+	Global.has_unsaved_changes = false
+
+
+func new_spritesheet():
+	if not Global.spritesheet.is_empty():
+		show_confirmation_dialog(
+			"New spritesheet",
+			"Unsaved progress will be lost",
+			Global.reset_spritesheet
+		)
+
+
+func open_spritesheet():
+	var open_spritesheet_internal := func():
+		Global.reset_spritesheet()
+		set_filepath_when_opening_spritesheet = true
+		open_spritesheet_dialog.popup()
+	
+	if not Global.spritesheet.is_empty():
+		show_confirmation_dialog(
+			"Open spritesheet",
+			"Unsaved progress will be lost",
+			open_spritesheet_internal
+		)
+	else:
+		open_spritesheet_internal.call()
