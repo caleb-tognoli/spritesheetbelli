@@ -171,3 +171,23 @@ func test_keep_ratio_resize_rounds() -> void:
 	main.keep_ratio_btn.button_pressed = false
 	main.sprite_height.value = 10
 	assert_eq(Global.spritesheet.sprite_size, Vector2i(33, 10))
+
+
+func test_closing_with_unsaved_changes_asks_first() -> void:
+	var quits := [0]
+	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	assert_eq(quits[0], 1, "nothing to save: closes right away")
+
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	assert_true(main.unsaved_changes_dialog.visible, "asks")
+	assert_eq(quits[0], 1)
+	main.unsaved_changes_dialog.custom_action.emit(&"discard")
+	assert_eq(quits[0], 2, "Don't Save closes")
+
+	Global.filepath = dir.path_join("close_save.png")
+	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	main.unsaved_changes_dialog.confirmed.emit()
+	assert_eq(quits[0], 3, "Save saves, then closes")
+	assert_false(Global.has_unsaved_changes)
+	assert_true(FileAccess.file_exists(dir.path_join("close_save.png")))

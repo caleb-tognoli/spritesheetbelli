@@ -53,10 +53,7 @@ func file_menu_index_pressed(index: int) -> void:
 		file_open_index:
 			owner.open_spritesheet()
 		file_save_index:
-			if Global.filepath.is_empty():
-				owner.popup_file_dialog(owner.save_spritesheet_dialog)
-			else:
-				owner.save_spritesheet(Global.filepath)
+			owner.save()
 		file_save_as_index:
 			owner.popup_file_dialog(owner.save_spritesheet_dialog)
 		file_export_sprites_index:

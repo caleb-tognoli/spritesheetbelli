@@ -27,6 +27,10 @@ var open_file_dialogs: Array[FileDialog] = []
 var warned_about_jpg_transparency := false
 ## True while the Add Spritesheet window shows a file picked with Open
 var loading_opened_file := false
+## Runs after the next successful save, e.g. closing the app after "Save"
+var after_save: Callable
+var unsaved_changes_dialog: ConfirmationDialog
+var after_unsaved_changes: Callable
 
 
 func _ready() -> void:
@@ -73,6 +77,10 @@ func _ready() -> void:
 				action.call()
 	)
 	confirmation_dialog.canceled.connect(func(): pending_confirm_action = Callable())
+
+	save_spritesheet_dialog.canceled.connect(func(): after_save = Callable())
+	_create_unsaved_changes_dialog()
+	get_tree().auto_accept_quit = false
 
 	for dialog: FileDialog in [
 		open_sprites_dialog,
@@ -221,12 +229,55 @@ func save_sprites(folder: String):
 	)
 
 
-func save_spritesheet(path: String):
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		confirm_unsaved_changes("closing", get_tree().quit)
+
+
+func _create_unsaved_changes_dialog() -> void:
+	unsaved_changes_dialog = ConfirmationDialog.new()
+	unsaved_changes_dialog.title = "Unsaved changes"
+	unsaved_changes_dialog.theme = confirmation_dialog.theme
+	unsaved_changes_dialog.ok_button_text = "Save"
+	unsaved_changes_dialog.add_button("Don't Save", true, "discard")
+	add_child(unsaved_changes_dialog)
+	unsaved_changes_dialog.confirmed.connect(
+		func():
+			after_save = after_unsaved_changes
+			save()
+	)
+	unsaved_changes_dialog.custom_action.connect(
+		func(_action: StringName):
+			unsaved_changes_dialog.hide()
+			after_unsaved_changes.call()
+	)
+
+
+## Runs [param then] right away, or after asking to save when there are unsaved changes
+func confirm_unsaved_changes(before: String, then: Callable) -> void:
+	if not Global.has_unsaved_changes or Global.spritesheet.is_empty():
+		then.call()
+		return
+	after_unsaved_changes = then
+	var file_name := Global.filepath.get_file() if Global.filepath else "the spritesheet"
+	unsaved_changes_dialog.dialog_text = "Save changes to %s before %s?" % [file_name, before]
+	unsaved_changes_dialog.popup_centered()
+
+
+## Saves to the current file, or asks where to save. Returns true if saved right away.
+func save() -> bool:
+	if Global.filepath.is_empty():
+		popup_file_dialog(save_spritesheet_dialog)
+		return false
+	return save_spritesheet(Global.filepath)
+
+
+func save_spritesheet(path: String) -> bool:
 	var spritesheet_image := Global.spritesheet.get_image()
 
-	if spritesheet_image.get_size() == Vector2i.ZERO:
+	if Global.spritesheet.is_empty():
 		show_notification_dialog("Error", "The spritesheet is empty.")
-		return
+		return false
 
 	path = SpritesheetExporter.with_image_extension(path)
 	var options := ExportOptions.new()
@@ -236,7 +287,8 @@ func save_spritesheet(path: String):
 		show_notification_dialog(
 			"Error", "Could not save spritesheet to %s (%s)." % [path, error_string(error)]
 		)
-		return
+		after_save = Callable()
+		return false
 
 	var message := "Saved %s in %s." % [path.get_file(), path.get_base_dir().get_file()]
 	if (
@@ -249,18 +301,19 @@ func save_spritesheet(path: String):
 			"\nJPG doesn't support transparency, so transparent areas were filled with %s."
 			% ("white" if options.opaque_background == Color.WHITE else "the background colour")
 		)
-	show_notification_dialog("Saved successfully", message)
 	Global.filepath = path
 	Global.has_unsaved_changes = false
+	if after_save.is_valid():
+		var action := after_save
+		after_save = Callable()
+		action.call()
+	else:
+		show_notification_dialog("Saved successfully", message)
+	return true
 
 
 func new_spritesheet():
-	if Global.has_unsaved_changes and not Global.spritesheet.is_empty():
-		show_confirmation_dialog(
-			"New spritesheet", "Unsaved progress will be lost", Global.reset_spritesheet
-		)
-	else:
-		Global.reset_spritesheet()
+	confirm_unsaved_changes("creating a new one", Global.reset_spritesheet)
 
 
 func open_spritesheet():
@@ -269,9 +322,4 @@ func open_spritesheet():
 		set_filepath_when_opening_spritesheet = true
 		popup_file_dialog(open_spritesheet_dialog)
 
-	if Global.has_unsaved_changes and not Global.spritesheet.is_empty():
-		show_confirmation_dialog(
-			"Open spritesheet", "Unsaved progress will be lost", open_spritesheet_internal
-		)
-	else:
-		open_spritesheet_internal.call()
+	confirm_unsaved_changes("opening another file", open_spritesheet_internal)
