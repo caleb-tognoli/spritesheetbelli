@@ -51,6 +51,7 @@ var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key_dialog := ColorKeyDialog.new()
 var row_name_dialog := RowNameDialog.new()
+var export_settings_dialog := ExportSettingsDialog.new()
 
 
 func _ready() -> void:
@@ -100,6 +101,7 @@ func _ready() -> void:
 	add_child(settings_window)
 	add_child(color_key_dialog)
 	add_child(row_name_dialog)
+	add_child(export_settings_dialog)
 	row_name_dialog.name_chosen.connect(
 		func(row: int, row_name: String) -> void:
 			Global.document.perform("Name row", Global.spritesheet.set_row_name.bind(row, row_name))
@@ -114,6 +116,7 @@ func _ready() -> void:
 			)
 	)
 	files.restore_session.call_deferred()
+	files.get_selected_coords = preview.get_selected_coords
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)
@@ -151,6 +154,12 @@ func _register_actions() -> void:
 		&"export_sprites",
 		"Export Sprites…",
 		files.popup_file_dialog.bind(files.save_sprites_dialog),
+		has_frames
+	)
+	add.call(
+		&"export_settings",
+		"Export Settings…",
+		func() -> void: export_settings_dialog.popup_centered(),
 		has_frames
 	)
 	add.call(

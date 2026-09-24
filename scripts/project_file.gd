@@ -49,6 +49,7 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"scale_filter": sheet.scale_filter,
 		"locked": locked,
 		"row_names": row_names,
+		"export": JSON.from_native(sheet.export_settings),
 		"frames": frames,
 		"extra": extra,
 	}
@@ -101,8 +102,14 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
 		"row_names": row_names,
+		"export": _read_export_settings(data.get("export", {})),
 	}
 	return {"state": state, "extra": data.get("extra", {})}
+
+
+static func _read_export_settings(value: Variant) -> Dictionary:
+	var settings: Variant = JSON.to_native(value)
+	return settings if settings is Dictionary else {}
 
 
 static func _write(zip: ZIPPacker, file: String, bytes: PackedByteArray) -> Error:

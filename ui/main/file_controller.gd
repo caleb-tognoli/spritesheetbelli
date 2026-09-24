@@ -27,6 +27,8 @@ var replace_image_dialog := _create_file_dialog(
 	"Replace Image", FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
 )
 var _replace_coord := Vector2i.ZERO
+## Returns the selected frames, for exporting only those
+var get_selected_coords := func() -> Array[Vector2i]: return []
 
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
@@ -192,8 +194,20 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 
 func save_sprites(folder: String) -> void:
 	var errors: PackedStringArray = []
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	var coords: Array[Vector2i] = []
+	if options.only_selected:
+		coords = get_selected_coords.call()
+		if coords.is_empty():
+			(
+				Notify
+				. error(
+					'No frames are selected. Select frames or turn off "Only selected frames" in Export Settings.'
+				)
+			)
+			return
 	var written := SpritesheetExporter.export_sprites(
-		Global.spritesheet, folder, errors, Settings.get_value(&"index_start")
+		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
 	)
 	if not errors.is_empty():
 		Notify.error("Could not save: %s." % ", ".join(errors))
@@ -314,9 +328,9 @@ func export_image_to(path: String) -> bool:
 		Notify.error("The spritesheet is empty.")
 		return false
 
-	var spritesheet_image := Global.spritesheet.get_image()
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	var spritesheet_image := Global.spritesheet.get_image(options)
 	path = SpritesheetExporter.with_image_extension(path)
-	var options := ExportOptions.from_settings()
 	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
 
 	if error != OK:

@@ -15,6 +15,7 @@ const MENUS := {
 		&"export_image",
 		&"export_image_as",
 		&"export_sprites",
+		&"export_settings",
 		&"",
 		&"add_sprites",
 		&"add_folder",

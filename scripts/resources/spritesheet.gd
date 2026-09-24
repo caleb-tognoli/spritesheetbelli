@@ -41,6 +41,10 @@ var scale_filter: Image.Interpolation:
 var row_names: Dictionary[int, String]:
 	get:
 		return _row_names
+## How this sheet is exported, see [ExportOptions]. Read only.
+var export_settings: Dictionary:
+	get:
+		return _export_settings
 
 var _grid_size := Vector2i.ZERO
 var _frames: Dictionary[Vector2i, Image] = {}
@@ -48,6 +52,7 @@ var _locked: Array[Vector2i] = []
 var _scale := Vector2.ONE
 var _scale_filter := Image.INTERPOLATE_NEAREST
 var _row_names: Dictionary[int, String] = {}
+var _export_settings := {}
 var _sprite_size := Vector2i.ZERO
 var _scaled_cache: Dictionary[Image, Image] = {}
 var _batch_depth := 0
@@ -173,6 +178,7 @@ func get_state() -> Dictionary:
 		"scale": _scale,
 		"scale_filter": _scale_filter,
 		"row_names": _row_names.duplicate(),
+		"export": _export_settings.duplicate(),
 		"sprite_size": _sprite_size,
 	}
 
@@ -184,6 +190,7 @@ func set_state(state: Dictionary) -> void:
 	_scale = state.get("scale", Vector2.ONE)
 	_scale_filter = state.get("scale_filter", Image.INTERPOLATE_NEAREST)
 	_row_names.assign(state.get("row_names", {}))
+	_export_settings = state.get("export", {}).duplicate()
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_scaled_cache.clear()
 	_changed()
@@ -252,6 +259,13 @@ func lock_free_cells(rect := Rect2i()) -> void:
 			var coord := Vector2i(x, y)
 			if not has_frame(coord) and not is_locked(coord):
 				_locked.append(coord)
+	_changed()
+
+
+func set_export_settings(settings: Dictionary) -> void:
+	if settings == _export_settings:
+		return
+	_export_settings = settings.duplicate()
 	_changed()
 
 
