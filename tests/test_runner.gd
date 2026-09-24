@@ -32,6 +32,11 @@ func _ready() -> void:
 		if not (file.begins_with("test_") and file.ends_with(".gd")):
 			continue
 		var script: GDScript = load(TEST_DIR.path_join(file))
+		# A script that doesn't compile has no methods, so its tests would silently vanish
+		if script == null or not script.can_instantiate():
+			print("  FAIL ", file, " doesn't compile")
+			failures.append("%s doesn't compile" % file)
+			continue
 		for method in script.get_script_method_list():
 			var method_name: String = method.name
 			if not method_name.begins_with("test_"):
