@@ -35,17 +35,21 @@ static func size_problem(size: Vector2i, extension := "png") -> String:
 
 ## Makes pixels close to [param color] transparent. [param tolerance] is 0 to 1.
 static func color_key(img: Image, color: Color, tolerance := 0.1) -> void:
-	var max_distance := tolerance * tolerance * 3.0
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			var distance := (
-				(c.r - color.r) * (c.r - color.r)
-				+ (c.g - color.g) * (c.g - color.g)
-				+ (c.b - color.b) * (c.b - color.b)
-			)
-			if distance <= max_distance:
-				img.set_pixel(x, y, Color(c, 0.0))
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
+	# Working on the raw bytes is much faster than get_pixel and set_pixel
+	var data := img.get_data()
+	var r := color.r8
+	var g := color.g8
+	var b := color.b8
+	var max_distance := (tolerance * 255.0) ** 2 * 3.0
+	for i in range(0, data.size(), 4):
+		var dr := data[i] - r
+		var dg := data[i + 1] - g
+		var db := data[i + 2] - b
+		if dr * dr + dg * dg + db * db <= max_distance:
+			data[i + 3] = 0
+	img.set_data(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8, data)
 
 
 ## Whether any pixel is not fully opaque

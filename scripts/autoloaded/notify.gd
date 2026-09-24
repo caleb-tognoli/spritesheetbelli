@@ -74,9 +74,27 @@ func progress(text: String, done: int, total: int) -> void:
 	if now - _progress_started < 250 and not _progress_overlay.visible:
 		return
 	_progress_overlay.visible = true
+	_progress_bar.indeterminate = false
 	_progress_label.text = "%s %d of %d" % [text, done, total]
 	_progress_bar.max_value = maxi(total, 1)
 	_progress_bar.value = done
+
+
+## Runs [param work] and returns its result. When [param slow], a "please wait" overlay is
+## drawn first, since the window can't repaint while the work runs.
+func run_busy(text: String, work: Callable, slow := true) -> Variant:
+	if not slow:
+		return work.call()
+	_progress_label.text = text + "…"
+	# How long it takes is unknown
+	_progress_bar.indeterminate = true
+	_progress_overlay.visible = true
+	# A frame is drawn between two process frames, so the overlay is on screen after
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var result: Variant = work.call()
+	hide_progress()
+	return result
 
 
 func hide_progress() -> void:
@@ -98,13 +116,15 @@ func _build_progress_overlay(layer: CanvasLayer) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_progress_overlay.add_child(center)
 	var panel := PanelContainer.new()
-	panel.theme_type_variation = &"Toast"
+	panel.theme_type_variation = &"BusyPanel"
 	center.add_child(panel)
 	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
 	box.custom_minimum_size = Vector2(320, 0)
 	panel.add_child(box)
 	box.add_child(_progress_label)
 	_progress_bar.show_percentage = false
+	_progress_bar.custom_minimum_size.y = 6
 	box.add_child(_progress_bar)
 
 

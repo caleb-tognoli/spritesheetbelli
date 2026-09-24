@@ -169,3 +169,33 @@ func test_frame_names_survive_edits_and_projects() -> void:
 	assert_eq(ProjectFile.save(sheet, path), OK)
 	var loaded: Dictionary = ProjectFile.load(path)
 	assert_eq(loaded.state.frames[Vector2i.ZERO].resource_name, "walk_01.png")
+
+
+func test_undoing_a_resize_reuses_scaled_images() -> void:
+	sheet.add_frames([make_image(Color.RED, Vector2i(8, 8))] as Array[Image])
+	sheet.set_frame_scale(Vector2(2, 2))
+	var scaled := sheet.get_frame_image(Vector2i.ZERO)
+	var state := sheet.get_state()
+	sheet.set_frame_scale(Vector2.ONE)
+	sheet.set_state(state)
+	assert_true(sheet.get_frame_image(Vector2i.ZERO) == scaled)
+	sheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
+	assert_false(sheet.is_frame_scaled(Vector2i.ZERO), "an edited frame is scaled again")
+
+
+func test_prepare_scaled_images() -> void:
+	var imgs: Array[Image] = []
+	for i in 4:
+		imgs.append(make_image(Color.RED, Vector2i(10, 6)))
+	sheet.add_frames(imgs)
+	sheet.set_frame_scale(Vector2(3, 3), Image.INTERPOLATE_BILINEAR)
+	assert_false(sheet.is_frame_scaled(Vector2i.ZERO))
+	assert_true(sheet.get_pending_scale_work() > 0)
+	assert_eq(
+		sheet.get_frame_rect_in_cell(Vector2i(1, 0)).size, Vector2i(30, 18), "no scaling needed"
+	)
+	assert_false(sheet.is_frame_scaled(Vector2i(1, 0)))
+	await sheet.prepare_scaled_images()
+	assert_true(sheet.is_frame_scaled(Vector2i(3, 0)))
+	assert_eq(sheet.get_pending_scale_work(), 0)
+	assert_eq(sheet.get_frame_image(Vector2i(2, 0)).get_size(), Vector2i(30, 18))

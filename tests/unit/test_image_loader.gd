@@ -28,3 +28,26 @@ func test_progress_overlay_waits_before_showing() -> void:
 	assert_true(Notify.is_progress_visible())
 	Notify.hide_progress()
 	assert_false(Notify.is_progress_visible())
+
+
+func test_run_busy_shows_the_overlay_while_working() -> void:
+	var seen := [false]
+	var result: Variant = await Notify.run_busy(
+		"Working",
+		func() -> int:
+			seen[0] = Notify.is_progress_visible()
+			return 5
+	)
+	assert_eq(result, 5)
+	assert_true(seen[0], "visible during the work")
+	assert_false(Notify.is_progress_visible(), "hidden after")
+	assert_eq(await Notify.run_busy("Quick", func() -> int: return 6, false), 6, "not slow")
+
+
+func test_color_key_on_raw_bytes() -> void:
+	var img := Image.create_empty(4, 1, false, Image.FORMAT_RGB8)
+	img.fill(Color.MAGENTA)
+	img.set_pixel(1, 0, Color.RED)
+	ImageUtils.color_key(img, Color.MAGENTA)
+	assert_eq(img.get_pixel(0, 0).a, 0.0)
+	assert_eq(img.get_pixel(1, 0), Color.RED, "other colours stay")

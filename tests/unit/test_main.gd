@@ -79,7 +79,7 @@ func test_add_spritesheet_keeps_empty_rows() -> void:
 func test_export_appends_png_extension() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var path := dir.path_join("sheet_no_ext")
-	main.files.export_image_to(path)
+	await main.files.export_image_to(path)
 	assert_true(FileAccess.file_exists(path + ".png"))
 	assert_eq(Global.document.export_path, path + ".png", "Ctrl+E exports here next time")
 	Notify.message_dialog.hide()
@@ -98,13 +98,13 @@ func test_save_and_open_project() -> void:
 			Global.spritesheet.resize_sprites(Vector2i(32, 32))
 	)
 	var path := dir.path_join("project")
-	assert_true(main.files.save_project(path))
+	assert_true(await main.files.save_project(path))
 	assert_eq(Global.document.path, path + ".sbelli")
 	assert_false(Global.document.is_dirty)
 	Notify.message_dialog.hide()
 
 	Global.document.reset()
-	assert_true(main.files.open_project(path + ".sbelli"))
+	assert_true(await main.files.open_project(path + ".sbelli"))
 	var sheet := Global.spritesheet
 	assert_eq(sheet.grid_size, Vector2i(3, 2))
 	assert_eq(sheet.frames[Vector2i(1, 0)].get_size(), Vector2i(8, 16), "original size kept")
@@ -120,7 +120,7 @@ func test_opening_invalid_project_shows_error() -> void:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	f.store_string("not a zip")
 	f.close()
-	assert_false(main.files.open_project(path))
+	assert_false(await main.files.open_project(path))
 	assert_true(Notify.message_dialog.visible)
 	Notify.message_dialog.hide()
 
@@ -190,7 +190,7 @@ func test_opening_a_file_is_not_an_unsaved_change() -> void:
 	var path := dir.path_join("open_me.png")
 	make_image(Color.RED, Vector2i(32, 16)).save_png(path)
 	main.files.set_filepath_when_opening_spritesheet = true
-	main.files.show_add_spritesheet_window(path)
+	await main.files.show_add_spritesheet_window(path)
 	main.files.add_spritesheet_window.add_spritesheet_to_global()
 	assert_false(Global.spritesheet.is_empty())
 	assert_false(Global.document.is_dirty)
@@ -270,7 +270,7 @@ func test_dropping_files() -> void:
 	assert_eq(Global.spritesheet.frames.size(), 2, "folder: images only")
 	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "a2 first")
 
-	main.files.open_dropped_files(PackedStringArray([folder.path_join("a2.png")]))
+	await main.files.open_dropped_files(PackedStringArray([folder.path_join("a2.png")]))
 	assert_true(main.files.add_spritesheet_window.visible, "one image opens Add Spritesheet")
 	main.files.add_spritesheet_window.hide()
 
@@ -314,7 +314,7 @@ func test_empty_hint_and_toasts() -> void:
 	)
 	await get_tree().process_frame
 	assert_false(main.preview_area.empty_hint.visible)
-	main.files.export_image_to(dir.path_join("toast.png"))
+	await main.files.export_image_to(dir.path_join("toast.png"))
 	assert_true(Notify.get_toasts()[-1].begins_with("Exported toast.png"))
 
 

@@ -143,6 +143,10 @@ func test_trim_and_color_key_actions() -> void:
 	assert_eq(main.color_key_dialog.picker.color, Color.MAGENTA, "suggests the corner colour")
 	main.color_key_dialog.confirmed.emit()
 	main.color_key_dialog.hide()
+	# Frames are processed on worker threads
+	for i in 5:
+		await get_tree().process_frame
+	assert_color(Global.spritesheet.frames[Vector2i(3, 0)], Vector2i.ZERO, Color(Color.MAGENTA, 0))
 	Actions.run(&"trim")
 	assert_eq(Global.spritesheet.frames[Vector2i(3, 0)].get_size(), Vector2i(8, 8))
 

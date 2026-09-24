@@ -107,7 +107,7 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 	)
 	if sheet.has_frame(coord):
 		var source := sheet.frames[coord]
-		var frame_size := sheet.get_frame_image(coord).get_size()
+		var frame_size := sheet.get_frame_rect_in_cell(coord).size
 		var text := "%s\n%d×%d px" % [cell_text, frame_size.x, frame_size.y]
 		if source.resource_name:
 			text += "\n" + source.resource_name

@@ -54,7 +54,10 @@ var _scale_filter := Image.INTERPOLATE_NEAREST
 var _row_names: Dictionary[int, String] = {}
 var _export_settings := {}
 var _sprite_size := Vector2i.ZERO
-var _scaled_cache: Dictionary[Image, Image] = {}
+## Scaled frames by scale and filter. The previous scale is kept too, so undoing a resize
+## doesn't scale everything again.
+var _scaled_caches: Dictionary[Vector3, Dictionary] = {}
+var _preparing := 0
 var _batch_depth := 0
 var _batch_changed := false
 
@@ -103,12 +106,77 @@ func get_frame_image(coord: Vector2i) -> Image:
 		return null
 	if _scale == Vector2.ONE:
 		return source
-	if not _scaled_cache.has(source):
+	var cache := _scaled_cache()
+	if not cache.has(source):
 		var img := source.duplicate()
 		var new_size := _scaled_size(source.get_size())
 		img.resize(new_size.x, new_size.y, _scale_filter)
-		_scaled_cache[source] = img
-	return _scaled_cache[source]
+		cache[source] = img
+	return cache[source]
+
+
+## Whether the frame at [param coord] is already scaled, so getting it is quick
+func is_frame_scaled(coord: Vector2i) -> bool:
+	return _scale == Vector2.ONE or not _frames.has(coord) or _scaled_cache().has(_frames[coord])
+
+
+## Every scaled image kept for reuse, as a set
+func get_cached_scaled_images() -> Dictionary:
+	var images := {}
+	for cache: Dictionary in _scaled_caches.values():
+		for img: Image in cache.values():
+			images[img] = true
+	return images
+
+
+## Whether [method prepare_scaled_images] is running
+func is_preparing_scaled_images() -> bool:
+	return _preparing > 0
+
+
+## Roughly how many pixels still have to be scaled, to tell if it will take a while
+func get_pending_scale_work() -> int:
+	if _scale == Vector2.ONE:
+		return 0
+	var cache := _scaled_cache()
+	var work := 0
+	for source: Image in _frames.values():
+		if not cache.has(source):
+			var scaled := _scaled_size(source.get_size())
+			work += scaled.x * scaled.y + source.get_width() * source.get_height()
+	return work
+
+
+## Scales every frame that isn't scaled yet, on worker threads. If the scale changes in
+## the meantime, the results are dropped.
+func prepare_scaled_images(on_progress := Callable()) -> void:
+	if _scale == Vector2.ONE:
+		return
+	var key := _cache_key()
+	var cache := _scaled_cache()
+	var sources: Array[Image] = []
+	var sizes: Array[Vector2i] = []
+	for source: Image in _frames.values():
+		if not cache.has(source) and source not in sources:
+			sources.append(source)
+			sizes.append(_scaled_size(source.get_size()))
+	var filter := _scale_filter
+	_preparing += 1
+	var results := await Parallel.map(
+		sources.size(),
+		func(i: int) -> Image:
+			var img := sources[i].duplicate() as Image
+			img.resize(sizes[i].x, sizes[i].y, filter)
+			return img,
+		on_progress
+	)
+	_preparing -= 1
+	if _cache_key() != key:
+		return
+	cache = _scaled_cache()
+	for i in sources.size():
+		if not cache.has(sources[i]):
+			cache[sources[i]] = results[i]
 
 
 ## The scaled frame centred in a transparent cell of [member sprite_size]
@@ -123,10 +191,11 @@ func get_cell_image(coord: Vector2i) -> Image:
 
 ## Where the scaled frame sits inside its cell
 func get_frame_rect_in_cell(coord: Vector2i) -> Rect2i:
-	var img := get_frame_image(coord)
-	if img == null:
+	var source: Image = _frames.get(coord)
+	if source == null:
 		return Rect2i()
-	return Rect2i((_sprite_size - img.get_size()) / 2, img.get_size())
+	var size := source.get_size() if _scale == Vector2.ONE else _scaled_size(source.get_size())
+	return Rect2i((_sprite_size - size) / 2, size)
 
 
 #region Batching
@@ -192,7 +261,6 @@ func set_state(state: Dictionary) -> void:
 	_row_names.assign(state.get("row_names", {}))
 	_export_settings = state.get("export", {}).duplicate()
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
-	_scaled_cache.clear()
 	_changed()
 
 
@@ -521,7 +589,6 @@ func set_frame_scale(new_scale: Vector2, filter := _scale_filter) -> void:
 		return
 	_scale = new_scale
 	_scale_filter = filter
-	_scaled_cache.clear()
 	_changed()
 
 
@@ -554,6 +621,24 @@ func get_base_sprite_size() -> Vector2i:
 	return size
 
 
+func _cache_key() -> Vector3:
+	return Vector3(_scale.x, _scale.y, _scale_filter)
+
+
+func _scaled_cache() -> Dictionary:
+	var key := _cache_key()
+	if _scaled_caches.has(key):
+		# Most recently used last
+		var cache: Dictionary = _scaled_caches[key]
+		_scaled_caches.erase(key)
+		_scaled_caches[key] = cache
+		return cache
+	_scaled_caches[key] = {}
+	while _scaled_caches.size() > 2:
+		_scaled_caches.erase(_scaled_caches.keys()[0])
+	return _scaled_caches[key]
+
+
 func _scaled_size(size: Vector2i) -> Vector2i:
 	return Vector2i((Vector2(size) * _scale).round()).max(Vector2i.ONE)
 
@@ -571,6 +656,7 @@ func _update_sprite_size() -> void:
 	var alive := {}
 	for img: Image in _frames.values():
 		alive[img] = true
-	for source: Image in _scaled_cache.keys():
-		if not alive.has(source):
-			_scaled_cache.erase(source)
+	for cache: Dictionary in _scaled_caches.values():
+		for source: Image in cache.keys():
+			if not alive.has(source):
+				cache.erase(source)

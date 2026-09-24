@@ -51,6 +51,12 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	var toast := _box(Color(p.accent, 0.95), 6, Vector4(12, 8, 12, 8))
 	theme.set_type_variation(&"Toast", "PanelContainer")
 	theme.set_stylebox("panel", &"Toast", toast)
+	theme.set_type_variation(&"BusyPanel", "PanelContainer")
+	theme.set_stylebox(
+		"panel", &"BusyPanel", _box(p.surface, 8, Vector4(20, 16, 20, 18), p.border, 1)
+	)
+	theme.set_stylebox("background", "ProgressBar", _box(p.raised, 3))
+	theme.set_stylebox("fill", "ProgressBar", _box(p.accent, 3))
 	theme.set_type_variation(&"StatusLabel", "Label")
 	theme.set_font_size("font_size", &"StatusLabel", 12)
 	theme.set_color("font_color", &"StatusLabel", p.text_muted)

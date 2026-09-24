@@ -11,6 +11,8 @@ const ICONS := {
 	&"rotate_ccw": preload("res://assets/icons/RotateLeft.svg"),
 	&"delete_frames": preload("res://assets/icons/Remove.svg"),
 }
+## Pixels to scale before it's done on worker threads behind a progress bar
+const SLOW_SCALE_WORK := 1_000_000
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
 	&"cut",
@@ -78,6 +80,7 @@ func _ready() -> void:
 
 	Global.spritesheet.updated.connect(set_text_params.bind(Global.spritesheet))
 	Global.spritesheet.updated.connect(disable_if_empty)
+	Global.spritesheet.updated.connect(_prepare_scaled_images)
 	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	export_image_btn.pressed.connect(Actions.run.bind(&"export_image"))
@@ -135,14 +138,7 @@ func _ready() -> void:
 			Global.document.perform("Name row", Global.spritesheet.set_row_name.bind(row, row_name))
 	)
 	preview.row_name_requested.connect(open_row_name_dialog)
-	color_key_dialog.color_chosen.connect(
-		func(color: Color, tolerance: float) -> void:
-			edit_selection(
-				"Remove background",
-				func(coords: Array[Vector2i]) -> void:
-					Global.spritesheet.color_key_frames(coords, color, tolerance)
-			)
-	)
+	color_key_dialog.color_chosen.connect(remove_background)
 	files.restore_session.call_deferred()
 	files.get_selected_coords = preview.get_selected_coords
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
@@ -387,6 +383,33 @@ func add_images(action_name: String, images: Array[Image]) -> void:
 	preview.set_selected_coords(coords)
 
 
+## Makes pixels close to [param color] transparent in the selected frames. Big frames
+## take a while, so they're processed on worker threads with a progress bar.
+func remove_background(color: Color, tolerance: float) -> void:
+	var sheet := Global.spritesheet
+	var coords := preview.get_selected_coords()
+	var sources: Array[Image] = []
+	for coord in coords:
+		sources.append(sheet.frames[coord])
+	var keyed := await Parallel.map(
+		sources.size(),
+		func(i: int) -> Image:
+			var img := sources[i].duplicate() as Image
+			ImageUtils.color_key(img, color, tolerance)
+			return img,
+		func(done: int, total: int) -> void: Notify.progress("Removing background", done, total)
+	)
+	Notify.hide_progress()
+	Global.document.perform(
+		"Remove background",
+		func() -> void:
+			for i in coords.size():
+				# Skip frames that changed in the meantime
+				if sheet.frames.get(coords[i]) == sources[i]:
+					sheet.replace_frame(coords[i], keyed[i])
+	)
+
+
 ## Runs [param edit] with the coordinates of the selected frames, as one undoable step
 func edit_selection(action_name: String, edit: Callable) -> void:
 	var coords := preview.get_selected_coords()
@@ -450,6 +473,23 @@ func _check_sprite_size(new_size: Vector2i) -> bool:
 
 
 ## The sheet's filter once it has been resized, otherwise the default from the settings
+## Scaling many or big frames takes a while, e.g. after resizing, changing the filter or
+## undoing either: scale them on worker threads while a progress bar shows
+func _prepare_scaled_images() -> void:
+	var sheet := Global.spritesheet
+	if sheet.is_preparing_scaled_images() or sheet.get_pending_scale_work() < SLOW_SCALE_WORK:
+		return
+	await sheet.prepare_scaled_images(
+		func(done: int, total: int) -> void: Notify.progress("Resizing sprites", done, total)
+	)
+	Notify.hide_progress()
+	if not is_inside_tree():
+		return
+	preview.queue_redraw()
+	# The scale may have changed again in the meantime
+	_prepare_scaled_images()
+
+
 func get_resize_filter() -> Image.Interpolation:
 	var sheet := Global.spritesheet
 	if sheet.frame_scale != Vector2.ONE:

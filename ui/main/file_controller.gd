@@ -4,6 +4,9 @@ extends Node
 
 const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
 const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp ; Images"
+## Work above these sizes shows a "please wait" overlay first
+const SLOW_PIXELS := 4_000_000
+const SLOW_FILE_BYTES := 4_000_000
 
 @export var add_spritesheet_window: AddSpritesheetWindow
 
@@ -224,12 +227,20 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 	if images.is_empty():
 		Notify.error("Drop images, folders of images or a .sbelli project.")
 	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
-		show_add_spritesheet_window(images[0])
+		await show_add_spritesheet_window(images[0])
 	else:
 		await add_sprites_from_paths(images)
 
 
 func show_add_spritesheet_window(spritesheet_path: String) -> void:
+	await Notify.run_busy(
+		"Opening %s" % spritesheet_path.get_file(),
+		_show_add_spritesheet_window.bind(spritesheet_path),
+		is_big_file(spritesheet_path)
+	)
+
+
+func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 	var img := Image.load_from_file(spritesheet_path)
 	if not img:
 		set_filepath_when_opening_spritesheet = false
@@ -247,6 +258,10 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 
 
 func save_sprites(folder: String) -> void:
+	await Notify.run_busy("Exporting sprites", _save_sprites.bind(folder), _is_big_sheet())
+
+
+func _save_sprites(folder: String) -> void:
 	var errors: PackedStringArray = []
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	var coords: Array[Vector2i] = []
@@ -303,7 +318,7 @@ func save() -> bool:
 	if not ProjectFile.is_project_path(Global.document.path):
 		save_as()
 		return false
-	return save_project(Global.document.path)
+	return await save_project(Global.document.path)
 
 
 func save_as() -> void:
@@ -316,6 +331,10 @@ func save_as() -> void:
 
 
 func save_project(path: String) -> bool:
+	return await Notify.run_busy("Saving", _save_project.bind(path), _is_big_sheet())
+
+
+func _save_project(path: String) -> bool:
 	path = ProjectFile.with_extension(path)
 	var extra := {"export_path": Global.document.export_path}
 	var error := ProjectFile.save(Global.spritesheet, path, extra)
@@ -339,6 +358,12 @@ func save_project(path: String) -> bool:
 
 
 func open_project(path: String) -> bool:
+	return await Notify.run_busy(
+		"Opening %s" % path.get_file(), _open_project.bind(path), is_big_file(path)
+	)
+
+
+func _open_project(path: String) -> bool:
 	var result := ProjectFile.load(path)
 	if result.has("error"):
 		Notify.error(result.error)
@@ -380,6 +405,10 @@ func export_image_as() -> void:
 
 
 func export_image_to(path: String) -> bool:
+	return await Notify.run_busy("Exporting", _export_image_to.bind(path), _is_big_sheet())
+
+
+func _export_image_to(path: String) -> bool:
 	if Global.spritesheet.is_empty():
 		Notify.error("The spritesheet is empty.")
 		return false
@@ -431,6 +460,10 @@ func export_image_to(path: String) -> bool:
 
 ## Packs trimmed frames tightly and writes the atlas PNG with a JSON file next to it
 func export_atlas(path: String) -> bool:
+	return await Notify.run_busy("Packing the atlas", _export_atlas.bind(path), _is_big_sheet())
+
+
+func _export_atlas(path: String) -> bool:
 	var sheet := Global.spritesheet
 	var options := ExportOptions.from_sheet(sheet)
 	var packed := AtlasPacker.pack(sheet, options.spacing, options.extrude)
@@ -488,6 +521,20 @@ func open_recent(path: String) -> void:
 func open_spritesheet() -> void:
 	# The spritesheet is only reset once a file is picked, so canceling keeps the current one
 	confirm_unsaved_changes("opening another file", popup_file_dialog.bind(open_dialog))
+
+
+static func is_big_file(path: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.READ)
+	return file != null and file.get_length() > SLOW_FILE_BYTES
+
+
+static func _is_big_sheet() -> bool:
+	var sheet := Global.spritesheet
+	var pixels := 0
+	for coord in sheet.frames:
+		var size := sheet.get_frame_rect_in_cell(coord).size
+		pixels += size.x * size.y
+	return pixels > SLOW_PIXELS
 
 
 static func _create_file_dialog(
