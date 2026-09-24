@@ -490,7 +490,9 @@ func update_sheet_info() -> void:
 		)
 		if selected:
 			sheet_info.text += " · " + tr("%d selected") % selected
-	legend.text = tr("Hatched cells are locked") if not sheet.locked_coordinates.is_empty() else ""
+	legend.text = (
+		tr("Cells with a lock stay empty") if not sheet.locked_coordinates.is_empty() else ""
+	)
 	legend.tooltip_text = "Locked cells are kept empty when adding sprites. Click one to unlock it."
 
 

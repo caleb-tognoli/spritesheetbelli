@@ -22,7 +22,10 @@ signal hover_changed(coord: Vector2i)
 ## The user double-clicked left of a row to name it
 signal row_name_requested(row: int)
 
-const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.8)
+const LOCK_ICON := preload("res://assets/icons/Lock.svg")
+const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
+## On-screen size of the lock icon on locked cells
+const LOCK_ICON_SIZE := 28.0
 const HOVER_COLOR := Color(1, 1, 1, 0.08)
 const CHECKER_COLORS: Array[Color] = [Color(0.36, 0.36, 0.36), Color(0.42, 0.42, 0.42)]
 const MAX_ZOOM := 32.0
@@ -37,6 +40,8 @@ const NO_CELL := Vector2i(-1, -1)
 enum Drag { NONE, PENDING, BOX, MOVE, PAN }
 
 @export var able_to_lock_spaces := true
+## When off, dragging a frame selects with a box instead of moving it
+@export var able_to_move_frames := true
 
 # Set from Settings
 var show_indices := true
@@ -401,7 +406,7 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 ## Turns a pending press into a box selection or a move
 func _begin_real_drag() -> void:
-	if spritesheet.has_frame(_drag_start_cell) and not _drag_additive:
+	if spritesheet.has_frame(_drag_start_cell) and not _drag_additive and able_to_move_frames:
 		if not is_selected(_drag_start_cell):
 			set_selected_coords([_drag_start_cell] as Array[Vector2i])
 		_drag = Drag.MOVE
@@ -492,7 +497,7 @@ func _draw() -> void:
 			if spritesheet.has_frame(coord):
 				_draw_frame(coord, rect)
 			elif spritesheet.is_locked(coord):
-				_draw_hatch(rect, LOCKED_COLOR, pixel)
+				_draw_lock(rect, pixel)
 			if coord == hovered_cell and _drag == Drag.NONE:
 				draw_rect(rect, HOVER_COLOR)
 
@@ -521,13 +526,12 @@ func _draw_frame(coord: Vector2i, rect: Rect2, modulate_color := Color.WHITE) ->
 	)
 
 
-func _draw_hatch(rect: Rect2, color: Color, pixel: float) -> void:
-	const LINES := 5
-	var step := rect.size / LINES
-	for i in range(1, LINES * 2):
-		var a := rect.position + Vector2(minf(i, LINES) * step.x, maxf(i - LINES, 0) * step.y)
-		var b := rect.position + Vector2(maxf(i - LINES, 0) * step.x, minf(i, LINES) * step.y)
-		draw_line(a, b, color, pixel)
+## A dimmed cell with a lock in the middle, kept small when zoomed out
+func _draw_lock(rect: Rect2, pixel: float) -> void:
+	draw_rect(rect, Color(0, 0, 0, 0.25))
+	var icon_size := minf(LOCK_ICON_SIZE * pixel, minf(rect.size.x, rect.size.y) * 0.6)
+	var icon_rect := Rect2(rect.get_center() - Vector2.ONE * icon_size / 2, Vector2.ONE * icon_size)
+	draw_texture_rect(LOCK_ICON, icon_rect, false, LOCKED_COLOR)
 
 
 func _draw_grid(cell_size: Vector2, pixel: float) -> void:
