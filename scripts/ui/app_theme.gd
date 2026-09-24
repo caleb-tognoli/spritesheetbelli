@@ -77,6 +77,8 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		theme.set_stylebox("hover_pressed", type, pressed)
 		theme.set_stylebox("disabled", type, (flat as StyleBox) if is_flat else disabled)
 		theme.set_stylebox("focus", type, focus)
+		# Room between a button's icon and its text
+		theme.set_constant("h_separation", type, 8)
 		theme.set_color("font_color", type, p.text)
 		theme.set_color("font_hover_color", type, p.text)
 		theme.set_color("font_focus_color", type, p.text)
