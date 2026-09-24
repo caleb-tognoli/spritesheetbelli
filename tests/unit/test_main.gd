@@ -316,3 +316,19 @@ func test_formatted_text_is_translatable() -> void:
 	TranslationServer.set_locale(previous)
 	TranslationServer.remove_translation(german)
 	assert_eq(text, "1 Frames · 1×1 Raster")
+
+
+func test_view_fits_when_first_frames_appear() -> void:
+	main.preview.set_zoom(1)
+	var imgs: Array[Image] = []
+	for i in 3:
+		imgs.append(make_image(Color.RED))
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(imgs))
+	await get_tree().process_frame
+	assert_true(main.preview.camera.zoom.x > 2.0, "zoomed to fit 48×16 px")
+	main.preview.set_zoom(1)
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.BLUE)] as Array[Image])
+	)
+	await get_tree().process_frame
+	assert_eq(main.preview.camera.zoom.x, 1.0, "later additions keep the view")

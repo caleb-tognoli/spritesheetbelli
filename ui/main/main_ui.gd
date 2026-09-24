@@ -59,6 +59,7 @@ var color_key_dialog := ColorKeyDialog.new()
 var row_name_dialog := RowNameDialog.new()
 var export_settings_dialog := ExportSettingsDialog.new()
 var about_dialog := AboutDialog.new()
+var _was_empty := true
 
 
 func _ready() -> void:
@@ -151,6 +152,13 @@ func _ready() -> void:
 	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
 	preview.selection_changed.connect(update_sheet_info)
+	# Show the whole sheet when frames first appear, e.g. after adding or opening
+	Global.spritesheet.updated.connect(
+		func() -> void:
+			if _was_empty and not Global.spritesheet.is_empty():
+				preview.fit_to_view.call_deferred()
+			_was_empty = Global.spritesheet.is_empty()
+	)
 	preview.move_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i, copy: bool) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
