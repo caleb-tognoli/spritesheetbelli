@@ -155,3 +155,17 @@ func test_jpg_export_fills_transparency() -> void:
 	assert_true(saved.get_pixel(12, 8).r > 0.9, "transparent half is white, not black")
 	assert_eq(SpritesheetExporter.with_image_extension("a/b"), "a/b.png")
 	assert_eq(SpritesheetExporter.with_image_extension("a/b.JPEG"), "a/b.JPEG")
+
+
+func test_frame_names_survive_edits_and_projects() -> void:
+	var img := make_image(Color.RED)
+	img.resource_name = "walk_01.png"
+	sheet.add_frames([img] as Array[Image])
+	var coords: Array[Vector2i] = [Vector2i.ZERO]
+	sheet.flip_frames(coords, true)
+	sheet.trim_frames(coords)
+	assert_eq(sheet.frames[Vector2i.ZERO].resource_name, "walk_01.png")
+	var path := OS.get_user_data_dir().path_join("tests/names.sbelli")
+	assert_eq(ProjectFile.save(sheet, path), OK)
+	var loaded: Dictionary = ProjectFile.load(path)
+	assert_eq(loaded.state.frames[Vector2i.ZERO].resource_name, "walk_01.png")

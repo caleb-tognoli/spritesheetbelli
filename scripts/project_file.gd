@@ -26,7 +26,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 	var frames: Array[Dictionary] = []
 	for coord in sheet.get_sorted_coords():
 		var file := "frames/%d_%d.png" % [coord.x, coord.y]
-		frames.append({"cell": [coord.x, coord.y], "file": file})
+		frames.append(
+			{"cell": [coord.x, coord.y], "file": file, "name": sheet.frames[coord].resource_name}
+		)
 		error = _write(zip, file, sheet.frames[coord].save_png_to_buffer())
 		if error != OK:
 			zip.close()
@@ -81,6 +83,7 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		if img.load_png_from_buffer(zip.read_file(frame.get("file", ""))) != OK:
 			return {"error": "A frame image is missing or damaged (%s)." % frame.get("file")}
 		img.convert(Image.FORMAT_RGBA8)
+		img.resource_name = frame.get("name", "")
 		frames[_to_vector2i(frame.get("cell"))] = img
 
 	var locked: Array[Vector2i] = []

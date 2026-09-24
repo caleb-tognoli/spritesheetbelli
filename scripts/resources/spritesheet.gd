@@ -343,8 +343,10 @@ func set_frame(coord: Vector2i, img: Image) -> void:
 	if img == null or img.is_empty() or coord.x < 0 or coord.y < 0:
 		return
 	if img.get_format() != Image.FORMAT_RGBA8:
+		var name := img.resource_name
 		img = img.duplicate()
 		img.convert(Image.FORMAT_RGBA8)
+		img.resource_name = name
 	_locked.erase(coord)
 	_grid_size = _grid_size.max(coord + Vector2i.ONE)
 	_frames[coord] = img
@@ -450,6 +452,8 @@ func edit_frames(coords: Array[Vector2i], edit: Callable) -> void:
 		if result is Image:
 			img = result
 		if img != null and not img.is_empty():
+			# duplicate() doesn't copy the name
+			img.resource_name = _frames[coord].resource_name
 			_frames[coord] = img
 			edited = true
 	if edited:
