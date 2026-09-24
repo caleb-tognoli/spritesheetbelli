@@ -26,7 +26,12 @@ func test_file_name_strip() -> void:
 
 
 func test_file_name_that_does_not_fit_is_ignored() -> void:
-	assert_eq(GridGuesser.guess_from_file_name("hero_30x30.png", Vector2i(64, 64)), Vector2i.ZERO)
+	assert_eq(GridGuesser.guess_from_file_name("hero_80x80.png", Vector2i(64, 64)), Vector2i.ZERO)
+	assert_eq(
+		GridGuesser.guess_from_file_name("walk_8x2.png", Vector2i(163, 48)),
+		Vector2i(8, 2),
+		"leftover pixels are allowed"
+	)
 	assert_eq(GridGuesser.guess_from_file_name("hero.png", Vector2i(64, 64)), Vector2i.ZERO)
 
 

@@ -268,3 +268,18 @@ func test_quick_scale_buttons_and_filter() -> void:
 	assert_eq(Global.spritesheet.scale_filter, Image.INTERPOLATE_CUBIC, "keeps the sheet's filter")
 	main.original_size_btn.pressed.emit()
 	assert_eq(Global.spritesheet.sprite_size, Vector2i(16, 16))
+
+
+func test_add_spritesheet_offset_spacing_and_warning() -> void:
+	var img := Image.create_empty(2 + 16 + 4 + 16 + 1, 18, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(2, 2, 16, 16), Color.RED)
+	img.fill_rect(Rect2i(22, 2, 16, 16), Color.BLUE)
+	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
+	window.setup(img)
+	window.update_grid_size(2, 1)
+	window.offset_x.value = 2
+	window.offset_y.value = 2
+	window.spacing_x.value = 4
+	assert_eq(window.spritesheet.sprite_size, Vector2i(16, 16))
+	assert_color(window.spritesheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.BLUE)
+	assert_true(window.slice_info.text.contains("1 px on the right"), window.slice_info.text)

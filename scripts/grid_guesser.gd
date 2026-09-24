@@ -41,17 +41,18 @@ static func guess_from_file_name(file_name: String, size: Vector2i) -> Vector2i:
 		var b := int(found.get_string(2))
 		if a <= 0 or b <= 0:
 			return Vector2i.ZERO
+		# Leftover pixels are fine: slicing reports them
 		if a >= MIN_SIZE_IN_NAME and b >= MIN_SIZE_IN_NAME:
-			if size.x % a == 0 and size.y % b == 0:
+			if size.x >= a and size.y >= b:
 				return Vector2i(size.x / a, size.y / b)
-		elif size.x % a == 0 and size.y % b == 0:
+		elif size.x >= a and size.y >= b:
 			return Vector2i(a, b)
 		return Vector2i.ZERO
 
 	var strip := RegEx.create_from_string("strip\\s*(\\d+)").search(name)
 	if strip:
 		var count := int(strip.get_string(1))
-		if count > 0 and size.x % count == 0:
+		if count > 0 and size.x >= count:
 			return Vector2i(count, 1)
 	return Vector2i.ZERO
 
@@ -98,7 +99,4 @@ static func _count_along(img: Image, horizontal: bool) -> int:
 	for spacing in spacings:
 		if absf(spacing - period) > period * 0.25:
 			return 0
-	var count := roundi(length / period)
-	if count <= 0 or length % count != 0:
-		return 0
-	return count
+	return maxi(0, roundi(length / period))

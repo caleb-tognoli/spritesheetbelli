@@ -90,6 +90,80 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
+[node name="Offset" type="VBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset"]
+layout_mode = 2
+text = "Offset:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OffsetX" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Pixels to skip at the top-left (horizontal)"
+max_value = 4096.0
+alignment = 2
+suffix = "px"
+select_all_on_focus = true
+
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="OffsetY" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Pixels to skip at the top-left (vertical)"
+max_value = 4096.0
+alignment = 2
+suffix = "px"
+select_all_on_focus = true
+
+[node name="Spacing" type="VBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing"]
+layout_mode = 2
+text = "Spacing:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SpacingX" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Pixels between cells (horizontal)"
+max_value = 4096.0
+alignment = 2
+suffix = "px"
+select_all_on_focus = true
+
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="SpacingY" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Pixels between cells (vertical)"
+max_value = 4096.0
+alignment = 2
+suffix = "px"
+select_all_on_focus = true
+
+[node name="SliceInfo" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+text = "Cell size: 0×0 px"
+
 [node name="PreviewArea" parent="VBoxContainer" instance=ExtResource("1_625nm")]
 unique_name_in_owner = true
 layout_mode = 2
