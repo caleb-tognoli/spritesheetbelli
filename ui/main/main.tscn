@@ -3,7 +3,6 @@
 [ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://resources/themes/main_theme.tres" id="1_cqlxd"]
 [ext_resource type="Script" path="res://ui/main/main_ui.gd" id="1_o3sot"]
 [ext_resource type="Theme" uid="uid://boqntmvqibtxh" path="res://resources/themes/top_row_theme.tres" id="1_pgjiq"]
-[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_numbers_only_component.gd" id="2_qfp4s"]
 [ext_resource type="Theme" uid="uid://byp010118e18q" path="res://resources/themes/dialog_theme.tres" id="3_px7nh"]
 [ext_resource type="Script" path="res://scripts/components/accept_dialog/accept_dialog_center_text_component.gd" id="3_wj0uo"]
 [ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://resources/themes/left_bar_theme.tres" id="5_itfh2"]
@@ -13,8 +12,6 @@
 [ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="6_q2y6a"]
 [ext_resource type="Script" path="res://ui/main/menu_bar.gd" id="7_rk3ov"]
 [ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://assets/icons/SpriteSheet.svg" id="7_wpt02"]
-[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_submit_on_focus_exit_component.gd" id="8_ej51d"]
-[ext_resource type="Script" path="res://scripts/components/line_edit/line_edit_set_default_on_empty_submit_component.gd" id="9_hy223"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qlfvo"]
 bg_color = Color(0, 0, 0, 1)
@@ -224,47 +221,33 @@ text = "Grid size:"
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="GridColumns" type="LineEdit" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="GridColumns" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Columns"
-placeholder_text = "x"
+min_value = 1.0
+max_value = 1024.0
+value = 1.0
+alignment = 2
 select_all_on_focus = true
-
-[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridColumns"]
-script = ExtResource("2_qfp4s")
-
-[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridColumns"]
-script = ExtResource("8_ej51d")
-
-[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridColumns"]
-script = ExtResource("9_hy223")
-default_value = "0"
 
 [node name="X" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
 layout_mode = 2
 text = "×"
 
-[node name="GridRows" type="LineEdit" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="GridRows" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Rows"
-placeholder_text = "y"
+min_value = 1.0
+max_value = 1024.0
+value = 1.0
+alignment = 2
 select_all_on_focus = true
-
-[node name="LineEditNumbersOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridRows"]
-script = ExtResource("2_qfp4s")
-
-[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridRows"]
-script = ExtResource("8_ej51d")
-
-[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer/GridRows"]
-script = ExtResource("9_hy223")
-default_value = "0"
 
 [node name="SpriteSize" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2
@@ -279,47 +262,35 @@ text = "Sprite size:"
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="SpriteWidth" type="LineEdit" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="SpriteWidth" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Length"
-placeholder_text = "x"
-editable = false
-
-[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer/SpriteWidth"]
-script = ExtResource("2_qfp4s")
-
-[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer/SpriteWidth"]
-script = ExtResource("8_ej51d")
-
-[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer/SpriteWidth"]
-script = ExtResource("9_hy223")
-default_value = "0"
+min_value = 1.0
+max_value = 16384.0
+value = 1.0
+alignment = 2
+select_all_on_focus = true
+suffix = "px"
 
 [node name="X" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
 layout_mode = 2
 text = "×"
 
-[node name="SpriteHeight" type="LineEdit" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="SpriteHeight" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 tooltip_text = "Height"
-placeholder_text = "y"
-editable = false
-
-[node name="LineEditNumberOnlyComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer/SpriteHeight"]
-script = ExtResource("2_qfp4s")
-
-[node name="LineEditSubmitOnFocusExitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer/SpriteHeight"]
-script = ExtResource("8_ej51d")
-
-[node name="LineEditSetDefaultOnEmptySubmitComponent" type="Node" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer/SpriteHeight"]
-script = ExtResource("9_hy223")
-default_value = "0"
+min_value = 1.0
+max_value = 16384.0
+value = 1.0
+alignment = 2
+select_all_on_focus = true
+suffix = "px"
 
 [node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2

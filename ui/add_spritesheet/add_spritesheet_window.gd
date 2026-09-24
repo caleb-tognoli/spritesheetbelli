@@ -6,8 +6,8 @@ signal canceled
 @onready var preview_area: PreviewArea = %PreviewArea
 @onready var add_selected_frames_btn: Button = %AddSelectedFrames
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
-@onready var grid_columns: LineEdit = %GridColumns
-@onready var grid_rows: LineEdit = %GridRows
+@onready var grid_columns: SpinBox = %GridColumns
+@onready var grid_rows: SpinBox = %GridRows
 
 @export var spritesheet_image: Image
 
@@ -20,11 +20,11 @@ func _ready() -> void:
 	add_selected_frames_btn.pressed.connect(add_selected_frames_to_global)
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
 	preview_area.spritesheet_preview.preview_updated.connect(on_preview_update)
-	grid_columns.text_submitted.connect(
-		func(columns_str: String): update_grid_size(int(columns_str), spritesheet.grid_size.y)
+	grid_columns.value_changed.connect(
+		func(columns: float): update_grid_size(int(columns), spritesheet.grid_size.y)
 	)
-	grid_rows.text_submitted.connect(
-		func(rows_str: String): update_grid_size(spritesheet.grid_size.x, int(rows_str))
+	grid_rows.value_changed.connect(
+		func(rows: float): update_grid_size(spritesheet.grid_size.x, int(rows))
 	)
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
@@ -66,8 +66,8 @@ func update_grid_size(columns: int, rows: int):
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
 
-	grid_columns.text = str(columns)
-	grid_rows.text = str(rows)
+	grid_columns.set_value_no_signal(columns)
+	grid_rows.set_value_no_signal(rows)
 
 
 func add_spritesheet_to_global():

@@ -118,3 +118,21 @@ func test_new_clears_everything() -> void:
 	main.new_spritesheet()
 	assert_true(Global.spritesheet.is_empty())
 	assert_eq(Global.filepath, "")
+
+
+func test_clearing_grid_field_keeps_previous_value() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED), make_image(Color.BLUE)] as Array[Image])
+	await get_tree().process_frame
+	var field: SpinBox = main.grid_columns
+	var line_edit := field.get_line_edit()
+	line_edit.text = ""
+	line_edit.text_submitted.emit("")
+	field.apply()
+	assert_eq(Global.spritesheet.frames.size(), 2, "no sprites deleted")
+	assert_eq(int(field.value), 2)
+
+
+func test_grid_spinbox_arrows_add_columns() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	main.grid_columns.value += 1
+	assert_eq(Global.spritesheet.grid_size, Vector2i(2, 1))

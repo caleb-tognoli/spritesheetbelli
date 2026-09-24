@@ -8,10 +8,10 @@ extends Control
 @onready var notification_dialog: AcceptDialog = $NotificationDialog
 @onready var confirmation_dialog: ConfirmationDialog = $ConfirmationDialog
 @onready var preview_area: Control = %PreviewArea
-@onready var grid_rows: LineEdit = %GridRows
-@onready var grid_columns: LineEdit = %GridColumns
-@onready var sprite_width: LineEdit = %SpriteWidth
-@onready var sprite_height: LineEdit = %SpriteHeight
+@onready var grid_rows: SpinBox = %GridRows
+@onready var grid_columns: SpinBox = %GridColumns
+@onready var sprite_width: SpinBox = %SpriteWidth
+@onready var sprite_height: SpinBox = %SpriteHeight
 @onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
 @onready var spritesheet_width: Label = %SpritesheetWidth
@@ -24,6 +24,9 @@ var warned_about_jpg_transparency := false
 
 
 func _ready() -> void:
+	# 0 is only shown while the spritesheet is empty
+	for field: SpinBox in [grid_rows, grid_columns, sprite_width, sprite_height]:
+		field.min_value = 0
 	preview_area.spritesheet_preview.spritesheet = Global.spritesheet
 	set_text_params(Global.spritesheet)
 	disable_if_empty()
@@ -36,28 +39,28 @@ func _ready() -> void:
 	add_spritesheet_btn.pressed.connect(popup_file_dialog.bind(open_spritesheet_dialog))
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
-	grid_rows.text_submitted.connect(
-		func(str_rows): set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(str_rows))
+	grid_rows.value_changed.connect(
+		func(rows: float): set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(rows))
 	)
-	grid_columns.text_submitted.connect(
-		func(str_columns):
-			set_spritesheet_grid_size(int(str_columns), Global.spritesheet.grid_size.y)
+	grid_columns.value_changed.connect(
+		func(columns: float):
+			set_spritesheet_grid_size(int(columns), Global.spritesheet.grid_size.y)
 	)
-	sprite_width.text_submitted.connect(
-		func(str_width):
+	sprite_width.value_changed.connect(
+		func(value: float):
 			if Global.spritesheet.sprite_size.x <= 0:
 				return
-			var width: int = int(str_width)
+			var width := int(value)
 			var height: int = (
 				(Global.spritesheet.sprite_size.y * width) / Global.spritesheet.sprite_size.x
 			)
 			resize_sprites(Vector2i(width, height))
 	)
-	sprite_height.text_submitted.connect(
-		func(str_height):
+	sprite_height.value_changed.connect(
+		func(value: float):
 			if Global.spritesheet.sprite_size.y <= 0:
 				return
-			var height: int = int(str_height)
+			var height := int(value)
 			var width: int = (
 				(Global.spritesheet.sprite_size.x * height) / Global.spritesheet.sprite_size.y
 			)
@@ -126,10 +129,10 @@ func resize_sprites(new_size: Vector2i) -> void:
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:
-	grid_rows.text = str(spritesheet.grid_size.y)
-	grid_columns.text = str(spritesheet.grid_size.x)
-	sprite_width.text = str(spritesheet.sprite_size.x)
-	sprite_height.text = str(spritesheet.sprite_size.y)
+	grid_rows.set_value_no_signal(spritesheet.grid_size.y)
+	grid_columns.set_value_no_signal(spritesheet.grid_size.x)
+	sprite_width.set_value_no_signal(spritesheet.sprite_size.x)
+	sprite_height.set_value_no_signal(spritesheet.sprite_size.y)
 	spritesheet_width.text = str(spritesheet.sprite_size.x * spritesheet.grid_size.x)
 	spritesheet_height.text = str(spritesheet.sprite_size.y * spritesheet.grid_size.y)
 
