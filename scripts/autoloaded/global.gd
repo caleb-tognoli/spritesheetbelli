@@ -57,4 +57,5 @@ func update_window_title() -> void:
 	if not title.is_empty():
 		title += " - "
 	title += ProjectSettings.get_setting("application/config/name")
+	title += " " + ProjectSettings.get_setting("application/config/version", "")
 	DisplayServer.window_set_title(title)

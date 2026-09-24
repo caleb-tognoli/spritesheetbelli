@@ -58,6 +58,7 @@ var clipboard := FrameClipboard.new()
 var color_key_dialog := ColorKeyDialog.new()
 var row_name_dialog := RowNameDialog.new()
 var export_settings_dialog := ExportSettingsDialog.new()
+var about_dialog := AboutDialog.new()
 
 
 func _ready() -> void:
@@ -124,6 +125,7 @@ func _ready() -> void:
 	add_child(color_key_dialog)
 	add_child(row_name_dialog)
 	add_child(export_settings_dialog)
+	add_child(about_dialog)
 	row_name_dialog.name_chosen.connect(
 		func(row: int, row_name: String) -> void:
 			Global.document.perform("Name row", Global.spritesheet.set_row_name.bind(row, row_name))
@@ -341,6 +343,7 @@ func _register_actions() -> void:
 	add.call(&"undo", "Undo", Global.document.undo, Global.document.can_undo)
 	add.call(&"redo", "Redo", Global.document.redo, Global.document.can_redo)
 
+	add.call(&"about", "About spritesheetbelli", func() -> void: about_dialog.popup_centered())
 	add.call(
 		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
 	)

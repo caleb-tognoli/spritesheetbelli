@@ -11,6 +11,8 @@ config_version=5
 [application]
 
 config/name="spritesheetbelli"
+config/description="Combine sprites into spritesheets and cut spritesheets into sprites."
+config/version="0.2.0"
 run/main_scene="res://ui/main/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"

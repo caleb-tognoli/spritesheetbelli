@@ -66,7 +66,7 @@ const MENUS := {
 		&"toggle_animation",
 		&"toggle_status_bar"
 	],
-	"Help": [&"show_shortcuts"],
+	"Help": [&"show_shortcuts", &"", &"about"],
 }
 
 ## Submenu of File, picked from with [signal RecentFilesMenu.file_chosen]

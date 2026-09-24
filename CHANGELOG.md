@@ -1,0 +1,55 @@
+# Changelog
+
+All notable changes to spritesheetbelli. The version is set in `project.godot`
+(`application/config/version`) and shown in Help > About.
+
+## 0.2.0
+
+### Added
+- Projects: save and reopen `.sbelli` files with every frame at its original size, the
+  grid, locked cells, scale, row names and export settings.
+- Undo and redo for every edit.
+- Export Image, Export Image As, Export Sprites and Export Packed Atlas, with export
+  settings: background colour, sprite file-name patterns, only selected frames, what to
+  do with existing files, and advanced padding, spacing and edge extrusion.
+- Metadata for game engines: TexturePacker-style JSON with Aseprite-style tags, or a
+  Godot SpriteFrames `.tres` with one animation per named row.
+- Animation preview (P) with loop, ping-pong and play-once.
+- Cut, copy, paste (also images copied in other apps), duplicate, replace image, insert
+  and remove cells, trim transparent borders and remove a background colour.
+- Drag frames to move them (Alt+drag copies); box selection, Shift and Ctrl clicks, and
+  arrow keys.
+- Named rows, shown next to the grid and used in exports.
+- Offset and spacing when slicing a spritesheet, with a warning when it doesn't divide
+  evenly, and a smarter grid-size guess.
+- Drag and drop files and folders; File > Add Folder; File > Open Recent.
+- Settings: where sprites are added, resize filter, numbering from 0 or 1, preview
+  colours, JPG options, theme, accent colour, interface scale and more.
+- Light theme, accent colour, logo, app icons and a boot splash.
+- Resizable sidebar, status bar, zoom presets, toasts and an empty-state hint.
+- Command-line mode for build pipelines (`--pack`, `--export`).
+- Keyboard shortcuts for every action (F1 lists them) and an About dialog.
+- Tests, CI and a formatter/linter setup.
+
+### Changed
+- Upgraded to Godot 4.7.2 with the Compatibility renderer.
+- Resizing is non-destructive and can keep pixel art sharp.
+- Images load in the background with a progress bar; large sheets draw and open faster.
+- New shortcuts: Ctrl+A selects all (was Add Sprites), Ctrl+I adds sprites, Ctrl+Q quits.
+
+### Fixed
+- Sprites being added twice, and in reverse order.
+- Frame numbers not scaling with zoom.
+- Exported sprites numbered in the wrong order.
+- JPG export turning transparency black.
+- Clearing a grid field deleting every sprite.
+- Rotating frames growing the sheet permanently.
+- Add Spritesheet locking free cells of the whole sheet.
+- Opening a file marking it as changed; closing without asking about unsaved changes.
+- Keep-aspect resizing drifting; the save message naming the folder; the right-click menu
+  position with display scaling.
+
+## 0.1.0
+
+First version: combine sprites into a spritesheet, cut spritesheets into frames, flip,
+rotate and export.
