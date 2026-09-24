@@ -9,6 +9,16 @@ static func load_all(paths: PackedStringArray, on_progress := Callable()) -> Arr
 	images.resize(paths.size())
 	if paths.is_empty():
 		return images
+	# Builds without threads (such as the web build) load one image per frame instead
+	if not OS.has_feature("threads"):
+		for i in paths.size():
+			images[i] = Image.load_from_file(paths[i])
+			if images[i]:
+				images[i].resource_name = paths[i].get_file()
+			if on_progress.is_valid():
+				on_progress.call(i + 1, paths.size())
+			await (Engine.get_main_loop() as SceneTree).process_frame
+		return images
 	var mutex := Mutex.new()
 	var load_one := func(i: int) -> void:
 		var img := Image.load_from_file(paths[i])

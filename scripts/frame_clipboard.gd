@@ -36,6 +36,9 @@ func get_images() -> Array[Image]:
 
 
 func _system_has_image() -> bool:
+	# Browsers don't let the app read images from the clipboard
+	if OS.has_feature("web"):
+		return false
 	return (
 		DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD)
 		and DisplayServer.clipboard_has_image()

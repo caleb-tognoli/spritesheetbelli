@@ -100,10 +100,51 @@ func _ready() -> void:
 ## Native file dialogs don't make the FileDialog visible, so calling popup() while
 ## one is already open spawns a second dialog, and each one emits its selection.
 func popup_file_dialog(dialog: FileDialog) -> void:
+	if WebFiles.is_web():
+		_web_file_dialog(dialog)
+		return
 	if dialog in open_file_dialogs:
 		return
 	open_file_dialogs.append(dialog)
 	dialog.popup()
+
+
+## In a browser, file dialogs can't reach the user's files: opening uses the browser's
+## file picker and saving writes into the browser, then downloads the file
+func _web_file_dialog(dialog: FileDialog) -> void:
+	var images := WebFiles.IMAGE_TYPES
+	var name := Global.document.get_display_name().get_basename()
+	if name.is_empty():
+		name = "spritesheet"
+	match dialog:
+		open_sprites_dialog:
+			WebFiles.pick(images, true, add_sprites_from_paths)
+		open_folder_dialog:
+			WebFiles.pick(images, true, add_sprites_from_paths, true)
+		open_spritesheet_dialog, replace_image_dialog:
+			WebFiles.pick(
+				images,
+				false,
+				func(paths: PackedStringArray) -> void: dialog.file_selected.emit(paths[0])
+			)
+		open_dialog:
+			WebFiles.pick(
+				".sbelli," + images,
+				false,
+				func(paths: PackedStringArray) -> void: dialog.file_selected.emit(paths[0])
+			)
+		save_project_dialog:
+			dialog.file_selected.emit(WebFiles.output_path(name + ".sbelli"))
+		export_image_dialog:
+			dialog.file_selected.emit(WebFiles.output_path(name + ".png"))
+		export_atlas_dialog:
+			dialog.file_selected.emit(WebFiles.output_path(name + "_atlas.png"))
+		save_sprites_dialog:
+			var folder := WebFiles.output_path(name + "_sprites")
+			DirAccess.make_dir_recursive_absolute(folder)
+			for file in DirAccess.get_files_at(folder):
+				DirAccess.remove_absolute(folder.path_join(file))
+			dialog.dir_selected.emit(folder)
 
 
 func add_sprites_from_paths(paths: PackedStringArray) -> void:
@@ -222,6 +263,7 @@ func save_sprites(folder: String) -> void:
 	if not errors.is_empty():
 		Notify.error(tr("Could not save: %s.") % ", ".join(errors))
 		return
+	WebFiles.download_folder(folder, folder.get_file() + ".zip")
 	Notify.toast(tr("Saved %d images to %s.") % [written.size(), folder.get_file()])
 
 
@@ -283,6 +325,7 @@ func save_project(path: String) -> bool:
 	Global.document.mark_saved()
 	Settings.set_value(&"last_session", path)
 	Settings.add_recent_file(path)
+	WebFiles.download(path)
 	if after_save.is_valid():
 		var action := after_save
 		after_save = Callable()
@@ -354,8 +397,10 @@ func export_image_to(path: String) -> bool:
 	if metadata_error != OK:
 		Notify.error(tr("Could not write the metadata (%s).") % error_string(metadata_error))
 		return false
+	WebFiles.download(path)
 	if options.metadata != ExportOptions.MetadataFormat.NONE:
 		message += tr("\nAlso wrote %s.") % Metadata.get_path_for_image(path, options).get_file()
+		WebFiles.download(Metadata.get_path_for_image(path, options))
 	if (
 		not SpritesheetExporter.supports_transparency(path)
 		and ImageUtils.has_transparency(spritesheet_image)
@@ -402,6 +447,8 @@ func export_atlas(path: String) -> bool:
 	if error != OK:
 		Notify.error(tr("Could not export the atlas (%s).") % error_string(error))
 		return false
+	WebFiles.download(path)
+	WebFiles.download(json_path)
 	Notify.toast(
 		(
 			tr("Packed %d frames into %s (%d×%d px) and %s.")
