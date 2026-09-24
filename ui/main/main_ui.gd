@@ -162,6 +162,12 @@ func _register_actions() -> void:
 		has_frames
 	)
 	add.call(
+		&"export_atlas",
+		"Export Packed Atlas…",
+		files.popup_file_dialog.bind(files.export_atlas_dialog),
+		has_frames
+	)
+	add.call(
 		&"export_settings",
 		"Export Settings…",
 		func() -> void: export_settings_dialog.popup_centered(),

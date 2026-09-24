@@ -46,12 +46,12 @@ static func build_image(sheet: Spritesheet, options: ExportOptions) -> Image:
 		else:
 			img.blit_rect(frame, Rect2i(Vector2i.ZERO, frame.get_size()), rect.position)
 		if options.extrude > 0:
-			_extrude(img, rect, options.extrude)
+			extrude_edges(img, rect, options.extrude)
 	return img
 
 
 ## Repeats the edge pixels of [param rect] outward by [param amount] pixels
-static func _extrude(img: Image, rect: Rect2i, amount: int) -> void:
+static func extrude_edges(img: Image, rect: Rect2i, amount: int) -> void:
 	var left := Rect2i(rect.position.x, rect.position.y, 1, rect.size.y)
 	var right := Rect2i(rect.end.x - 1, rect.position.y, 1, rect.size.y)
 	for i in range(1, amount + 1):

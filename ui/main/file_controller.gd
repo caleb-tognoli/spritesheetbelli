@@ -26,6 +26,9 @@ var open_folder_dialog := _create_file_dialog("Add Folder", FileDialog.FILE_MODE
 var replace_image_dialog := _create_file_dialog(
 	"Replace Image", FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
 )
+var export_atlas_dialog := _create_file_dialog(
+	"Export Packed Atlas", FileDialog.FILE_MODE_SAVE_FILE, ["*.png ; PNG Images"]
+)
 var _replace_coord := Vector2i.ZERO
 ## Returns the selected frames, for exporting only those
 var get_selected_coords := func() -> Array[Vector2i]: return []
@@ -49,6 +52,8 @@ func _ready() -> void:
 	add_child(save_project_dialog)
 	add_child(open_folder_dialog)
 	add_child(replace_image_dialog)
+	add_child(export_atlas_dialog)
+	export_atlas_dialog.file_selected.connect(export_atlas)
 	replace_image_dialog.file_selected.connect(
 		func(path: String) -> void:
 			var img := Image.load_from_file(path)
@@ -83,6 +88,7 @@ func _ready() -> void:
 		save_project_dialog,
 		open_folder_dialog,
 		replace_image_dialog,
+		export_atlas_dialog,
 	]:
 		var on_closed := func() -> void: open_file_dialogs.erase(dialog)
 		dialog.canceled.connect(on_closed)
@@ -353,6 +359,49 @@ func export_image_to(path: String) -> bool:
 		)
 	Global.document.export_path = path
 	Notify.message("Exported", message)
+	return true
+
+
+## Packs trimmed frames tightly and writes the atlas PNG with a JSON file next to it
+func export_atlas(path: String) -> bool:
+	var sheet := Global.spritesheet
+	var options := ExportOptions.from_sheet(sheet)
+	var packed := AtlasPacker.pack(sheet, options.spacing, options.extrude)
+	var image: Image = packed.image
+	if packed.regions.is_empty():
+		Notify.error("The frames don't fit in a %d px atlas." % AtlasPacker.MAX_SIZE)
+		return false
+	path = path.get_basename() + ".png"
+	var json_path := path.get_basename() + ".json"
+	var frames := Metadata.atlas_frames(
+		sheet, packed.regions, options, Settings.get_value(&"index_start")
+	)
+	var error := image.save_png(path)
+	if error == OK:
+		var file := FileAccess.open(json_path, FileAccess.WRITE)
+		if file:
+			file.store_string(
+				Metadata.texture_packer_json(frames, path.get_file(), image.get_size())
+			)
+			file.close()
+		else:
+			error = FileAccess.get_open_error()
+	if error != OK:
+		Notify.error("Could not export the atlas (%s)." % error_string(error))
+		return false
+	Notify.message(
+		"Exported",
+		(
+			"Packed %d frames into %s (%d×%d px) and %s."
+			% [
+				frames.size(),
+				path.get_file(),
+				image.get_width(),
+				image.get_height(),
+				json_path.get_file()
+			]
+		)
+	)
 	return true
 
 
