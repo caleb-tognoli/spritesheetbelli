@@ -133,6 +133,7 @@ static func export_sprites(
 ) -> PackedStringArray:
 	if coords.is_empty():
 		coords = sheet.get_sorted_coords()
+	DirAccess.make_dir_recursive_absolute(folder)
 	var written: PackedStringArray = []
 	for coord in coords:
 		var base := folder.path_join(
