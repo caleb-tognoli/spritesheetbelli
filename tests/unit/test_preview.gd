@@ -138,3 +138,22 @@ func test_tooltip_describes_cells() -> void:
 	assert_true(PreviewArea.describe_cell(sheet, Vector2i(0, 0)).contains("16×16"))
 	assert_true(PreviewArea.describe_cell(sheet, Vector2i(3, 1)).contains("lock"))
 	assert_eq(PreviewArea.describe_cell(sheet, Vector2i(9, 9)), "")
+
+
+func key(keycode: Key, shift := false) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.pressed = true
+	event.shift_pressed = shift
+	preview._unhandled_input(event)
+
+
+func test_arrow_keys_move_selection() -> void:
+	key(KEY_RIGHT)
+	assert_eq(selected(), [Vector2i(0, 0)] as Array[Vector2i], "first press selects a frame")
+	key(KEY_RIGHT)
+	assert_eq(selected(), [Vector2i(1, 0)] as Array[Vector2i])
+	key(KEY_RIGHT, true)
+	assert_eq(selected(), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i], "shift extends")
+	key(KEY_DOWN)
+	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "no frame below: stays")

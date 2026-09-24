@@ -252,6 +252,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_SPACE:
 		_pan_key_held = event.pressed
 		_update_cursor()
+	elif event is InputEventKey and event.pressed and _handle_arrow_key(event):
+		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		_handle_mouse_button(event)
 	elif event is InputEventMouseMotion:
@@ -317,6 +319,36 @@ func _on_left_release(event: InputEventMouseButton) -> void:
 				move_requested.emit(get_selected_coords(), _move_offset, event.alt_pressed)
 			_move_offset = Vector2i.ZERO
 			queue_redraw()
+
+
+## Arrow keys move the selection to the next frame in that direction; Shift extends it
+func _handle_arrow_key(event: InputEventKey) -> bool:
+	var directions := {
+		KEY_LEFT: Vector2i.LEFT,
+		KEY_RIGHT: Vector2i.RIGHT,
+		KEY_UP: Vector2i.UP,
+		KEY_DOWN: Vector2i.DOWN
+	}
+	if not directions.has(event.keycode) or spritesheet.is_empty():
+		return false
+	var direction: Vector2i = directions[event.keycode]
+	var from := _anchor if spritesheet.has_frame(_anchor) else spritesheet.get_sorted_coords()[0]
+	if _selected.is_empty():
+		set_selected_coords([from] as Array[Vector2i])
+		_anchor = from
+		return true
+	var cell := from + direction
+	while spritesheet.is_inside(cell) and not spritesheet.has_frame(cell):
+		cell += direction
+	if not spritesheet.has_frame(cell):
+		# Nothing further that way: keep only the current frame selected
+		cell = from
+	if not event.shift_pressed:
+		_selected.clear()
+	_selected[cell] = true
+	_anchor = cell
+	_selection_updated()
+	return true
 
 
 ## A press and release without dragging
