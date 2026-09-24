@@ -39,8 +39,8 @@ func setup(img: Image):
 	var guessed_size := guess_grid_size(img.get_size())
 	update_grid_size(guessed_size.x, guessed_size.y)
 	
-	preview_area.spritesheet_preview.camera.zoom = Vector2.ONE
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
+	preview_area.spritesheet_preview.set_zoom(1)
 
 
 func on_preview_update():
@@ -71,19 +71,20 @@ func update_grid_size(columns: int, rows: int):
 
 
 func add_spritesheet_to_global():
-	var rows_images: Array[Array] = []
-	for row in spritesheet.grid_size.y:
-		rows_images.append([])
-		for column in spritesheet.grid_size.x:
-			if spritesheet.frames.has(Vector2i(column, row)):
-				rows_images[row].append(spritesheet.frames[Vector2i(column, row)])
-			else:
-				rows_images[row].append(Image.new())
-	for row_images in rows_images:
-		var frames: Array[Image] = []
-		frames.assign(row_images)
-		Global.spritesheet.add_frames(frames, Spritesheet.AddMode.ROW)
-	Global.spritesheet.lock_all_free_spaces()
+	if spritesheet.is_empty():
+		close_requested.emit()
+		return
+	
+	# Place the whole grid below the existing frames, keeping empty rows and columns
+	var target := Global.spritesheet
+	var offset := Vector2i(0, target.get_first_free_row())
+	target.grid_size = Vector2i(
+		max(target.grid_size.x, spritesheet.grid_size.x),
+		max(target.grid_size.y, offset.y + spritesheet.grid_size.y)
+	)
+	for coord: Vector2i in spritesheet.frames:
+		target.add_frame_at_coordinate(spritesheet.frames[coord], coord + offset)
+	target.lock_all_free_spaces()
 	close_requested.emit()
 
 

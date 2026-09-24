@@ -85,10 +85,11 @@ func get_free_space(free_space_mode: FreeSpace = FreeSpace.FIRST_FREE) -> Vector
 				Vector2i(last_frame_column + 1, last_row_with_frames)
 			)
 	
-	if grid_size.y == 1:
+	var first_free := get_first_free_unlocked_space()
+	# Single-row spritesheets grow horizontally instead of wrapping to a new row
+	if grid_size.y == 1 and first_free.y > 0:
 		return Vector2i(grid_size.x, 0)
-	else:
-		return get_first_free_unlocked_space()
+	return first_free
 
 
 func get_first_free_unlocked_space(from: Vector2i = Vector2i.ZERO) -> Vector2i:
@@ -152,7 +153,7 @@ func lock_all_free_spaces():
 
 func pad_frames_to_sprite_size():
 	for frame_coord in frames:
-		if frames[frame_coord].get_size() < sprite_size:
+		if frames[frame_coord].get_size() != sprite_size:
 			var img := Image.create_empty(sprite_size.x, sprite_size.y, false, Image.FORMAT_RGBA8)
 			var center := Rect2i(Vector2i.ZERO, frames[frame_coord].get_size())
 			img.blend_rect(frames[frame_coord], center, (img.get_size() - frames[frame_coord].get_size()) / 2)
