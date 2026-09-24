@@ -51,19 +51,15 @@ func test_file_dialog_opens_once() -> void:
 
 
 func test_zoom_keeps_point_under_cursor() -> void:
-	main.files.add_sprites_from_paths(PackedStringArray())
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var preview: SpritesheetPreview = main.preview_area.spritesheet_preview
 	var anchor := Vector2(100, 80)
-	var before := preview.camera.position + anchor / preview.camera.zoom
-	await get_tree().process_frame
+	var before := preview.screen_to_world(anchor)
 	preview.set_zoom(4, anchor)
-	assert_eq(preview.camera.position + anchor / preview.camera.zoom, before)
-	var frame: SpritesheetPreviewFrame = preview.frames.get_child(0)
-	assert_eq(frame.index_container.scale, Vector2.ONE * 0.25)
-	assert_true(frame.index_container.visible, "index visible when frame is 64px on screen")
+	assert_eq(preview.screen_to_world(anchor), before)
+	assert_true(preview.is_index_visible(), "index visible when a cell is 64px on screen")
 	preview.set_zoom(1)
-	assert_false(frame.index_container.visible, "index hidden when frame is 16px on screen")
+	assert_false(preview.is_index_visible(), "index hidden when a cell is 16px on screen")
 
 
 func test_add_spritesheet_keeps_empty_rows() -> void:

@@ -21,7 +21,7 @@ func _ready() -> void:
 	close_requested.connect(canceled.emit)
 	add_selected_frames_btn.pressed.connect(add_selected_frames_to_global)
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
-	preview_area.spritesheet_preview.preview_updated.connect(on_preview_update)
+	preview_area.spritesheet_preview.selection_changed.connect(on_preview_update)
 	grid_columns.value_changed.connect(
 		func(columns: float): update_grid_size(int(columns), spritesheet.grid_size.y)
 	)

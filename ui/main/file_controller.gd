@@ -95,6 +95,7 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 	for path in sorted_paths:
 		var img := Image.load_from_file(path)
 		if img:
+			img.resource_name = path.get_file()
 			imgs.append(img)
 		else:
 			failed_files.append(path.get_file())

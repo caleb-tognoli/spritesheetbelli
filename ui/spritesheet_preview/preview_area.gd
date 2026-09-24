@@ -8,6 +8,7 @@ extends Control
 @onready var num_selected: Label = %NumSelected
 
 @onready var zoom: Label = %Zoom
+@onready var container: SubViewportContainer = $PreviewContainer
 
 
 func _ready() -> void:
@@ -16,6 +17,7 @@ func _ready() -> void:
 	select_all_btn.pressed.connect(select_all.bind(true))
 	select_none_btn.pressed.connect(select_all.bind(false))
 	spritesheet_preview.zoom_changed.connect(update_zoom_label)
+	spritesheet_preview.hover_changed.connect(update_tooltip)
 	update_zoom_label(spritesheet_preview.camera.zoom.x)
 
 
@@ -53,5 +55,25 @@ func set_context_actions(ids: Array[StringName]) -> void:
 
 
 func select_all(select: bool) -> void:
-	for frame: SpritesheetPreviewFrame in spritesheet_preview.frames.get_children():
-		frame.selected = select
+	spritesheet_preview.select_all(select)
+
+
+## Describes the cell under the mouse
+func update_tooltip(coord: Vector2i) -> void:
+	container.tooltip_text = describe_cell(spritesheet_preview.spritesheet, coord)
+
+
+static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
+	if not sheet.is_inside(coord):
+		return ""
+	var position := "Cell %d (column %d, row %d)" % [sheet.index_of(coord), coord.x, coord.y]
+	if sheet.has_frame(coord):
+		var source := sheet.frames[coord]
+		var size := sheet.get_frame_image(coord).get_size()
+		var text := "%s\n%d×%d px" % [position, size.x, size.y]
+		if source.resource_name:
+			text += "\n" + source.resource_name
+		return text
+	if sheet.is_locked(coord):
+		return "%s\nLocked: kept empty when adding sprites. Click to unlock." % position
+	return "%s\nEmpty. Click to lock it so added sprites skip it." % position

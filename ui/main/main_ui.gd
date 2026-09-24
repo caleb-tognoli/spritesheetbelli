@@ -61,6 +61,14 @@ func _ready() -> void:
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)
+	preview.move_requested.connect(
+		func(coords: Array[Vector2i], offset: Vector2i, copy: bool):
+			var targets: Array[Vector2i] = Global.document.perform(
+				"Copy frames" if copy else "Move frames",
+				Global.spritesheet.move_frames.bind(coords, offset, copy)
+			)
+			preview.set_selected_coords(targets)
+	)
 	preview.lock_requested.connect(
 		func(coord: Vector2i, locked: bool):
 			Global.document.perform(
