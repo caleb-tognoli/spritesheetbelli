@@ -122,6 +122,3 @@ editor settings).
 | `ui/spritesheet_preview/` | The preview that draws and edits the grid |
 | `tests/` | The test runner and tests |
 
-## License
-
-[MIT](LICENSE)
