@@ -101,11 +101,11 @@ size_flags_vertical = 0
 theme_override_constants/separation = 10
 alignment = 2
 
-[node name="Zoom" type="Label" parent="MarginContainer/CameraOptions"]
+[node name="Zoom" type="MenuButton" parent="MarginContainer/CameraOptions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "100%
-"
+tooltip_text = "Zoom"
+text = "100%"
 
 [node name="CenterView" type="TextureButton" parent="MarginContainer/CameraOptions" node_paths=PackedStringArray("preview")]
 layout_mode = 2

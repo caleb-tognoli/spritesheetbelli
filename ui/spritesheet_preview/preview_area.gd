@@ -7,13 +7,38 @@ extends Control
 @onready var select_none_btn: Button = %SelectNone
 @onready var num_selected: Label = %NumSelected
 
-@onready var zoom: Label = %Zoom
+@onready var zoom: MenuButton = %Zoom
 @onready var container: SubViewportContainer = $PreviewContainer
 
 var animation_preview := AnimationPreview.new()
+## Shown in the middle while the spritesheet is empty. Hidden when empty.
+var empty_hint := Label.new()
+
+const ZOOM_PRESETS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+const ZOOM_FIT_ID := 100
 
 
 func _ready() -> void:
+	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	empty_hint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	empty_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	empty_hint.theme_type_variation = &"EmptyHint"
+	add_child(empty_hint)
+	move_child(empty_hint, container.get_index() + 1)
+
+	var zoom_menu := zoom.get_popup()
+	for preset in ZOOM_PRESETS:
+		zoom_menu.add_item("%d%%" % roundi(preset * 100), ZOOM_PRESETS.find(preset))
+	zoom_menu.add_separator()
+	zoom_menu.add_item("Fit to View", ZOOM_FIT_ID)
+	zoom_menu.id_pressed.connect(
+		func(id: int) -> void:
+			if id == ZOOM_FIT_ID:
+				spritesheet_preview.fit_to_view()
+			else:
+				spritesheet_preview.set_zoom(ZOOM_PRESETS[id], container.size / 2)
+	)
 	animation_preview.preview = spritesheet_preview
 	animation_preview.visible = false
 	add_child(animation_preview)
@@ -49,6 +74,7 @@ func _gui_input(event: InputEvent) -> void:
 
 func update_ui() -> void:
 	var is_empty := spritesheet_preview.spritesheet.is_empty()
+	empty_hint.visible = is_empty and not empty_hint.text.is_empty()
 	select_all_btn.visible = not is_empty
 	select_none_btn.visible = not is_empty
 

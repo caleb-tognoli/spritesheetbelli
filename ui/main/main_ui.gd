@@ -142,6 +142,11 @@ func _ready() -> void:
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
+	preview_area.empty_hint.text = (
+		"Drop images, folders or a .sbelli project here\n"
+		+ "or use Add Sprite(s) and Add Spritesheet (Ctrl+I, Ctrl+Shift+I)"
+	)
+	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
 	preview.selection_changed.connect(update_sheet_info)
 	preview.move_requested.connect(

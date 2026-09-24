@@ -283,3 +283,21 @@ func test_add_spritesheet_offset_spacing_and_warning() -> void:
 	assert_eq(window.spritesheet.sprite_size, Vector2i(16, 16))
 	assert_color(window.spritesheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.BLUE)
 	assert_true(window.slice_info.text.contains("1 px on the right"), window.slice_info.text)
+
+
+func test_empty_hint_and_toasts() -> void:
+	assert_true(main.preview_area.empty_hint.visible, "hint while empty")
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	await get_tree().process_frame
+	assert_false(main.preview_area.empty_hint.visible)
+	main.files.export_image_to(dir.path_join("toast.png"))
+	assert_true(Notify.get_toasts()[-1].begins_with("Exported toast.png"))
+
+
+func test_zoom_presets() -> void:
+	var menu: PopupMenu = main.preview_area.zoom.get_popup()
+	menu.id_pressed.emit(PreviewArea.ZOOM_PRESETS.find(4.0))
+	assert_eq(main.preview.camera.zoom.x, 4.0)
+	assert_eq(main.preview_area.zoom.text, "400%")

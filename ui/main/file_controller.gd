@@ -219,9 +219,7 @@ func save_sprites(folder: String) -> void:
 	if not errors.is_empty():
 		Notify.error("Could not save: %s." % ", ".join(errors))
 		return
-	Notify.message(
-		"Saved successfully", "Saved %d images to %s." % [written.size(), folder.get_file()]
-	)
+	Notify.toast("Saved %d images to %s." % [written.size(), folder.get_file()])
 
 
 func _create_unsaved_changes_dialog() -> void:
@@ -287,7 +285,7 @@ func save_project(path: String) -> bool:
 		after_save = Callable()
 		action.call()
 	else:
-		Notify.message("Saved", "Saved %s." % path.get_file())
+		Notify.toast("Saved %s" % path.get_file())
 	return true
 
 
@@ -366,7 +364,7 @@ func export_image_to(path: String) -> bool:
 			% ("white" if options.opaque_background == Color.WHITE else "the background colour")
 		)
 	Global.document.export_path = path
-	Notify.message("Exported", message)
+	Notify.toast(message, 7.0 if "\n" in message else 3.0)
 	return true
 
 
@@ -397,8 +395,7 @@ func export_atlas(path: String) -> bool:
 	if error != OK:
 		Notify.error("Could not export the atlas (%s)." % error_string(error))
 		return false
-	Notify.message(
-		"Exported",
+	Notify.toast(
 		(
 			"Packed %d frames into %s (%d×%d px) and %s."
 			% [
