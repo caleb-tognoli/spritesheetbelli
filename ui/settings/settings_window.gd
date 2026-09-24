@@ -30,6 +30,8 @@ const ROWS := [
 	[&"jpg_quality", "JPG quality", "spin", [0.1, 1.0, 0.05, ""]],
 	[&"jpg_background", "JPG background (replaces transparency)", "color"],
 	"Interface",
+	[&"theme", "Theme", "option", ["Dark", "Light"], ["dark", "light"]],
+	[&"accent_color", "Accent colour", "color"],
 	[
 		&"ui_scale",
 		"Interface scale",

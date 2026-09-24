@@ -1,12 +1,8 @@
 [gd_scene load_steps=9 format=3 uid="uid://d2j21cyiaw56v"]
 
 [ext_resource type="Script" path="res://ui/add_spritesheet/add_spritesheet_window.gd" id="1_03ua1"]
-[ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://resources/themes/main_theme.tres" id="1_6ilyc"]
 [ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="1_625nm"]
 [ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://resources/themes/left_bar_theme.tres" id="3_6ejyu"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8faui"]
-bg_color = Color(0, 0, 0, 1)
 
 [node name="AddSpritesheetWindow" type="Window"]
 title = "Add Spritesheet"
@@ -17,7 +13,6 @@ transient = true
 exclusive = true
 popup_window = true
 force_native = true
-theme = ExtResource("1_6ilyc")
 script = ExtResource("1_03ua1")
 
 [node name="BG" type="Panel" parent="."]
@@ -26,7 +21,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_8faui")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 anchors_preset = 15

@@ -22,8 +22,23 @@ func _ready() -> void:
 		func(key: StringName) -> void:
 			if key == &"ui_scale":
 				apply_ui_scale()
+			elif key in [&"theme", &"accent_color"]:
+				apply_theme()
 	)
 	apply_ui_scale()
+	apply_theme()
+
+
+## Fills the project theme (an empty resource in project.godot) with the generated one,
+## so every control and window uses it, whatever its parents are
+func apply_theme() -> void:
+	var light: bool = Settings.get_value(&"theme") == "light"
+	var project_theme := ThemeDB.get_project_theme()
+	if project_theme == null:
+		return
+	project_theme.clear()
+	project_theme.merge_with(AppTheme.build(light, Settings.get_value(&"accent_color")))
+	get_tree().root.propagate_notification(Control.NOTIFICATION_THEME_CHANGED)
 
 
 ## Scales the whole interface; "Automatic" follows the screen's scale

@@ -25,6 +25,8 @@ const DEFAULTS := {
 	&"jpg_quality": 0.9,
 	&"jpg_background": Color.WHITE,
 	# Interface
+	&"theme": "dark",
+	&"accent_color": AppTheme.DEFAULT_ACCENT,
 	&"ui_scale": 0.0,
 	&"confirm_grid_shrink": true,
 	&"restore_session": false,

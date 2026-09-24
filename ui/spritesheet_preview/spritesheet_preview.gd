@@ -22,7 +22,6 @@ signal hover_changed(coord: Vector2i)
 ## The user double-clicked left of a row to name it
 signal row_name_requested(row: int)
 
-const SELECTION_COLOR := Color(0.2, 0.55, 0.95)
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.8)
 const HOVER_COLOR := Color(1, 1, 1, 0.08)
 const CHECKER_COLORS: Array[Color] = [Color(0.36, 0.36, 0.36), Color(0.42, 0.42, 0.42)]
@@ -48,6 +47,7 @@ var background_color := Color.BLACK
 var checker_size := 8
 var zoom_speed := 0.2
 var index_start := 0
+var selection_color := AppTheme.DEFAULT_ACCENT
 
 var spritesheet: Spritesheet = Spritesheet.new():
 	set = set_spritesheet
@@ -87,6 +87,7 @@ func apply_settings() -> void:
 	checker_size = Settings.get_value(&"checker_size")
 	zoom_speed = Settings.get_value(&"zoom_speed")
 	index_start = Settings.get_value(&"index_start")
+	selection_color = Settings.get_value(&"accent_color")
 	queue_redraw()
 
 
@@ -467,8 +468,8 @@ func _draw() -> void:
 	_draw_row_names(cell_size)
 	if _drag == Drag.BOX:
 		var box := _box_rect()
-		draw_rect(box, Color(SELECTION_COLOR, 0.15))
-		draw_rect(box, SELECTION_COLOR, false, pixel)
+		draw_rect(box, Color(selection_color, 0.15))
+		draw_rect(box, selection_color, false, pixel)
 
 
 func _draw_frame(coord: Vector2i, rect: Rect2, modulate_color := Color.WHITE) -> void:
@@ -511,15 +512,15 @@ func _draw_grid(cell_size: Vector2, pixel: float) -> void:
 func _draw_selection(pixel: float) -> void:
 	for coord in _selected:
 		var rect := cell_rect(coord)
-		draw_rect(rect, Color(SELECTION_COLOR, 0.25))
-		draw_rect(rect.grow(-pixel), SELECTION_COLOR, false, pixel * 2)
+		draw_rect(rect, Color(selection_color, 0.25))
+		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
 
 	# Ghosts of the frames being moved, where they would land
 	if _drag == Drag.MOVE and _move_offset != Vector2i.ZERO:
 		for coord in _selected:
 			var target := cell_rect(coord + _move_offset)
 			_draw_frame(coord, target, Color(1, 1, 1, 0.6))
-			draw_rect(target.grow(-pixel), SELECTION_COLOR, false, pixel * 2)
+			draw_rect(target.grow(-pixel), selection_color, false, pixel * 2)
 
 
 func _draw_indices(visible_rect: Rect2) -> void:

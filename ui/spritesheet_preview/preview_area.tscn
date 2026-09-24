@@ -107,9 +107,9 @@ layout_mode = 2
 tooltip_text = "Zoom"
 text = "100%"
 
-[node name="CenterView" type="TextureButton" parent="MarginContainer/CameraOptions" node_paths=PackedStringArray("preview")]
+[node name="CenterView" type="Button" parent="MarginContainer/CameraOptions" node_paths=PackedStringArray("preview")]
 layout_mode = 2
-texture_normal = ExtResource("4_eb4du")
-stretch_mode = 3
+icon = ExtResource("4_eb4du")
+flat = true
 script = ExtResource("5_p2elb")
 preview = NodePath("../../../PreviewContainer/SubViewport/SpritesheetPreview")
