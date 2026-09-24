@@ -82,7 +82,8 @@ func add_spritesheet_to_global():
 	target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 	for coord: Vector2i in spritesheet.frames:
 		target.set_frame(coord + offset, spritesheet.frames[coord])
-	target.lock_free_cells()
+	# Keep the added sheet's layout without touching free cells elsewhere
+	target.lock_free_cells(Rect2i(offset, spritesheet.grid_size))
 	target.end_batch()
 	close_requested.emit()
 

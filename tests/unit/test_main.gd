@@ -136,3 +136,16 @@ func test_grid_spinbox_arrows_add_columns() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	main.grid_columns.value += 1
 	assert_eq(Global.spritesheet.grid_size, Vector2i(2, 1))
+
+
+func test_add_spritesheet_only_locks_its_own_cells() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED), make_image(Color.GREEN)] as Array[Image])
+	Global.spritesheet.remove_frames([Vector2i(0, 0)] as Array[Vector2i])
+	var img := Image.create_empty(32, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(0, 0, 16, 16), Color.BLUE)
+	var window: AddSpritesheetWindow = main.add_spritesheet_window
+	window.setup(img)
+	window.update_grid_size(2, 1)
+	window.add_spritesheet_to_global()
+	assert_false(Global.spritesheet.is_locked(Vector2i(0, 0)), "old gap stays free")
+	assert_true(Global.spritesheet.is_locked(Vector2i(1, 1)), "new sheet's empty cell locked")
