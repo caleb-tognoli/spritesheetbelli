@@ -8,12 +8,12 @@ const TEST_DIR := "res://tests/unit"
 func _ready() -> void:
 	# The headless window is tiny, which makes popups complain about their position
 	get_window().size = Vector2i(1280, 800)
-	
+
 	var filter := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--filter="):
 			filter = arg.trim_prefix("--filter=")
-	
+
 	var failures: PackedStringArray = []
 	var test_count := 0
 	for file in DirAccess.get_files_at(TEST_DIR):
@@ -27,7 +27,7 @@ func _ready() -> void:
 			var test_name := "%s:%s" % [file.get_basename(), method_name]
 			if filter and not filter in test_name:
 				continue
-			
+
 			var test: Node = script.new()
 			test.current_test = test_name
 			add_child(test)
@@ -35,7 +35,7 @@ func _ready() -> void:
 			await test.call(method_name)
 			await test.after_each()
 			test_count += 1
-			
+
 			if test.failures.is_empty():
 				print("  ok   ", test_name)
 			else:
@@ -46,6 +46,6 @@ func _ready() -> void:
 			remove_child(test)
 			test.queue_free()
 			await get_tree().process_frame
-	
+
 	print("\n%d tests, %d failures" % [test_count, failures.size()])
 	get_tree().quit(mini(failures.size(), 125))

@@ -1,7 +1,6 @@
 class_name AcceptDialogCenterTextComponent
 extends Node
 
-
 @onready var dialog: AcceptDialog = get_parent()
 
 

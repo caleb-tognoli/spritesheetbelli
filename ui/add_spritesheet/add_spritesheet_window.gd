@@ -1,7 +1,6 @@
 class_name AddSpritesheetWindow
 extends Window
 
-
 signal canceled
 
 @onready var preview_area: PreviewArea = %PreviewArea
@@ -22,23 +21,21 @@ func _ready() -> void:
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
 	preview_area.spritesheet_preview.preview_updated.connect(on_preview_update)
 	grid_columns.text_submitted.connect(
-		func(columns_str: String):
-			update_grid_size(int(columns_str), spritesheet.grid_size.y)
+		func(columns_str: String): update_grid_size(int(columns_str), spritesheet.grid_size.y)
 	)
 	grid_rows.text_submitted.connect(
-		func(rows_str: String):
-			update_grid_size(spritesheet.grid_size.x, int(rows_str))
+		func(rows_str: String): update_grid_size(spritesheet.grid_size.x, int(rows_str))
 	)
-	
+
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 
 
 func setup(img: Image):
 	spritesheet_image = img
-	
+
 	var guessed_size := guess_grid_size(img.get_size())
 	update_grid_size(guessed_size.x, guessed_size.y)
-	
+
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
 	preview_area.spritesheet_preview.set_zoom(1)
 
@@ -56,16 +53,20 @@ func update_grid_size(columns: int, rows: int):
 	var grid_size := Vector2i(columns, rows)
 	spritesheet.grid_size = grid_size
 	spritesheet.sprite_size = spritesheet_image.get_size() / grid_size
-	
+
 	for row in grid_size.y:
 		for column in grid_size.x:
-			var frame_position := Vector2i(column * spritesheet.sprite_size.x, row * spritesheet.sprite_size.y)
-			var frame_img := spritesheet_image.get_region(Rect2i(frame_position, spritesheet.sprite_size))
+			var frame_position := Vector2i(
+				column * spritesheet.sprite_size.x, row * spritesheet.sprite_size.y
+			)
+			var frame_img := spritesheet_image.get_region(
+				Rect2i(frame_position, spritesheet.sprite_size)
+			)
 			if not frame_img.is_invisible():
 				spritesheet.frames[Vector2i(column, row)] = frame_img
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
-	
+
 	grid_columns.text = str(columns)
 	grid_rows.text = str(rows)
 
@@ -74,7 +75,7 @@ func add_spritesheet_to_global():
 	if spritesheet.is_empty():
 		close_requested.emit()
 		return
-	
+
 	# Place the whole grid below the existing frames, keeping empty rows and columns
 	var target := Global.spritesheet
 	var offset := Vector2i(0, target.get_first_free_row())
@@ -100,5 +101,4 @@ static func guess_grid_size(spritesheet_size: Vector2i) -> Vector2i:
 	var gcd := Math.gcd(spritesheet_size.x, spritesheet_size.y)
 	if gcd != 1:
 		return spritesheet_size / gcd
-	else:
-		return Vector2i(3, 3)
+	return Vector2i(3, 3)

@@ -1,7 +1,6 @@
 class_name LineEditSetDefaultOnEmptySubmitComponent
 extends Node
 
-
 @export var default_value: String
 
 @onready var line_edit: LineEdit = get_parent()

@@ -1,10 +1,9 @@
 class_name SpritesheetPreviewFrame
 extends TextureRect
 
-
 signal selection_updated
 
-enum SelectionMode {NONE, SELECTING, DESELECTING}
+enum SelectionMode { NONE, SELECTING, DESELECTING }
 
 ## Minimum on-screen size of the frame for its index label to be shown
 const MIN_SIZE_TO_SHOW_INDEX := Vector2(50, 50)
@@ -46,10 +45,10 @@ func setup(spritesheet: Spritesheet, coordinate: Vector2i):
 	size = spritesheet.sprite_size
 	position.x = spritesheet.sprite_size.x * coordinate.x
 	position.y = spritesheet.sprite_size.y * coordinate.y
-	
+
 	var coordinate_label: Label = get_node("%Coordinate")
 	coordinate_label.text = str(coordinate.y * spritesheet.grid_size.x + coordinate.x)
-	
+
 	coordinate_in_spritesheet = coordinate
 	img = spritesheet.frames[coordinate]
 

@@ -1,7 +1,6 @@
 class_name SpritesheetPreview
 extends Node2D
 
-
 signal preview_updated
 signal zoom_changed(zoom: float)
 
@@ -40,11 +39,10 @@ func _input(event: InputEvent) -> void:
 			frame.set_default_cursor_shape(Control.CURSOR_ARROW)
 	elif event is InputEventMouseMotion and Input.is_action_pressed("ui_drag"):
 		camera.position = (
-			+ start_camera_position 
-			- (get_viewport().get_mouse_position() - start_drag_position)
-				/ camera.zoom
+			start_camera_position
+			- (get_viewport().get_mouse_position() - start_drag_position) / camera.zoom
 		)
-	
+
 	if event.is_action_pressed("mouse_wheel_up"):
 		set_zoom(camera.zoom.x * (1 + MOUSE_WHEEL_ZOOM_FORCE), get_viewport().get_mouse_position())
 	elif event.is_action_pressed("mouse_wheel_down"):
@@ -57,7 +55,7 @@ func set_zoom(value: float, anchor := Vector2.ZERO) -> void:
 	var anchor_in_world := camera.position + anchor / camera.zoom
 	camera.zoom = Vector2(value, value)
 	camera.position = anchor_in_world - anchor / camera.zoom
-	
+
 	for frame: SpritesheetPreviewFrame in frames.get_children():
 		frame.update_zoom(value)
 	zoom_changed.emit(value)
@@ -66,18 +64,23 @@ func set_zoom(value: float, anchor := Vector2.ZERO) -> void:
 func _draw() -> void:
 	if not spritesheet:
 		return
-	
+
 	for row in spritesheet.grid_size.y + 1:
 		draw_line(
-			Vector2(0, row * spritesheet.sprite_size.y), 
-			Vector2(spritesheet.grid_size.x * spritesheet.sprite_size.x, row * spritesheet.sprite_size.y),
+			Vector2(0, row * spritesheet.sprite_size.y),
+			Vector2(
+				spritesheet.grid_size.x * spritesheet.sprite_size.x, row * spritesheet.sprite_size.y
+			),
 			GRID_COLOR,
 		)
-	
+
 	for column in spritesheet.grid_size.x + 1:
 		draw_line(
-			Vector2(column * spritesheet.sprite_size.x, 0), 
-			Vector2(column * spritesheet.sprite_size.x, spritesheet.grid_size.y * spritesheet.sprite_size.y),
+			Vector2(column * spritesheet.sprite_size.x, 0),
+			Vector2(
+				column * spritesheet.sprite_size.x,
+				spritesheet.grid_size.y * spritesheet.sprite_size.y
+			),
 			GRID_COLOR,
 		)
 
@@ -87,11 +90,11 @@ func update_preview() -> void:
 		child.free()
 	for child in empty_spaces.get_children():
 		child.free()
-	
+
 	for row in spritesheet.grid_size.y:
 		for column in spritesheet.grid_size.x:
 			var coord := Vector2i(column, row)
-			
+
 			if coord in spritesheet.frames:
 				var frame: SpritesheetPreviewFrame = FRAME_SCENE.instantiate()
 				frame.setup(spritesheet, coord)
@@ -101,12 +104,10 @@ func update_preview() -> void:
 			elif able_to_lock_spaces:
 				var empty_space: SpritesheetPreviewEmptySpace = EMPTY_SPACE_SCENE.instantiate()
 				empty_space.setup(spritesheet, coord)
-				empty_space.lock_updated.connect(
-					set_locked_coordinate_in_spritesheet.bind(coord)
-				)
+				empty_space.lock_updated.connect(set_locked_coordinate_in_spritesheet.bind(coord))
 				empty_space.set_is_locked(coord in spritesheet.locked_coordinates)
 				empty_spaces.add_child(empty_space)
-	
+
 	queue_redraw()
 	preview_updated.emit()
 

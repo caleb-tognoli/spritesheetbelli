@@ -1,7 +1,6 @@
 class_name LineEditNumberOnlyComponent
 extends Node
 
-
 @onready var line_edit: LineEdit = get_parent()
 @onready var regex_number_only = RegEx.new()
 
@@ -10,7 +9,7 @@ var old_text = ""
 
 func _ready() -> void:
 	regex_number_only.compile("^[0-9]*$")
-	
+
 	line_edit.text_changed.connect(_on_line_edit_text_changed)
 	line_edit.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 

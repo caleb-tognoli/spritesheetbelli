@@ -15,7 +15,9 @@ func test_first_frame_goes_to_origin() -> void:
 
 
 func test_single_row_fills_gaps_then_grows() -> void:
-	sheet.add_frames([make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image])
+	sheet.add_frames(
+		[make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image]
+	)
 	sheet.frames.erase(Vector2i(1, 0))
 	sheet.add_frames([make_image(Color.WHITE)] as Array[Image])
 	assert_true(sheet.frames.has(Vector2i(1, 0)), "gap filled")
@@ -24,7 +26,12 @@ func test_single_row_fills_gaps_then_grows() -> void:
 
 
 func test_frames_are_padded_to_sprite_size() -> void:
-	sheet.add_frames([make_image(Color.RED, Vector2i(8, 8)), make_image(Color.BLUE, Vector2i(16, 12))] as Array[Image])
+	sheet.add_frames(
+		(
+			[make_image(Color.RED, Vector2i(8, 8)), make_image(Color.BLUE, Vector2i(16, 12))]
+			as Array[Image]
+		)
+	)
 	assert_eq(sheet.sprite_size, Vector2i(16, 12))
 	for img: Image in sheet.frames.values():
 		assert_eq(img.get_size(), Vector2i(16, 12))
@@ -38,7 +45,9 @@ func test_locked_spaces_are_skipped() -> void:
 
 
 func test_shrinking_grid_removes_outside_frames() -> void:
-	sheet.add_frames([make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image])
+	sheet.add_frames(
+		[make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image]
+	)
 	sheet.grid_size = Vector2i(2, 1)
 	assert_eq(sheet.frames.size(), 2)
 

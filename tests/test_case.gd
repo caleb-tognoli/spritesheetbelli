@@ -26,14 +26,22 @@ func assert_false(condition: bool, message := "") -> void:
 
 func assert_eq(actual: Variant, expected: Variant, message := "") -> void:
 	if not _is_equal(actual, expected):
-		fail("%sexpected %s, got %s" % [
-			message + ": " if message else "", var_to_str(expected), var_to_str(actual)
-		])
+		fail(
+			(
+				"%sexpected %s, got %s"
+				% [message + ": " if message else "", var_to_str(expected), var_to_str(actual)]
+			)
+		)
 
 
 func assert_ne(actual: Variant, not_expected: Variant, message := "") -> void:
 	if _is_equal(actual, not_expected):
-		fail("%sexpected anything but %s" % [message + ": " if message else "", var_to_str(not_expected)])
+		fail(
+			(
+				"%sexpected anything but %s"
+				% [message + ": " if message else "", var_to_str(not_expected)]
+			)
+		)
 
 
 func assert_color(img: Image, pos: Vector2i, expected: Color, message := "") -> void:

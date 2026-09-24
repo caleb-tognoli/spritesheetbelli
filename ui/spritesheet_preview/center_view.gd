@@ -1,6 +1,5 @@
 extends TextureButton
 
-
 @export var camera: Camera2D
 
 
