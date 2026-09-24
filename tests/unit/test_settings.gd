@@ -30,14 +30,31 @@ func test_window_edits_settings() -> void:
 	var window := SettingsWindow.new()
 	add_child(window)
 	window.popup_centered()
-	var checks := window.find_children("*", "CheckBox", true, false)
-	assert_true(checks.size() >= 4)
-	var show_grid: CheckBox = checks[0]
+	window.show_category("Preview")
+	var show_grid := window.get_control(&"show_grid") as CheckBox
+	assert_true(show_grid.is_visible_in_tree(), "the category's settings are shown")
+	assert_false(window.get_control(&"theme").is_visible_in_tree(), "others are not")
 	assert_true(show_grid.button_pressed)
+	assert_false(window.get_revert_button(&"show_grid").visible, "at its default")
 	show_grid.button_pressed = false
 	assert_false(Settings.get_value(&"show_grid"))
-	Settings.reset_to_defaults()
+	assert_true(window.get_revert_button(&"show_grid").visible, "can be reverted")
+	window.get_revert_button(&"show_grid").pressed.emit()
+	assert_true(Settings.get_value(&"show_grid"))
+
+	show_grid.button_pressed = false
+	window.custom_action.emit(&"reset")
+	assert_true(Notify.confirm_dialog.visible, "asks before resetting everything")
+	assert_false(Settings.get_value(&"show_grid"))
+	Notify.confirm_dialog.confirmed.emit()
+	Notify.confirm_dialog.hide()
 	assert_true(show_grid.button_pressed, "controls follow the settings")
+
+	window.search.text = "colour"
+	window.search.text_changed.emit("colour")
+	assert_true(window.get_control(&"grid_color").is_visible_in_tree())
+	assert_true(window.get_control(&"accent_color").is_visible_in_tree(), "from all categories")
+	assert_false(show_grid.is_visible_in_tree())
 	window.queue_free()
 
 
