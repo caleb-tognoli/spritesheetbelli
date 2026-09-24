@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 Global="*res://scripts/autoloaded/global.gd"
 Actions="*res://scripts/autoloaded/actions.gd"
+Notify="*res://scripts/autoloaded/notify.gd"
 
 [debug]
 
@@ -41,6 +42,10 @@ folder_colors={
 [filesystem]
 
 import/blender/enabled=false
+
+[gui]
+
+theme/custom="res://resources/themes/main_theme.tres"
 
 [input]
 

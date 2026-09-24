@@ -24,7 +24,7 @@ func save_images(colors: Dictionary) -> void:
 
 func test_added_sprites_are_sorted_and_deduplicated() -> void:
 	save_images({"f1.png": Color.RED, "f2.png": Color.GREEN, "f10.png": Color.BLUE})
-	main.add_sprites_from_paths(
+	main.files.add_sprites_from_paths(
 		PackedStringArray(
 			[
 				dir.path_join("f10.png"),
@@ -42,16 +42,16 @@ func test_added_sprites_are_sorted_and_deduplicated() -> void:
 
 
 func test_file_dialog_opens_once() -> void:
-	main.popup_file_dialog(main.open_sprites_dialog)
-	main.popup_file_dialog(main.open_sprites_dialog)
-	assert_eq(main.open_file_dialogs.size(), 1)
-	main.open_sprites_dialog.canceled.emit()
-	assert_true(main.open_file_dialogs.is_empty(), "canceled releases the dialog")
-	main.open_sprites_dialog.hide()
+	main.files.popup_file_dialog(main.files.open_sprites_dialog)
+	main.files.popup_file_dialog(main.files.open_sprites_dialog)
+	assert_eq(main.files.open_file_dialogs.size(), 1)
+	main.files.open_sprites_dialog.canceled.emit()
+	assert_true(main.files.open_file_dialogs.is_empty(), "canceled releases the dialog")
+	main.files.open_sprites_dialog.hide()
 
 
 func test_zoom_keeps_point_under_cursor() -> void:
-	main.add_sprites_from_paths(PackedStringArray())
+	main.files.add_sprites_from_paths(PackedStringArray())
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var preview: SpritesheetPreview = main.preview_area.spritesheet_preview
 	var anchor := Vector2(100, 80)
@@ -70,7 +70,7 @@ func test_add_spritesheet_keeps_empty_rows() -> void:
 	var img := Image.create_empty(48, 48, false, Image.FORMAT_RGBA8)
 	img.fill_rect(Rect2i(0, 0, 16, 16), Color.RED)
 	img.fill_rect(Rect2i(32, 32, 16, 16), Color.BLUE)
-	var window: AddSpritesheetWindow = main.add_spritesheet_window
+	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
 	window.setup(img)
 	window.update_grid_size(3, 3)
 	window.add_spritesheet_to_global()
@@ -83,39 +83,39 @@ func test_add_spritesheet_keeps_empty_rows() -> void:
 func test_save_appends_png_extension() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var path := dir.path_join("sheet_no_ext")
-	main.save_spritesheet(path)
+	main.files.save_spritesheet(path)
 	assert_true(FileAccess.file_exists(path + ".png"))
 	assert_eq(Global.document.path, path + ".png")
 	assert_false(Global.document.is_dirty)
-	main.notification_dialog.hide()
+	Notify.message_dialog.hide()
 
 
 func test_confirmation_runs_latest_action_once() -> void:
 	var calls := [0]
-	main.show_confirmation_dialog("t", "t", func(): calls[0] += 1)
-	main.confirmation_dialog.canceled.emit()
-	main.show_confirmation_dialog("t", "t", func(): calls[0] += 10)
-	main.confirmation_dialog.confirmed.emit()
-	main.confirmation_dialog.confirmed.emit()
+	Notify.confirm("t", "t", func(): calls[0] += 1)
+	Notify.confirm_dialog.canceled.emit()
+	Notify.confirm("t", "t", func(): calls[0] += 10)
+	Notify.confirm_dialog.confirmed.emit()
+	Notify.confirm_dialog.confirmed.emit()
 	assert_eq(calls[0], 10)
-	main.confirmation_dialog.hide()
+	Notify.confirm_dialog.hide()
 
 
 func test_canceling_open_keeps_spritesheet() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	Global.document.mark_saved()
-	main.open_spritesheet()
-	main.open_spritesheet_dialog.canceled.emit()
+	main.files.open_spritesheet()
+	main.files.open_spritesheet_dialog.canceled.emit()
 	assert_eq(Global.spritesheet.frames.size(), 1)
-	assert_false(main.set_filepath_when_opening_spritesheet)
-	main.open_spritesheet_dialog.hide()
+	assert_false(main.files.set_filepath_when_opening_spritesheet)
+	main.files.open_spritesheet_dialog.hide()
 
 
 func test_new_clears_everything() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	Global.document.path = "x.png"
 	Global.document.mark_saved()
-	main.new_spritesheet()
+	main.files.new_spritesheet()
 	assert_true(Global.spritesheet.is_empty())
 	assert_eq(Global.document.path, "")
 
@@ -143,7 +143,7 @@ func test_add_spritesheet_only_locks_its_own_cells() -> void:
 	Global.spritesheet.remove_frames([Vector2i(0, 0)] as Array[Vector2i])
 	var img := Image.create_empty(32, 16, false, Image.FORMAT_RGBA8)
 	img.fill_rect(Rect2i(0, 0, 16, 16), Color.BLUE)
-	var window: AddSpritesheetWindow = main.add_spritesheet_window
+	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
 	window.setup(img)
 	window.update_grid_size(2, 1)
 	window.add_spritesheet_to_global()
@@ -154,9 +154,9 @@ func test_add_spritesheet_only_locks_its_own_cells() -> void:
 func test_opening_a_file_is_not_an_unsaved_change() -> void:
 	var path := dir.path_join("open_me.png")
 	make_image(Color.RED, Vector2i(32, 16)).save_png(path)
-	main.set_filepath_when_opening_spritesheet = true
-	main.show_add_spritesheet_window(path)
-	main.add_spritesheet_window.add_spritesheet_to_global()
+	main.files.set_filepath_when_opening_spritesheet = true
+	main.files.show_add_spritesheet_window(path)
+	main.files.add_spritesheet_window.add_spritesheet_to_global()
 	assert_false(Global.spritesheet.is_empty())
 	assert_false(Global.document.is_dirty)
 	assert_eq(Global.document.path, path)
@@ -178,21 +178,21 @@ func test_keep_ratio_resize_rounds() -> void:
 
 func test_closing_with_unsaved_changes_asks_first() -> void:
 	var quits := [0]
-	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
 	assert_eq(quits[0], 1, "nothing to save: closes right away")
 
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
-	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
-	assert_true(main.unsaved_changes_dialog.visible, "asks")
+	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	assert_true(main.files.unsaved_changes_dialog.visible, "asks")
 	assert_eq(quits[0], 1)
-	main.unsaved_changes_dialog.custom_action.emit(&"discard")
+	main.files.unsaved_changes_dialog.custom_action.emit(&"discard")
 	assert_eq(quits[0], 2, "Don't Save closes")
 
 	Global.document.path = dir.path_join("close_save.png")
-	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
-	main.unsaved_changes_dialog.confirmed.emit()
+	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	main.files.unsaved_changes_dialog.confirmed.emit()
 	assert_eq(quits[0], 3, "Save saves, then closes")
 	assert_false(Global.document.is_dirty)
 	assert_true(FileAccess.file_exists(dir.path_join("close_save.png")))
