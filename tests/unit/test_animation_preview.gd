@@ -29,43 +29,95 @@ func test_toggle() -> void:
 	assert_false(animation.visible)
 
 
+## Plays one frame's worth of time
+func advance() -> void:
+	animation.player._process(1.0 / animation.player.fps + 0.0001)
+
+
+func current() -> Vector2i:
+	return animation.player.get_current_cell()
+
+
 func test_loops_through_all_frames() -> void:
-	var seen: Array[Vector2i] = [animation.get_current_coord()]
+	var seen: Array[Vector2i] = [current()]
 	for i in 3:
-		animation.step()
-		seen.append(animation.get_current_coord())
+		advance()
+		seen.append(current())
 	assert_eq(
 		seen, [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 0)] as Array[Vector2i]
 	)
 
 
 func test_ping_pong() -> void:
-	animation.mode = AnimationPreview.Mode.PING_PONG
+	animation.player.mode = SheetAnimation.Mode.PING_PONG
 	var seen: Array[int] = []
 	for i in 5:
-		animation.step()
-		seen.append(animation.get_current_coord().x)
+		advance()
+		seen.append(current().x)
 	assert_eq(seen, [1, 2, 1, 0, 1] as Array[int])
 
 
 func test_once_stops_at_the_end() -> void:
-	animation.mode = AnimationPreview.Mode.ONCE
+	animation.player.mode = SheetAnimation.Mode.ONCE
 	for i in 5:
-		animation.step()
-	assert_eq(animation.get_current_coord(), Vector2i(2, 0))
-	assert_false(animation.playing)
+		advance()
+	assert_eq(current(), Vector2i(2, 0))
+	assert_false(animation.player.playing)
+	animation.player.play_button.pressed.emit()
+	assert_eq(current(), Vector2i(0, 0), "playing again starts over")
+
+
+func test_previous_and_next_frame_stop_playing() -> void:
+	animation.player.next_button.pressed.emit()
+	assert_eq(current(), Vector2i(1, 0))
+	assert_false(animation.player.playing)
+	animation.player.previous_button.pressed.emit()
+	animation.player.previous_button.pressed.emit()
+	assert_eq(current(), Vector2i(2, 0), "wraps around")
 
 
 func test_plays_only_selected_frames() -> void:
 	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
-	animation.step()
-	assert_eq(animation.get_current_coord(), Vector2i(2, 0))
-	animation.step()
-	assert_eq(animation.get_current_coord(), Vector2i(0, 0))
+	advance()
+	assert_eq(current(), Vector2i(2, 0))
+	advance()
+	assert_eq(current(), Vector2i(0, 0))
 
 
-func test_advances_with_time() -> void:
-	animation.fps = 60
-	var start := animation.get_current_coord()
-	animation._process(1.0 / 60 + 0.001)
-	assert_ne(animation.get_current_coord(), start)
+func test_plays_a_chosen_animation() -> void:
+	var sheet := Global.spritesheet
+	var walk := SheetAnimation.create(
+		"walk", [Vector2i(2, 0), Vector2i(1, 0)] as Array[Vector2i], 5
+	)
+	Global.document.perform("New animation", sheet.add_animation.bind(walk))
+	assert_eq(animation.selector.item_count, 2, "selected frames and walk")
+	animation.selector.select(1)
+	animation.selector.item_selected.emit(1)
+	assert_eq(animation.player.fps, 5.0)
+	assert_eq(animation.player.get_cells(), walk.cells)
+
+
+func test_animation_window() -> void:
+	var window: AnimationWindow = main.animation_window
+	main.preview.set_selected_coords([Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
+	window.open()
+	assert_true(window.empty_hint.visible, "no animations yet")
+	window.add_button.pressed.emit()
+	var sheet := Global.spritesheet
+	assert_eq(sheet.animations.size(), 1)
+	assert_eq(sheet.animations[0].cells, [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
+	window.from_spin.value = 0
+	assert_eq(sheet.animations[0].cells.size(), 3, "from 0 to 2")
+	window.fps_spin.value = 20
+	window.mode_option.select(window.mode_option.get_item_index(SheetAnimation.Mode.PING_PONG))
+	window.mode_option.item_selected.emit(window.mode_option.selected)
+	assert_eq(sheet.animations[0].fps, 20.0)
+	assert_eq(sheet.animations[0].mode, SheetAnimation.Mode.PING_PONG)
+	window.name_edit.text = "run"
+	window.name_edit.text_submitted.emit("run")
+	assert_eq(sheet.animations[0].name, "run")
+	Global.document.undo()
+	assert_eq(sheet.animations[0].name, "animation", "undoable")
+	window.remove_button.pressed.emit()
+	assert_true(sheet.animations.is_empty())
+	window.hide()

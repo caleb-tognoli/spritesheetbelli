@@ -96,6 +96,9 @@ func test_save_and_open_project() -> void:
 			Global.spritesheet.set_locked(Vector2i(2, 1), true)
 			Global.spritesheet.set_row_name(0, "idle")
 			Global.spritesheet.resize_sprites(Vector2i(32, 32))
+			var jump := SheetAnimation.create("jump", [Vector2i(1, 0)] as Array[Vector2i], 7.5)
+			jump.mode = SheetAnimation.Mode.PING_PONG
+			Global.spritesheet.add_animation(jump)
 	)
 	var path := dir.path_join("project")
 	assert_true(await main.files.save_project(path))
@@ -111,6 +114,9 @@ func test_save_and_open_project() -> void:
 	assert_eq(sheet.sprite_size, Vector2i(32, 32), "scale kept")
 	assert_true(sheet.is_locked(Vector2i(2, 1)))
 	assert_eq(sheet.row_names.get(0), "idle")
+	var jump := sheet.animations[0]
+	assert_eq([jump.name, jump.cells, jump.fps], ["jump", [Vector2i(1, 0)], 7.5], "animations kept")
+	assert_eq(jump.mode, SheetAnimation.Mode.PING_PONG)
 	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED)
 	assert_false(Global.document.can_undo())
 

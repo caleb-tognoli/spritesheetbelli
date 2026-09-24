@@ -5,7 +5,20 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 
 ## Unreleased
 
+### Added
+- Animations: make named animations from a range of cells or the selected frames, each
+  with its own speed and type (once, loop or ping-pong), in View > Animations… or with
+  the button on the animation preview. The preview can play any of them. Exports use
+  them: SpriteFrames get their speed and looping, JSON gets frame tags.
+- History panel (View > History, Ctrl+H): every undo step; click one to go back to it.
+- Progress overlay for slow work, such as resizing many big sprites, which now happens
+  on worker threads.
+- Error dialogs when an image would be bigger than Godot or the format allows.
+
 ### Changed
+- The animation player has play/stop and previous/next frame buttons.
+- Locked cells show a lock instead of diagonal lines.
+- Offset and spacing in Add Spritesheet are hidden until needed.
 - One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
   Packed Atlas and Export Settings. It asks what to export (spritesheet image, sprites,
   Godot SpriteFrames, Aseprite/TexturePacker JSON or a packed atlas) and shows only the

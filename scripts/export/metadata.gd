@@ -58,36 +58,80 @@ static func grid_frames(
 	return frames
 
 
-## Animations from rows: each row with frames becomes one, named after the row.
-## Returns [code]{"name": String, "indices": Array}[/code] with indices into
-## [method grid_frames]. Without any row names, all frames form one "default" animation.
+## The sheet's animations, or else one per row: each row with frames becomes one, named
+## after the row. Without animations or row names, all frames form one "default" animation.
+## Returns [code]{"name": String, "indices": Array, "mode": SheetAnimation.Mode,
+## "fps": float}[/code] with indices into [method grid_frames]; fps is 0 when not set.
 static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 	var coords := sheet.get_sorted_coords()
 	var result: Array[Dictionary] = []
+	if not sheet.animations.is_empty():
+		var index_of := {}
+		for i in coords.size():
+			index_of[coords[i]] = i
+		for animation in sheet.animations:
+			var indices := animation.get_frame_cells(sheet).map(
+				func(cell: Vector2i) -> int: return index_of[cell]
+			)
+			if not indices.is_empty():
+				result.append(
+					{
+						"name": animation.name,
+						"indices": indices,
+						"mode": animation.mode,
+						"fps": animation.fps
+					}
+				)
+		return result
 	if sheet.row_names.is_empty():
-		result.append({"name": "default", "indices": range(coords.size())})
+		result.append(
+			{
+				"name": "default",
+				"indices": range(coords.size()),
+				"mode": SheetAnimation.Mode.LOOP,
+				"fps": 0.0
+			}
+		)
 		return result
 	var by_row := {}
 	for i in coords.size():
 		var row := coords[i].y
 		if not by_row.has(row):
-			by_row[row] = {"name": sheet.row_names.get(row, "row%d" % row), "indices": []}
+			by_row[row] = {
+				"name": sheet.row_names.get(row, "row%d" % row),
+				"indices": [],
+				"mode": SheetAnimation.Mode.LOOP,
+				"fps": 0.0,
+			}
 		by_row[row].indices.append(i)
 	for row: int in by_row:
 		result.append(by_row[row])
 	return result
 
 
-## Aseprite-style frame tags, one per named animation
+## Aseprite-style frame tags, one per named animation. Tags cover a range of frames, so an
+## animation of scattered frames spans from its first to its last one.
 static func frame_tags(sheet: Spritesheet) -> Array[Dictionary]:
 	var tags: Array[Dictionary] = []
-	if sheet.row_names.is_empty():
+	if sheet.row_names.is_empty() and sheet.animations.is_empty():
 		return tags
 	for animation in animations(sheet):
 		var indices: Array = animation.indices
-		tags.append(
-			{"name": animation.name, "from": indices[0], "to": indices[-1], "direction": "forward"}
-		)
+		var tag := {
+			"name": animation.name,
+			"from": indices[0],
+			"to": indices[-1],
+			"direction": "forward",
+		}
+		if indices[-1] < indices[0]:
+			tag.direction = "reverse"
+			tag.from = indices[-1]
+			tag.to = indices[0]
+		if animation.mode == SheetAnimation.Mode.PING_PONG:
+			tag.direction = "pingpong"
+		elif animation.mode == SheetAnimation.Mode.ONCE:
+			tag.repeat = "1"
+		tags.append(tag)
 	return tags
 
 
@@ -115,14 +159,25 @@ static func sprite_frames_tres(
 	var animation_texts: PackedStringArray = []
 	for animation in animation_list:
 		var frame_texts: PackedStringArray = []
-		for index: int in animation.indices:
+		var indices: Array = animation.indices.duplicate()
+		# SpriteFrames can't ping-pong, so the way back is written out
+		if animation.get("mode") == SheetAnimation.Mode.PING_PONG and indices.size() > 2:
+			var back := indices.slice(1, indices.size() - 1)
+			back.reverse()
+			indices.append_array(back)
+		for index: int in indices:
 			frame_texts.append(
 				'{\n"duration": 1.0,\n"texture": SubResource("AtlasTexture_%d")\n}' % index
 			)
 		animation_texts.append(
 			(
-				'{\n"frames": [%s],\n"loop": true,\n"name": &%s,\n"speed": %s\n}'
-				% [", ".join(frame_texts), JSON.stringify(animation.name), str(float(fps))]
+				'{\n"frames": [%s],\n"loop": %s,\n"name": &%s,\n"speed": %s\n}'
+				% [
+					", ".join(frame_texts),
+					str(animation.get("mode") != SheetAnimation.Mode.ONCE),
+					JSON.stringify(animation.name),
+					str(float(animation.fps if animation.get("fps", 0.0) > 0 else fps))
+				]
 			)
 		)
 	lines.append("[resource]")

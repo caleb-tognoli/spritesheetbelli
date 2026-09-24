@@ -199,3 +199,40 @@ func test_prepare_scaled_images() -> void:
 	assert_true(sheet.is_frame_scaled(Vector2i(3, 0)))
 	assert_eq(sheet.get_pending_scale_work(), 0)
 	assert_eq(sheet.get_frame_image(Vector2i(2, 0)).get_size(), Vector2i(30, 18))
+
+
+func test_animations_follow_their_frames() -> void:
+	var imgs: Array[Image] = []
+	for color: Color in [Color.RED, Color.GREEN, Color.BLUE]:
+		imgs.append(make_image(color))
+	sheet.add_frames(imgs)
+	var cells: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)]
+	var index := sheet.add_animation(SheetAnimation.create("walk", cells, 8))
+	assert_eq(sheet.animations[index].name, "walk")
+	sheet.move_frames([Vector2i(1, 0)] as Array[Vector2i], Vector2i(0, 1))
+	assert_eq(
+		sheet.animations[0].cells,
+		[Vector2i(0, 0), Vector2i(1, 1), Vector2i(2, 0)] as Array[Vector2i],
+		"a moved frame keeps its place in the animation"
+	)
+	sheet.remove_cell(Vector2i(0, 0))
+	assert_eq(sheet.animations[0].cells.size(), 2, "a removed cell leaves the animation")
+	var state := sheet.get_state()
+	sheet.remove_animation(0)
+	assert_true(sheet.animations.is_empty())
+	sheet.set_state(state)
+	assert_eq(sheet.animations.size(), 1, "undoable")
+	assert_eq(sheet.get_unique_animation_name("walk"), "walk2")
+
+
+func test_ping_pong_playback() -> void:
+	var imgs: Array[Image] = []
+	for color: Color in [Color.RED, Color.GREEN, Color.BLUE]:
+		imgs.append(make_image(color))
+	sheet.add_frames(imgs)
+	var animation := SheetAnimation.create("a", [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)])
+	animation.mode = SheetAnimation.Mode.PING_PONG
+	assert_eq(
+		animation.get_playback_cells(sheet),
+		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(1, 0)] as Array[Vector2i]
+	)

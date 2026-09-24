@@ -80,6 +80,7 @@ var _advanced := _grid()
 ## Controls of each row, with the targets they're shown for
 var _rows: Array[Dictionary] = []
 var _pattern_label: Label
+var _fps_label: Label
 var _updating := false
 
 
@@ -131,7 +132,7 @@ func _init() -> void:
 	animation_fps.step = 0.5
 	animation_fps.suffix = "fps"
 	animation_fps.tooltip_text = "Frames per second of the animations"
-	_add_row(_settings, "Animation speed", animation_fps, [T.GODOT, T.JSON])
+	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.GODOT, T.JSON])
 
 	pattern.custom_minimum_size = Vector2(200, 0)
 	pattern.placeholder_text = "{index}"
@@ -311,6 +312,10 @@ func _update_visibility(options: ExportOptions) -> void:
 		for control: Control in row.controls:
 			control.visible = shown
 	_pattern_label.text = "File names" if options.target == T.SPRITES else "Frame names"
+	# Animations have their own speed; this one is for animations made from rows
+	if not Global.spritesheet.animations.is_empty():
+		_fps_label.visible = false
+		animation_fps.visible = false
 	advanced_toggle.visible = any_advanced
 	advanced_toggle.icon = EXPANDED_ICON if advanced_toggle.button_pressed else COLLAPSED_ICON
 	reset_size()

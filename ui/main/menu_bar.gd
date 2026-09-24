@@ -60,6 +60,7 @@ const MENUS := {
 		&"zoom_fit",
 		&"",
 		&"toggle_animation",
+		&"edit_animations",
 		&"toggle_history",
 		&"toggle_status_bar"
 	],

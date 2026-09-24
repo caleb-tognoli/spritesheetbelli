@@ -187,3 +187,22 @@ func test_export_targets() -> void:
 	restored.apply(options.to_dictionary())
 	assert_eq(restored.target, ExportOptions.Target.JSON)
 	assert_eq(restored.image_format, "webp")
+
+
+func test_animations_in_metadata() -> void:
+	var walk := SheetAnimation.create(
+		"walk", [Vector2i(2, 0), Vector2i(0, 0)] as Array[Vector2i], 6
+	)
+	walk.mode = SheetAnimation.Mode.ONCE
+	sheet.add_animation(walk)
+	var list := Metadata.animations(sheet)
+	assert_eq(list.size(), 1, "defined animations replace rows")
+	assert_eq(list[0].indices, [2, 0])
+	var tres := Metadata.sprite_frames_tres(
+		Metadata.grid_frames(sheet, ExportOptions.new()), list, "a.png", 12
+	)
+	assert_true('"loop": false' in tres, "once doesn't loop")
+	assert_true('"speed": 6.0' in tres, "its own speed")
+	var tags := Metadata.frame_tags(sheet)
+	assert_eq(tags[0].direction, "reverse")
+	assert_eq(tags[0].repeat, "1")

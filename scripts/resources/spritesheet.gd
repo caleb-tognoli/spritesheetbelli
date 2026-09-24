@@ -9,6 +9,8 @@ extends Resource
 
 signal updated
 
+const NO_CELL := Vector2i(-1, -1)
+
 enum AddMode {
 	FIRST_FREE,  ## Fill the first free, unlocked cell
 	APPEND,  ## After the last frame
@@ -41,6 +43,14 @@ var scale_filter: Image.Interpolation:
 var row_names: Dictionary[int, String]:
 	get:
 		return _row_names
+## Named animations, in the order they were made. Read only: changes go through
+## [method add_animation], [method set_animation] and [method remove_animation].
+var animations: Array[SheetAnimation]:
+	get:
+		var result: Array[SheetAnimation] = []
+		for data in _animations:
+			result.append(SheetAnimation.from_dictionary(data))
+		return result
 ## How this sheet is exported, see [ExportOptions]. Read only.
 var export_settings: Dictionary:
 	get:
@@ -53,6 +63,7 @@ var _scale := Vector2.ONE
 var _scale_filter := Image.INTERPOLATE_NEAREST
 var _row_names: Dictionary[int, String] = {}
 var _export_settings := {}
+var _animations: Array[Dictionary] = []
 var _sprite_size := Vector2i.ZERO
 ## Scaled frames by scale and filter. The previous scale is kept too, so undoing a resize
 ## doesn't scale everything again.
@@ -247,6 +258,7 @@ func get_state() -> Dictionary:
 		"scale": _scale,
 		"scale_filter": _scale_filter,
 		"row_names": _row_names.duplicate(),
+		"animations": _animations.duplicate(true),
 		"export": _export_settings.duplicate(),
 		"sprite_size": _sprite_size,
 	}
@@ -259,6 +271,7 @@ func set_state(state: Dictionary) -> void:
 	_scale = state.get("scale", Vector2.ONE)
 	_scale_filter = state.get("scale_filter", Image.INTERPOLATE_NEAREST)
 	_row_names.assign(state.get("row_names", {}))
+	_animations.assign(state.get("animations", []).duplicate(true))
 	_export_settings = state.get("export", {}).duplicate()
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_changed()
@@ -295,6 +308,9 @@ func set_grid_size(size: Vector2i) -> void:
 	for row: int in _row_names.keys():
 		if row >= size.y:
 			_row_names.erase(row)
+	_remap_animation_cells(
+		func(cell: Vector2i) -> Vector2i: return cell if is_inside(cell) else NO_CELL
+	)
 	_changed()
 
 
@@ -470,9 +486,11 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 		return targets
 	begin_batch()
 	var displaced: Array[Image] = []
+	var displaced_cells: Array[Vector2i] = []
 	for target in targets:
 		if has_frame(target) and not moving.has(target):
 			displaced.append(_frames[target])
+			displaced_cells.append(target)
 	if not copy:
 		for coord in moving:
 			_frames.erase(coord)
@@ -486,6 +504,13 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 				freed.append(coord)
 		for i in mini(displaced.size(), freed.size()):
 			_frames[freed[i]] = displaced[i]
+		# Animations follow their frames
+		var moved := {}
+		for coord in moving:
+			moved[coord] = coord + offset
+		for i in mini(displaced_cells.size(), freed.size()):
+			moved[displaced_cells[i]] = freed[i]
+		_remap_animation_cells(func(cell: Vector2i) -> Vector2i: return moved.get(cell, cell))
 	end_batch()
 	return targets
 
@@ -500,6 +525,10 @@ func insert_empty_cell(coord: Vector2i) -> void:
 		var index := index_of(c)
 		shifted[coord_of(index + 1) if index >= start else c] = _frames[c]
 	_frames = shifted
+	_remap_animation_cells(
+		func(cell: Vector2i) -> Vector2i:
+			return coord_of(index_of(cell) + 1) if index_of(cell) >= start else cell
+	)
 	_grid_size.y = maxi(_grid_size.y, get_first_free_row())
 	_locked.assign(_locked.filter(func(c: Vector2i) -> bool: return not _frames.has(c)))
 	_changed()
@@ -515,7 +544,68 @@ func remove_cell(coord: Vector2i) -> void:
 			continue
 		shifted[coord_of(index - 1) if index > start else c] = _frames[c]
 	_frames = shifted
+	_remap_animation_cells(
+		func(cell: Vector2i) -> Vector2i:
+			var index := index_of(cell)
+			if index == start:
+				return NO_CELL
+			return coord_of(index - 1) if index > start else cell
+	)
 	_changed()
+
+
+#endregion
+
+#region Animations
+
+
+## Adds an animation and returns its index
+func add_animation(animation: SheetAnimation) -> int:
+	_animations.append(animation.to_dictionary())
+	_changed()
+	return _animations.size() - 1
+
+
+func set_animation(index: int, animation: SheetAnimation) -> void:
+	if index < 0 or index >= _animations.size():
+		return
+	var data := animation.to_dictionary()
+	if data == _animations[index]:
+		return
+	_animations[index] = data
+	_changed()
+
+
+func remove_animation(index: int) -> void:
+	if index < 0 or index >= _animations.size():
+		return
+	_animations.remove_at(index)
+	_changed()
+
+
+## A name not used by any animation, based on [param base]
+func get_unique_animation_name(base := "animation") -> String:
+	var used := {}
+	for data in _animations:
+		used[data.name] = true
+	if not used.has(base):
+		return base
+	var number := 2
+	while used.has("%s%d" % [base, number]):
+		number += 1
+	return "%s%d" % [base, number]
+
+
+## Changes the cells of every animation with [param map], which returns a new cell or
+## NO_CELL to drop it
+func _remap_animation_cells(map: Callable) -> void:
+	for data in _animations:
+		var cells: Array[Vector2i] = []
+		for cell: Vector2i in data.cells:
+			var mapped: Vector2i = map.call(cell)
+			if mapped != NO_CELL:
+				cells.append(mapped)
+		data.cells = cells
 
 
 #endregion

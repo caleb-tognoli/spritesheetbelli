@@ -63,6 +63,7 @@ var color_key_dialog := ColorKeyDialog.new()
 var row_name_dialog := RowNameDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
+var animation_window := AnimationWindow.new()
 var _was_empty := true
 
 
@@ -143,6 +144,12 @@ func _ready() -> void:
 	add_child(export_dialog)
 	export_dialog.export_requested.connect(files.choose_export_path)
 	add_child(about_dialog)
+	animation_window.preview = preview
+	add_child(animation_window)
+	var animation_preview := preview_area.animation_preview
+	animation_preview.details_requested.connect(animation_window.open)
+	# The small player follows the animation being edited
+	animation_window.list.item_selected.connect(animation_preview.select_animation)
 	row_name_dialog.name_chosen.connect(
 		func(row: int, row_name: String) -> void:
 			Global.document.perform("Name row", Global.spritesheet.set_row_name.bind(row, row_name))
@@ -336,6 +343,7 @@ func _register_actions() -> void:
 		null,
 		func() -> bool: return history_panel.visible
 	)
+	add.call(&"edit_animations", "Animations…", func() -> void: animation_window.open(), has_frames)
 	var animation := preview_area.animation_preview
 	Actions.add(
 		&"toggle_animation",

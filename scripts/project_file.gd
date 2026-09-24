@@ -58,6 +58,11 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 	var locked: Array[Array] = []
 	for coord in sheet.locked_coordinates:
 		locked.append([coord.x, coord.y])
+	var animations: Array[Dictionary] = []
+	for animation in sheet.animations:
+		var data := animation.to_dictionary()
+		data.cells = animation.cells.map(func(cell: Vector2i) -> Array: return [cell.x, cell.y])
+		animations.append(data)
 
 	var data := {
 		"format": FORMAT,
@@ -67,6 +72,7 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"scale_filter": sheet.scale_filter,
 		"locked": locked,
 		"row_names": row_names,
+		"animations": animations,
 		"export": JSON.from_native(sheet.export_settings),
 		"frames": frames,
 		"extra": extra,
@@ -122,6 +128,10 @@ static func _read(zip: ZIPReader) -> Dictionary:
 	for row: String in data.get("row_names", {}):
 		row_names[int(row)] = data.row_names[row]
 	var frame_scale: Array = data.get("frame_scale", [1, 1])
+	var animations: Array[Dictionary] = []
+	for animation: Variant in data.get("animations", []):
+		if animation is Dictionary:
+			animations.append(SheetAnimation.from_dictionary(animation).to_dictionary())
 
 	var state := {
 		"grid_size": _to_vector2i(data.get("grid_size", [0, 0])),
@@ -130,6 +140,7 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
 		"row_names": row_names,
+		"animations": animations,
 		"export": _read_export_settings(data.get("export", {})),
 	}
 	return {"state": state, "extra": data.get("extra", {})}
