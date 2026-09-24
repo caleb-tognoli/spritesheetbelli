@@ -48,6 +48,8 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var sheet_size: Label = %SheetSize
 @onready var export_btn: Button = %Export
 @onready var split: HSplitContainer = %Split
+@onready var preview_split: HSplitContainer = %PreviewSplit
+@onready var history_panel: HistoryPanel = %HistoryPanel
 @onready var status_bar: Control = %StatusBar
 @onready var sheet_info: Label = %SheetInfo
 @onready var cell_info: Label = %CellInfo
@@ -87,10 +89,19 @@ func _ready() -> void:
 	split.split_offset = Settings.get_value(&"sidebar_width")
 	split.dragged.connect(func(offset: int) -> void: Settings.set_value(&"sidebar_width", offset))
 	status_bar.visible = Settings.get_value(&"show_status_bar")
+	history_panel.visible = Settings.get_value(&"show_history")
+	# The split offset is from the preview's side, so a wider history is a negative offset
+	preview_split.split_offset = Settings.get_value(&"history_width")
+	preview_split.dragged.connect(
+		func(offset: int) -> void: Settings.set_value(&"history_width", offset)
+	)
 	Settings.changed.connect(
 		func(key: StringName) -> void:
 			if key == &"show_status_bar":
 				status_bar.visible = Settings.get_value(key)
+			elif key == &"show_history":
+				history_panel.visible = Settings.get_value(key)
+				Actions.refresh()
 	)
 	preview.hover_changed.connect(update_cell_info)
 	grid_rows.value_changed.connect(
@@ -316,6 +327,14 @@ func _register_actions() -> void:
 		Callable(),
 		null,
 		func() -> bool: return status_bar.visible
+	)
+	Actions.add(
+		&"toggle_history",
+		"History",
+		func() -> void: Settings.set_value(&"show_history", not history_panel.visible),
+		Callable(),
+		null,
+		func() -> bool: return history_panel.visible
 	)
 	var animation := preview_area.animation_preview
 	Actions.add(

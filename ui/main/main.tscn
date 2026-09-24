@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="6_q2y6a"]
 [ext_resource type="Script" path="res://ui/main/menu_bar.gd" id="7_rk3ov"]
 [ext_resource type="Script" path="res://ui/main/file_controller.gd" id="10_files"]
+[ext_resource type="Script" path="res://ui/main/history_panel.gd" id="11_history"]
 [ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://assets/icons/SpriteSheet.svg" id="7_wpt02"]
 [ext_resource type="Texture2D" path="res://assets/icons/Link.svg" id="8_link"]
 
@@ -310,10 +311,21 @@ layout_mode = 2
 tooltip_text = "Export the spritesheet as an image, sprites or for a game engine (Ctrl+E)"
 text = "Export…"
 
-[node name="PreviewArea" parent="Layout/Split" instance=ExtResource("6_q2y6a")]
+[node name="PreviewSplit" type="HSplitContainer" parent="Layout/Split"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="PreviewArea" parent="Layout/Split/PreviewSplit" instance=ExtResource("6_q2y6a")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HistoryPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+script = ExtResource("11_history")
 
 [node name="StatusBar" type="PanelContainer" parent="Layout"]
 unique_name_in_owner = true

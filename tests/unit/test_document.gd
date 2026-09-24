@@ -78,3 +78,18 @@ func test_reset_forgets_history_and_path() -> void:
 	assert_false(doc.can_undo())
 	assert_eq(doc.path, "")
 	assert_false(doc.is_dirty)
+
+
+func test_go_to_history() -> void:
+	for color: Color in [Color.RED, Color.GREEN, Color.BLUE]:
+		add(color)
+	assert_eq(doc.get_history(), PackedStringArray(["Add", "Add", "Add"]))
+	assert_eq(doc.get_history_position(), 3)
+	doc.go_to_history(1)
+	assert_eq(sheet.frames.size(), 1)
+	assert_eq(doc.get_history().size(), 3, "undone steps stay until a new edit")
+	doc.go_to_history(3)
+	assert_eq(sheet.frames.size(), 3)
+	doc.go_to_history(0)
+	assert_true(sheet.is_empty())
+	assert_false(doc.is_dirty, "back to where it started")

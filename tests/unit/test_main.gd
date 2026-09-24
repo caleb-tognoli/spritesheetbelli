@@ -408,3 +408,21 @@ func test_export_dialog() -> void:
 	var path := dir.path_join("dialog_export.png")
 	assert_true(await main.files.export_to(path))
 	assert_true(FileAccess.file_exists(dir.path_join("dialog_export.tres")), "SpriteFrames too")
+
+
+func test_history_panel() -> void:
+	Actions.run(&"toggle_history")
+	var panel: HistoryPanel = main.history_panel
+	assert_true(panel.visible)
+	for color: Color in [Color.RED, Color.GREEN]:
+		Global.document.perform(
+			"Add sprites", Global.spritesheet.add_frames.bind([make_image(color)] as Array[Image])
+		)
+	assert_eq(panel.list.item_count, 3, "the start and two steps")
+	assert_eq(panel.list.get_item_text(2), "Add sprites")
+	assert_true(panel.list.is_selected(2), "the current step")
+	panel.list.item_clicked.emit(0, Vector2.ZERO, MOUSE_BUTTON_LEFT)
+	assert_true(Global.spritesheet.is_empty(), "clicking the start undoes everything")
+	assert_true(panel.list.is_selected(0))
+	Actions.run(&"toggle_history")
+	assert_false(panel.visible)

@@ -35,9 +35,13 @@ const DEFAULTS := {
 	&"last_session": "",
 	&"recent_files": [],
 	&"sidebar_width": 0,
+	&"show_history": false,
+	&"history_width": 0,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
-const REMEMBERED: Array[StringName] = [&"last_session", &"recent_files", &"sidebar_width"]
+const REMEMBERED: Array[StringName] = [
+	&"last_session", &"recent_files", &"sidebar_width", &"show_history", &"history_width"
+]
 const MAX_RECENT_FILES := 10
 
 ## Where settings are saved. Tests use their own file.

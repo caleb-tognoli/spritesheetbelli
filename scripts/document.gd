@@ -22,6 +22,8 @@ var is_dirty: bool:
 	get:
 		return undo_redo.get_version() != _saved_version
 
+## What the history starts from, e.g. "Opened walk.png"
+var history_start := "New spritesheet"
 var undo_redo := UndoRedo.new()
 var _saved_version := undo_redo.get_version()
 
@@ -70,6 +72,31 @@ func redo() -> void:
 		changed.emit()
 
 
+## Names of the undoable steps, oldest first, including those that were undone
+func get_history() -> PackedStringArray:
+	var names: PackedStringArray = []
+	for i in undo_redo.get_history_count():
+		names.append(undo_redo.get_action_name(i))
+	return names
+
+
+## How many steps of [method get_history] are applied
+func get_history_position() -> int:
+	return undo_redo.get_current_action() + 1
+
+
+## Undoes or redoes until [param position] steps of the history are applied
+func go_to_history(position: int) -> void:
+	position = clampi(position, 0, undo_redo.get_history_count())
+	if position == get_history_position():
+		return
+	while get_history_position() > position and undo_redo.undo():
+		pass
+	while get_history_position() < position and undo_redo.redo():
+		pass
+	changed.emit()
+
+
 func mark_saved() -> void:
 	_saved_version = undo_redo.get_version()
 	changed.emit()
@@ -81,6 +108,8 @@ func load_state(state: Dictionary, file_path := "", image_path := "") -> void:
 	undo_redo.clear_history()
 	path = file_path
 	export_path = image_path
+	var opened := file_path if file_path else image_path
+	history_start = "Opened %s" % opened.get_file() if opened else "New spritesheet"
 	mark_saved()
 
 
