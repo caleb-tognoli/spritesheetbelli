@@ -1,7 +1,11 @@
 extends TextureButton
 
-@export var camera: Camera2D
+@export var preview: SpritesheetPreview
+
+
+func _ready() -> void:
+	tooltip_text = "Fit to view"
 
 
 func _pressed() -> void:
-	camera.position = Vector2(-50, -50)
+	preview.fit_to_view()

@@ -2,6 +2,19 @@ extends Control
 
 const LINK_ICON := preload("res://assets/icons/Link.svg")
 const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
+const ICONS := {
+	&"add_sprites": preload("res://assets/icons/Add.svg"),
+	&"add_spritesheet": preload("res://assets/icons/SpriteSheet.svg"),
+	&"flip_h": preload("res://assets/icons/MirrorX.svg"),
+	&"flip_v": preload("res://assets/icons/MirrorY.svg"),
+	&"rotate_cw": preload("res://assets/icons/RotateRight.svg"),
+	&"rotate_ccw": preload("res://assets/icons/RotateLeft.svg"),
+	&"delete_frames": preload("res://assets/icons/Remove.svg"),
+}
+## Actions offered when right-clicking frames
+const CONTEXT_ACTIONS: Array[StringName] = [
+	&"flip_h", &"flip_v", &"rotate_cw", &"rotate_ccw", &"", &"delete_frames"
+]
 
 @onready var add_spritesheet_window: AddSpritesheetWindow = $AddSpritesheetWindow
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
@@ -20,6 +33,9 @@ const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
 @onready var spritesheet_width: Label = %SpritesheetWidth
 @onready var spritesheet_height: Label = %SpritesheetHeight
+@onready var preview: SpritesheetPreview = preview_area.spritesheet_preview
+
+var shortcuts_dialog := ShortcutsDialog.new()
 
 var set_filepath_when_opening_spritesheet: bool = false
 var pending_confirm_action: Callable
@@ -45,8 +61,8 @@ func _ready() -> void:
 	Global.spritesheet.updated.connect(disable_if_empty)
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
 	open_spritesheet_dialog.canceled.connect(func(): set_filepath_when_opening_spritesheet = false)
-	add_sprites_btn.pressed.connect(popup_file_dialog.bind(open_sprites_dialog))
-	add_spritesheet_btn.pressed.connect(popup_file_dialog.bind(open_spritesheet_dialog))
+	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
+	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
 	grid_rows.value_changed.connect(
@@ -81,6 +97,11 @@ func _ready() -> void:
 	save_spritesheet_dialog.canceled.connect(func(): after_save = Callable())
 	_create_unsaved_changes_dialog()
 	get_tree().auto_accept_quit = false
+	shortcuts_dialog.theme = confirmation_dialog.theme
+	add_child(shortcuts_dialog)
+	_register_actions()
+	preview_area.set_context_actions(CONTEXT_ACTIONS)
+	preview.preview_updated.connect(Actions.refresh)
 
 	for dialog: FileDialog in [
 		open_sprites_dialog,
@@ -93,6 +114,76 @@ func _ready() -> void:
 		dialog.file_selected.connect(on_closed.unbind(1))
 		dialog.files_selected.connect(on_closed.unbind(1))
 		dialog.dir_selected.connect(on_closed.unbind(1))
+
+
+func _register_actions() -> void:
+	var sheet := Global.spritesheet
+	var has_frames := func() -> bool: return not sheet.is_empty()
+	var has_selection := func() -> bool: return not preview.get_selected_coords().is_empty()
+	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()):
+		Actions.add(id, label, run, can_run, ICONS.get(id))
+
+	add.call(&"new", "New", new_spritesheet)
+	add.call(&"open", "Open…", open_spritesheet)
+	add.call(&"save", "Save", save, has_frames)
+	add.call(&"save_as", "Save As…", popup_file_dialog.bind(save_spritesheet_dialog), has_frames)
+	add.call(
+		&"export_sprites",
+		"Export Sprites…",
+		popup_file_dialog.bind(save_sprites_dialog),
+		has_frames
+	)
+	add.call(&"add_sprites", "Add Sprite(s)…", popup_file_dialog.bind(open_sprites_dialog))
+	add.call(
+		&"add_spritesheet", "Add Spritesheet…", popup_file_dialog.bind(open_spritesheet_dialog)
+	)
+	add.call(&"quit", "Quit", func(): confirm_unsaved_changes("quitting", get_tree().quit))
+
+	add.call(&"select_all", "Select All", preview_area.select_all.bind(true), has_frames)
+	add.call(&"select_none", "Select None", preview_area.select_all.bind(false), has_selection)
+	add.call(
+		&"flip_h",
+		"Flip Horizontally",
+		edit_selection.bind(sheet.flip_frames.bind(true)),
+		has_selection
+	)
+	add.call(
+		&"flip_v",
+		"Flip Vertically",
+		edit_selection.bind(sheet.flip_frames.bind(false)),
+		has_selection
+	)
+	add.call(
+		&"rotate_cw",
+		"Rotate 90° CW",
+		edit_selection.bind(sheet.rotate_frames.bind(true)),
+		has_selection
+	)
+	add.call(
+		&"rotate_ccw",
+		"Rotate 90° CCW",
+		edit_selection.bind(sheet.rotate_frames.bind(false)),
+		has_selection
+	)
+	add.call(&"delete_frames", "Delete", edit_selection.bind(sheet.remove_frames), has_selection)
+
+	add.call(&"zoom_in", "Zoom In", preview.zoom_by.bind(1.25))
+	add.call(&"zoom_out", "Zoom Out", preview.zoom_by.bind(0.8))
+	add.call(
+		&"zoom_reset",
+		"Actual Size",
+		func(): preview.set_zoom(1, preview.get_viewport_rect().size / 2)
+	)
+	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
+
+	add.call(&"show_shortcuts", "Keyboard Shortcuts", func(): shortcuts_dialog.popup_centered())
+
+
+## Runs [param edit] with the coordinates of the selected frames
+func edit_selection(edit: Callable) -> void:
+	var coords := preview.get_selected_coords()
+	if not coords.is_empty():
+		edit.call(coords)
 
 
 ## Native file dialogs don't make the FileDialog visible, so calling popup() while

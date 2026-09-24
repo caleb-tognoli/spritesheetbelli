@@ -52,6 +52,24 @@ func _input(event: InputEvent) -> void:
 		set_zoom(camera.zoom.x / (1 + MOUSE_WHEEL_ZOOM_FORCE), get_viewport().get_mouse_position())
 
 
+## Zooms by [param factor] around the centre of the view
+func zoom_by(factor: float) -> void:
+	set_zoom(camera.zoom.x * factor, get_viewport_rect().size / 2)
+
+
+## Zooms and centres the view so the whole spritesheet is visible
+func fit_to_view() -> void:
+	const MARGIN := 40.0
+	var content := Vector2(spritesheet.sprite_size * spritesheet.grid_size)
+	var view := get_viewport_rect().size
+	if content.x <= 0 or content.y <= 0 or view.x <= MARGIN * 2 or view.y <= MARGIN * 2:
+		camera.position = -Vector2(50, 50) / camera.zoom
+		return
+	var fit := (view - Vector2.ONE * MARGIN * 2) / content
+	set_zoom(minf(fit.x, fit.y))
+	camera.position = content / 2 - view / 2 / camera.zoom
+
+
 ## Zooms the camera keeping the point under [param anchor] (in viewport coordinates) in place
 func set_zoom(value: float, anchor := Vector2.ZERO) -> void:
 	value = clampf(value, MIN_ZOOM, MAX_ZOOM)
@@ -97,6 +115,7 @@ func queue_update() -> void:
 
 func update_preview() -> void:
 	_update_queued = false
+	var selection := get_selected_coords()
 	for child in frames.get_children():
 		child.free()
 	for child in empty_spaces.get_children():
@@ -111,6 +130,8 @@ func update_preview() -> void:
 				frame.setup(spritesheet, coord)
 				frame.selection_updated.connect(preview_updated.emit)
 				frames.add_child(frame)
+				if coord in selection:
+					frame.set_selected_silently(true)
 				frame.update_zoom(camera.zoom.x)
 			elif able_to_lock_spaces:
 				var empty_space: SpritesheetPreviewEmptySpace = EMPTY_SPACE_SCENE.instantiate()

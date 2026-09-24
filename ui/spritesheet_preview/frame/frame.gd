@@ -13,9 +13,13 @@ const MIN_SIZE_TO_SHOW_INDEX := Vector2(50, 50)
 
 static var selection_mode: SelectionMode = SelectionMode.NONE
 
-var selected := false:
-	set = set_selected
+var selected: bool:
+	get:
+		return _selected
+	set(v):
+		set_selected(v)
 var coordinate_in_spritesheet := -Vector2i.ONE
+var _selected := false
 
 
 func _ready() -> void:
@@ -60,6 +64,11 @@ func update_zoom(zoom: float) -> void:
 
 
 func set_selected(v: bool):
-	selected = v
-	selection_panel.visible = selected
+	set_selected_silently(v)
 	selection_updated.emit()
+
+
+## Changes the selection without emitting [signal selection_updated]
+func set_selected_silently(v: bool) -> void:
+	_selected = v
+	selection_panel.visible = v

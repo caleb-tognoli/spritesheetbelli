@@ -17,22 +17,6 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qlfvo"]
 bg_color = Color(0, 0, 0, 1)
 
-[sub_resource type="InputEventKey" id="InputEventKey_fw5es"]
-device = -1
-ctrl_pressed = true
-keycode = 65
-
-[sub_resource type="Shortcut" id="Shortcut_vjag6"]
-events = [SubResource("InputEventKey_fw5es")]
-
-[sub_resource type="InputEventKey" id="InputEventKey_3xdg3"]
-device = -1
-ctrl_pressed = true
-keycode = 81
-
-[sub_resource type="Shortcut" id="Shortcut_i6gfa"]
-events = [SubResource("InputEventKey_3xdg3")]
-
 [node name="Main" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -124,28 +108,12 @@ layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_right = 15
 
-[node name="HBoxContainter" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer"]
-layout_mode = 2
-theme = ExtResource("6_by5vc")
-script = ExtResource("7_rk3ov")
-
-[node name="FileMenuButton" type="MenuButton" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainter"]
+[node name="MenuBar" type="MenuBar" parent="VBoxContainer/PanelContainer/MarginContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "File"
-switch_on_hover = true
-item_count = 6
-popup/item_0/text = "New"
-popup/item_1/text = "Open"
-popup/item_1/id = 1
-popup/item_2/id = 100
-popup/item_2/separator = true
-popup/item_3/text = "Save"
-popup/item_3/id = 10
-popup/item_4/text = "Save as"
-popup/item_4/id = 11
-popup/item_5/text = "Export Sprites"
-popup/item_5/id = 12
+theme = ExtResource("6_by5vc")
+flat = true
+script = ExtResource("7_rk3ov")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -175,7 +143,6 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 30)
 layout_mode = 2
 size_flags_vertical = 4
-shortcut = SubResource("Shortcut_vjag6")
 text = "Add Sprite(s)
 "
 icon = ExtResource("5_x1m0q")
@@ -185,7 +152,6 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 30)
 layout_mode = 2
 size_flags_vertical = 4
-shortcut = SubResource("Shortcut_i6gfa")
 text = "Add Spritesheet
 "
 icon = ExtResource("7_wpt02")
