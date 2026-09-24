@@ -385,8 +385,14 @@ func export_image_to(path: String) -> bool:
 		return false
 
 	var options := ExportOptions.from_sheet(Global.spritesheet)
-	var spritesheet_image := Global.spritesheet.get_image(options)
 	path = SpritesheetExporter.with_image_extension(path)
+	var problem := ImageUtils.size_problem(
+		SpritesheetExporter.get_image_size(Global.spritesheet, options), path.get_extension()
+	)
+	if problem:
+		Notify.error(problem + "\n" + tr("Make the sprites smaller or use fewer cells."))
+		return false
+	var spritesheet_image := Global.spritesheet.get_image(options)
 	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
 
 	if error != OK:

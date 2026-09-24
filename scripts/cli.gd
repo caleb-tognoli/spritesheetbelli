@@ -166,6 +166,12 @@ static func _write(sheet: Spritesheet, path: String, export: ExportOptions, say:
 		error = ProjectFile.save(sheet, path)
 	else:
 		path = SpritesheetExporter.with_image_extension(path)
+		var problem := ImageUtils.size_problem(
+			SpritesheetExporter.get_image_size(sheet, export), path.get_extension()
+		)
+		if problem:
+			say.call("Error: " + problem)
+			return 1
 		error = SpritesheetExporter.save_image(sheet.get_image(export), path, export)
 	if error == OK and not ProjectFile.is_project_path(path):
 		error = Metadata.write_for_image(sheet, export, path)

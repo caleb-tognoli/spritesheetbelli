@@ -416,7 +416,7 @@ func set_sprite_size(width: int, height: int) -> void:
 
 
 func resize_sprites(new_size: Vector2i) -> void:
-	if new_size.x <= 0 or new_size.y <= 0:
+	if new_size.x <= 0 or new_size.y <= 0 or not _check_sprite_size(new_size):
 		set_text_params(Global.spritesheet)
 		return
 	Global.document.perform(
@@ -427,10 +427,26 @@ func resize_sprites(new_size: Vector2i) -> void:
 ## Multiplies the current scale, e.g. 2 to double the size
 func scale_sprites(factor: float) -> void:
 	var sheet := Global.spritesheet
+	if not _check_sprite_size(Vector2i((Vector2(sheet.sprite_size) * factor).round())):
+		return
 	Global.document.perform(
 		"Resize sprites",
 		sheet.set_frame_scale.bind(sheet.frame_scale * factor, get_resize_filter())
 	)
+
+
+## Shows an error and returns false when sprites would be too big to show
+func _check_sprite_size(new_size: Vector2i) -> bool:
+	var limit := ImageUtils.MAX_TEXTURE_SIZE
+	if new_size.x <= limit and new_size.y <= limit:
+		return true
+	Notify.error(
+		(
+			tr("Sprites can be at most %d×%d px, and these would be %d×%d px.")
+			% [limit, limit, new_size.x, new_size.y]
+		)
+	)
+	return false
 
 
 ## The sheet's filter once it has been resized, otherwise the default from the settings

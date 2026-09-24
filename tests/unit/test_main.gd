@@ -368,3 +368,11 @@ func test_ctrl_scroll_steps_fields_and_triple_size() -> void:
 	assert_eq(Global.spritesheet.grid_size.x, 2, "Ctrl+wheel adds a column")
 	main.triple_size_btn.pressed.emit()
 	assert_eq(Global.spritesheet.sprite_size, Vector2i(48, 48))
+
+
+func test_too_big_sprites_show_an_error() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED, Vector2i(6000, 10))] as Array[Image])
+	main.triple_size_btn.pressed.emit()
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(6000, 10), "not resized")
+	assert_true(Notify.message_dialog.visible, "explains why")
+	Notify.message_dialog.hide()

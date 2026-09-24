@@ -164,3 +164,9 @@ func test_projects_with_one_file_per_frame_still_open() -> void:
 	var loaded := ProjectFile.load(path)
 	assert_false(loaded.has("error"), str(loaded.get("error")))
 	assert_color(loaded.state.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.BLUE)
+
+
+func test_too_big_images_are_explained() -> void:
+	assert_eq(ImageUtils.size_problem(Vector2i(4096, 4096)), "")
+	assert_true("WEBP" in ImageUtils.size_problem(Vector2i(20000, 10), "webp"))
+	assert_true("million" in ImageUtils.size_problem(Vector2i(20000, 20000)))
