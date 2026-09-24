@@ -40,5 +40,7 @@ theme_override_constants/margin_top = 5
 unique_name_in_owner = true
 texture_filter = 2
 layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 20
 text = "0"

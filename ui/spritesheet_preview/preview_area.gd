@@ -17,10 +17,12 @@ func _ready() -> void:
 	select_all_btn.pressed.connect(select_all.bind(true))
 	select_none_btn.pressed.connect(select_all.bind(false))
 	options_menu.id_pressed.connect(options_menu_item_pressed)
+	spritesheet_preview.zoom_changed.connect(update_zoom_label)
+	update_zoom_label(spritesheet_preview.camera.zoom.x)
 
 
-func _process(_delta: float) -> void:
-	zoom.text = str(spritesheet_preview.camera.zoom.x * 100).pad_decimals(0) + "%"
+func update_zoom_label(value: float) -> void:
+	zoom.text = "%d%%" % roundi(value * 100)
 
 
 func _gui_input(event: InputEvent) -> void:

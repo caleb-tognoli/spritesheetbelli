@@ -6,7 +6,11 @@ signal selection_updated
 
 enum SelectionMode {NONE, SELECTING, DESELECTING}
 
+## Minimum on-screen size of the frame for its index label to be shown
+const MIN_SIZE_TO_SHOW_INDEX := Vector2(50, 50)
+
 @onready var selection_panel: Panel = $SelectionPanel
+@onready var index_container: Control = $MarginContainer
 
 static var selection_mode: SelectionMode = SelectionMode.NONE
 
@@ -45,11 +49,19 @@ func setup(spritesheet: Spritesheet, coordinate: Vector2i):
 	
 	var coordinate_label: Label = get_node("%Coordinate")
 	coordinate_label.text = str(coordinate.y * spritesheet.grid_size.x + coordinate.x)
-	if size < Vector2(50, 50):
-		coordinate_label.visible = false
 	
 	coordinate_in_spritesheet = coordinate
 	img = spritesheet.frames[coordinate]
+
+
+## Keeps the index label the same size on screen regardless of the camera zoom
+func update_zoom(zoom: float) -> void:
+	index_container.scale = Vector2.ONE / zoom
+	var size_on_screen := size * zoom
+	index_container.visible = (
+		size_on_screen.x >= MIN_SIZE_TO_SHOW_INDEX.x
+		and size_on_screen.y >= MIN_SIZE_TO_SHOW_INDEX.y
+	)
 
 
 func set_selected(v: bool):
