@@ -66,6 +66,9 @@ func _ready() -> void:
 			)
 	)
 	get_window().files_dropped.connect(open_dropped_files)
+	# A dialog that closed without saying so (some native dialogs) would otherwise block
+	# its button for good. The window only regains focus once the dialog is gone.
+	get_window().focus_entered.connect(open_file_dialogs.clear)
 
 	# Loading the opened file is not an unsaved change
 	add_spritesheet_window.frames_added.connect(
