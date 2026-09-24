@@ -6,7 +6,7 @@ var dir := OS.get_user_data_dir().path_join("tests")
 
 func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
-	Global.reset_spritesheet()
+	Global.document.reset()
 	main = load("res://ui/main/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -14,7 +14,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	main.queue_free()
-	Global.reset_spritesheet()
+	Global.document.reset()
 
 
 func save_images(colors: Dictionary) -> void:
@@ -85,8 +85,8 @@ func test_save_appends_png_extension() -> void:
 	var path := dir.path_join("sheet_no_ext")
 	main.save_spritesheet(path)
 	assert_true(FileAccess.file_exists(path + ".png"))
-	assert_eq(Global.filepath, path + ".png")
-	assert_false(Global.has_unsaved_changes)
+	assert_eq(Global.document.path, path + ".png")
+	assert_false(Global.document.is_dirty)
 	main.notification_dialog.hide()
 
 
@@ -103,7 +103,7 @@ func test_confirmation_runs_latest_action_once() -> void:
 
 func test_canceling_open_keeps_spritesheet() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
-	Global.has_unsaved_changes = false
+	Global.document.mark_saved()
 	main.open_spritesheet()
 	main.open_spritesheet_dialog.canceled.emit()
 	assert_eq(Global.spritesheet.frames.size(), 1)
@@ -113,11 +113,11 @@ func test_canceling_open_keeps_spritesheet() -> void:
 
 func test_new_clears_everything() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
-	Global.filepath = "x.png"
-	Global.has_unsaved_changes = false
+	Global.document.path = "x.png"
+	Global.document.mark_saved()
 	main.new_spritesheet()
 	assert_true(Global.spritesheet.is_empty())
-	assert_eq(Global.filepath, "")
+	assert_eq(Global.document.path, "")
 
 
 func test_clearing_grid_field_keeps_previous_value() -> void:
@@ -158,10 +158,13 @@ func test_opening_a_file_is_not_an_unsaved_change() -> void:
 	main.show_add_spritesheet_window(path)
 	main.add_spritesheet_window.add_spritesheet_to_global()
 	assert_false(Global.spritesheet.is_empty())
-	assert_false(Global.has_unsaved_changes)
-	assert_eq(Global.filepath, path)
-	Global.spritesheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
-	assert_true(Global.has_unsaved_changes, "later edits are changes")
+	assert_false(Global.document.is_dirty)
+	assert_eq(Global.document.path, path)
+	assert_false(Global.document.can_undo(), "opening can't be undone")
+	await get_tree().process_frame
+	Actions.run(&"select_all")
+	Actions.run(&"flip_h")
+	assert_true(Global.document.is_dirty, "later edits are changes")
 
 
 func test_keep_ratio_resize_rounds() -> void:
@@ -178,16 +181,18 @@ func test_closing_with_unsaved_changes_asks_first() -> void:
 	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
 	assert_eq(quits[0], 1, "nothing to save: closes right away")
 
-	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
 	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
 	assert_true(main.unsaved_changes_dialog.visible, "asks")
 	assert_eq(quits[0], 1)
 	main.unsaved_changes_dialog.custom_action.emit(&"discard")
 	assert_eq(quits[0], 2, "Don't Save closes")
 
-	Global.filepath = dir.path_join("close_save.png")
+	Global.document.path = dir.path_join("close_save.png")
 	main.confirm_unsaved_changes("closing", func(): quits[0] += 1)
 	main.unsaved_changes_dialog.confirmed.emit()
 	assert_eq(quits[0], 3, "Save saves, then closes")
-	assert_false(Global.has_unsaved_changes)
+	assert_false(Global.document.is_dirty)
 	assert_true(FileAccess.file_exists(dir.path_join("close_save.png")))

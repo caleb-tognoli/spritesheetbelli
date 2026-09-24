@@ -3,6 +3,8 @@ extends Node2D
 
 signal preview_updated
 signal zoom_changed(zoom: float)
+## The user clicked an empty cell to lock or unlock it
+signal lock_requested(coord: Vector2i, locked: bool)
 
 const FRAME_SCENE := preload("res://ui/spritesheet_preview/frame/frame.tscn")
 const EMPTY_SPACE_SCENE := preload("res://ui/spritesheet_preview/empty_space/empty_space.tscn")
@@ -138,7 +140,7 @@ func update_preview() -> void:
 				empty_space.setup(spritesheet, coord)
 				empty_space.set_is_locked(spritesheet.is_locked(coord))
 				empty_space.lock_updated.connect(
-					func(locked: bool): spritesheet.set_locked(coord, locked)
+					func(locked: bool): lock_requested.emit(coord, locked)
 				)
 				empty_spaces.add_child(empty_space)
 

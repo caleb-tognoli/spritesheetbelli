@@ -4,7 +4,7 @@ var main: Control
 
 
 func before_each() -> void:
-	Global.reset_spritesheet()
+	Global.document.reset()
 	main = load("res://ui/main/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -16,7 +16,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	main.queue_free()
-	Global.reset_spritesheet()
+	Global.document.reset()
 
 
 func press(keycode: Key, ctrl := false, shift := false) -> void:
@@ -78,3 +78,15 @@ func test_shortcuts_dialog_lists_actions() -> void:
 		labels.append(child.text)
 	assert_true("Ctrl+Shift+S" in labels)
 	main.shortcuts_dialog.hide()
+
+
+func test_undo_redo_shortcuts() -> void:
+	Actions.run(&"select_all")
+	Actions.run(&"delete_frames")
+	assert_true(Global.spritesheet.is_empty())
+	await get_tree().process_frame
+	await press(KEY_Z, true)
+	assert_eq(Global.spritesheet.frames.size(), 3, "Ctrl+Z")
+	await get_tree().process_frame
+	await press(KEY_Z, true, true)
+	assert_true(Global.spritesheet.is_empty(), "Ctrl+Shift+Z")

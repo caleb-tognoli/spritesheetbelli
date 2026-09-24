@@ -1,37 +1,25 @@
 extends Node
+## Holds the open document and keeps the window title in sync with it.
 
-var spritesheet: Spritesheet = Spritesheet.new()
-var filepath: String:
-	set(v):
-		filepath = v
-		update_window_title()
-var has_unsaved_changes: bool:
-	set(v):
-		has_unsaved_changes = v
-		update_window_title()
+var document := Document.new()
+## The open document's spritesheet
+var spritesheet: Spritesheet:
+	get:
+		return document.spritesheet
 
 
 func _ready() -> void:
-	spritesheet.updated.connect(func(): has_unsaved_changes = true)
+	document.changed.connect(update_window_title)
 	update_window_title()
 
 
-func update_window_title():
-	var title: String = ""
-
-	if has_unsaved_changes:
+func update_window_title() -> void:
+	var title := ""
+	if document.is_dirty:
 		title += "(*) "
-	if not filepath.is_empty():
-		title += filepath.get_file()
-
+	if not document.path.is_empty():
+		title += document.path.get_file()
 	if not title.is_empty():
 		title += " - "
 	title += ProjectSettings.get_setting("application/config/name")
-
 	DisplayServer.window_set_title(title)
-
-
-func reset_spritesheet() -> void:
-	spritesheet.clear()
-	filepath = ""
-	has_unsaved_changes = false

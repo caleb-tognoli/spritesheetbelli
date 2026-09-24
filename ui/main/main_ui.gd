@@ -82,7 +82,8 @@ func _ready() -> void:
 	add_spritesheet_window.frames_added.connect(
 		func():
 			if loading_opened_file:
-				Global.has_unsaved_changes = false
+				loading_opened_file = false
+				Global.document.load_state(Global.spritesheet.get_state(), Global.document.path)
 	)
 	add_spritesheet_window.canceled.connect(func(): loading_opened_file = false)
 	confirmation_dialog.confirmed.connect(
@@ -102,6 +103,13 @@ func _ready() -> void:
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)
+	preview.lock_requested.connect(
+		func(coord: Vector2i, locked: bool):
+			Global.document.perform(
+				"Lock cell" if locked else "Unlock cell",
+				Global.spritesheet.set_locked.bind(coord, locked)
+			)
+	)
 
 	for dialog: FileDialog in [
 		open_sprites_dialog,
@@ -144,28 +152,33 @@ func _register_actions() -> void:
 	add.call(
 		&"flip_h",
 		"Flip Horizontally",
-		edit_selection.bind(sheet.flip_frames.bind(true)),
+		edit_selection.bind("Flip", sheet.flip_frames.bind(true)),
 		has_selection
 	)
 	add.call(
 		&"flip_v",
 		"Flip Vertically",
-		edit_selection.bind(sheet.flip_frames.bind(false)),
+		edit_selection.bind("Flip", sheet.flip_frames.bind(false)),
 		has_selection
 	)
 	add.call(
 		&"rotate_cw",
 		"Rotate 90° CW",
-		edit_selection.bind(sheet.rotate_frames.bind(true)),
+		edit_selection.bind("Rotate", sheet.rotate_frames.bind(true)),
 		has_selection
 	)
 	add.call(
 		&"rotate_ccw",
 		"Rotate 90° CCW",
-		edit_selection.bind(sheet.rotate_frames.bind(false)),
+		edit_selection.bind("Rotate", sheet.rotate_frames.bind(false)),
 		has_selection
 	)
-	add.call(&"delete_frames", "Delete", edit_selection.bind(sheet.remove_frames), has_selection)
+	add.call(
+		&"delete_frames",
+		"Delete",
+		edit_selection.bind("Delete", sheet.remove_frames),
+		has_selection
+	)
 
 	add.call(&"zoom_in", "Zoom In", preview.zoom_by.bind(1.25))
 	add.call(&"zoom_out", "Zoom Out", preview.zoom_by.bind(0.8))
@@ -176,14 +189,17 @@ func _register_actions() -> void:
 	)
 	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
 
+	add.call(&"undo", "Undo", Global.document.undo, Global.document.can_undo)
+	add.call(&"redo", "Redo", Global.document.redo, Global.document.can_redo)
+
 	add.call(&"show_shortcuts", "Keyboard Shortcuts", func(): shortcuts_dialog.popup_centered())
 
 
-## Runs [param edit] with the coordinates of the selected frames
-func edit_selection(edit: Callable) -> void:
+## Runs [param edit] with the coordinates of the selected frames, as one undoable step
+func edit_selection(action_name: String, edit: Callable) -> void:
 	var coords := preview.get_selected_coords()
 	if not coords.is_empty():
-		edit.call(coords)
+		Global.document.perform(action_name, edit.bind(coords))
 
 
 ## Native file dialogs don't make the FileDialog visible, so calling popup() while
@@ -212,7 +228,7 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 			imgs.append(img)
 		else:
 			failed_files.append(path.get_file())
-	Global.spritesheet.add_frames(imgs)
+	Global.document.perform("Add sprites", Global.spritesheet.add_frames.bind(imgs))
 
 	if not failed_files.is_empty():
 		show_notification_dialog("Error", "Could not load: %s." % ", ".join(failed_files))
@@ -241,7 +257,7 @@ func resize_sprites(new_size: Vector2i) -> void:
 	if new_size.x <= 0 or new_size.y <= 0:
 		set_text_params(Global.spritesheet)
 		return
-	Global.spritesheet.resize_sprites(new_size)
+	Global.document.perform("Resize sprites", Global.spritesheet.resize_sprites.bind(new_size))
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:
@@ -270,8 +286,8 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 
 	if set_filepath_when_opening_spritesheet:
 		set_filepath_when_opening_spritesheet = false
-		Global.reset_spritesheet()
-		Global.filepath = spritesheet_path
+		Global.document.reset()
+		Global.document.path = spritesheet_path
 		loading_opened_file = true
 	add_spritesheet_window.setup(img)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
@@ -292,7 +308,9 @@ func show_confirmation_dialog(title: String, dialog_text: String, confirm_action
 
 func set_spritesheet_grid_size(columns: int, rows: int):
 	var frames_outside_count := Global.spritesheet.count_frames_outside(Vector2i(columns, rows))
-	var spritesheet_set_size := Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))
+	var spritesheet_set_size := Global.document.perform.bind(
+		"Resize grid", Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))
+	)
 
 	if frames_outside_count > 0:
 		show_confirmation_dialog(
@@ -346,21 +364,21 @@ func _create_unsaved_changes_dialog() -> void:
 
 ## Runs [param then] right away, or after asking to save when there are unsaved changes
 func confirm_unsaved_changes(before: String, then: Callable) -> void:
-	if not Global.has_unsaved_changes or Global.spritesheet.is_empty():
+	if not Global.document.is_dirty or Global.spritesheet.is_empty():
 		then.call()
 		return
 	after_unsaved_changes = then
-	var file_name := Global.filepath.get_file() if Global.filepath else "the spritesheet"
+	var file_name := Global.document.path.get_file() if Global.document.path else "the spritesheet"
 	unsaved_changes_dialog.dialog_text = "Save changes to %s before %s?" % [file_name, before]
 	unsaved_changes_dialog.popup_centered()
 
 
 ## Saves to the current file, or asks where to save. Returns true if saved right away.
 func save() -> bool:
-	if Global.filepath.is_empty():
+	if Global.document.path.is_empty():
 		popup_file_dialog(save_spritesheet_dialog)
 		return false
-	return save_spritesheet(Global.filepath)
+	return save_spritesheet(Global.document.path)
 
 
 func save_spritesheet(path: String) -> bool:
@@ -392,8 +410,8 @@ func save_spritesheet(path: String) -> bool:
 			"\nJPG doesn't support transparency, so transparent areas were filled with %s."
 			% ("white" if options.opaque_background == Color.WHITE else "the background colour")
 		)
-	Global.filepath = path
-	Global.has_unsaved_changes = false
+	Global.document.path = path
+	Global.document.mark_saved()
 	if after_save.is_valid():
 		var action := after_save
 		after_save = Callable()
@@ -404,7 +422,7 @@ func save_spritesheet(path: String) -> bool:
 
 
 func new_spritesheet():
-	confirm_unsaved_changes("creating a new one", Global.reset_spritesheet)
+	confirm_unsaved_changes("creating a new one", Global.document.reset)
 
 
 func open_spritesheet():

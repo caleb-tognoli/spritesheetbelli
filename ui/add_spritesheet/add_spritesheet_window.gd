@@ -79,14 +79,16 @@ func add_spritesheet_to_global():
 
 	# Place the whole grid below the existing frames, keeping empty rows and columns
 	var target := Global.spritesheet
-	var offset := Vector2i(0, target.get_first_free_row())
-	target.begin_batch()
-	target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
-	for coord: Vector2i in spritesheet.frames:
-		target.set_frame(coord + offset, spritesheet.frames[coord])
-	# Keep the added sheet's layout without touching free cells elsewhere
-	target.lock_free_cells(Rect2i(offset, spritesheet.grid_size))
-	target.end_batch()
+	Global.document.perform(
+		"Add spritesheet",
+		func():
+			var offset := Vector2i(0, target.get_first_free_row())
+			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
+			for coord: Vector2i in spritesheet.frames:
+				target.set_frame(coord + offset, spritesheet.frames[coord])
+			# Keep the added sheet's layout without touching free cells elsewhere
+			target.lock_free_cells(Rect2i(offset, spritesheet.grid_size))
+	)
 	frames_added.emit()
 	close_requested.emit()
 
@@ -95,7 +97,7 @@ func add_selected_frames_to_global():
 	var imgs: Array[Image] = []
 	for coord in preview_area.spritesheet_preview.get_selected_coords():
 		imgs.append(spritesheet.frames[coord])
-	Global.spritesheet.add_frames(imgs)
+	Global.document.perform("Add frames", Global.spritesheet.add_frames.bind(imgs))
 	frames_added.emit()
 	close_requested.emit()
 

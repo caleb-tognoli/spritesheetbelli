@@ -20,6 +20,9 @@ const MENUS := {
 	],
 	"Edit":
 	[
+		&"undo",
+		&"redo",
+		&"",
 		&"select_all",
 		&"select_none",
 		&"",
