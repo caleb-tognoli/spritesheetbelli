@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "gdtoolkit==4.*"
+      - name: Lint
+        run: gdlint scripts ui tests
+      - name: Check formatting
+        # Godot's script editor keeps indentation on blank lines, so this only warns.
+        # Run `gdformat scripts ui tests` before committing to fix it.
+        continue-on-error: true
+        run: gdformat --check scripts ui tests
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot
+        run: |
+          curl -sSLo godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+      - name: Import project
+        run: godot --headless --import || true
+      - name: Run tests
+        run: godot --headless --path . res://tests/test_runner.tscn
