@@ -394,22 +394,24 @@ func edit_selection(action_name: String, edit: Callable) -> void:
 		Global.document.perform(action_name, edit.bind(coords))
 
 
-## Resizes sprites to the given width or height (-1 = unchanged), keeping the
-## ratio of the original frames when Keep aspect ratio is on
+## Resizes sprites to the given width or height (-1 = unchanged). With the size linked,
+## the other side follows the current proportions, so a deliberate stretch is kept.
 func set_sprite_size(width: int, height: int) -> void:
 	var sheet := Global.spritesheet
 	var base := sheet.get_base_sprite_size()
 	if base.x <= 0 or base.y <= 0:
 		return
+	# Scale factors are exact, unlike the rounded sprite size
+	var aspect := sheet.frame_scale.y / sheet.frame_scale.x
 	var new_size := sheet.sprite_size
 	if width >= 0:
 		new_size.x = width
 		if keep_ratio_btn.button_pressed:
-			new_size.y = roundi(width * base.y / float(base.x))
+			new_size.y = roundi(base.y * width / float(base.x) * aspect)
 	if height >= 0:
 		new_size.y = height
 		if keep_ratio_btn.button_pressed:
-			new_size.x = roundi(height * base.x / float(base.y))
+			new_size.x = roundi(base.x * height / float(base.y) / aspect)
 	resize_sprites(new_size)
 
 
@@ -452,7 +454,7 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	resize_filter.select(get_resize_filter())
 
 
-## Frame count, grid and image image_size in the status bar
+## Frame count, grid and image size in the status bar
 func update_sheet_info() -> void:
 	var sheet := Global.spritesheet
 	if sheet.is_empty():

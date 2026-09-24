@@ -212,6 +212,28 @@ func test_keep_ratio_resize_rounds() -> void:
 	assert_eq(Global.spritesheet.sprite_size, Vector2i(33, 10))
 
 
+func test_linked_size_keeps_a_stretch() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED, Vector2i(32, 24))] as Array[Image])
+	main.keep_ratio_btn.button_pressed = false
+	main.sprite_height.value = 48
+	main.keep_ratio_btn.button_pressed = true
+	main.sprite_width.value = 64
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(64, 96), "the stretch is kept")
+	main.sprite_height.value = 48
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(32, 48))
+
+
+func test_select_none_shows_with_a_selection() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	await get_tree().process_frame
+	var button: Button = main.preview_area.select_none_btn
+	assert_false(button.visible, "nothing selected")
+	Actions.run(&"select_all")
+	assert_true(button.visible)
+	Actions.run(&"select_none")
+	assert_false(button.visible)
+
+
 func test_closing_with_unsaved_changes_asks_first() -> void:
 	var quits := [0]
 	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)

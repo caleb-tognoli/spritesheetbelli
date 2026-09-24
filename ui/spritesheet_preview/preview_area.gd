@@ -76,10 +76,10 @@ func update_ui() -> void:
 	var is_empty := spritesheet_preview.spritesheet.is_empty()
 	empty_hint.visible = is_empty and not empty_hint.text.is_empty()
 	select_all_btn.visible = not is_empty
-	select_none_btn.visible = not is_empty
 
 	var selection_size := spritesheet_preview.get_selected_coords().size()
 	var selection_empty := is_empty or selection_size == 0
+	select_none_btn.visible = not selection_empty
 	num_selected.visible = not selection_empty
 	num_selected.text = "%d selected" % [selection_size]
 
