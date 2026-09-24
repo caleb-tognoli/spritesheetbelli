@@ -306,7 +306,7 @@ func test_zoom_presets() -> void:
 func test_formatted_text_is_translatable() -> void:
 	var german := Translation.new()
 	german.locale = "de"
-	german.add_message("%d frames · %d×%d grid", "%d Frames · %d×%d Raster")
+	german.add_message("%d frames · %d×%d grid · %d×%d px", "%d Frames · %d×%d Raster · %d×%d px")
 	TranslationServer.add_translation(german)
 	var previous := TranslationServer.get_locale()
 	TranslationServer.set_locale("de")
@@ -315,7 +315,7 @@ func test_formatted_text_is_translatable() -> void:
 	var text: String = main.sheet_info.text
 	TranslationServer.set_locale(previous)
 	TranslationServer.remove_translation(german)
-	assert_eq(text, "1 Frames · 1×1 Raster")
+	assert_eq(text, "1 Frames · 1×1 Raster · 16×16 px")
 
 
 func test_view_fits_when_first_frames_appear() -> void:
@@ -332,3 +332,17 @@ func test_view_fits_when_first_frames_appear() -> void:
 	)
 	await get_tree().process_frame
 	assert_eq(main.preview.camera.zoom.x, 1.0, "later additions keep the view")
+
+
+func test_ctrl_scroll_steps_fields_and_triple_size() -> void:
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel.pressed = true
+	wheel.ctrl_pressed = true
+	main.grid_columns.gui_input.emit(wheel)
+	assert_eq(Global.spritesheet.grid_size.x, 2, "Ctrl+wheel adds a column")
+	main.triple_size_btn.pressed.emit()
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(48, 48))

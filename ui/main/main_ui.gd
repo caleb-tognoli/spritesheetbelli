@@ -38,6 +38,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var keep_ratio_btn: Button = %KeepRatio
 @onready var half_size_btn: Button = %HalfSize
 @onready var double_size_btn: Button = %DoubleSize
+@onready var triple_size_btn: Button = %TripleSize
 @onready var original_size_btn: Button = %OriginalSize
 @onready var resize_filter: OptionButton = %ResizeFilter
 @onready var add_sprites_btn: Button = %AddSprites
@@ -70,6 +71,7 @@ func _ready() -> void:
 	# 0 is only shown while the spritesheet is empty
 	for field: SpinBox in [grid_rows, grid_columns, sprite_width, sprite_height]:
 		field.min_value = 0
+		SpinScroll.enable(field)
 	preview_area.spritesheet_preview.spritesheet = Global.spritesheet
 	set_text_params(Global.spritesheet)
 	disable_if_empty()
@@ -104,6 +106,7 @@ func _ready() -> void:
 	)
 	half_size_btn.pressed.connect(scale_sprites.bind(0.5))
 	double_size_btn.pressed.connect(scale_sprites.bind(2.0))
+	triple_size_btn.pressed.connect(scale_sprites.bind(3.0))
 	original_size_btn.pressed.connect(
 		func() -> void:
 			Global.document.perform(
@@ -456,9 +459,10 @@ func update_sheet_info() -> void:
 		sheet_info.text = tr("No frames. Add sprites or drop images here.")
 	else:
 		var selected := preview.get_selected_coords().size()
+		var size := SpritesheetExporter.get_image_size(sheet, ExportOptions.from_sheet(sheet))
 		sheet_info.text = (
-			tr("%d frames · %d×%d grid")
-			% [sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y]
+			tr("%d frames · %d×%d grid · %d×%d px")
+			% [sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y, size.x, size.y]
 		)
 		if selected:
 			sheet_info.text += " · " + tr("%d selected") % selected
@@ -477,7 +481,9 @@ func disable_if_empty() -> void:
 	grid_columns.editable = not is_empty
 	sprite_width.editable = not is_empty
 	sprite_height.editable = not is_empty
-	for button: BaseButton in [half_size_btn, double_size_btn, original_size_btn, resize_filter]:
+	for button: BaseButton in [
+		half_size_btn, double_size_btn, triple_size_btn, original_size_btn, resize_filter
+	]:
 		button.disabled = is_empty
 	original_size_btn.disabled = is_empty or Global.spritesheet.frame_scale == Vector2.ONE
 

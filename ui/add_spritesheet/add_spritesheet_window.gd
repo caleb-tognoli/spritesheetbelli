@@ -34,6 +34,8 @@ func _ready() -> void:
 		func(rows: float) -> void: update_grid_size(spritesheet.grid_size.x, int(rows))
 	)
 
+	for field: SpinBox in [grid_columns, grid_rows, offset_x, offset_y, spacing_x, spacing_y]:
+		SpinScroll.enable(field)
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.value_changed.connect(
 			func(_value: float) -> void:

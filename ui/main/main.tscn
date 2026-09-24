@@ -250,6 +250,13 @@ size_flags_horizontal = 3
 tooltip_text = "Double size"
 text = "2×"
 
+[node name="TripleSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Triple size"
+text = "3×"
+
 [node name="OriginalSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
 unique_name_in_owner = true
 layout_mode = 2
