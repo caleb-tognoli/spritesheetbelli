@@ -92,6 +92,7 @@ func _register_actions() -> void:
 	add.call(
 		&"add_sprites", "Add Sprite(s)…", files.popup_file_dialog.bind(files.open_sprites_dialog)
 	)
+	add.call(&"add_folder", "Add Folder…", files.popup_file_dialog.bind(files.open_folder_dialog))
 	add.call(
 		&"add_spritesheet",
 		"Add Spritesheet…",

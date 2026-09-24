@@ -22,6 +22,7 @@ var open_dialog := _create_file_dialog(
 var save_project_dialog := _create_file_dialog(
 	"Save Project", FileDialog.FILE_MODE_SAVE_FILE, [PROJECT_FILTER]
 )
+var open_folder_dialog := _create_file_dialog("Add Folder", FileDialog.FILE_MODE_OPEN_DIR, [])
 
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
@@ -37,8 +38,11 @@ func _ready() -> void:
 	export_image_dialog.file_selected.connect(export_image_to)
 	save_project_dialog.file_selected.connect(save_project)
 	save_project_dialog.canceled.connect(func(): after_save = Callable())
+	open_folder_dialog.dir_selected.connect(add_sprites_from_folder)
 	add_child(open_dialog)
 	add_child(save_project_dialog)
+	add_child(open_folder_dialog)
+	get_window().files_dropped.connect(open_dropped_files)
 
 	# Loading the opened file is not an unsaved change
 	add_spritesheet_window.frames_added.connect(
@@ -59,6 +63,7 @@ func _ready() -> void:
 		export_image_dialog,
 		open_dialog,
 		save_project_dialog,
+		open_folder_dialog,
 	]:
 		var on_closed := func(): open_file_dialogs.erase(dialog)
 		dialog.canceled.connect(on_closed)
@@ -97,6 +102,48 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 
 	if not failed_files.is_empty():
 		Notify.error("Could not load: %s." % ", ".join(failed_files))
+
+
+## Adds every image in [param folder] (not its subfolders), sorted by name
+func add_sprites_from_folder(folder: String) -> void:
+	var paths := get_images_in_folder(folder)
+	if paths.is_empty():
+		Notify.error("There are no images in %s." % folder.get_file())
+		return
+	add_sprites_from_paths(paths)
+
+
+static func get_images_in_folder(folder: String) -> PackedStringArray:
+	var paths: PackedStringArray = []
+	for file in DirAccess.get_files_at(folder):
+		if is_image_path(file):
+			paths.append(folder.path_join(file))
+	return paths
+
+
+static func is_image_path(path: String) -> bool:
+	return path.get_extension().to_lower() in SpritesheetExporter.IMAGE_EXTENSIONS
+
+
+## Files dropped on the window: a project is opened, one image goes through the
+## Add Spritesheet window, several images or folders are added as sprites.
+func open_dropped_files(paths: PackedStringArray) -> void:
+	var images: PackedStringArray = []
+	for path in paths:
+		if ProjectFile.is_project_path(path):
+			confirm_unsaved_changes("opening another file", open_project.bind(path))
+			return
+		if DirAccess.dir_exists_absolute(path):
+			images.append_array(get_images_in_folder(path))
+		elif is_image_path(path):
+			images.append(path)
+
+	if images.is_empty():
+		Notify.error("Drop images, folders of images or a .sbelli project.")
+	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
+		show_add_spritesheet_window(images[0])
+	else:
+		add_sprites_from_paths(images)
 
 
 func show_add_spritesheet_window(spritesheet_path: String) -> void:

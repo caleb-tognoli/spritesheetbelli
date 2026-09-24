@@ -17,6 +17,7 @@ const MENUS := {
 		&"export_sprites",
 		&"",
 		&"add_sprites",
+		&"add_folder",
 		&"add_spritesheet",
 		&"",
 		&"quit",

@@ -236,3 +236,22 @@ func test_closing_with_unsaved_changes_asks_first() -> void:
 	assert_eq(quits[0], 3, "Save saves, then closes")
 	assert_false(Global.document.is_dirty)
 	assert_true(FileAccess.file_exists(dir.path_join("close_save.sbelli")))
+
+
+func test_dropping_files() -> void:
+	var folder := dir.path_join("drop_folder")
+	DirAccess.make_dir_recursive_absolute(folder)
+	for f in DirAccess.get_files_at(folder):
+		DirAccess.remove_absolute(folder.path_join(f))
+	make_image(Color.RED).save_png(folder.path_join("a2.png"))
+	make_image(Color.BLUE).save_png(folder.path_join("a10.png"))
+	var note := FileAccess.open(folder.path_join("notes.txt"), FileAccess.WRITE)
+	note.close()
+
+	main.files.open_dropped_files(PackedStringArray([folder]))
+	assert_eq(Global.spritesheet.frames.size(), 2, "folder: images only")
+	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "a2 first")
+
+	main.files.open_dropped_files(PackedStringArray([folder.path_join("a2.png")]))
+	assert_true(main.files.add_spritesheet_window.visible, "one image opens Add Spritesheet")
+	main.files.add_spritesheet_window.hide()
