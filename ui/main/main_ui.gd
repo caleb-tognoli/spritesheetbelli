@@ -55,6 +55,10 @@ var export_settings_dialog := ExportSettingsDialog.new()
 
 
 func _ready() -> void:
+	# The command line doesn't need the window
+	if Global.cli_mode:
+		queue_free()
+		return
 	# 0 is only shown while the spritesheet is empty
 	for field: SpinBox in [grid_rows, grid_columns, sprite_width, sprite_height]:
 		field.min_value = 0

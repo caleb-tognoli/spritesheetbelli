@@ -2,6 +2,8 @@ extends Node
 ## Holds the open document and keeps the window title in sync with it.
 
 var document := Document.new()
+## True when started from the command line to pack or export, without the window
+var cli_mode := false
 ## The open document's spritesheet
 var spritesheet: Spritesheet:
 	get:
@@ -9,6 +11,11 @@ var spritesheet: Spritesheet:
 
 
 func _ready() -> void:
+	var args := OS.get_cmdline_user_args()
+	if Cli.is_cli(args):
+		cli_mode = true
+		get_tree().quit(Cli.run(args))
+		return
 	document.changed.connect(update_window_title)
 	update_window_title()
 	Settings.changed.connect(

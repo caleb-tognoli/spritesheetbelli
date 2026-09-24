@@ -64,6 +64,8 @@ var recent_files := RecentFilesMenu.new()
 
 
 func _ready() -> void:
+	if Global.cli_mode:
+		return
 	# Actions are registered by the main scene, which is ready after its children
 	build.call_deferred()
 
