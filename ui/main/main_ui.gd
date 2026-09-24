@@ -238,7 +238,7 @@ func save_spritesheet(path: String):
 		)
 		return
 
-	var message := "Saved spritesheet to %s." % [path.get_base_dir().get_file()]
+	var message := "Saved %s in %s." % [path.get_file(), path.get_base_dir().get_file()]
 	if (
 		not SpritesheetExporter.supports_transparency(path)
 		and ImageUtils.has_transparency(spritesheet_image)
