@@ -134,3 +134,17 @@ func test_trim_and_color_key() -> void:
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(4, 6))
 	sheet.color_key_frames([Vector2i(1, 0)] as Array[Vector2i], Color.MAGENTA)
 	assert_true(sheet.frames[Vector2i(1, 0)].is_invisible())
+
+
+func test_exported_sprites_are_named_by_grid_index() -> void:
+	var dir := OS.get_user_data_dir().path_join("tests/export_order")
+	DirAccess.make_dir_recursive_absolute(dir)
+	for f in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir.path_join(f))
+	sheet.set_grid_size(Vector2i(3, 1))
+	sheet.set_frame(Vector2i(2, 0), make_image(Color.BLUE))
+	sheet.set_frame(Vector2i(0, 0), make_image(Color.RED))
+	var written := SpritesheetExporter.export_sprites(sheet, dir)
+	assert_eq(written.size(), 2)
+	assert_color(Image.load_from_file(dir.path_join("0.png")), Vector2i.ZERO, Color.RED)
+	assert_color(Image.load_from_file(dir.path_join("2.png")), Vector2i.ZERO, Color.BLUE)

@@ -189,24 +189,13 @@ func set_spritesheet_grid_size(columns: int, rows: int):
 
 
 func save_sprites(folder: String):
-	var sprites: Array[Image] = []
-	for coord in Global.spritesheet.frames:
-		sprites.append(Global.spritesheet.get_cell_image(coord))
-	var i := 0
-	while i < sprites.size():
-		var filename := folder.path_join(str(i))
-		var extension := ".png"
-
-		if FileAccess.file_exists(filename + extension):
-			var j := 1
-			while FileAccess.file_exists(filename + "(%d)" % j + extension):
-				j += 1
-			filename += "(%d)" % j
-
-		sprites[i].save_png(filename + extension)
-		i += 1
+	var errors: PackedStringArray = []
+	var written := SpritesheetExporter.export_sprites(Global.spritesheet, folder, errors)
+	if not errors.is_empty():
+		show_notification_dialog("Error", "Could not save: %s." % ", ".join(errors))
+		return
 	show_notification_dialog(
-		"Saved successfully", "Saved %d images to %s." % [sprites.size(), folder.get_file()]
+		"Saved successfully", "Saved %d images to %s." % [written.size(), folder.get_file()]
 	)
 
 
