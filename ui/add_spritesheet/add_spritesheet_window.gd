@@ -32,10 +32,11 @@ func _ready() -> void:
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 
 
-func setup(img: Image):
+## Shows [param img] sliced into a guessed grid. [param file_name] can hold a size hint.
+func setup(img: Image, file_name := ""):
 	spritesheet_image = img
 
-	var guessed_size := guess_grid_size(img.get_size())
+	var guessed_size := GridGuesser.guess(img, file_name)
 	update_grid_size(guessed_size.x, guessed_size.y)
 
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
@@ -100,10 +101,3 @@ func add_selected_frames_to_global():
 	Global.document.perform("Add frames", Global.spritesheet.add_frames.bind(imgs))
 	frames_added.emit()
 	close_requested.emit()
-
-
-static func guess_grid_size(spritesheet_size: Vector2i) -> Vector2i:
-	var gcd := Math.gcd(spritesheet_size.x, spritesheet_size.y)
-	if gcd != 1:
-		return spritesheet_size / gcd
-	return Vector2i(3, 3)

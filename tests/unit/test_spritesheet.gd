@@ -60,10 +60,6 @@ func test_get_image_places_frames() -> void:
 	assert_color(img, Vector2i(20, 5), Color.BLUE)
 
 
-func test_guess_grid_size() -> void:
-	assert_eq(AddSpritesheetWindow.guess_grid_size(Vector2i(96, 64)), Vector2i(3, 2))
-
-
 func test_rotating_back_restores_sprite_size() -> void:
 	sheet.add_frames(
 		[make_image(Color.RED, Vector2i(16, 32)), make_image(Color.BLUE)] as Array[Image]

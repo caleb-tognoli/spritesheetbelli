@@ -158,7 +158,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 		Global.document.reset()
 		Global.document.export_path = spritesheet_path
 		loading_opened_file = true
-	add_spritesheet_window.setup(img)
+	add_spritesheet_window.setup(img, spritesheet_path)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
