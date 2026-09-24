@@ -80,13 +80,13 @@ func set_spritesheet(value: Spritesheet) -> void:
 
 func _on_spritesheet_updated() -> void:
 	# Forget selections and textures of frames that are gone
-	for coord in _selected.keys():
+	for coord: Vector2i in _selected.keys():
 		if not spritesheet.has_frame(coord):
 			_selected.erase(coord)
 	var alive := {}
 	for coord in spritesheet.frames:
 		alive[spritesheet.get_frame_image(coord)] = true
-	for img in _textures.keys():
+	for img: Image in _textures.keys():
 		if not alive.has(img):
 			_textures.erase(img)
 	queue_redraw()

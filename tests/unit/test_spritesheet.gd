@@ -73,7 +73,7 @@ func test_rotating_back_restores_sprite_size() -> void:
 
 func test_one_update_per_operation() -> void:
 	var count := [0]
-	sheet.updated.connect(func(): count[0] += 1)
+	sheet.updated.connect(func() -> void: count[0] += 1)
 	var imgs: Array[Image] = []
 	for i in 20:
 		imgs.append(make_image(Color.RED))

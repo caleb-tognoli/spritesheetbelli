@@ -11,7 +11,7 @@ func before_each() -> void:
 	await get_tree().process_frame
 	preview = main.preview
 	var imgs: Array[Image] = []
-	for color in [Color.RED, Color.GREEN, Color.BLUE, Color.WHITE]:
+	for color: Color in [Color.RED, Color.GREEN, Color.BLUE, Color.WHITE]:
 		imgs.append(make_image(color))
 	Global.document.perform("Add", Global.spritesheet.add_frames.bind(imgs))
 	Global.document.perform("Grid", Global.spritesheet.set_grid_size.bind(Vector2i(4, 2)))

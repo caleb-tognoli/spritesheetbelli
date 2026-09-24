@@ -45,16 +45,19 @@ func _ready() -> void:
 	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	grid_rows.value_changed.connect(
-		func(rows: float): set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(rows))
+		func(rows: float) -> void:
+			set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(rows))
 	)
 	grid_columns.value_changed.connect(
-		func(columns: float):
+		func(columns: float) -> void:
 			set_spritesheet_grid_size(int(columns), Global.spritesheet.grid_size.y)
 	)
-	sprite_width.value_changed.connect(func(width: float): set_sprite_size(int(width), -1))
-	sprite_height.value_changed.connect(func(height: float): set_sprite_size(-1, int(height)))
+	sprite_width.value_changed.connect(func(width: float) -> void: set_sprite_size(int(width), -1))
+	sprite_height.value_changed.connect(
+		func(height: float) -> void: set_sprite_size(-1, int(height))
+	)
 	keep_ratio_btn.toggled.connect(
-		func(on: bool): keep_ratio_btn.icon = LINK_ICON if on else UNLINK_ICON
+		func(on: bool) -> void: keep_ratio_btn.icon = LINK_ICON if on else UNLINK_ICON
 	)
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
@@ -62,7 +65,7 @@ func _ready() -> void:
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)
 	preview.move_requested.connect(
-		func(coords: Array[Vector2i], offset: Vector2i, copy: bool):
+		func(coords: Array[Vector2i], offset: Vector2i, copy: bool) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
 				"Copy frames" if copy else "Move frames",
 				Global.spritesheet.move_frames.bind(coords, offset, copy)
@@ -70,7 +73,7 @@ func _ready() -> void:
 			preview.set_selected_coords(targets)
 	)
 	preview.lock_requested.connect(
-		func(coord: Vector2i, locked: bool):
+		func(coord: Vector2i, locked: bool) -> void:
 			Global.document.perform(
 				"Lock cell" if locked else "Unlock cell",
 				Global.spritesheet.set_locked.bind(coord, locked)
@@ -82,7 +85,7 @@ func _register_actions() -> void:
 	var sheet := Global.spritesheet
 	var has_frames := func() -> bool: return not sheet.is_empty()
 	var has_selection := func() -> bool: return not preview.get_selected_coords().is_empty()
-	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()):
+	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()) -> void:
 		Actions.add(id, label, run, can_run, ICONS.get(id))
 
 	add.call(&"new", "New", files.new_spritesheet)
@@ -106,7 +109,9 @@ func _register_actions() -> void:
 		"Add Spritesheet…",
 		files.popup_file_dialog.bind(files.open_spritesheet_dialog)
 	)
-	add.call(&"quit", "Quit", func(): files.confirm_unsaved_changes("quitting", get_tree().quit))
+	add.call(
+		&"quit", "Quit", func() -> void: files.confirm_unsaved_changes("quitting", get_tree().quit)
+	)
 
 	add.call(&"select_all", "Select All", preview_area.select_all.bind(true), has_frames)
 	add.call(&"select_none", "Select None", preview_area.select_all.bind(false), has_selection)
@@ -146,14 +151,16 @@ func _register_actions() -> void:
 	add.call(
 		&"zoom_reset",
 		"Actual Size",
-		func(): preview.set_zoom(1, preview.get_viewport_rect().size / 2)
+		func() -> void: preview.set_zoom(1, preview.get_viewport_rect().size / 2)
 	)
 	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
 
 	add.call(&"undo", "Undo", Global.document.undo, Global.document.can_undo)
 	add.call(&"redo", "Redo", Global.document.redo, Global.document.can_redo)
 
-	add.call(&"show_shortcuts", "Keyboard Shortcuts", func(): shortcuts_dialog.popup_centered())
+	add.call(
+		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
+	)
 
 
 ## Runs [param edit] with the coordinates of the selected frames, as one undoable step
@@ -198,7 +205,7 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	spritesheet_height.text = str(spritesheet.sprite_size.y * spritesheet.grid_size.y)
 
 
-func disable_if_empty():
+func disable_if_empty() -> void:
 	var is_empty := Global.spritesheet.is_empty()
 	grid_rows.editable = not is_empty
 	grid_columns.editable = not is_empty
@@ -206,7 +213,7 @@ func disable_if_empty():
 	sprite_height.editable = not is_empty
 
 
-func set_spritesheet_grid_size(columns: int, rows: int):
+func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 	var frames_outside_count := Global.spritesheet.count_frames_outside(Vector2i(columns, rows))
 	var spritesheet_set_size := Global.document.perform.bind(
 		"Resize grid", Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))

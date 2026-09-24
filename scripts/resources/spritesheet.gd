@@ -86,7 +86,7 @@ func get_sorted_coords() -> Array[Vector2i]:
 	var coords: Array[Vector2i] = []
 	coords.assign(_frames.keys())
 	coords.sort_custom(
-		func(a: Vector2i, b: Vector2i): return a.y < b.y or (a.y == b.y and a.x < b.x)
+		func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x)
 	)
 	return coords
 
@@ -190,7 +190,7 @@ func set_state(state: Dictionary) -> void:
 
 
 static func states_equal(a: Dictionary, b: Dictionary) -> bool:
-	for key in a:
+	for key: String in a:
 		if not b.has(key) or typeof(a[key]) != typeof(b[key]) or a[key] != b[key]:
 			return false
 	return a.size() == b.size()
@@ -419,7 +419,7 @@ func insert_empty_cell(coord: Vector2i) -> void:
 		shifted[coord_of(index + 1) if index >= start else c] = _frames[c]
 	_frames = shifted
 	_grid_size.y = maxi(_grid_size.y, get_first_free_row())
-	_locked.assign(_locked.filter(func(c: Vector2i): return not _frames.has(c)))
+	_locked.assign(_locked.filter(func(c: Vector2i) -> bool: return not _frames.has(c)))
 	_changed()
 
 
@@ -463,7 +463,7 @@ func edit_frames(coords: Array[Vector2i], edit: Callable) -> void:
 func flip_frames(coords: Array[Vector2i], horizontal: bool) -> void:
 	edit_frames(
 		coords,
-		func(img: Image):
+		func(img: Image) -> void:
 			if horizontal:
 				img.flip_x()
 			else:
@@ -473,7 +473,8 @@ func flip_frames(coords: Array[Vector2i], horizontal: bool) -> void:
 
 func rotate_frames(coords: Array[Vector2i], clockwise: bool) -> void:
 	edit_frames(
-		coords, func(img: Image): img.rotate_90(CLOCKWISE if clockwise else COUNTERCLOCKWISE)
+		coords,
+		func(img: Image) -> void: img.rotate_90(CLOCKWISE if clockwise else COUNTERCLOCKWISE)
 	)
 
 
@@ -491,7 +492,7 @@ func trim_frames(coords: Array[Vector2i]) -> void:
 
 ## Makes pixels close to [param color] transparent
 func color_key_frames(coords: Array[Vector2i], color: Color, tolerance := 0.1) -> void:
-	edit_frames(coords, func(img: Image): ImageUtils.color_key(img, color, tolerance))
+	edit_frames(coords, func(img: Image) -> void: ImageUtils.color_key(img, color, tolerance))
 
 
 ## Replaces the image of an existing frame
@@ -534,7 +535,7 @@ func get_image(options := ExportOptions.new()) -> Image:
 ## The cell size without [member frame_scale]
 func get_base_sprite_size() -> Vector2i:
 	var size := Vector2i.ZERO
-	for img in _frames.values():
+	for img: Image in _frames.values():
 		size = size.max(img.get_size())
 	return size
 
@@ -549,13 +550,13 @@ func _update_sprite_size() -> void:
 			_sprite_size = Vector2i.ZERO
 		return
 	var size := Vector2i.ZERO
-	for img in _frames.values():
+	for img: Image in _frames.values():
 		size = size.max(_scaled_size(img.get_size()))
 	_sprite_size = size
 	# Drop cached scaled images of frames that are gone
 	var alive := {}
-	for img in _frames.values():
+	for img: Image in _frames.values():
 		alive[img] = true
-	for source in _scaled_cache.keys():
+	for source: Image in _scaled_cache.keys():
 		if not alive.has(source):
 			_scaled_cache.erase(source)

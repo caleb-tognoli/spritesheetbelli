@@ -60,10 +60,10 @@ func test_dirty_follows_saved_version() -> void:
 
 func test_one_update_per_perform() -> void:
 	var count := [0]
-	sheet.updated.connect(func(): count[0] += 1)
+	sheet.updated.connect(func() -> void: count[0] += 1)
 	doc.perform(
 		"Many",
-		func():
+		func() -> void:
 			for i in 5:
 				sheet.add_frames([make_image(Color.RED)] as Array[Image])
 	)

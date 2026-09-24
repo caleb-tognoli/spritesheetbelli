@@ -24,6 +24,8 @@ Notify="*res://scripts/autoloaded/notify.gd"
 [debug]
 
 gdscript/warnings/integer_division=0
+gdscript/warnings/untyped_declaration=1
+gdscript/warnings/inferred_declaration=0
 
 [display]
 

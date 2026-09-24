@@ -40,7 +40,7 @@ func _ready() -> void:
 				print("  ok   ", test_name)
 			else:
 				print("  FAIL ", test_name)
-				for f in test.failures:
+				for f: String in test.failures:
 					print("         ", f)
 				failures.append_array(test.failures)
 			remove_child(test)

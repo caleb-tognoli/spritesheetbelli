@@ -74,7 +74,7 @@ func test_shortcut_text() -> void:
 func test_shortcuts_dialog_lists_actions() -> void:
 	main.shortcuts_dialog.popup_centered()
 	var labels: Array[String] = []
-	for child in main.shortcuts_dialog.find_children("*", "Label", true, false):
+	for child: Label in main.shortcuts_dialog.find_children("*", "Label", true, false):
 		labels.append(child.text)
 	assert_true("Ctrl+Shift+S" in labels)
 	main.shortcuts_dialog.hide()

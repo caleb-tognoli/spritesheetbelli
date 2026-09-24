@@ -13,13 +13,13 @@ func _ready() -> void:
 		dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(dialog)
 	confirm_dialog.confirmed.connect(
-		func():
+		func() -> void:
 			var action := _confirm_action
 			_confirm_action = Callable()
 			if action.is_valid():
 				action.call()
 	)
-	confirm_dialog.canceled.connect(func(): _confirm_action = Callable())
+	confirm_dialog.canceled.connect(func() -> void: _confirm_action = Callable())
 
 
 func message(title: String, text: String) -> void:

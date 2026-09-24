@@ -88,7 +88,7 @@ func test_export_appends_png_extension() -> void:
 func test_save_and_open_project() -> void:
 	Global.document.perform(
 		"Add",
-		func():
+		func() -> void:
 			Global.spritesheet.add_frames(
 				[make_image(Color.RED), make_image(Color.BLUE, Vector2i(8, 16))] as Array[Image]
 			)
@@ -127,9 +127,9 @@ func test_opening_invalid_project_shows_error() -> void:
 
 func test_confirmation_runs_latest_action_once() -> void:
 	var calls := [0]
-	Notify.confirm("t", "t", func(): calls[0] += 1)
+	Notify.confirm("t", "t", func() -> void: calls[0] += 1)
 	Notify.confirm_dialog.canceled.emit()
-	Notify.confirm("t", "t", func(): calls[0] += 10)
+	Notify.confirm("t", "t", func() -> void: calls[0] += 10)
 	Notify.confirm_dialog.confirmed.emit()
 	Notify.confirm_dialog.confirmed.emit()
 	assert_eq(calls[0], 10)
@@ -214,20 +214,20 @@ func test_keep_ratio_resize_rounds() -> void:
 
 func test_closing_with_unsaved_changes_asks_first() -> void:
 	var quits := [0]
-	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)
 	assert_eq(quits[0], 1, "nothing to save: closes right away")
 
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
-	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)
 	assert_true(main.files.unsaved_changes_dialog.visible, "asks")
 	assert_eq(quits[0], 1)
 	main.files.unsaved_changes_dialog.custom_action.emit(&"discard")
 	assert_eq(quits[0], 2, "Don't Save closes")
 
 	Global.document.path = dir.path_join("close_save.sbelli")
-	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
+	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)
 	main.files.unsaved_changes_dialog.confirmed.emit()
 	assert_eq(quits[0], 3, "Save saves, then closes")
 	assert_false(Global.document.is_dirty)

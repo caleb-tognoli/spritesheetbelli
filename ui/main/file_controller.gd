@@ -37,7 +37,7 @@ func _ready() -> void:
 	save_sprites_dialog.dir_selected.connect(save_sprites)
 	export_image_dialog.file_selected.connect(export_image_to)
 	save_project_dialog.file_selected.connect(save_project)
-	save_project_dialog.canceled.connect(func(): after_save = Callable())
+	save_project_dialog.canceled.connect(func() -> void: after_save = Callable())
 	open_folder_dialog.dir_selected.connect(add_sprites_from_folder)
 	add_child(open_dialog)
 	add_child(save_project_dialog)
@@ -46,14 +46,14 @@ func _ready() -> void:
 
 	# Loading the opened file is not an unsaved change
 	add_spritesheet_window.frames_added.connect(
-		func():
+		func() -> void:
 			if loading_opened_file:
 				loading_opened_file = false
 				Global.document.load_state(
 					Global.spritesheet.get_state(), "", Global.document.export_path
 				)
 	)
-	add_spritesheet_window.canceled.connect(func(): loading_opened_file = false)
+	add_spritesheet_window.canceled.connect(func() -> void: loading_opened_file = false)
 
 	_create_unsaved_changes_dialog()
 	for dialog: FileDialog in [
@@ -65,7 +65,7 @@ func _ready() -> void:
 		save_project_dialog,
 		open_folder_dialog,
 	]:
-		var on_closed := func(): open_file_dialogs.erase(dialog)
+		var on_closed := func() -> void: open_file_dialogs.erase(dialog)
 		dialog.canceled.connect(on_closed)
 		dialog.file_selected.connect(on_closed.unbind(1))
 		dialog.files_selected.connect(on_closed.unbind(1))
@@ -88,7 +88,9 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 	for path in paths:
 		if path not in sorted_paths:
 			sorted_paths.append(path)
-	sorted_paths.sort_custom(func(a: String, b: String): return a.naturalnocasecmp_to(b) < 0)
+	sorted_paths.sort_custom(
+		func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0
+	)
 
 	var imgs: Array[Image] = []
 	var failed_files: PackedStringArray = []
@@ -163,7 +165,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
-func save_sprites(folder: String):
+func save_sprites(folder: String) -> void:
 	var errors: PackedStringArray = []
 	var written := SpritesheetExporter.export_sprites(Global.spritesheet, folder, errors)
 	if not errors.is_empty():
@@ -180,12 +182,12 @@ func _create_unsaved_changes_dialog() -> void:
 	unsaved_changes_dialog.add_button("Don't Save", true, "discard")
 	add_child(unsaved_changes_dialog)
 	unsaved_changes_dialog.confirmed.connect(
-		func():
+		func() -> void:
 			after_save = after_unsaved_changes
 			save()
 	)
 	unsaved_changes_dialog.custom_action.connect(
-		func(_action: StringName):
+		func(_action: StringName) -> void:
 			unsaved_changes_dialog.hide()
 			after_unsaved_changes.call()
 	)
@@ -301,11 +303,11 @@ func export_image_to(path: String) -> bool:
 	return true
 
 
-func new_spritesheet():
+func new_spritesheet() -> void:
 	confirm_unsaved_changes("creating a new one", Global.document.reset)
 
 
-func open_spritesheet():
+func open_spritesheet() -> void:
 	# The spritesheet is only reset once a file is picked, so canceling keeps the current one
 	confirm_unsaved_changes("opening another file", popup_file_dialog.bind(open_dialog))
 

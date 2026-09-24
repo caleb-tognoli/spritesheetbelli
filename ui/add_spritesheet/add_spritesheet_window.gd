@@ -23,17 +23,17 @@ func _ready() -> void:
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
 	preview_area.spritesheet_preview.selection_changed.connect(on_preview_update)
 	grid_columns.value_changed.connect(
-		func(columns: float): update_grid_size(int(columns), spritesheet.grid_size.y)
+		func(columns: float) -> void: update_grid_size(int(columns), spritesheet.grid_size.y)
 	)
 	grid_rows.value_changed.connect(
-		func(rows: float): update_grid_size(spritesheet.grid_size.x, int(rows))
+		func(rows: float) -> void: update_grid_size(spritesheet.grid_size.x, int(rows))
 	)
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 
 
 ## Shows [param img] sliced into a guessed grid. [param file_name] can hold a size hint.
-func setup(img: Image, file_name := ""):
+func setup(img: Image, file_name := "") -> void:
 	spritesheet_image = img
 
 	var guessed_size := GridGuesser.guess(img, file_name)
@@ -43,13 +43,13 @@ func setup(img: Image, file_name := ""):
 	preview_area.spritesheet_preview.set_zoom(1)
 
 
-func on_preview_update():
+func on_preview_update() -> void:
 	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
 	add_selected_frames_btn.disabled = selection_size == 0
 	add_selected_frames_btn.text = "Add selected frames (%d)" % selection_size
 
 
-func update_grid_size(columns: int, rows: int):
+func update_grid_size(columns: int, rows: int) -> void:
 	rows = max(1, rows)
 	columns = max(1, columns)
 	spritesheet = Spritesheet.new()
@@ -73,7 +73,7 @@ func update_grid_size(columns: int, rows: int):
 	grid_rows.set_value_no_signal(rows)
 
 
-func add_spritesheet_to_global():
+func add_spritesheet_to_global() -> void:
 	if spritesheet.is_empty():
 		close_requested.emit()
 		return
@@ -82,7 +82,7 @@ func add_spritesheet_to_global():
 	var target := Global.spritesheet
 	Global.document.perform(
 		"Add spritesheet",
-		func():
+		func() -> void:
 			var offset := Vector2i(0, target.get_first_free_row())
 			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 			for coord: Vector2i in spritesheet.frames:
@@ -94,7 +94,7 @@ func add_spritesheet_to_global():
 	close_requested.emit()
 
 
-func add_selected_frames_to_global():
+func add_selected_frames_to_global() -> void:
 	var imgs: Array[Image] = []
 	for coord in preview_area.spritesheet_preview.get_selected_coords():
 		imgs.append(spritesheet.frames[coord])
