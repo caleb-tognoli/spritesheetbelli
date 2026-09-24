@@ -10,11 +10,19 @@ func _ready() -> void:
 	Actions.state_changed.connect(update_items)
 
 
-func set_actions(ids: Array[StringName]) -> void:
+## Fills the menu. [param submenus] maps ids to [code][label, PopupMenu][/code] pairs
+## shown as submenus.
+func set_actions(ids: Array[StringName], submenus := {}) -> void:
 	clear()
 	for id in ids:
 		if id.is_empty():
 			add_separator()
+			continue
+		if submenus.has(id):
+			var submenu: PopupMenu = submenus[id][1]
+			if not submenu.get_parent():
+				add_child(submenu)
+			add_submenu_node_item(submenus[id][0], submenu)
 			continue
 		var action: AppAction = Actions.get_action(id)
 		if action == null:

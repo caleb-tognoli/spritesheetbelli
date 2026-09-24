@@ -30,9 +30,11 @@ const DEFAULTS := {
 	&"restore_session": false,
 	# Remembered between runs
 	&"last_session": "",
+	&"recent_files": [],
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
-const REMEMBERED: Array[StringName] = [&"last_session"]
+const REMEMBERED: Array[StringName] = [&"last_session", &"recent_files"]
+const MAX_RECENT_FILES := 10
 
 ## Where settings are saved. Tests use their own file.
 var path := PATH
@@ -83,3 +85,23 @@ func save_settings() -> void:
 	for key: StringName in _values:
 		_config.set_value(SECTION, key, _values[key])
 	_config.save(path)
+
+
+## Puts [param file] first in the recent files list
+func add_recent_file(file: String) -> void:
+	var recent := get_recent_files()
+	var existing := recent.find(file)
+	if existing >= 0:
+		recent.remove_at(existing)
+	recent.insert(0, file)
+	if recent.size() > MAX_RECENT_FILES:
+		recent.resize(MAX_RECENT_FILES)
+	set_value(&"recent_files", Array(recent))
+
+
+func get_recent_files() -> PackedStringArray:
+	return PackedStringArray(get_value(&"recent_files"))
+
+
+func clear_recent_files() -> void:
+	set_value(&"recent_files", [])

@@ -185,6 +185,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 
 	if set_filepath_when_opening_spritesheet:
 		set_filepath_when_opening_spritesheet = false
+		Settings.add_recent_file(spritesheet_path)
 		Global.document.reset()
 		Global.document.export_path = spritesheet_path
 		loading_opened_file = true
@@ -274,6 +275,7 @@ func save_project(path: String) -> bool:
 	Global.document.path = path
 	Global.document.mark_saved()
 	Settings.set_value(&"last_session", path)
+	Settings.add_recent_file(path)
 	if after_save.is_valid():
 		var action := after_save
 		after_save = Callable()
@@ -290,6 +292,7 @@ func open_project(path: String) -> bool:
 		return false
 	Global.document.load_state(result.state, path, result.extra.get("export_path", ""))
 	Settings.set_value(&"last_session", path)
+	Settings.add_recent_file(path)
 	return true
 
 
@@ -355,6 +358,14 @@ func export_image_to(path: String) -> bool:
 
 func new_spritesheet() -> void:
 	confirm_unsaved_changes("creating a new one", Global.document.reset)
+
+
+## Opens a recent file, asking to save changes first
+func open_recent(path: String) -> void:
+	if not FileAccess.file_exists(path):
+		Notify.error("%s no longer exists." % path)
+		return
+	confirm_unsaved_changes("opening another file", open_path.bind(path))
 
 
 func open_spritesheet() -> void:

@@ -117,6 +117,7 @@ func _ready() -> void:
 	)
 	files.restore_session.call_deferred()
 	files.get_selected_coords = preview.get_selected_coords
+	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)

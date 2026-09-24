@@ -6,6 +6,13 @@ const TEST_DIR := "res://tests/unit"
 
 
 func _ready() -> void:
+	# Fail instead of hanging when something breaks badly, e.g. an autoload
+	get_tree().create_timer(600).timeout.connect(
+		func() -> void:
+			print("Tests timed out")
+			get_tree().quit(124)
+	)
+
 	# The headless window is tiny, which makes popups complain about their position
 	get_window().size = Vector2i(1280, 800)
 

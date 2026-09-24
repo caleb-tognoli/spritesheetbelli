@@ -8,6 +8,7 @@ const MENUS := {
 	[
 		&"new",
 		&"open",
+		&"open_recent",
 		&"",
 		&"save",
 		&"save_as",
@@ -58,6 +59,9 @@ const MENUS := {
 	"Help": [&"show_shortcuts"],
 }
 
+## Submenu of File, picked from with [signal RecentFilesMenu.file_chosen]
+var recent_files := RecentFilesMenu.new()
+
 
 func _ready() -> void:
 	# Actions are registered by the main scene, which is ready after its children
@@ -66,7 +70,8 @@ func _ready() -> void:
 
 func build() -> void:
 	for child in get_children():
-		child.free()
+		if child != recent_files:
+			child.free()
 	for title: String in MENUS:
 		var popup := ActionPopupMenu.new()
 		popup.name = title
@@ -74,4 +79,4 @@ func build() -> void:
 		add_child(popup)
 		var ids: Array[StringName] = []
 		ids.assign(MENUS[title])
-		popup.set_actions(ids)
+		popup.set_actions(ids, {&"open_recent": ["Open Recent", recent_files]})

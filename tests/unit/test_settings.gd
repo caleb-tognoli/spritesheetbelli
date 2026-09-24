@@ -61,3 +61,38 @@ func test_add_mode_new_row() -> void:
 	)
 	assert_true(sheet.has_frame(Vector2i(0, 1)))
 	assert_true(sheet.has_frame(Vector2i(1, 1)))
+
+
+func test_recent_files() -> void:
+	Settings.clear_recent_files()
+	for i in 12:
+		Settings.add_recent_file("file%d.sbelli" % i)
+	Settings.add_recent_file("file5.sbelli")
+	var recent := Settings.get_recent_files()
+	assert_eq(recent.size(), Settings.MAX_RECENT_FILES)
+	assert_eq(recent[0], "file5.sbelli", "most recent first, no duplicates")
+	assert_eq(recent.count("file5.sbelli"), 1)
+	Settings.clear_recent_files()
+
+
+func test_recent_files_menu() -> void:
+	var main: Control = load("res://ui/main/main.tscn").instantiate()
+	add_child(main)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var path := OS.get_user_data_dir().path_join("tests/recent.sbelli")
+	var sheet := Spritesheet.new()
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	ProjectFile.save(sheet, path)
+	Settings.clear_recent_files()
+	Settings.add_recent_file(path)
+	var menu: RecentFilesMenu = main.get_node("%MenuBar").recent_files
+	menu.refresh()
+	assert_eq(menu.get_item_text(0), "recent.sbelli  (%s)" % path.get_base_dir())
+	menu.id_pressed.emit(0)
+	assert_eq(Global.document.path, path, "opened")
+	assert_eq(Global.spritesheet.frames.size(), 1)
+	menu.id_pressed.emit(RecentFilesMenu.CLEAR_ID)
+	assert_true(Settings.get_recent_files().is_empty())
+	main.queue_free()
+	Global.document.reset()
