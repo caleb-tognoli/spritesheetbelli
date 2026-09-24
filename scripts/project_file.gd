@@ -60,9 +60,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		locked.append([coord.x, coord.y])
 	var animations: Array[Dictionary] = []
 	for animation in sheet.animations:
-		var data := animation.to_dictionary()
-		data.cells = animation.cells.map(func(cell: Vector2i) -> Array: return [cell.x, cell.y])
-		animations.append(data)
+		var saved := animation.to_dictionary()
+		saved.cells = animation.cells.map(func(cell: Vector2i) -> Array: return [cell.x, cell.y])
+		animations.append(saved)
 
 	var data := {
 		"format": FORMAT,

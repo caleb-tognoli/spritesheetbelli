@@ -102,7 +102,7 @@ func test_animation_window() -> void:
 	main.preview.set_selected_coords([Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
 	window.open()
 	assert_true(window.empty_hint.visible, "no animations yet")
-	window.add_button.pressed.emit()
+	window.new_button.pressed.emit()
 	var sheet := Global.spritesheet
 	assert_eq(sheet.animations.size(), 1)
 	assert_eq(sheet.animations[0].cells, [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
@@ -118,6 +118,6 @@ func test_animation_window() -> void:
 	assert_eq(sheet.animations[0].name, "run")
 	Global.document.undo()
 	assert_eq(sheet.animations[0].name, "animation", "undoable")
-	window.remove_button.pressed.emit()
+	window.delete_button.pressed.emit()
 	assert_true(sheet.animations.is_empty())
 	window.hide()

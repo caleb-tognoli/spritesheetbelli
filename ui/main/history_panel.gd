@@ -51,13 +51,13 @@ func refresh() -> void:
 		return
 	var document := Global.document
 	var steps := document.get_history()
-	var position := document.get_history_position()
+	var current := document.get_history_position()
 	list.clear()
 	list.add_item(tr(document.history_start))
 	for step in steps:
 		list.add_item(tr(step))
 	var muted := get_theme_color("font_color", &"StatusLabel")
-	for i in range(position + 1, list.item_count):
+	for i in range(current + 1, list.item_count):
 		list.set_item_custom_fg_color(i, Color(muted, 0.6))
-	list.select(position)
+	list.select(current)
 	list.ensure_current_is_visible()

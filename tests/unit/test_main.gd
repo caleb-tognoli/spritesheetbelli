@@ -96,9 +96,9 @@ func test_save_and_open_project() -> void:
 			Global.spritesheet.set_locked(Vector2i(2, 1), true)
 			Global.spritesheet.set_row_name(0, "idle")
 			Global.spritesheet.resize_sprites(Vector2i(32, 32))
-			var jump := SheetAnimation.create("jump", [Vector2i(1, 0)] as Array[Vector2i], 7.5)
-			jump.mode = SheetAnimation.Mode.PING_PONG
-			Global.spritesheet.add_animation(jump)
+			var saved := SheetAnimation.create("jump", [Vector2i(1, 0)] as Array[Vector2i], 7.5)
+			saved.mode = SheetAnimation.Mode.PING_PONG
+			Global.spritesheet.add_animation(saved)
 	)
 	var path := dir.path_join("project")
 	assert_true(await main.files.save_project(path))

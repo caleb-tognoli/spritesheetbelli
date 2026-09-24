@@ -19,8 +19,8 @@ const MODES: Array[SheetAnimation.Mode] = [
 ## Where selected frames come from
 var preview: SpritesheetPreview
 var list := ItemList.new()
-var add_button := Button.new()
-var remove_button := Button.new()
+var new_button := Button.new()
+var delete_button := Button.new()
 var player := FramePlayer.new()
 var name_edit := LineEdit.new()
 var from_spin := SpinBox.new()
@@ -51,14 +51,14 @@ func _init() -> void:
 	left.add_child(list)
 	var buttons := HBoxContainer.new()
 	left.add_child(buttons)
-	add_button.text = "New"
-	add_button.icon = ADD_ICON
-	add_button.tooltip_text = "A new animation of the selected frames, or of every frame"
-	add_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buttons.add_child(add_button)
-	remove_button.icon = REMOVE_ICON
-	remove_button.tooltip_text = "Delete the animation"
-	buttons.add_child(remove_button)
+	new_button.text = "New"
+	new_button.icon = ADD_ICON
+	new_button.tooltip_text = "A new animation of the selected frames, or of every frame"
+	new_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(new_button)
+	delete_button.icon = REMOVE_ICON
+	delete_button.tooltip_text = "Delete the animation"
+	buttons.add_child(delete_button)
 
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -105,14 +105,16 @@ func _init() -> void:
 	fps_spin.suffix = "fps"
 	fps_spin.tooltip_text = "Frames per second"
 	_add_property("Speed", fps_spin)
-	for mode in MODES:
-		mode_option.add_icon_item(MODE_ICONS[mode], SheetAnimation.MODE_NAMES[mode], mode)
+	for each_mode in MODES:
+		mode_option.add_icon_item(
+			MODE_ICONS[each_mode], SheetAnimation.MODE_NAMES[each_mode], each_mode
+		)
 	mode_option.tooltip_text = "Once plays to the end, Loop starts over, Ping-pong plays back"
 	_add_property("Type", mode_option)
 
 	list.item_selected.connect(func(_index: int) -> void: _show_selected())
-	add_button.pressed.connect(add_animation)
-	remove_button.pressed.connect(remove_animation)
+	new_button.pressed.connect(add_animation)
+	delete_button.pressed.connect(remove_animation)
 	name_edit.text_submitted.connect(func(_text: String) -> void: _apply())
 	name_edit.focus_exited.connect(_apply)
 	from_spin.value_changed.connect(func(_value: float) -> void: _apply_range())
@@ -197,7 +199,7 @@ func _show_selected() -> void:
 	var has_animation := index >= 0
 	_properties.visible = has_animation
 	player.visible = has_animation
-	remove_button.disabled = not has_animation
+	delete_button.disabled = not has_animation
 	empty_hint.visible = not has_animation
 	if not has_animation:
 		return
