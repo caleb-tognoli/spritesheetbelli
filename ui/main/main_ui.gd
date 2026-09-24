@@ -13,7 +13,20 @@ const ICONS := {
 }
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
-	&"flip_h", &"flip_v", &"rotate_cw", &"rotate_ccw", &"", &"delete_frames"
+	&"cut",
+	&"copy",
+	&"paste",
+	&"duplicate",
+	&"",
+	&"flip_h",
+	&"flip_v",
+	&"rotate_cw",
+	&"rotate_ccw",
+	&"",
+	&"insert_cell",
+	&"remove_cell",
+	&"",
+	&"delete_frames",
 ]
 
 @onready var files: FileController = $Files
@@ -31,6 +44,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 
 var shortcuts_dialog := ShortcutsDialog.new()
 var settings_window := SettingsWindow.new()
+var clipboard := FrameClipboard.new()
 
 
 func _ready() -> void:
@@ -150,6 +164,56 @@ func _register_actions() -> void:
 		has_selection
 	)
 
+	add.call(&"copy", "Copy", copy_selection, has_selection)
+	add.call(
+		&"cut",
+		"Cut",
+		func() -> void:
+			copy_selection()
+			edit_selection("Cut", sheet.remove_frames),
+		has_selection
+	)
+	add.call(
+		&"paste",
+		"Paste",
+		func() -> void: add_images("Paste", clipboard.get_images()),
+		clipboard.has_content
+	)
+	add.call(
+		&"duplicate",
+		"Duplicate",
+		func() -> void: add_images("Duplicate", get_selected_images()),
+		has_selection
+	)
+	add.call(
+		&"replace_image",
+		"Replace Image…",
+		func() -> void: files.replace_frame_image(preview.get_selected_coords()[0]),
+		func() -> bool: return preview.get_selected_coords().size() == 1
+	)
+	add.call(
+		&"insert_cell",
+		"Insert Empty Cell",
+		func() -> void:
+			var coord := preview.get_selected_coords()[0]
+			Global.document.perform("Insert cell", sheet.insert_empty_cell.bind(coord)),
+		has_selection
+	)
+	add.call(
+		&"remove_cell",
+		"Remove Cell",
+		func() -> void:
+			var coords := preview.get_selected_coords()
+			coords.reverse()
+			Global.document.perform(
+				"Remove cells",
+				func() -> void:
+					for coord in coords:
+						sheet.remove_cell(coord)
+			),
+		has_selection
+	)
+
 	add.call(&"zoom_in", "Zoom In", preview.zoom_by.bind(1.25))
 	add.call(&"zoom_out", "Zoom Out", preview.zoom_by.bind(0.8))
 	add.call(
@@ -174,6 +238,29 @@ func _register_actions() -> void:
 	add.call(
 		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
 	)
+
+
+func get_selected_images() -> Array[Image]:
+	var images: Array[Image] = []
+	for coord in preview.get_selected_coords():
+		images.append(Global.spritesheet.frames[coord])
+	return images
+
+
+func copy_selection() -> void:
+	clipboard.copy(get_selected_images())
+	Actions.refresh()
+
+
+## Adds [param images] to free cells as one undoable step and selects them
+func add_images(action_name: String, images: Array[Image]) -> void:
+	if images.is_empty():
+		return
+	var mode: Spritesheet.AddMode = Settings.get_value(&"add_mode")
+	var coords: Array[Vector2i] = Global.document.perform(
+		action_name, Global.spritesheet.add_frames.bind(images, mode)
+	)
+	preview.set_selected_coords(coords)
 
 
 ## Runs [param edit] with the coordinates of the selected frames, as one undoable step
@@ -253,3 +340,6 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		files.confirm_unsaved_changes("closing", get_tree().quit)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		clipboard.on_focus_in()
+		Actions.refresh()

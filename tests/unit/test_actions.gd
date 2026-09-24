@@ -32,7 +32,7 @@ func press(keycode: Key, ctrl := false, shift := false) -> void:
 func test_menus_are_built_from_actions() -> void:
 	await get_tree().process_frame
 	var menu_bar: MenuBar = main.get_node("%MenuBar")
-	assert_eq(menu_bar.get_menu_count(), 4)
+	assert_eq(menu_bar.get_menu_count(), MainMenuBar.MENUS.size())
 	var file: PopupMenu = menu_bar.get_child(0)
 	assert_eq(file.get_item_text(0), "New")
 	assert_ne(file.get_item_shortcut(0), null, "shortcut shown in menu")
@@ -90,3 +90,44 @@ func test_undo_redo_shortcuts() -> void:
 	await get_tree().process_frame
 	await press(KEY_Z, true, true)
 	assert_true(Global.spritesheet.is_empty(), "Ctrl+Shift+Z")
+
+
+func test_copy_paste() -> void:
+	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
+	Actions.run(&"copy")
+	assert_true(Actions.run(&"paste"))
+	assert_eq(Global.spritesheet.frames.size(), 4)
+	assert_color(Global.spritesheet.frames[Vector2i(3, 0)], Vector2i.ZERO, Color.GREEN)
+	assert_eq(
+		main.preview.get_selected_coords(),
+		[Vector2i(3, 0)] as Array[Vector2i],
+		"pasted frames selected"
+	)
+
+
+func test_cut() -> void:
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	Actions.run(&"cut")
+	assert_false(Global.spritesheet.has_frame(Vector2i(0, 0)))
+	Actions.run(&"paste")
+	assert_color(
+		Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "fills the gap"
+	)
+
+
+func test_duplicate() -> void:
+	Actions.run(&"select_all")
+	Actions.run(&"duplicate")
+	assert_eq(Global.spritesheet.frames.size(), 6)
+	Global.document.undo()
+	assert_eq(Global.spritesheet.frames.size(), 3, "one undo step")
+
+
+func test_insert_and_remove_cell() -> void:
+	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
+	Actions.run(&"insert_cell")
+	assert_false(Global.spritesheet.has_frame(Vector2i(1, 0)))
+	assert_color(Global.spritesheet.frames[Vector2i(2, 0)], Vector2i.ZERO, Color.GREEN)
+	main.preview.set_selected_coords([Vector2i(2, 0)] as Array[Vector2i])
+	Actions.run(&"remove_cell")
+	assert_color(Global.spritesheet.frames[Vector2i(2, 0)], Vector2i.ZERO, Color.BLUE)

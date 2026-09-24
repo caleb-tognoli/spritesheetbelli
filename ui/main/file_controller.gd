@@ -23,6 +23,10 @@ var save_project_dialog := _create_file_dialog(
 	"Save Project", FileDialog.FILE_MODE_SAVE_FILE, [PROJECT_FILTER]
 )
 var open_folder_dialog := _create_file_dialog("Add Folder", FileDialog.FILE_MODE_OPEN_DIR, [])
+var replace_image_dialog := _create_file_dialog(
+	"Replace Image", FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
+)
+var _replace_coord := Vector2i.ZERO
 
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
@@ -42,6 +46,18 @@ func _ready() -> void:
 	add_child(open_dialog)
 	add_child(save_project_dialog)
 	add_child(open_folder_dialog)
+	add_child(replace_image_dialog)
+	replace_image_dialog.file_selected.connect(
+		func(path: String) -> void:
+			var img := Image.load_from_file(path)
+			if not img:
+				Notify.error("Could not load %s." % path.get_file())
+				return
+			img.resource_name = path.get_file()
+			Global.document.perform(
+				"Replace image", Global.spritesheet.replace_frame.bind(_replace_coord, img)
+			)
+	)
 	get_window().files_dropped.connect(open_dropped_files)
 
 	# Loading the opened file is not an unsaved change
@@ -64,6 +80,7 @@ func _ready() -> void:
 		open_dialog,
 		save_project_dialog,
 		open_folder_dialog,
+		replace_image_dialog,
 	]:
 		var on_closed := func() -> void: open_file_dialogs.erase(dialog)
 		dialog.canceled.connect(on_closed)
@@ -107,6 +124,12 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 
 	if not failed_files.is_empty():
 		Notify.error("Could not load: %s." % ", ".join(failed_files))
+
+
+## Asks for an image to replace the frame at [param coord]
+func replace_frame_image(coord: Vector2i) -> void:
+	_replace_coord = coord
+	popup_file_dialog(replace_image_dialog)
 
 
 ## Adds every image in [param folder] (not its subfolders), sorted by name
