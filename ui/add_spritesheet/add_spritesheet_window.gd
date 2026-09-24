@@ -2,6 +2,8 @@ class_name AddSpritesheetWindow
 extends Window
 
 signal canceled
+## Emitted after frames were added to the open spritesheet
+signal frames_added
 
 @onready var preview_area: PreviewArea = %PreviewArea
 @onready var add_selected_frames_btn: Button = %AddSelectedFrames
@@ -85,6 +87,7 @@ func add_spritesheet_to_global():
 	# Keep the added sheet's layout without touching free cells elsewhere
 	target.lock_free_cells(Rect2i(offset, spritesheet.grid_size))
 	target.end_batch()
+	frames_added.emit()
 	close_requested.emit()
 
 
@@ -93,6 +96,7 @@ func add_selected_frames_to_global():
 	for coord in preview_area.spritesheet_preview.get_selected_coords():
 		imgs.append(spritesheet.frames[coord])
 	Global.spritesheet.add_frames(imgs)
+	frames_added.emit()
 	close_requested.emit()
 
 

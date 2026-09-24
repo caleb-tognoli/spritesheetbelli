@@ -149,3 +149,16 @@ func test_add_spritesheet_only_locks_its_own_cells() -> void:
 	window.add_spritesheet_to_global()
 	assert_false(Global.spritesheet.is_locked(Vector2i(0, 0)), "old gap stays free")
 	assert_true(Global.spritesheet.is_locked(Vector2i(1, 1)), "new sheet's empty cell locked")
+
+
+func test_opening_a_file_is_not_an_unsaved_change() -> void:
+	var path := dir.path_join("open_me.png")
+	make_image(Color.RED, Vector2i(32, 16)).save_png(path)
+	main.set_filepath_when_opening_spritesheet = true
+	main.show_add_spritesheet_window(path)
+	main.add_spritesheet_window.add_spritesheet_to_global()
+	assert_false(Global.spritesheet.is_empty())
+	assert_false(Global.has_unsaved_changes)
+	assert_eq(Global.filepath, path)
+	Global.spritesheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
+	assert_true(Global.has_unsaved_changes, "later edits are changes")

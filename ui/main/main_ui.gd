@@ -21,6 +21,8 @@ var set_filepath_when_opening_spritesheet: bool = false
 var pending_confirm_action: Callable
 var open_file_dialogs: Array[FileDialog] = []
 var warned_about_jpg_transparency := false
+## True while the Add Spritesheet window shows a file picked with Open
+var loading_opened_file := false
 
 
 func _ready() -> void:
@@ -67,6 +69,13 @@ func _ready() -> void:
 			resize_sprites(Vector2i(width, height))
 	)
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
+	# Loading the opened file is not an unsaved change
+	add_spritesheet_window.frames_added.connect(
+		func():
+			if loading_opened_file:
+				Global.has_unsaved_changes = false
+	)
+	add_spritesheet_window.canceled.connect(func(): loading_opened_file = false)
 	confirmation_dialog.confirmed.connect(
 		func():
 			var action := pending_confirm_action
@@ -156,6 +165,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 		set_filepath_when_opening_spritesheet = false
 		Global.reset_spritesheet()
 		Global.filepath = spritesheet_path
+		loading_opened_file = true
 	add_spritesheet_window.setup(img)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
