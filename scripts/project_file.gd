@@ -1,11 +1,13 @@
 class_name ProjectFile
-## Saves and loads .sbelli projects: a zip holding project.json and one PNG per frame,
-## so a spritesheet can be reopened exactly as it was.
+## Saves and loads .sbelli projects: a zip holding project.json and frames.png, where every
+## frame is stored at its original size, so a spritesheet can be reopened exactly as it was.
+## (One image instead of one file per frame keeps large projects fast to open.)
 
 const EXTENSION := "sbelli"
 const FORMAT := "spritesheetbelli"
 const VERSION := 1
 const JSON_FILE := "project.json"
+const FRAMES_FILE := "frames.png"
 
 
 static func is_project_path(path: String) -> bool:
@@ -23,13 +25,29 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 	if error != OK:
 		return error
 
+	var coords := sheet.get_sorted_coords()
+	var sizes: Array[Vector2i] = []
+	for coord in coords:
+		sizes.append(sheet.frames[coord].get_size())
+	var layout := _shelf_layout(sizes)
 	var frames: Array[Dictionary] = []
-	for coord in sheet.get_sorted_coords():
-		var file := "frames/%d_%d.png" % [coord.x, coord.y]
-		frames.append(
-			{"cell": [coord.x, coord.y], "file": file, "name": sheet.frames[coord].resource_name}
-		)
-		error = _write(zip, file, sheet.frames[coord].save_png_to_buffer())
+	if not coords.is_empty():
+		var atlas := Image.create_empty(layout.size.x, layout.size.y, false, Image.FORMAT_RGBA8)
+		for i in coords.size():
+			var img: Image = sheet.frames[coords[i]]
+			var position: Vector2i = layout.positions[i]
+			atlas.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), position)
+			(
+				frames
+				. append(
+					{
+						"cell": [coords[i].x, coords[i].y],
+						"rect": [position.x, position.y, img.get_width(), img.get_height()],
+						"name": img.resource_name,
+					}
+				)
+			)
+		error = _write(zip, FRAMES_FILE, atlas.save_png_to_buffer())
 		if error != OK:
 			zip.close()
 			return error
@@ -78,10 +96,15 @@ static func _read(zip: ZIPReader) -> Dictionary:
 	if int(data.get("version", 0)) > VERSION:
 		return {"error": "This project was made with a newer version of spritesheetbelli."}
 
+	var atlas := Image.new()
+	if zip.file_exists(FRAMES_FILE):
+		if atlas.load_png_from_buffer(zip.read_file(FRAMES_FILE)) != OK:
+			return {"error": TranslationServer.translate("The frames image is damaged.")}
+		atlas.convert(Image.FORMAT_RGBA8)
 	var frames: Dictionary[Vector2i, Image] = {}
 	for frame: Dictionary in data.get("frames", []):
-		var img := Image.new()
-		if img.load_png_from_buffer(zip.read_file(frame.get("file", ""))) != OK:
+		var img := _read_frame(zip, atlas, frame)
+		if img == null:
 			return {
 				"error":
 				(
@@ -89,7 +112,6 @@ static func _read(zip: ZIPReader) -> Dictionary:
 					% frame.get("file")
 				)
 			}
-		img.convert(Image.FORMAT_RGBA8)
 		img.resource_name = frame.get("name", "")
 		frames[_to_vector2i(frame.get("cell"))] = img
 
@@ -111,6 +133,46 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		"export": _read_export_settings(data.get("export", {})),
 	}
 	return {"state": state, "extra": data.get("extra", {})}
+
+
+## A frame from its rectangle in frames.png, or from its own PNG in older projects
+static func _read_frame(zip: ZIPReader, atlas: Image, frame: Dictionary) -> Image:
+	var rect: Variant = frame.get("rect")
+	if rect is Array and rect.size() == 4 and not atlas.is_empty():
+		var region := Rect2i(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]))
+		if Rect2i(Vector2i.ZERO, atlas.get_size()).encloses(region) and region.has_area():
+			return atlas.get_region(region)
+		return null
+	var file: String = frame.get("file", "")
+	var img := Image.new()
+	if file.is_empty() or img.load_png_from_buffer(zip.read_file(file)) != OK:
+		return null
+	img.convert(Image.FORMAT_RGBA8)
+	return img
+
+
+## Places frames in rows of a roughly square image. Returns
+## [code]{"size": Vector2i, "positions": Array[Vector2i]}[/code].
+static func _shelf_layout(sizes: Array[Vector2i]) -> Dictionary:
+	var area := 0
+	var widest := 1
+	for size in sizes:
+		area += size.x * size.y
+		widest = maxi(widest, size.x)
+	var width := maxi(widest, ceili(sqrt(area)))
+	var positions: Array[Vector2i] = []
+	var cursor := Vector2i.ZERO
+	var row_height := 0
+	var used := Vector2i.ONE
+	for size in sizes:
+		if cursor.x + size.x > width:
+			cursor = Vector2i(0, cursor.y + row_height)
+			row_height = 0
+		positions.append(cursor)
+		used = used.max(cursor + size)
+		cursor.x += size.x
+		row_height = maxi(row_height, size.y)
+	return {"size": used, "positions": positions}
 
 
 static func _read_export_settings(value: Variant) -> Dictionary:

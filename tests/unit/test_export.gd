@@ -142,3 +142,25 @@ func test_default_animation_without_row_names() -> void:
 	assert_eq(animations.size(), 1)
 	assert_eq(animations[0].name, "default")
 	assert_eq(animations[0].indices, [0, 1, 2])
+
+
+func test_projects_with_one_file_per_frame_still_open() -> void:
+	var path := dir.path_join("legacy.sbelli")
+	var zip := ZIPPacker.new()
+	zip.open(path)
+	zip.start_file("frames/1_0.png")
+	zip.write_file(make_image(Color.BLUE, Vector2i(6, 6)).save_png_to_buffer())
+	zip.close_file()
+	zip.start_file("project.json")
+	var data := {
+		"format": "spritesheetbelli",
+		"version": 1,
+		"grid_size": [2, 1],
+		"frames": [{"cell": [1, 0], "file": "frames/1_0.png"}],
+	}
+	zip.write_file(JSON.stringify(data).to_utf8_buffer())
+	zip.close_file()
+	zip.close()
+	var loaded := ProjectFile.load(path)
+	assert_false(loaded.has("error"), str(loaded.get("error")))
+	assert_color(loaded.state.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.BLUE)

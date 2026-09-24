@@ -479,12 +479,11 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO)
 
 	var visible_rect := _visible_world_rect()
-	for y in spritesheet.grid_size.y:
-		for x in spritesheet.grid_size.x:
+	var visible_cells := _visible_cells(visible_rect)
+	for y in range(visible_cells.position.y, visible_cells.end.y):
+		for x in range(visible_cells.position.x, visible_cells.end.x):
 			var coord := Vector2i(x, y)
 			var rect := cell_rect(coord)
-			if not visible_rect.intersects(rect):
-				continue
 			if spritesheet.has_frame(coord):
 				_draw_frame(coord, rect)
 			elif spritesheet.is_locked(coord):
@@ -496,7 +495,7 @@ func _draw() -> void:
 		_draw_grid(cell_size, pixel)
 	_draw_selection(pixel)
 	if is_index_visible():
-		_draw_indices(visible_rect)
+		_draw_indices(visible_cells)
 	_draw_row_names(cell_size)
 	if _drag == Drag.BOX:
 		var box := _box_rect()
@@ -555,13 +554,13 @@ func _draw_selection(pixel: float) -> void:
 			draw_rect(target.grow(-pixel), selection_color, false, pixel * 2)
 
 
-func _draw_indices(visible_rect: Rect2) -> void:
+func _draw_indices(visible_cells: Rect2i) -> void:
 	var font := ThemeDB.fallback_font
 	var inverse_zoom := Vector2.ONE / camera.zoom
 	for coord in spritesheet.frames:
-		var rect := cell_rect(coord)
-		if not visible_rect.intersects(rect):
+		if not visible_cells.has_point(coord):
 			continue
+		var rect := cell_rect(coord)
 		# Text is drawn unscaled so it keeps the same size at any zoom
 		draw_set_transform(rect.position, 0, inverse_zoom)
 		var text := str(spritesheet.index_of(coord) + index_start)
@@ -594,6 +593,14 @@ func _draw_row_names(cell_size: Vector2) -> void:
 			Color(0.8, 0.85, 1.0)
 		)
 	draw_set_transform(Vector2.ZERO)
+
+
+## The range of cells on screen, so drawing skips the rest of large sheets
+func _visible_cells(visible_rect: Rect2) -> Rect2i:
+	var cell_size := Vector2(spritesheet.sprite_size)
+	var start := Vector2i((visible_rect.position / cell_size).floor()).max(Vector2i.ZERO)
+	var end := Vector2i((visible_rect.end / cell_size).ceil()).min(spritesheet.grid_size)
+	return Rect2i(start, (end - start).max(Vector2i.ZERO))
 
 
 func _visible_world_rect() -> Rect2:
