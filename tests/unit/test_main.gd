@@ -56,6 +56,7 @@ func test_zoom_keeps_point_under_cursor() -> void:
 	var preview: SpritesheetPreview = main.preview_area.spritesheet_preview
 	var anchor := Vector2(100, 80)
 	var before := preview.camera.position + anchor / preview.camera.zoom
+	await get_tree().process_frame
 	preview.set_zoom(4, anchor)
 	assert_eq(preview.camera.position + anchor / preview.camera.zoom, before)
 	var frame: SpritesheetPreviewFrame = preview.frames.get_child(0)

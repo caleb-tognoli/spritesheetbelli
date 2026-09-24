@@ -19,11 +19,14 @@ const MIN_ZOOM := 0.02
 
 var spritesheet: Spritesheet = Spritesheet.new():
 	set(v):
+		if spritesheet and spritesheet.updated.is_connected(queue_update):
+			spritesheet.updated.disconnect(queue_update)
 		spritesheet = v
+		spritesheet.updated.connect(queue_update)
 		update_preview()
-		v.updated.connect(update_preview)
 var start_drag_position := Vector2.ZERO
 var start_camera_position := Vector2.ZERO
+var _update_queued := false
 
 
 func _input(event: InputEvent) -> void:
@@ -85,7 +88,15 @@ func _draw() -> void:
 		)
 
 
+## Rebuilds the preview once at the end of the frame, however many changes happen
+func queue_update() -> void:
+	if not _update_queued:
+		_update_queued = true
+		update_preview.call_deferred()
+
+
 func update_preview() -> void:
+	_update_queued = false
 	for child in frames.get_children():
 		child.free()
 	for child in empty_spaces.get_children():
@@ -95,7 +106,7 @@ func update_preview() -> void:
 		for column in spritesheet.grid_size.x:
 			var coord := Vector2i(column, row)
 
-			if coord in spritesheet.frames:
+			if spritesheet.has_frame(coord):
 				var frame: SpritesheetPreviewFrame = FRAME_SCENE.instantiate()
 				frame.setup(spritesheet, coord)
 				frame.selection_updated.connect(preview_updated.emit)
@@ -104,24 +115,25 @@ func update_preview() -> void:
 			elif able_to_lock_spaces:
 				var empty_space: SpritesheetPreviewEmptySpace = EMPTY_SPACE_SCENE.instantiate()
 				empty_space.setup(spritesheet, coord)
-				empty_space.lock_updated.connect(set_locked_coordinate_in_spritesheet.bind(coord))
-				empty_space.set_is_locked(coord in spritesheet.locked_coordinates)
+				empty_space.set_is_locked(spritesheet.is_locked(coord))
+				empty_space.lock_updated.connect(
+					func(locked: bool): spritesheet.set_locked(coord, locked)
+				)
 				empty_spaces.add_child(empty_space)
 
 	queue_redraw()
 	preview_updated.emit()
 
 
-func get_selected_frames() -> Dictionary:
-	var frames_dict: Dictionary = {}
+## Coordinates of the selected frames, in reading order
+func get_selected_coords() -> Array[Vector2i]:
+	var coords: Array[Vector2i] = []
 	for frame: SpritesheetPreviewFrame in frames.get_children():
 		if frame.selected:
-			frames_dict[frame.coordinate_in_spritesheet] = frame.img
-	return frames_dict
+			coords.append(frame.coordinate_in_spritesheet)
+	return coords
 
 
-func set_locked_coordinate_in_spritesheet(lock: bool, coord: Vector2i):
-	if lock and not spritesheet.locked_coordinates.has(coord):
-		spritesheet.locked_coordinates.append(coord)
-	elif not lock and spritesheet.locked_coordinates.has(coord):
-		spritesheet.locked_coordinates.erase(coord)
+func set_selected_coords(coords: Array[Vector2i]) -> void:
+	for frame: SpritesheetPreviewFrame in frames.get_children():
+		frame.selected = frame.coordinate_in_spritesheet in coords

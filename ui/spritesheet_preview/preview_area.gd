@@ -39,7 +39,7 @@ func update_ui() -> void:
 	select_all_btn.visible = not is_empty
 	select_none_btn.visible = not is_empty
 
-	var selection_size := spritesheet_preview.get_selected_frames().size()
+	var selection_size := spritesheet_preview.get_selected_coords().size()
 	var selection_empty := is_empty or selection_size == 0
 	num_selected.visible = not selection_empty
 	num_selected.text = "%d selected" % [selection_size]
@@ -54,33 +54,20 @@ func select_all(select: bool) -> void:
 
 
 func options_menu_item_pressed(id: int):
-	var selected_frames: Dictionary = spritesheet_preview.get_selected_frames()
+	var sheet: Spritesheet = spritesheet_preview.spritesheet
+	var selected := spritesheet_preview.get_selected_coords()
 	match id:
 		0:
-			for frame: Image in selected_frames.values():
-				frame.flip_x()
+			sheet.flip_frames(selected, true)
 		1:
-			for frame: Image in selected_frames.values():
-				frame.flip_y()
-		2, 3:
-			var max_sprite_size: Vector2i = spritesheet_preview.spritesheet.sprite_size
-			for frame: Image in selected_frames.values():
-				if id == 2:
-					frame.rotate_90(CLOCKWISE)
-				else:
-					frame.rotate_90(COUNTERCLOCKWISE)
-				var frame_new_size := frame.get_size()
-				max_sprite_size.x = max(max_sprite_size.x, frame_new_size.x)
-				max_sprite_size.y = max(max_sprite_size.y, frame_new_size.y)
-			spritesheet_preview.spritesheet.sprite_size = max_sprite_size
-			spritesheet_preview.spritesheet.pad_frames_to_sprite_size()
+			sheet.flip_frames(selected, false)
+		2:
+			sheet.rotate_frames(selected, true)
+		3:
+			sheet.rotate_frames(selected, false)
 		4:
-			for coord: Vector2i in selected_frames:
-				spritesheet_preview.spritesheet.frames.erase(coord)
+			sheet.remove_frames(selected)
 
-	spritesheet_preview.spritesheet.updated.emit()
-
-	for coord: Vector2i in selected_frames:
-		for frame: SpritesheetPreviewFrame in spritesheet_preview.frames.get_children():
-			if frame.coordinate_in_spritesheet == coord:
-				frame.selected = true
+	# The preview is rebuilt at the end of the frame, restore the selection after that
+	await get_tree().process_frame
+	spritesheet_preview.set_selected_coords(selected)

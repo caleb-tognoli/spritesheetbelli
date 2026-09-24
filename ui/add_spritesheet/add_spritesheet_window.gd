@@ -41,7 +41,7 @@ func setup(img: Image):
 
 
 func on_preview_update():
-	var selection_size := preview_area.spritesheet_preview.get_selected_frames().size()
+	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
 	add_selected_frames_btn.disabled = selection_size == 0
 	add_selected_frames_btn.text = "Add selected frames (%d)" % selection_size
 
@@ -51,19 +51,18 @@ func update_grid_size(columns: int, rows: int):
 	columns = max(1, columns)
 	spritesheet = Spritesheet.new()
 	var grid_size := Vector2i(columns, rows)
-	spritesheet.grid_size = grid_size
-	spritesheet.sprite_size = spritesheet_image.get_size() / grid_size
+	var cell_size := spritesheet_image.get_size() / grid_size
 
+	spritesheet.begin_batch()
+	spritesheet.set_grid_size(grid_size)
 	for row in grid_size.y:
 		for column in grid_size.x:
-			var frame_position := Vector2i(
-				column * spritesheet.sprite_size.x, row * spritesheet.sprite_size.y
-			)
 			var frame_img := spritesheet_image.get_region(
-				Rect2i(frame_position, spritesheet.sprite_size)
+				Rect2i(Vector2i(column, row) * cell_size, cell_size)
 			)
 			if not frame_img.is_invisible():
-				spritesheet.frames[Vector2i(column, row)] = frame_img
+				spritesheet.set_frame(Vector2i(column, row), frame_img)
+	spritesheet.end_batch()
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
 
@@ -79,21 +78,20 @@ func add_spritesheet_to_global():
 	# Place the whole grid below the existing frames, keeping empty rows and columns
 	var target := Global.spritesheet
 	var offset := Vector2i(0, target.get_first_free_row())
-	target.grid_size = Vector2i(
-		max(target.grid_size.x, spritesheet.grid_size.x),
-		max(target.grid_size.y, offset.y + spritesheet.grid_size.y)
-	)
+	target.begin_batch()
+	target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 	for coord: Vector2i in spritesheet.frames:
-		target.add_frame_at_coordinate(spritesheet.frames[coord], coord + offset)
-	target.lock_all_free_spaces()
+		target.set_frame(coord + offset, spritesheet.frames[coord])
+	target.lock_free_cells()
+	target.end_batch()
 	close_requested.emit()
 
 
 func add_selected_frames_to_global():
-	var selected_frames: Dictionary = preview_area.spritesheet_preview.get_selected_frames()
-	var selected_frames_imgs: Array[Image] = []
-	selected_frames_imgs.assign(selected_frames.values())
-	Global.spritesheet.add_frames(selected_frames_imgs)
+	var imgs: Array[Image] = []
+	for coord in preview_area.spritesheet_preview.get_selected_coords():
+		imgs.append(spritesheet.frames[coord])
+	Global.spritesheet.add_frames(imgs)
 	close_requested.emit()
 
 

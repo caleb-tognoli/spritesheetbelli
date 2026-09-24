@@ -18,7 +18,7 @@ func test_single_row_fills_gaps_then_grows() -> void:
 	sheet.add_frames(
 		[make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image]
 	)
-	sheet.frames.erase(Vector2i(1, 0))
+	sheet.remove_frames([Vector2i(1, 0)] as Array[Vector2i])
 	sheet.add_frames([make_image(Color.WHITE)] as Array[Image])
 	assert_true(sheet.frames.has(Vector2i(1, 0)), "gap filled")
 	sheet.add_frames([make_image(Color.WHITE)] as Array[Image])
@@ -33,13 +33,14 @@ func test_frames_are_padded_to_sprite_size() -> void:
 		)
 	)
 	assert_eq(sheet.sprite_size, Vector2i(16, 12))
-	for img: Image in sheet.frames.values():
-		assert_eq(img.get_size(), Vector2i(16, 12))
+	for coord in sheet.frames:
+		assert_eq(sheet.get_cell_image(coord).get_size(), Vector2i(16, 12))
+	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(8, 8), "stored unpadded")
 
 
 func test_locked_spaces_are_skipped() -> void:
-	sheet.grid_size = Vector2i(3, 2)
-	sheet.locked_coordinates.append(Vector2i(0, 0))
+	sheet.set_grid_size(Vector2i(3, 2))
+	sheet.set_locked(Vector2i(0, 0), true)
 	sheet.add_frames([make_image(Color.RED)] as Array[Image])
 	assert_true(sheet.frames.has(Vector2i(1, 0)))
 
@@ -48,7 +49,7 @@ func test_shrinking_grid_removes_outside_frames() -> void:
 	sheet.add_frames(
 		[make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image]
 	)
-	sheet.grid_size = Vector2i(2, 1)
+	sheet.set_grid_size(Vector2i(2, 1))
 	assert_eq(sheet.frames.size(), 2)
 
 
@@ -61,3 +62,75 @@ func test_get_image_places_frames() -> void:
 
 func test_guess_grid_size() -> void:
 	assert_eq(AddSpritesheetWindow.guess_grid_size(Vector2i(96, 64)), Vector2i(3, 2))
+
+
+func test_rotating_back_restores_sprite_size() -> void:
+	sheet.add_frames(
+		[make_image(Color.RED, Vector2i(16, 32)), make_image(Color.BLUE)] as Array[Image]
+	)
+	var coords: Array[Vector2i] = [Vector2i(0, 0)]
+	sheet.rotate_frames(coords, true)
+	assert_eq(sheet.sprite_size, Vector2i(32, 16))
+	sheet.rotate_frames(coords, false)
+	assert_eq(sheet.sprite_size, Vector2i(16, 32))
+
+
+func test_one_update_per_operation() -> void:
+	var count := [0]
+	sheet.updated.connect(func(): count[0] += 1)
+	var imgs: Array[Image] = []
+	for i in 20:
+		imgs.append(make_image(Color.RED))
+	sheet.add_frames(imgs)
+	assert_eq(count[0], 1)
+
+
+func test_edits_never_modify_images_in_place() -> void:
+	var img := make_image(Color.RED)
+	img.set_pixel(0, 0, Color.BLUE)
+	sheet.add_frames([img] as Array[Image])
+	var state := sheet.get_state()
+	sheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
+	assert_color(img, Vector2i.ZERO, Color.BLUE, "original untouched")
+	sheet.set_state(state)
+	assert_color(sheet.frames[Vector2i.ZERO], Vector2i.ZERO, Color.BLUE, "state restored")
+
+
+func test_resize_is_lossless() -> void:
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	sheet.resize_sprites(Vector2i(4, 4))
+	assert_eq(sheet.sprite_size, Vector2i(4, 4))
+	sheet.resize_sprites(Vector2i(64, 64))
+	assert_eq(sheet.sprite_size, Vector2i(64, 64))
+	assert_eq(sheet.frames[Vector2i.ZERO].get_size(), Vector2i(16, 16), "source kept")
+
+
+func test_move_frames_swaps() -> void:
+	sheet.add_frames(
+		[make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image]
+	)
+	sheet.move_frames([Vector2i(0, 0)] as Array[Vector2i], Vector2i(2, 0))
+	assert_color(sheet.frames[Vector2i(2, 0)], Vector2i.ZERO, Color.RED)
+	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.BLUE)
+
+
+func test_insert_and_remove_cell() -> void:
+	sheet.add_frames([make_image(Color.RED), make_image(Color.GREEN)] as Array[Image])
+	sheet.set_grid_size(Vector2i(2, 1))
+	sheet.insert_empty_cell(Vector2i(0, 0))
+	assert_false(sheet.has_frame(Vector2i(0, 0)))
+	assert_color(sheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.RED)
+	assert_color(sheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.GREEN, "wraps to next row")
+	sheet.remove_cell(Vector2i(0, 0))
+	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED)
+	assert_color(sheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.GREEN)
+
+
+func test_trim_and_color_key() -> void:
+	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(4, 4, 4, 6), Color.RED)
+	sheet.add_frames([img, make_image(Color.MAGENTA)] as Array[Image])
+	sheet.trim_frames([Vector2i(0, 0)] as Array[Vector2i])
+	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(4, 6))
+	sheet.color_key_frames([Vector2i(1, 0)] as Array[Vector2i], Color.MAGENTA)
+	assert_true(sheet.frames[Vector2i(1, 0)].is_invisible())

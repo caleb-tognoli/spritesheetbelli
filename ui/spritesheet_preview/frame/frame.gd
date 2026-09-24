@@ -16,7 +16,6 @@ static var selection_mode: SelectionMode = SelectionMode.NONE
 var selected := false:
 	set = set_selected
 var coordinate_in_spritesheet := -Vector2i.ONE
-var img: Image
 
 
 func _ready() -> void:
@@ -39,18 +38,15 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func setup(spritesheet: Spritesheet, coordinate: Vector2i):
-	var img_texture := ImageTexture.new()
-	img_texture.set_image(spritesheet.frames[coordinate])
-	texture = img_texture
+	texture = ImageTexture.create_from_image(spritesheet.get_frame_image(coordinate))
 	size = spritesheet.sprite_size
 	position.x = spritesheet.sprite_size.x * coordinate.x
 	position.y = spritesheet.sprite_size.y * coordinate.y
 
 	var coordinate_label: Label = get_node("%Coordinate")
-	coordinate_label.text = str(coordinate.y * spritesheet.grid_size.x + coordinate.x)
+	coordinate_label.text = str(spritesheet.index_of(coordinate))
 
 	coordinate_in_spritesheet = coordinate
-	img = spritesheet.frames[coordinate]
 
 
 ## Keeps the index label the same size on screen regardless of the camera zoom

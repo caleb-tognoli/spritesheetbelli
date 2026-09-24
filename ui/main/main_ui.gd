@@ -121,7 +121,7 @@ func resize_sprites(new_size: Vector2i) -> void:
 	if new_size.x <= 0 or new_size.y <= 0:
 		set_text_params(Global.spritesheet)
 		return
-	Global.spritesheet.resize_frames(new_size)
+	Global.spritesheet.resize_sprites(new_size)
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:
@@ -170,11 +170,7 @@ func show_confirmation_dialog(title: String, dialog_text: String, confirm_action
 
 
 func set_spritesheet_grid_size(columns: int, rows: int):
-	var frames_outside_count := 0
-	for coord in Global.spritesheet.frames:
-		if columns <= coord.x or rows <= coord.y:
-			frames_outside_count += 1
-
+	var frames_outside_count := Global.spritesheet.count_frames_outside(Vector2i(columns, rows))
 	var spritesheet_set_size := Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))
 
 	if frames_outside_count > 0:
@@ -188,11 +184,14 @@ func set_spritesheet_grid_size(columns: int, rows: int):
 		)
 	else:
 		spritesheet_set_size.call()
-	Global.spritesheet.updated.emit()
+	# Show the current size again if the change was canceled or not possible
+	set_text_params(Global.spritesheet)
 
 
 func save_sprites(folder: String):
-	var sprites := Global.spritesheet.frames.values()
+	var sprites: Array[Image] = []
+	for coord in Global.spritesheet.frames:
+		sprites.append(Global.spritesheet.get_cell_image(coord))
 	var i := 0
 	while i < sprites.size():
 		var filename := folder.path_join(str(i))

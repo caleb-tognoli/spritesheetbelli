@@ -32,9 +32,6 @@ func update_window_title():
 
 
 func reset_spritesheet() -> void:
-	spritesheet.frames = {}
-	spritesheet.locked_coordinates = []
-	spritesheet.sprite_size = Vector2i.ZERO
-	spritesheet.grid_size = Vector2i.ZERO  # Emits updated
+	spritesheet.clear()
 	filepath = ""
 	has_unsaved_changes = false
