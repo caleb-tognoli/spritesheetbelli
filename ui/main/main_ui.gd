@@ -20,6 +20,7 @@ extends Control
 var set_filepath_when_opening_spritesheet: bool = false
 var pending_confirm_action: Callable
 var open_file_dialogs: Array[FileDialog] = []
+var warned_about_jpg_transparency := false
 
 
 func _ready() -> void:
@@ -206,17 +207,9 @@ func save_spritesheet(path: String):
 		show_notification_dialog("Error", "The spritesheet is empty.")
 		return
 
-	var error: Error
-	match path.get_extension().to_lower():
-		"jpg", "jpeg", "jpe":
-			error = spritesheet_image.save_jpg(path)
-		"webp":
-			error = spritesheet_image.save_webp(path)
-		"png":
-			error = spritesheet_image.save_png(path)
-		_:
-			path += ".png"
-			error = spritesheet_image.save_png(path)
+	path = SpritesheetExporter.with_image_extension(path)
+	var options := ExportOptions.new()
+	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
 
 	if error != OK:
 		show_notification_dialog(
@@ -224,9 +217,18 @@ func save_spritesheet(path: String):
 		)
 		return
 
-	show_notification_dialog(
-		"Saved successfully", "Saved spritesheet to %s." % [path.get_base_dir().get_file()]
-	)
+	var message := "Saved spritesheet to %s." % [path.get_base_dir().get_file()]
+	if (
+		not SpritesheetExporter.supports_transparency(path)
+		and ImageUtils.has_transparency(spritesheet_image)
+		and not warned_about_jpg_transparency
+	):
+		warned_about_jpg_transparency = true
+		message += (
+			"\nJPG doesn't support transparency, so transparent areas were filled with %s."
+			% ("white" if options.opaque_background == Color.WHITE else "the background colour")
+		)
+	show_notification_dialog("Saved successfully", message)
 	Global.filepath = path
 	Global.has_unsaved_changes = false
 

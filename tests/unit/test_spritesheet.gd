@@ -148,3 +148,14 @@ func test_exported_sprites_are_named_by_grid_index() -> void:
 	assert_eq(written.size(), 2)
 	assert_color(Image.load_from_file(dir.path_join("0.png")), Vector2i.ZERO, Color.RED)
 	assert_color(Image.load_from_file(dir.path_join("2.png")), Vector2i.ZERO, Color.BLUE)
+
+
+func test_jpg_export_fills_transparency() -> void:
+	var path := OS.get_user_data_dir().path_join("tests/transparent.jpg")
+	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(0, 0, 8, 16), Color.BLUE)
+	assert_eq(SpritesheetExporter.save_image(img, path), OK)
+	var saved := Image.load_from_file(path)
+	assert_true(saved.get_pixel(12, 8).r > 0.9, "transparent half is white, not black")
+	assert_eq(SpritesheetExporter.with_image_extension("a/b"), "a/b.png")
+	assert_eq(SpritesheetExporter.with_image_extension("a/b.JPEG"), "a/b.JPEG")

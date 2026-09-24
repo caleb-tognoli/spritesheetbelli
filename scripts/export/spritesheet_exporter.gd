@@ -20,6 +20,32 @@ static func build_image(sheet: Spritesheet, options: ExportOptions) -> Image:
 	return img
 
 
+## File extensions that can be exported, lowercase
+const IMAGE_EXTENSIONS: PackedStringArray = ["png", "webp", "jpg", "jpeg", "jpe"]
+
+
+static func supports_transparency(path: String) -> bool:
+	return path.get_extension().to_lower() not in ["jpg", "jpeg", "jpe"]
+
+
+## Adds .png when [param path] has no known image extension
+static func with_image_extension(path: String) -> String:
+	if path.get_extension().to_lower() in IMAGE_EXTENSIONS:
+		return path
+	return path + ".png"
+
+
+## Saves [param img] in the format given by the extension of [param path]
+static func save_image(img: Image, path: String, options := ExportOptions.new()) -> Error:
+	match path.get_extension().to_lower():
+		"jpg", "jpeg", "jpe":
+			var flat := ImageUtils.flatten(img, options.opaque_background)
+			return flat.save_jpg(path, options.jpg_quality)
+		"webp":
+			return img.save_webp(path)
+	return img.save_png(path)
+
+
 ## Saves every frame as its own PNG named after its index on the grid.
 ## Returns the paths written, or an empty array and the error through [param errors].
 static func export_sprites(
