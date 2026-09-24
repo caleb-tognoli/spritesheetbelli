@@ -1,6 +1,9 @@
 class_name AddSpritesheetWindow
 extends Window
 
+const COLLAPSED_ICON := preload("res://assets/icons/GuiTreeArrowRight.svg")
+const EXPANDED_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
+
 signal canceled
 ## Emitted after frames were added to the open spritesheet
 signal frames_added
@@ -19,6 +22,8 @@ signal frames_added
 @export var spritesheet_image: Image
 
 var spritesheet: Spritesheet
+## Shows the rarely needed offset and spacing fields
+var more_options_btn := Button.new()
 
 
 func _ready() -> void:
@@ -42,7 +47,26 @@ func _ready() -> void:
 				update_grid_size(spritesheet.grid_size.x, spritesheet.grid_size.y)
 		)
 
+	# Offset and spacing are rarely needed, so they're hidden until asked for
+	var offset_box := offset_x.get_parent().get_parent() as Control
+	var spacing_box := spacing_x.get_parent().get_parent() as Control
+	more_options_btn.text = "Offset & Spacing"
+	more_options_btn.toggle_mode = true
+	more_options_btn.flat = true
+	more_options_btn.size_flags_vertical = Control.SIZE_SHRINK_END
+	more_options_btn.tooltip_text = "For sheets with a margin around or gaps between the frames"
+	offset_box.add_sibling(more_options_btn)
+	offset_box.get_parent().move_child(more_options_btn, offset_box.get_index())
+	more_options_btn.toggled.connect(
+		func(on: bool) -> void:
+			offset_box.visible = on
+			spacing_box.visible = on
+			more_options_btn.icon = EXPANDED_ICON if on else COLLAPSED_ICON
+	)
+	more_options_btn.toggled.emit(false)
+
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
+	preview_area.spritesheet_preview.able_to_move_frames = false
 	# Show the whole sheet once the window has its size
 	visibility_changed.connect(
 		func() -> void:
@@ -57,6 +81,7 @@ func setup(img: Image, file_name := "") -> void:
 	spritesheet_image = img
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
+	more_options_btn.button_pressed = false
 
 	var guessed_size := GridGuesser.guess(img, file_name)
 	update_grid_size(guessed_size.x, guessed_size.y)

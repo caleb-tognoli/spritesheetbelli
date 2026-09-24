@@ -101,6 +101,13 @@ func test_dragging_frames_moves_them() -> void:
 	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "undoable")
 
 
+func test_dragging_selects_when_moving_is_off() -> void:
+	preview.able_to_move_frames = false
+	drag(at(Vector2i(0, 0)), at(Vector2i(1, 0)))
+	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
+	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "box selection")
+
+
 func test_alt_drag_copies() -> void:
 	drag(at(Vector2i(0, 0)), at(Vector2i(0, 1)), true)
 	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED)
