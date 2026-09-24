@@ -301,3 +301,18 @@ func test_zoom_presets() -> void:
 	menu.id_pressed.emit(PreviewArea.ZOOM_PRESETS.find(4.0))
 	assert_eq(main.preview.camera.zoom.x, 4.0)
 	assert_eq(main.preview_area.zoom.text, "400%")
+
+
+func test_formatted_text_is_translatable() -> void:
+	var german := Translation.new()
+	german.locale = "de"
+	german.add_message("%d frames · %d×%d grid", "%d Frames · %d×%d Raster")
+	TranslationServer.add_translation(german)
+	var previous := TranslationServer.get_locale()
+	TranslationServer.set_locale("de")
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	main.update_sheet_info()
+	var text: String = main.sheet_info.text
+	TranslationServer.set_locale(previous)
+	TranslationServer.remove_translation(german)
+	assert_eq(text, "1 Frames · 1×1 Raster")

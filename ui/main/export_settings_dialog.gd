@@ -188,7 +188,7 @@ func _update_labels(options: ExportOptions) -> void:
 			coords[mini(1, coords.size() - 1)],
 			Settings.get_value(&"index_start")
 		)
-		pattern_example.text = "For example: %s.png" % example
+		pattern_example.text = tr("For example: %s.png") % example
 
 
 func _add_spin(spin: SpinBox, text: String, tip: String) -> void:

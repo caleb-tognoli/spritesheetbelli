@@ -442,15 +442,16 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 func update_sheet_info() -> void:
 	var sheet := Global.spritesheet
 	if sheet.is_empty():
-		sheet_info.text = "No frames. Add sprites or drop images here."
+		sheet_info.text = tr("No frames. Add sprites or drop images here.")
 	else:
 		var selected := preview.get_selected_coords().size()
 		sheet_info.text = (
-			"%d frames · %d×%d grid" % [sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y]
+			tr("%d frames · %d×%d grid")
+			% [sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y]
 		)
 		if selected:
-			sheet_info.text += " · %d selected" % selected
-	legend.text = "Hatched cells are locked" if not sheet.locked_coordinates.is_empty() else ""
+			sheet_info.text += " · " + tr("%d selected") % selected
+	legend.text = tr("Hatched cells are locked") if not sheet.locked_coordinates.is_empty() else ""
 	legend.tooltip_text = "Locked cells are kept empty when adding sprites. Click one to unlock it."
 
 
@@ -480,7 +481,7 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 		Notify.confirm(
 			"Confirm resize",
 			(
-				"Resizing the grid to %d×%d would delete %d sprites."
+				tr("Resizing the grid to %d×%d would delete %d sprites.")
 				% [columns, rows, frames_outside_count]
 			),
 			spritesheet_set_size

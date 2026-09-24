@@ -142,4 +142,4 @@ func _show_current() -> void:
 		)
 	_display.texture = _textures[source]
 	var index: int = preview.spritesheet.index_of(coord) + Settings.get_value(&"index_start")
-	_info.text = "Frame %d  (%d of %d)" % [index, _position + 1, _coords.size()]
+	_info.text = tr("Frame %d  (%d of %d)") % [index, _position + 1, _coords.size()]

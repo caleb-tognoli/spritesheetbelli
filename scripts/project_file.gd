@@ -63,7 +63,7 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 static func load(path: String) -> Dictionary:
 	var zip := ZIPReader.new()
 	if zip.open(path) != OK:
-		return {"error": "Could not open %s." % path.get_file()}
+		return {"error": TranslationServer.translate("Could not open %s.") % path.get_file()}
 	var result := _read(zip)
 	zip.close()
 	return result
@@ -82,7 +82,13 @@ static func _read(zip: ZIPReader) -> Dictionary:
 	for frame: Dictionary in data.get("frames", []):
 		var img := Image.new()
 		if img.load_png_from_buffer(zip.read_file(frame.get("file", ""))) != OK:
-			return {"error": "A frame image is missing or damaged (%s)." % frame.get("file")}
+			return {
+				"error":
+				(
+					TranslationServer.translate("A frame image is missing or damaged (%s).")
+					% frame.get("file")
+				)
+			}
 		img.convert(Image.FORMAT_RGBA8)
 		img.resource_name = frame.get("name", "")
 		frames[_to_vector2i(frame.get("cell"))] = img

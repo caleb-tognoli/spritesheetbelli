@@ -19,7 +19,7 @@ func _init() -> void:
 
 func open(row: int, current_name: String) -> void:
 	_row = row
-	title = "Name Row %d" % row
+	title = tr("Name Row %d") % row
 	line_edit.text = current_name
 	popup_centered()
 	line_edit.grab_focus()

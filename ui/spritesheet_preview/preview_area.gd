@@ -102,7 +102,9 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 	if not sheet.is_inside(coord):
 		return ""
 	var index: int = sheet.index_of(coord) + Settings.get_value(&"index_start")
-	var position := "Cell %d (column %d, row %d)" % [index, coord.x, coord.y]
+	var position := (
+		TranslationServer.translate("Cell %d (column %d, row %d)") % [index, coord.x, coord.y]
+	)
 	if sheet.has_frame(coord):
 		var source := sheet.frames[coord]
 		var size := sheet.get_frame_image(coord).get_size()
@@ -111,5 +113,19 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 			text += "\n" + source.resource_name
 		return text
 	if sheet.is_locked(coord):
-		return "%s\nLocked: kept empty when adding sprites. Click to unlock." % position
-	return "%s\nEmpty. Click to lock it so added sprites skip it." % position
+		return (
+			"%s\n%s"
+			% [
+				position,
+				TranslationServer.translate(
+					"Locked: kept empty when adding sprites. Click to unlock."
+				)
+			]
+		)
+	return (
+		"%s\n%s"
+		% [
+			position,
+			TranslationServer.translate("Empty. Click to lock it so added sprites skip it.")
+		]
+	)

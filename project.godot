@@ -55,6 +55,10 @@ import/blender/enabled=false
 
 theme/custom="res://resources/themes/app_theme.tres"
 
+[internationalization]
+
+locale/translations_pot_files=PackedStringArray("res://scripts/autoloaded/actions.gd", "res://scripts/autoloaded/global.gd", "res://scripts/autoloaded/notify.gd", "res://scripts/autoloaded/settings.gd", "res://scripts/document.gd", "res://scripts/export/atlas_packer.gd", "res://scripts/export/export_options.gd", "res://scripts/export/metadata.gd", "res://scripts/export/spritesheet_exporter.gd", "res://scripts/frame_clipboard.gd", "res://scripts/grid_guesser.gd", "res://scripts/image_loader.gd", "res://scripts/image_utils.gd", "res://scripts/project_file.gd", "res://scripts/resources/spritesheet.gd", "res://scripts/slicer.gd", "res://scripts/ui/action_popup_menu.gd", "res://scripts/ui/app_action.gd", "res://scripts/ui/app_theme.gd", "res://scripts/ui/shortcuts_dialog.gd", "res://ui/add_spritesheet/add_spritesheet_window.gd", "res://ui/add_spritesheet/add_spritesheet_window.tscn", "res://ui/animation_preview/animation_preview.gd", "res://ui/main/color_key_dialog.gd", "res://ui/main/export_settings_dialog.gd", "res://ui/main/file_controller.gd", "res://ui/main/main.tscn", "res://ui/main/main_ui.gd", "res://ui/main/menu_bar.gd", "res://ui/main/recent_files_menu.gd", "res://ui/main/row_name_dialog.gd", "res://ui/settings/settings_window.gd", "res://ui/spritesheet_preview/center_view.gd", "res://ui/spritesheet_preview/preview_area.gd", "res://ui/spritesheet_preview/preview_area.tscn", "res://ui/spritesheet_preview/spritesheet_preview.gd")
+
 [input]
 
 name_row={

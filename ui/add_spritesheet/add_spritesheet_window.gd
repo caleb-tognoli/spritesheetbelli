@@ -66,7 +66,7 @@ func setup(img: Image, file_name := "") -> void:
 func on_preview_update() -> void:
 	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
 	add_selected_frames_btn.disabled = selection_size == 0
-	add_selected_frames_btn.text = "Add selected frames (%d)" % selection_size
+	add_selected_frames_btn.text = tr("Add selected frames (%d)") % selection_size
 
 
 func update_grid_size(columns: int, rows: int) -> void:
@@ -124,7 +124,7 @@ func add_selected_frames_to_global() -> void:
 
 
 func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
-	slice_info.text = "Cell size: %d×%d px" % [cell_size.x, cell_size.y]
+	slice_info.text = tr("Cell size: %d×%d px") % [cell_size.x, cell_size.y]
 	slice_info.tooltip_text = ""
 	slice_info.remove_theme_color_override("font_color")
 	if unused != Vector2i.ZERO:
@@ -133,6 +133,6 @@ func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
 			parts.append("%d px on the right" % unused.x)
 		if unused.y > 0:
 			parts.append("%d px at the bottom" % unused.y)
-		slice_info.text += "\n%s not used" % " and ".join(parts)
+		slice_info.text += tr("\n%s not used") % " and ".join(parts)
 		slice_info.tooltip_text = "The image doesn't divide evenly into this grid"
 		slice_info.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))

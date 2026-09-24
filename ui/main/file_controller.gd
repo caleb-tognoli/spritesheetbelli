@@ -58,7 +58,7 @@ func _ready() -> void:
 		func(path: String) -> void:
 			var img := Image.load_from_file(path)
 			if not img:
-				Notify.error("Could not load %s." % path.get_file())
+				Notify.error(tr("Could not load %s.") % path.get_file())
 				return
 			img.resource_name = path.get_file()
 			Global.document.perform(
@@ -134,7 +134,7 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 	)
 
 	if not failed_files.is_empty():
-		Notify.error("Could not load: %s." % ", ".join(failed_files))
+		Notify.error(tr("Could not load: %s.") % ", ".join(failed_files))
 
 
 ## Asks for an image to replace the frame at [param coord]
@@ -147,7 +147,7 @@ func replace_frame_image(coord: Vector2i) -> void:
 func add_sprites_from_folder(folder: String) -> void:
 	var paths := get_images_in_folder(folder)
 	if paths.is_empty():
-		Notify.error("There are no images in %s." % folder.get_file())
+		Notify.error(tr("There are no images in %s.") % folder.get_file())
 		return
 	await add_sprites_from_paths(paths)
 
@@ -189,7 +189,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 	var img := Image.load_from_file(spritesheet_path)
 	if not img:
 		set_filepath_when_opening_spritesheet = false
-		Notify.error("Could not load %s." % spritesheet_path.get_file())
+		Notify.error(tr("Could not load %s.") % spritesheet_path.get_file())
 		return
 
 	if set_filepath_when_opening_spritesheet:
@@ -220,9 +220,9 @@ func save_sprites(folder: String) -> void:
 		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
 	)
 	if not errors.is_empty():
-		Notify.error("Could not save: %s." % ", ".join(errors))
+		Notify.error(tr("Could not save: %s.") % ", ".join(errors))
 		return
-	Notify.toast("Saved %d images to %s." % [written.size(), folder.get_file()])
+	Notify.toast(tr("Saved %d images to %s.") % [written.size(), folder.get_file()])
 
 
 func _create_unsaved_changes_dialog() -> void:
@@ -249,7 +249,7 @@ func confirm_unsaved_changes(before: String, then: Callable) -> void:
 		return
 	after_unsaved_changes = then
 	var file_name := Global.document.path.get_file() if Global.document.path else "the spritesheet"
-	unsaved_changes_dialog.dialog_text = "Save changes to %s before %s?" % [file_name, before]
+	unsaved_changes_dialog.dialog_text = tr("Save changes to %s before %s?") % [file_name, before]
 	unsaved_changes_dialog.popup_centered()
 
 
@@ -275,7 +275,7 @@ func save_project(path: String) -> bool:
 	var extra := {"export_path": Global.document.export_path}
 	var error := ProjectFile.save(Global.spritesheet, path, extra)
 	if error != OK:
-		Notify.error("Could not save %s (%s)." % [path.get_file(), error_string(error)])
+		Notify.error(tr("Could not save %s (%s).") % [path.get_file(), error_string(error)])
 		after_save = Callable()
 		return false
 
@@ -288,7 +288,7 @@ func save_project(path: String) -> bool:
 		after_save = Callable()
 		action.call()
 	else:
-		Notify.toast("Saved %s" % path.get_file())
+		Notify.toast(tr("Saved %s") % path.get_file())
 	return true
 
 
@@ -344,18 +344,18 @@ func export_image_to(path: String) -> bool:
 	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
 
 	if error != OK:
-		Notify.error("Could not export to %s (%s)." % [path, error_string(error)])
+		Notify.error(tr("Could not export to %s (%s).") % [path, error_string(error)])
 		return false
 
-	var message := "Exported %s in %s." % [path.get_file(), path.get_base_dir().get_file()]
+	var message := tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
 	var metadata_error := Metadata.write_for_image(
 		Global.spritesheet, options, path, Settings.get_value(&"index_start")
 	)
 	if metadata_error != OK:
-		Notify.error("Could not write the metadata (%s)." % error_string(metadata_error))
+		Notify.error(tr("Could not write the metadata (%s).") % error_string(metadata_error))
 		return false
 	if options.metadata != ExportOptions.MetadataFormat.NONE:
-		message += "\nAlso wrote %s." % Metadata.get_path_for_image(path, options).get_file()
+		message += tr("\nAlso wrote %s.") % Metadata.get_path_for_image(path, options).get_file()
 	if (
 		not SpritesheetExporter.supports_transparency(path)
 		and ImageUtils.has_transparency(spritesheet_image)
@@ -363,8 +363,12 @@ func export_image_to(path: String) -> bool:
 	):
 		warned_about_jpg_transparency = true
 		message += (
-			"\nJPG doesn't support transparency, so transparent areas were filled with %s."
-			% ("white" if options.opaque_background == Color.WHITE else "the background colour")
+			tr("\nJPG doesn't support transparency, so transparent areas were filled with %s.")
+			% (
+				tr("white")
+				if options.opaque_background == Color.WHITE
+				else tr("the background colour")
+			)
 		)
 	Global.document.export_path = path
 	Notify.toast(message, 7.0 if "\n" in message else 3.0)
@@ -378,7 +382,7 @@ func export_atlas(path: String) -> bool:
 	var packed := AtlasPacker.pack(sheet, options.spacing, options.extrude)
 	var image: Image = packed.image
 	if packed.regions.is_empty():
-		Notify.error("The frames don't fit in a %d px atlas." % AtlasPacker.MAX_SIZE)
+		Notify.error(tr("The frames don't fit in a %d px atlas.") % AtlasPacker.MAX_SIZE)
 		return false
 	path = path.get_basename() + ".png"
 	var json_path := path.get_basename() + ".json"
@@ -396,11 +400,11 @@ func export_atlas(path: String) -> bool:
 		else:
 			error = FileAccess.get_open_error()
 	if error != OK:
-		Notify.error("Could not export the atlas (%s)." % error_string(error))
+		Notify.error(tr("Could not export the atlas (%s).") % error_string(error))
 		return false
 	Notify.toast(
 		(
-			"Packed %d frames into %s (%d×%d px) and %s."
+			tr("Packed %d frames into %s (%d×%d px) and %s.")
 			% [
 				frames.size(),
 				path.get_file(),
