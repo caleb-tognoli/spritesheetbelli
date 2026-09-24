@@ -60,7 +60,7 @@ func _init() -> void:
 	sprites.add_child(only_selected)
 	sprites.add_child(Control.new())
 	sprites.add_child(_label("When a file exists"))
-	for label in ["Add a number", "Overwrite it", "Skip the sprite"]:
+	for label: String in ["Add a number", "Overwrite it", "Skip the sprite"]:
 		existing.add_item(label)
 	sprites.add_child(existing)
 
@@ -68,7 +68,9 @@ func _init() -> void:
 	var meta := _grid()
 	box.add_child(meta)
 	meta.add_child(_label("Also write"))
-	for label in ["Nothing", "JSON (TexturePacker, Aseprite tags)", "Godot SpriteFrames (.tres)"]:
+	for label: String in [
+		"Nothing", "JSON (TexturePacker, Aseprite tags)", "Godot SpriteFrames (.tres)"
+	]:
 		metadata.add_item(label)
 	metadata.tooltip_text = "A file next to the image that tells game engines where each frame is"
 	meta.add_child(metadata)

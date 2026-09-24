@@ -5,7 +5,7 @@ var dir := OS.get_user_data_dir().path_join("tests/cli")
 
 func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir.path_join("frames"))
-	for sub in ["", "frames", "sprites"]:
+	for sub: String in ["", "frames", "sprites"]:
 		for f in DirAccess.get_files_at(dir.path_join(sub)):
 			DirAccess.remove_absolute(dir.path_join(sub).path_join(f))
 	for i in 5:

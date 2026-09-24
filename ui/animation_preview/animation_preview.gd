@@ -59,7 +59,7 @@ func _init() -> void:
 	_fps_spin.tooltip_text = "Frames per second"
 	_fps_spin.value_changed.connect(func(value: float) -> void: fps = value)
 	controls.add_child(_fps_spin)
-	for label in ["Loop", "Ping-pong", "Once"]:
+	for label: String in ["Loop", "Ping-pong", "Once"]:
 		_mode_option.add_item(label)
 	_mode_option.tooltip_text = "How the animation repeats"
 	_mode_option.item_selected.connect(
