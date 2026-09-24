@@ -80,13 +80,52 @@ func test_add_spritesheet_keeps_empty_rows() -> void:
 	assert_eq(Global.spritesheet.grid_size, Vector2i(3, 3))
 
 
-func test_save_appends_png_extension() -> void:
+func test_export_appends_png_extension() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var path := dir.path_join("sheet_no_ext")
-	main.files.save_spritesheet(path)
+	main.files.export_image_to(path)
 	assert_true(FileAccess.file_exists(path + ".png"))
-	assert_eq(Global.document.path, path + ".png")
+	assert_eq(Global.document.export_path, path + ".png", "Ctrl+E exports here next time")
+	Notify.message_dialog.hide()
+
+
+func test_save_and_open_project() -> void:
+	Global.document.perform(
+		"Add",
+		func():
+			Global.spritesheet.add_frames(
+				[make_image(Color.RED), make_image(Color.BLUE, Vector2i(8, 16))] as Array[Image]
+			)
+			Global.spritesheet.set_grid_size(Vector2i(3, 2))
+			Global.spritesheet.set_locked(Vector2i(2, 1), true)
+			Global.spritesheet.set_row_name(0, "idle")
+			Global.spritesheet.resize_sprites(Vector2i(32, 32))
+	)
+	var path := dir.path_join("project")
+	assert_true(main.files.save_project(path))
+	assert_eq(Global.document.path, path + ".sbelli")
 	assert_false(Global.document.is_dirty)
+	Notify.message_dialog.hide()
+
+	Global.document.reset()
+	assert_true(main.files.open_project(path + ".sbelli"))
+	var sheet := Global.spritesheet
+	assert_eq(sheet.grid_size, Vector2i(3, 2))
+	assert_eq(sheet.frames[Vector2i(1, 0)].get_size(), Vector2i(8, 16), "original size kept")
+	assert_eq(sheet.sprite_size, Vector2i(32, 32), "scale kept")
+	assert_true(sheet.is_locked(Vector2i(2, 1)))
+	assert_eq(sheet.row_names.get(0), "idle")
+	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED)
+	assert_false(Global.document.can_undo())
+
+
+func test_opening_invalid_project_shows_error() -> void:
+	var path := dir.path_join("broken.sbelli")
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string("not a zip")
+	f.close()
+	assert_false(main.files.open_project(path))
+	assert_true(Notify.message_dialog.visible)
 	Notify.message_dialog.hide()
 
 
@@ -105,10 +144,10 @@ func test_canceling_open_keeps_spritesheet() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	Global.document.mark_saved()
 	main.files.open_spritesheet()
-	main.files.open_spritesheet_dialog.canceled.emit()
+	assert_true(main.files.open_dialog in main.files.open_file_dialogs, "open dialog shown")
+	main.files.open_dialog.canceled.emit()
 	assert_eq(Global.spritesheet.frames.size(), 1)
-	assert_false(main.files.set_filepath_when_opening_spritesheet)
-	main.files.open_spritesheet_dialog.hide()
+	main.files.open_dialog.hide()
 
 
 func test_new_clears_everything() -> void:
@@ -159,7 +198,8 @@ func test_opening_a_file_is_not_an_unsaved_change() -> void:
 	main.files.add_spritesheet_window.add_spritesheet_to_global()
 	assert_false(Global.spritesheet.is_empty())
 	assert_false(Global.document.is_dirty)
-	assert_eq(Global.document.path, path)
+	assert_eq(Global.document.export_path, path, "exports back to the opened image")
+	assert_eq(Global.document.path, "", "not saved as a project yet")
 	assert_false(Global.document.can_undo(), "opening can't be undone")
 	await get_tree().process_frame
 	Actions.run(&"select_all")
@@ -190,9 +230,9 @@ func test_closing_with_unsaved_changes_asks_first() -> void:
 	main.files.unsaved_changes_dialog.custom_action.emit(&"discard")
 	assert_eq(quits[0], 2, "Don't Save closes")
 
-	Global.document.path = dir.path_join("close_save.png")
+	Global.document.path = dir.path_join("close_save.sbelli")
 	main.files.confirm_unsaved_changes("closing", func(): quits[0] += 1)
 	main.files.unsaved_changes_dialog.confirmed.emit()
 	assert_eq(quits[0], 3, "Save saves, then closes")
 	assert_false(Global.document.is_dirty)
-	assert_true(FileAccess.file_exists(dir.path_join("close_save.png")))
+	assert_true(FileAccess.file_exists(dir.path_join("close_save.sbelli")))

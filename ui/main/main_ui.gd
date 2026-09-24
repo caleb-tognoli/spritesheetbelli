@@ -80,12 +80,9 @@ func _register_actions() -> void:
 	add.call(&"new", "New", files.new_spritesheet)
 	add.call(&"open", "Open…", files.open_spritesheet)
 	add.call(&"save", "Save", files.save, has_frames)
-	add.call(
-		&"save_as",
-		"Save As…",
-		files.popup_file_dialog.bind(files.save_spritesheet_dialog),
-		has_frames
-	)
+	add.call(&"save_as", "Save As…", files.save_as, has_frames)
+	add.call(&"export_image", "Export Image", files.export_image, has_frames)
+	add.call(&"export_image_as", "Export Image As…", files.export_image_as, has_frames)
 	add.call(
 		&"export_sprites",
 		"Export Sprites…",

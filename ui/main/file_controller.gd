@@ -2,6 +2,9 @@ class_name FileController
 extends Node
 ## Opening, saving, exporting and adding files, with the dialogs they need.
 
+const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
+const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp ; Images"
+
 @export var add_spritesheet_window: AddSpritesheetWindow
 
 var warned_about_jpg_transparency := false
@@ -13,27 +16,38 @@ var after_save: Callable
 var unsaved_changes_dialog := ConfirmationDialog.new()
 var after_unsaved_changes: Callable
 var open_file_dialogs: Array[FileDialog] = []
+var open_dialog := _create_file_dialog(
+	"Open", FileDialog.FILE_MODE_OPEN_FILE, [PROJECT_FILTER, IMAGE_FILTER]
+)
+var save_project_dialog := _create_file_dialog(
+	"Save Project", FileDialog.FILE_MODE_SAVE_FILE, [PROJECT_FILTER]
+)
 
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
 @onready var save_sprites_dialog: FileDialog = $SaveSpritesDialog
-@onready var save_spritesheet_dialog: FileDialog = $SaveSpritesheetDialog
+@onready var export_image_dialog: FileDialog = $ExportImageDialog
 
 
 func _ready() -> void:
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
-	open_spritesheet_dialog.canceled.connect(func(): set_filepath_when_opening_spritesheet = false)
+	open_dialog.file_selected.connect(open_path)
 	save_sprites_dialog.dir_selected.connect(save_sprites)
-	save_spritesheet_dialog.file_selected.connect(save_spritesheet)
-	save_spritesheet_dialog.canceled.connect(func(): after_save = Callable())
+	export_image_dialog.file_selected.connect(export_image_to)
+	save_project_dialog.file_selected.connect(save_project)
+	save_project_dialog.canceled.connect(func(): after_save = Callable())
+	add_child(open_dialog)
+	add_child(save_project_dialog)
 
 	# Loading the opened file is not an unsaved change
 	add_spritesheet_window.frames_added.connect(
 		func():
 			if loading_opened_file:
 				loading_opened_file = false
-				Global.document.load_state(Global.spritesheet.get_state(), Global.document.path)
+				Global.document.load_state(
+					Global.spritesheet.get_state(), "", Global.document.export_path
+				)
 	)
 	add_spritesheet_window.canceled.connect(func(): loading_opened_file = false)
 
@@ -42,7 +56,9 @@ func _ready() -> void:
 		open_sprites_dialog,
 		open_spritesheet_dialog,
 		save_sprites_dialog,
-		save_spritesheet_dialog,
+		export_image_dialog,
+		open_dialog,
+		save_project_dialog,
 	]:
 		var on_closed := func(): open_file_dialogs.erase(dialog)
 		dialog.canceled.connect(on_closed)
@@ -93,7 +109,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 	if set_filepath_when_opening_spritesheet:
 		set_filepath_when_opening_spritesheet = false
 		Global.document.reset()
-		Global.document.path = spritesheet_path
+		Global.document.export_path = spritesheet_path
 		loading_opened_file = true
 	add_spritesheet_window.setup(img)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
@@ -138,15 +154,76 @@ func confirm_unsaved_changes(before: String, then: Callable) -> void:
 	unsaved_changes_dialog.popup_centered()
 
 
-## Saves to the current file, or asks where to save. Returns true if saved right away.
+## Saves the project to its file, or asks where to save. Returns true if saved right away.
 func save() -> bool:
-	if Global.document.path.is_empty():
-		popup_file_dialog(save_spritesheet_dialog)
+	if not ProjectFile.is_project_path(Global.document.path):
+		save_as()
 		return false
-	return save_spritesheet(Global.document.path)
+	return save_project(Global.document.path)
 
 
-func save_spritesheet(path: String) -> bool:
+func save_as() -> void:
+	var suggested := Global.document.path
+	if suggested.is_empty() and Global.document.export_path:
+		suggested = Global.document.export_path
+	if suggested:
+		save_project_dialog.current_path = ProjectFile.with_extension(suggested)
+	popup_file_dialog(save_project_dialog)
+
+
+func save_project(path: String) -> bool:
+	path = ProjectFile.with_extension(path)
+	var extra := {"export_path": Global.document.export_path}
+	var error := ProjectFile.save(Global.spritesheet, path, extra)
+	if error != OK:
+		Notify.error("Could not save %s (%s)." % [path.get_file(), error_string(error)])
+		after_save = Callable()
+		return false
+
+	Global.document.path = path
+	Global.document.mark_saved()
+	if after_save.is_valid():
+		var action := after_save
+		after_save = Callable()
+		action.call()
+	else:
+		Notify.message("Saved", "Saved %s." % path.get_file())
+	return true
+
+
+func open_project(path: String) -> bool:
+	var result := ProjectFile.load(path)
+	if result.has("error"):
+		Notify.error(result.error)
+		return false
+	Global.document.load_state(result.state, path, result.extra.get("export_path", ""))
+	return true
+
+
+## Opens a project, or an image through the Add Spritesheet window
+func open_path(path: String) -> void:
+	if ProjectFile.is_project_path(path):
+		open_project(path)
+	else:
+		set_filepath_when_opening_spritesheet = true
+		show_add_spritesheet_window(path)
+
+
+## Exports the image to the last export path, or asks where
+func export_image() -> void:
+	if Global.document.export_path.is_empty():
+		export_image_as()
+	else:
+		export_image_to(Global.document.export_path)
+
+
+func export_image_as() -> void:
+	if Global.document.export_path:
+		export_image_dialog.current_path = Global.document.export_path
+	popup_file_dialog(export_image_dialog)
+
+
+func export_image_to(path: String) -> bool:
 	if Global.spritesheet.is_empty():
 		Notify.error("The spritesheet is empty.")
 		return false
@@ -157,11 +234,10 @@ func save_spritesheet(path: String) -> bool:
 	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
 
 	if error != OK:
-		Notify.error("Could not save spritesheet to %s (%s)." % [path, error_string(error)])
-		after_save = Callable()
+		Notify.error("Could not export to %s (%s)." % [path, error_string(error)])
 		return false
 
-	var message := "Saved %s in %s." % [path.get_file(), path.get_base_dir().get_file()]
+	var message := "Exported %s in %s." % [path.get_file(), path.get_base_dir().get_file()]
 	if (
 		not SpritesheetExporter.supports_transparency(path)
 		and ImageUtils.has_transparency(spritesheet_image)
@@ -172,14 +248,8 @@ func save_spritesheet(path: String) -> bool:
 			"\nJPG doesn't support transparency, so transparent areas were filled with %s."
 			% ("white" if options.opaque_background == Color.WHITE else "the background colour")
 		)
-	Global.document.path = path
-	Global.document.mark_saved()
-	if after_save.is_valid():
-		var action := after_save
-		after_save = Callable()
-		action.call()
-	else:
-		Notify.message("Saved successfully", message)
+	Global.document.export_path = path
+	Notify.message("Exported", message)
 	return true
 
 
@@ -189,8 +259,16 @@ func new_spritesheet():
 
 func open_spritesheet():
 	# The spritesheet is only reset once a file is picked, so canceling keeps the current one
-	var open_spritesheet_internal := func():
-		set_filepath_when_opening_spritesheet = true
-		popup_file_dialog(open_spritesheet_dialog)
+	confirm_unsaved_changes("opening another file", popup_file_dialog.bind(open_dialog))
 
-	confirm_unsaved_changes("opening another file", open_spritesheet_internal)
+
+static func _create_file_dialog(
+	dialog_title: String, mode: FileDialog.FileMode, filters: PackedStringArray
+) -> FileDialog:
+	var dialog := FileDialog.new()
+	dialog.title = dialog_title
+	dialog.file_mode = mode
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.filters = filters
+	dialog.use_native_dialog = true
+	return dialog

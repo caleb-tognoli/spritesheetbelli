@@ -33,7 +33,7 @@ script = ExtResource("10_files")
 add_spritesheet_window = NodePath("../AddSpritesheetWindow")
 
 [node name="OpenSpritesDialog" type="FileDialog" parent="Files"]
-title = "Open File(s)"
+title = "Add Sprite(s)"
 size = Vector2i(324, 180)
 ok_button_text = "Open"
 file_mode = 1
@@ -43,7 +43,7 @@ use_native_dialog = true
 
 [node name="OpenSpritesheetDialog" type="FileDialog" parent="Files"]
 auto_translate_mode = 1
-title = "Open a File"
+title = "Add Spritesheet"
 size = Vector2i(312, 175)
 ok_button_text = "Open"
 file_mode = 0
@@ -52,14 +52,15 @@ filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
 use_native_dialog = true
 
 [node name="SaveSpritesDialog" type="FileDialog" parent="Files"]
-title = "Open a Directory"
+title = "Export Sprites to Folder"
 size = Vector2i(454, 175)
 ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 use_native_dialog = true
 
-[node name="SaveSpritesheetDialog" type="FileDialog" parent="Files"]
+[node name="ExportImageDialog" type="FileDialog" parent="Files"]
+title = "Export Image"
 auto_translate_mode = 1
 size = Vector2i(454, 175)
 ok_button_text = "Save"

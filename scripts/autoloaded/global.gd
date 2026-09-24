@@ -17,8 +17,7 @@ func update_window_title() -> void:
 	var title := ""
 	if document.is_dirty:
 		title += "(*) "
-	if not document.path.is_empty():
-		title += document.path.get_file()
+	title += document.get_display_name()
 	if not title.is_empty():
 		title += " - "
 	title += ProjectSettings.get_setting("application/config/name")

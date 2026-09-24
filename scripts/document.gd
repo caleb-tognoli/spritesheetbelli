@@ -12,6 +12,11 @@ var path := "":
 	set(v):
 		path = v
 		changed.emit()
+## Image the spritesheet was opened from or last exported to
+var export_path := "":
+	set(v):
+		export_path = v
+		changed.emit()
 ## Whether there are changes since the last save or open
 var is_dirty: bool:
 	get:
@@ -71,11 +76,19 @@ func mark_saved() -> void:
 
 
 ## Replaces the whole state without undo history, e.g. when opening a file
-func load_state(state: Dictionary, file_path := "") -> void:
+func load_state(state: Dictionary, file_path := "", image_path := "") -> void:
 	spritesheet.set_state(state)
 	undo_redo.clear_history()
 	path = file_path
+	export_path = image_path
 	mark_saved()
+
+
+## Name shown to the user: the project file, else the image it came from
+func get_display_name() -> String:
+	if path:
+		return path.get_file()
+	return export_path.get_file()
 
 
 ## Empties the document and forgets its file and history
