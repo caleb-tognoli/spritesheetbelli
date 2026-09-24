@@ -251,3 +251,20 @@ func test_dropping_files() -> void:
 	main.files.open_dropped_files(PackedStringArray([folder.path_join("a2.png")]))
 	assert_true(main.files.add_spritesheet_window.visible, "one image opens Add Spritesheet")
 	main.files.add_spritesheet_window.hide()
+
+
+func test_quick_scale_buttons_and_filter() -> void:
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	main.double_size_btn.pressed.emit()
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(32, 32))
+	main.half_size_btn.pressed.emit()
+	main.half_size_btn.pressed.emit()
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(8, 8))
+	main.resize_filter.item_selected.emit(Image.INTERPOLATE_CUBIC)
+	assert_eq(Global.spritesheet.scale_filter, Image.INTERPOLATE_CUBIC)
+	main.double_size_btn.pressed.emit()
+	assert_eq(Global.spritesheet.scale_filter, Image.INTERPOLATE_CUBIC, "keeps the sheet's filter")
+	main.original_size_btn.pressed.emit()
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(16, 16))

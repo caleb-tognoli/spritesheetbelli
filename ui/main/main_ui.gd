@@ -36,6 +36,10 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var sprite_width: SpinBox = %SpriteWidth
 @onready var sprite_height: SpinBox = %SpriteHeight
 @onready var keep_ratio_btn: Button = %KeepRatio
+@onready var half_size_btn: Button = %HalfSize
+@onready var double_size_btn: Button = %DoubleSize
+@onready var original_size_btn: Button = %OriginalSize
+@onready var resize_filter: OptionButton = %ResizeFilter
 @onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
 @onready var spritesheet_width: Label = %SpritesheetWidth
@@ -70,6 +74,21 @@ func _ready() -> void:
 	sprite_width.value_changed.connect(func(width: float) -> void: set_sprite_size(int(width), -1))
 	sprite_height.value_changed.connect(
 		func(height: float) -> void: set_sprite_size(-1, int(height))
+	)
+	half_size_btn.pressed.connect(scale_sprites.bind(0.5))
+	double_size_btn.pressed.connect(scale_sprites.bind(2.0))
+	original_size_btn.pressed.connect(
+		func() -> void:
+			Global.document.perform(
+				"Original size", Global.spritesheet.set_frame_scale.bind(Vector2.ONE)
+			)
+	)
+	resize_filter.item_selected.connect(
+		func(filter: int) -> void:
+			var sheet := Global.spritesheet
+			Global.document.perform(
+				"Resize filter", sheet.set_frame_scale.bind(sheet.frame_scale, filter)
+			)
 	)
 	keep_ratio_btn.toggled.connect(
 		func(on: bool) -> void: keep_ratio_btn.icon = LINK_ICON if on else UNLINK_ICON
@@ -293,10 +312,26 @@ func resize_sprites(new_size: Vector2i) -> void:
 	if new_size.x <= 0 or new_size.y <= 0:
 		set_text_params(Global.spritesheet)
 		return
-	var filter: Image.Interpolation = Settings.get_value(&"resize_filter")
 	Global.document.perform(
-		"Resize sprites", Global.spritesheet.resize_sprites.bind(new_size, filter)
+		"Resize sprites", Global.spritesheet.resize_sprites.bind(new_size, get_resize_filter())
 	)
+
+
+## Multiplies the current scale, e.g. 2 to double the size
+func scale_sprites(factor: float) -> void:
+	var sheet := Global.spritesheet
+	Global.document.perform(
+		"Resize sprites",
+		sheet.set_frame_scale.bind(sheet.frame_scale * factor, get_resize_filter())
+	)
+
+
+## The sheet's filter once it has been resized, otherwise the default from the settings
+func get_resize_filter() -> Image.Interpolation:
+	var sheet := Global.spritesheet
+	if sheet.frame_scale != Vector2.ONE:
+		return sheet.scale_filter
+	return Settings.get_value(&"resize_filter")
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:
@@ -306,6 +341,7 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	sprite_height.set_value_no_signal(spritesheet.sprite_size.y)
 	spritesheet_width.text = str(spritesheet.sprite_size.x * spritesheet.grid_size.x)
 	spritesheet_height.text = str(spritesheet.sprite_size.y * spritesheet.grid_size.y)
+	resize_filter.select(get_resize_filter())
 
 
 func disable_if_empty() -> void:
@@ -314,6 +350,9 @@ func disable_if_empty() -> void:
 	grid_columns.editable = not is_empty
 	sprite_width.editable = not is_empty
 	sprite_height.editable = not is_empty
+	for button: BaseButton in [half_size_btn, double_size_btn, original_size_btn, resize_filter]:
+		button.disabled = is_empty
+	original_size_btn.disabled = is_empty or Global.spritesheet.frame_scale == Vector2.ONE
 
 
 func set_spritesheet_grid_size(columns: int, rows: int) -> void:

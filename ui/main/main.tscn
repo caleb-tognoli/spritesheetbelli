@@ -256,6 +256,47 @@ button_pressed = true
 icon = ExtResource("8_link")
 flat = true
 
+[node name="HalfSize" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Half size"
+text = "½×"
+flat = true
+
+[node name="DoubleSize" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Double size"
+text = "2×"
+flat = true
+
+[node name="OriginalSize" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Original size"
+text = "1:1"
+flat = true
+
+[node name="ResizeFilter" type="OptionButton" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "How pixels are blended when resizing. Nearest keeps pixel art sharp."
+item_count = 5
+popup/item_0/text = "Nearest"
+popup/item_0/id = 0
+popup/item_1/text = "Bilinear"
+popup/item_1/id = 1
+popup/item_2/text = "Cubic"
+popup/item_2/id = 2
+popup/item_3/text = "Trilinear"
+popup/item_3/id = 3
+popup/item_4/text = "Lanczos"
+popup/item_4/id = 4
+
 [node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
