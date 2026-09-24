@@ -46,8 +46,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
 @onready var sheet_size: Label = %SheetSize
-@onready var export_image_btn: Button = %ExportImage
-@onready var export_settings_btn: Button = %ExportSettings
+@onready var export_btn: Button = %Export
 @onready var split: HSplitContainer = %Split
 @onready var status_bar: Control = %StatusBar
 @onready var sheet_info: Label = %SheetInfo
@@ -60,7 +59,7 @@ var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key_dialog := ColorKeyDialog.new()
 var row_name_dialog := RowNameDialog.new()
-var export_settings_dialog := ExportSettingsDialog.new()
+var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
 var _was_empty := true
 
@@ -83,8 +82,7 @@ func _ready() -> void:
 	Global.spritesheet.updated.connect(_prepare_scaled_images)
 	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
-	export_image_btn.pressed.connect(Actions.run.bind(&"export_image"))
-	export_settings_btn.pressed.connect(Actions.run.bind(&"export_settings"))
+	export_btn.pressed.connect(Actions.run.bind(&"export"))
 	get_window().min_size = Vector2i(820, 520)
 	split.split_offset = Settings.get_value(&"sidebar_width")
 	split.dragged.connect(func(offset: int) -> void: Settings.set_value(&"sidebar_width", offset))
@@ -131,7 +129,8 @@ func _ready() -> void:
 	add_child(settings_window)
 	add_child(color_key_dialog)
 	add_child(row_name_dialog)
-	add_child(export_settings_dialog)
+	add_child(export_dialog)
+	export_dialog.export_requested.connect(files.choose_export_path)
 	add_child(about_dialog)
 	row_name_dialog.name_chosen.connect(
 		func(row: int, row_name: String) -> void:
@@ -186,26 +185,7 @@ func _register_actions() -> void:
 	add.call(&"open", "Open…", files.open_spritesheet)
 	add.call(&"save", "Save", files.save, has_frames)
 	add.call(&"save_as", "Save As…", files.save_as, has_frames)
-	add.call(&"export_image", "Export Image", files.export_image, has_frames)
-	add.call(&"export_image_as", "Export Image As…", files.export_image_as, has_frames)
-	add.call(
-		&"export_sprites",
-		"Export Sprites…",
-		files.popup_file_dialog.bind(files.save_sprites_dialog),
-		has_frames
-	)
-	add.call(
-		&"export_atlas",
-		"Export Packed Atlas…",
-		files.popup_file_dialog.bind(files.export_atlas_dialog),
-		has_frames
-	)
-	add.call(
-		&"export_settings",
-		"Export Settings…",
-		func() -> void: export_settings_dialog.popup_centered(),
-		has_frames
-	)
+	add.call(&"export", "Export…", func() -> void: export_dialog.popup_centered(), has_frames)
 	add.call(
 		&"add_sprites", "Add Sprite(s)…", files.popup_file_dialog.bind(files.open_sprites_dialog)
 	)

@@ -41,6 +41,8 @@ static func palette(light: bool, accent: Color) -> Palette:
 static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	var p := palette(light, accent)
 	var theme := Theme.new()
+	# Dialogs and windows; the sidebar, menus and preview set their own smaller sizes
+	theme.default_font_size = 14
 
 	var panel := _box(p.background)
 	theme.set_stylebox("panel", "Panel", panel)

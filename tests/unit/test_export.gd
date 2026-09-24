@@ -170,3 +170,20 @@ func test_too_big_images_are_explained() -> void:
 	assert_eq(ImageUtils.size_problem(Vector2i(4096, 4096)), "")
 	assert_true("WEBP" in ImageUtils.size_problem(Vector2i(20000, 10), "webp"))
 	assert_true("million" in ImageUtils.size_problem(Vector2i(20000, 20000)))
+
+
+func test_export_targets() -> void:
+	var options := ExportOptions.new()
+	options.apply({"metadata": ExportOptions.MetadataFormat.GODOT})
+	assert_eq(options.target, ExportOptions.Target.GODOT, "projects from before targets")
+	options.target = ExportOptions.Target.IMAGE
+	options.image_format = "webp"
+	assert_eq(options.get_file_extension(), "webp")
+	assert_eq(options.metadata, ExportOptions.MetadataFormat.NONE)
+	options.target = ExportOptions.Target.JSON
+	assert_eq(options.get_file_extension(), "png", "JSON goes with a PNG")
+	assert_true(options.writes_sheet_image())
+	var restored := ExportOptions.new()
+	restored.apply(options.to_dictionary())
+	assert_eq(restored.target, ExportOptions.Target.JSON)
+	assert_eq(restored.image_format, "webp")

@@ -53,8 +53,8 @@ file_mode = 2
 access = 2
 use_native_dialog = true
 
-[node name="ExportImageDialog" type="FileDialog" parent="Files"]
-title = "Export Image"
+[node name="ExportFileDialog" type="FileDialog" parent="Files"]
+title = "Export"
 auto_translate_mode = 1
 size = Vector2i(454, 175)
 ok_button_text = "Save"
@@ -303,18 +303,12 @@ layout_mode = 2
 text = "0 × 0 px"
 tooltip_text = "Size of the exported image"
 
-[node name="ExportImage" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="Export" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-tooltip_text = "Export the spritesheet image (Ctrl+E)"
-text = "Export Image"
-
-[node name="ExportSettings" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Export Settings…"
-flat = true
+tooltip_text = "Export the spritesheet as an image, sprites or for a game engine (Ctrl+E)"
+text = "Export…"
 
 [node name="PreviewArea" parent="Layout/Split" instance=ExtResource("6_q2y6a")]
 unique_name_in_owner = true

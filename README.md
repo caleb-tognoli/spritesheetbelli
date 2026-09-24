@@ -22,8 +22,9 @@ A small desktop tool made with Godot.</p>
 - **Preview animations** of the selected frames with loop, ping-pong or play-once.
 - **Name rows** as animations (idle, walk, jump); names are used in exports.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
-  `walk_{frame:2}`; or a tightly packed atlas. Padding, spacing and edge extrusion are
-  there when an engine needs them.
+  `walk_{frame:2}`; or a tightly packed atlas. One Export dialog shows only the settings
+  that matter for what you export; padding, spacing and edge extrusion are there when an
+  engine needs them.
 - **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
   Godot `SpriteFrames` resource with one animation per named row.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original size.
@@ -59,7 +60,7 @@ Press **F1** in the app for the full list. The most useful:
 | --- | --- |
 | Add sprites / spritesheet | Ctrl+I / Ctrl+Shift+I |
 | Save project / Save As | Ctrl+S / Ctrl+Shift+S |
-| Export image / Export As / Export sprites | Ctrl+E / Ctrl+Shift+E / Ctrl+Alt+E |
+| Export | Ctrl+E |
 | Undo / Redo | Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z |
 | Cut / Copy / Paste / Duplicate | Ctrl+X / Ctrl+C / Ctrl+V / Ctrl+D |
 | Select all / none | Ctrl+A / Esc |

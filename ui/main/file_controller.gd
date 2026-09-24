@@ -29,9 +29,6 @@ var open_folder_dialog := _create_file_dialog("Add Folder", FileDialog.FILE_MODE
 var replace_image_dialog := _create_file_dialog(
 	"Replace Image", FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
 )
-var export_atlas_dialog := _create_file_dialog(
-	"Export Packed Atlas", FileDialog.FILE_MODE_SAVE_FILE, ["*.png ; PNG Images"]
-)
 var _replace_coord := Vector2i.ZERO
 ## Returns the selected frames, for exporting only those
 var get_selected_coords := func() -> Array[Vector2i]: return []
@@ -39,7 +36,7 @@ var get_selected_coords := func() -> Array[Vector2i]: return []
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
 @onready var save_sprites_dialog: FileDialog = $SaveSpritesDialog
-@onready var export_image_dialog: FileDialog = $ExportImageDialog
+@onready var export_file_dialog: FileDialog = $ExportFileDialog
 
 
 func _ready() -> void:
@@ -47,7 +44,7 @@ func _ready() -> void:
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
 	open_dialog.file_selected.connect(open_path)
 	save_sprites_dialog.dir_selected.connect(save_sprites)
-	export_image_dialog.file_selected.connect(export_image_to)
+	export_file_dialog.file_selected.connect(export_to)
 	save_project_dialog.file_selected.connect(save_project)
 	save_project_dialog.canceled.connect(func() -> void: after_save = Callable())
 	open_folder_dialog.dir_selected.connect(add_sprites_from_folder)
@@ -55,8 +52,6 @@ func _ready() -> void:
 	add_child(save_project_dialog)
 	add_child(open_folder_dialog)
 	add_child(replace_image_dialog)
-	add_child(export_atlas_dialog)
-	export_atlas_dialog.file_selected.connect(export_atlas)
 	replace_image_dialog.file_selected.connect(
 		func(path: String) -> void:
 			var img := Image.load_from_file(path)
@@ -89,12 +84,11 @@ func _ready() -> void:
 		open_sprites_dialog,
 		open_spritesheet_dialog,
 		save_sprites_dialog,
-		export_image_dialog,
+		export_file_dialog,
 		open_dialog,
 		save_project_dialog,
 		open_folder_dialog,
 		replace_image_dialog,
-		export_atlas_dialog,
 	]:
 		var on_closed := func() -> void: open_file_dialogs.erase(dialog)
 		dialog.canceled.connect(on_closed)
@@ -141,10 +135,8 @@ func _web_file_dialog(dialog: FileDialog) -> void:
 			)
 		save_project_dialog:
 			dialog.file_selected.emit(WebFiles.output_path(base_name + ".sbelli"))
-		export_image_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(base_name + ".png"))
-		export_atlas_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(base_name + "_atlas.png"))
+		export_file_dialog:
+			dialog.file_selected.emit(WebFiles.output_path(dialog.current_file))
 		save_sprites_dialog:
 			var folder := WebFiles.output_path(base_name + "_sprites")
 			DirAccess.make_dir_recursive_absolute(folder)
@@ -271,7 +263,7 @@ func _save_sprites(folder: String) -> void:
 			(
 				Notify
 				. error(
-					'No frames are selected. Select frames or turn off "Only selected frames" in Export Settings.'
+					'No frames are selected. Select frames or turn off "Only selected frames" when exporting.'
 				)
 			)
 			return
@@ -390,18 +382,42 @@ func open_path(path: String) -> void:
 		show_add_spritesheet_window(path)
 
 
-## Exports the image to the last export path, or asks where
-func export_image() -> void:
-	if Global.document.export_path.is_empty():
-		export_image_as()
-	else:
-		export_image_to(Global.document.export_path)
+## Asks where to export, following the sheet's export settings. The file dialog asks
+## before overwriting a file.
+func choose_export_path() -> void:
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	if options.target == ExportOptions.Target.SPRITES:
+		popup_file_dialog(save_sprites_dialog)
+		return
+	var extension := options.get_file_extension()
+	var names := {"png": "PNG Images", "jpg": "JPEG Images", "webp": "WebP Images"}
+	var patterns := {"png": "*.png", "jpg": "*.jpg, *.jpeg, *.jpe", "webp": "*.webp"}
+	export_file_dialog.filters = ["%s ; %s" % [patterns[extension], names[extension]]]
+	export_file_dialog.title = "Export"
+	var suggested := suggested_export_path(options)
+	export_file_dialog.current_dir = suggested.get_base_dir()
+	export_file_dialog.current_file = suggested.get_file()
+	popup_file_dialog(export_file_dialog)
 
 
-func export_image_as() -> void:
-	if Global.document.export_path:
-		export_image_dialog.current_path = Global.document.export_path
-	popup_file_dialog(export_image_dialog)
+## Where to suggest exporting: next to the last export or the project, named after it
+static func suggested_export_path(options: ExportOptions) -> String:
+	var document := Global.document
+	var base := document.export_path if document.export_path else document.path
+	var folder := base.get_base_dir()
+	var base_name := base.get_file().get_basename()
+	if base_name.is_empty():
+		base_name = "spritesheet"
+	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
+		base_name += "_atlas"
+	return folder.path_join(base_name + "." + options.get_file_extension())
+
+
+## Exports to [param path] what the sheet's export settings say
+func export_to(path: String) -> bool:
+	if ExportOptions.from_sheet(Global.spritesheet).target == ExportOptions.Target.ATLAS:
+		return await export_atlas(path)
+	return await export_image_to(path)
 
 
 func export_image_to(path: String) -> bool:

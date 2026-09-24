@@ -376,3 +376,35 @@ func test_too_big_sprites_show_an_error() -> void:
 	assert_eq(Global.spritesheet.sprite_size, Vector2i(6000, 10), "not resized")
 	assert_true(Notify.message_dialog.visible, "explains why")
 	Notify.message_dialog.hide()
+
+
+func test_export_dialog() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED), make_image(Color.BLUE)] as Array[Image])
+	await get_tree().process_frame
+	Actions.run(&"export")
+	var dialog: ExportDialog = main.export_dialog
+	assert_true(dialog.visible)
+	assert_true(dialog.image_format.visible, "image settings for an image")
+	assert_false(dialog.pattern.visible)
+	dialog.select_target(ExportOptions.Target.SPRITES)
+	assert_false(dialog.image_format.visible)
+	assert_true(dialog.pattern.visible, "file names for sprites")
+	assert_false(dialog.advanced_toggle.visible, "nothing advanced for sprites")
+	dialog.select_target(ExportOptions.Target.GODOT)
+	assert_true(dialog.animation_fps.visible)
+	assert_false(dialog.padding.visible, "advanced options are hidden until asked for")
+	dialog.advanced_toggle.button_pressed = true
+	assert_true(dialog.padding.visible)
+	dialog.padding.value = 3
+	dialog.get_ok_button().pressed.emit()
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	assert_eq(options.target, ExportOptions.Target.GODOT, "saved with the sheet")
+	assert_eq(options.padding, 3)
+	assert_true(main.files.export_file_dialog in main.files.open_file_dialogs, "asks where")
+	assert_eq(main.files.export_file_dialog.current_file, "spritesheet.png")
+	main.files.export_file_dialog.hide()
+	main.files.open_file_dialogs.clear()
+
+	var path := dir.path_join("dialog_export.png")
+	assert_true(await main.files.export_to(path))
+	assert_true(FileAccess.file_exists(dir.path_join("dialog_export.tres")), "SpriteFrames too")

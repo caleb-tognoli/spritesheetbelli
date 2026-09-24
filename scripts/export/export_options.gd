@@ -3,8 +3,22 @@ extends RefCounted
 ## How a spritesheet is turned into images. Stored per sheet in
 ## [member Spritesheet.export_settings], except the JPG options which are user settings.
 
+## What an export produces
+enum Target {
+	IMAGE,  ## The spritesheet as one image
+	SPRITES,  ## Every frame as its own image, in a folder
+	GODOT,  ## The spritesheet image and a Godot SpriteFrames resource
+	JSON,  ## The spritesheet image and a JSON file (Aseprite and TexturePacker style)
+	ATLAS,  ## Trimmed frames packed tightly, with a JSON file
+}
 enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
 enum MetadataFormat { NONE, JSON, GODOT }
+
+const IMAGE_FORMATS: Array[String] = ["png", "jpg", "webp"]
+
+var target := Target.IMAGE
+## File format of the spritesheet image when exporting only the image
+var image_format := "png"
 
 ## Colour behind every frame. Formats without transparency (JPG) always use an opaque colour.
 var background := Color.TRANSPARENT
@@ -24,12 +38,30 @@ var sprite_name_pattern := "{index}"
 var only_selected := false
 var existing_files := Existing.ADD_NUMBER
 
-## Also written next to exported images, for game engines
-var metadata := MetadataFormat.NONE
+## The file written next to the image for game engines, following [member target]
+var metadata: MetadataFormat:
+	get:
+		match target:
+			Target.GODOT:
+				return MetadataFormat.GODOT
+			Target.JSON:
+				return MetadataFormat.JSON
+		return MetadataFormat.NONE
+	set(value):
+		match value:
+			MetadataFormat.GODOT:
+				target = Target.GODOT
+			MetadataFormat.JSON:
+				target = Target.JSON
+			_:
+				if target in [Target.GODOT, Target.JSON]:
+					target = Target.IMAGE
 ## Frames per second of animations in metadata
 var animation_fps := 12.0
 
 const _SHEET_KEYS: Array[StringName] = [
+	&"target",
+	&"image_format",
 	&"background",
 	&"padding",
 	&"spacing",
@@ -37,7 +69,6 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"sprite_name_pattern",
 	&"only_selected",
 	&"existing_files",
-	&"metadata",
 	&"animation_fps",
 ]
 
@@ -58,6 +89,9 @@ static func from_settings() -> ExportOptions:
 
 
 func apply(settings: Dictionary) -> void:
+	# Projects from before export targets stored which metadata to write
+	if settings.get("metadata") is int and not settings.has("target"):
+		metadata = settings.metadata
 	for key in _SHEET_KEYS:
 		if not settings.has(key):
 			continue
@@ -67,6 +101,23 @@ func apply(settings: Dictionary) -> void:
 			value = type_convert(value, expected)
 		if typeof(value) == expected:
 			set(key, value)
+	if image_format not in IMAGE_FORMATS:
+		image_format = "png"
+
+
+## Whether the export writes the spritesheet as one image
+func writes_sheet_image() -> bool:
+	return target in [Target.IMAGE, Target.GODOT, Target.JSON]
+
+
+## Extension of the file picked when exporting, or empty for a folder
+func get_file_extension() -> String:
+	match target:
+		Target.IMAGE:
+			return image_format
+		Target.SPRITES:
+			return ""
+	return "png"
 
 
 ## The per-sheet values, for [method Spritesheet.set_export_settings]

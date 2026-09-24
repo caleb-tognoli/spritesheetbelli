@@ -21,7 +21,9 @@ static func write_for_image(
 			frames, animations(sheet), image_path.get_file(), options.animation_fps
 		)
 	else:
-		text = texture_packer_json(frames, image_path.get_file(), size, frame_tags(sheet))
+		text = texture_packer_json(
+			frames, image_path.get_file(), size, frame_tags(sheet), options.animation_fps
+		)
 	var file := FileAccess.open(get_path_for_image(image_path, options), FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
@@ -129,12 +131,14 @@ static func sprite_frames_tres(
 
 
 ## JSON in the TexturePacker "hash" format, readable by most engines and tools.
-## [param tags] are added as Aseprite-style "frameTags".
+## [param tags] are added as Aseprite-style "frameTags", and with [param fps] each frame
+## gets an Aseprite-style duration in milliseconds.
 static func texture_packer_json(
 	frames: Array[Dictionary],
 	image_file: String,
 	image_size: Vector2i,
 	tags: Array[Dictionary] = [],
+	fps := 0.0,
 ) -> String:
 	var entries := {}
 	for frame in frames:
@@ -148,6 +152,8 @@ static func texture_packer_json(
 			"spriteSourceSize": _rect(source),
 			"sourceSize": {"w": source_size.x, "h": source_size.y},
 		}
+		if fps > 0:
+			entries[frame.name]["duration"] = roundi(1000.0 / fps)
 	var data := {
 		"frames": entries,
 		"meta":

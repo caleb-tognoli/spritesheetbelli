@@ -3,6 +3,15 @@
 All notable changes to spritesheetbelli. The version is set in `project.godot`
 (`application/config/version`) and shown in Help > About.
 
+## Unreleased
+
+### Changed
+- One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
+  Packed Atlas and Export Settings. It asks what to export (spritesheet image, sprites,
+  Godot SpriteFrames, Aseprite/TexturePacker JSON or a packed atlas) and shows only the
+  settings that matter, with padding, spacing and extrusion under Advanced. Exports
+  always ask where to save, so only projects are overwritten without asking.
+
 ## 0.2.0
 
 ### Added
