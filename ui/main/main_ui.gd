@@ -42,8 +42,14 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var resize_filter: OptionButton = %ResizeFilter
 @onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
-@onready var spritesheet_width: Label = %SpritesheetWidth
-@onready var spritesheet_height: Label = %SpritesheetHeight
+@onready var sheet_size: Label = %SheetSize
+@onready var export_image_btn: Button = %ExportImage
+@onready var export_settings_btn: Button = %ExportSettings
+@onready var split: HSplitContainer = %Split
+@onready var status_bar: Control = %StatusBar
+@onready var sheet_info: Label = %SheetInfo
+@onready var cell_info: Label = %CellInfo
+@onready var legend: Label = %Legend
 @onready var preview: SpritesheetPreview = preview_area.spritesheet_preview
 
 var shortcuts_dialog := ShortcutsDialog.new()
@@ -70,6 +76,18 @@ func _ready() -> void:
 	Global.spritesheet.updated.connect(disable_if_empty)
 	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
+	export_image_btn.pressed.connect(Actions.run.bind(&"export_image"))
+	export_settings_btn.pressed.connect(Actions.run.bind(&"export_settings"))
+	get_window().min_size = Vector2i(820, 520)
+	split.split_offset = Settings.get_value(&"sidebar_width")
+	split.dragged.connect(func(offset: int) -> void: Settings.set_value(&"sidebar_width", offset))
+	status_bar.visible = Settings.get_value(&"show_status_bar")
+	Settings.changed.connect(
+		func(key: StringName) -> void:
+			if key == &"show_status_bar":
+				status_bar.visible = Settings.get_value(key)
+	)
+	preview.hover_changed.connect(update_cell_info)
 	grid_rows.value_changed.connect(
 		func(rows: float) -> void:
 			set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(rows))
@@ -125,6 +143,7 @@ func _ready() -> void:
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)
+	preview.selection_changed.connect(update_sheet_info)
 	preview.move_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i, copy: bool) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
@@ -296,6 +315,14 @@ func _register_actions() -> void:
 		func() -> void: preview.set_zoom(1, preview.get_viewport_rect().size / 2)
 	)
 	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
+	Actions.add(
+		&"toggle_status_bar",
+		"Status Bar",
+		func() -> void: Settings.set_value(&"show_status_bar", not status_bar.visible),
+		Callable(),
+		null,
+		func() -> bool: return status_bar.visible
+	)
 	var animation := preview_area.animation_preview
 	Actions.add(
 		&"toggle_animation",
@@ -398,9 +425,33 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	grid_columns.set_value_no_signal(spritesheet.grid_size.x)
 	sprite_width.set_value_no_signal(spritesheet.sprite_size.x)
 	sprite_height.set_value_no_signal(spritesheet.sprite_size.y)
-	spritesheet_width.text = str(spritesheet.sprite_size.x * spritesheet.grid_size.x)
-	spritesheet_height.text = str(spritesheet.sprite_size.y * spritesheet.grid_size.y)
+	var size := SpritesheetExporter.get_image_size(
+		spritesheet, ExportOptions.from_sheet(spritesheet)
+	)
+	sheet_size.text = "%d × %d px" % [size.x, size.y]
+	update_sheet_info()
 	resize_filter.select(get_resize_filter())
+
+
+## Frame count, grid and image size in the status bar
+func update_sheet_info() -> void:
+	var sheet := Global.spritesheet
+	if sheet.is_empty():
+		sheet_info.text = "No frames. Add sprites or drop images here."
+	else:
+		var selected := preview.get_selected_coords().size()
+		sheet_info.text = (
+			"%d frames · %d×%d grid" % [sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y]
+		)
+		if selected:
+			sheet_info.text += " · %d selected" % selected
+	legend.text = "Hatched cells are locked" if not sheet.locked_coordinates.is_empty() else ""
+	legend.tooltip_text = "Locked cells are kept empty when adding sprites. Click one to unlock it."
+
+
+## Describes the cell under the mouse in the status bar
+func update_cell_info(coord: Vector2i) -> void:
+	cell_info.text = PreviewArea.describe_cell(Global.spritesheet, coord).replace("\n", " · ")
 
 
 func disable_if_empty() -> void:

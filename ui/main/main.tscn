@@ -1,8 +1,7 @@
-[gd_scene load_steps=21 format=3 uid="uid://byoh7fhk7x54x"]
+[gd_scene format=3 uid="uid://byoh7fhk7x54x"]
 
 [ext_resource type="Theme" uid="uid://b3ifhjmt3jxbu" path="res://resources/themes/main_theme.tres" id="1_cqlxd"]
 [ext_resource type="Script" path="res://ui/main/main_ui.gd" id="1_o3sot"]
-[ext_resource type="Theme" uid="uid://boqntmvqibtxh" path="res://resources/themes/top_row_theme.tres" id="1_pgjiq"]
 [ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://resources/themes/left_bar_theme.tres" id="5_itfh2"]
 [ext_resource type="PackedScene" uid="uid://d2j21cyiaw56v" path="res://ui/add_spritesheet/add_spritesheet_window.tscn" id="5_waa3t"]
 [ext_resource type="Texture2D" uid="uid://dkerv3ip4g7lj" path="res://assets/icons/Add.svg" id="5_x1m0q"]
@@ -12,9 +11,6 @@
 [ext_resource type="Script" path="res://ui/main/file_controller.gd" id="10_files"]
 [ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://assets/icons/SpriteSheet.svg" id="7_wpt02"]
 [ext_resource type="Texture2D" path="res://assets/icons/Link.svg" id="8_link"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qlfvo"]
-bg_color = Color(0, 0, 0, 1)
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -68,118 +64,107 @@ access = 2
 filters = PackedStringArray("*.png; PNG Images", "*.jpg, *.jpeg, *.jpe; JPEG Images", "*.webp; WebP Images")
 use_native_dialog = true
 
-[node name="Panel" type="Panel" parent="."]
+[node name="Background" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_qlfvo")
+mouse_filter = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="Layout" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 2
+theme_override_constants/separation = 0
 
-[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer"]
+[node name="MenuPanel" type="PanelContainer" parent="Layout"]
 layout_mode = 2
+theme_type_variation = &"MenuPanel"
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/PanelContainer"]
+[node name="MenuMargin" type="MarginContainer" parent="Layout/MenuPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_right = 15
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
 
-[node name="MenuBar" type="MenuBar" parent="VBoxContainer/PanelContainer/MarginContainer"]
+[node name="MenuBar" type="MenuBar" parent="Layout/MenuPanel/MenuMargin"]
 unique_name_in_owner = true
 layout_mode = 2
 theme = ExtResource("6_by5vc")
 flat = true
 script = ExtResource("7_rk3ov")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="Split" type="HSplitContainer" parent="Layout"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
+split_offset = 0
 
-[node name="ToolBar" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(180, 0)
+[node name="Sidebar" type="PanelContainer" parent="Layout/Split"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(230, 0)
 layout_mode = 2
-size_flags_horizontal = 0
 theme = ExtResource("5_itfh2")
+theme_type_variation = &"SidebarPanel"
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/ToolBar"]
+[node name="Scroll" type="ScrollContainer" parent="Layout/Split/Sidebar"]
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 20
+horizontal_scroll_mode = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer"]
-custom_minimum_size = Vector2(0, 100)
+[node name="Margin" type="MarginContainer" parent="Layout/Split/Sidebar/Scroll"]
 layout_mode = 2
-theme_override_constants/separation = 15
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
 
-[node name="AddSprites" type="Button" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer"]
+[node name="Sections" type="VBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AddHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+layout_mode = 2
+text = "Add"
+theme_type_variation = &"HeaderSmall"
+
+[node name="AddSprites" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 30)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-size_flags_vertical = 4
-text = "Add Sprite(s)
-"
+tooltip_text = "Add image files as sprites"
+text = "Add Sprite(s)"
 icon = ExtResource("5_x1m0q")
+alignment = 0
 
-[node name="AddSpritesheet" type="Button" parent="VBoxContainer/HBoxContainer/ToolBar/MarginContainer/VBoxContainer"]
+[node name="AddSpritesheet" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 30)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-size_flags_vertical = 4
-text = "Add Spritesheet
-"
+tooltip_text = "Cut a spritesheet image into frames and add them"
+text = "Add Spritesheet"
 icon = ExtResource("7_wpt02")
+alignment = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 2
-
-[node name="Panel" type="PanelContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 75)
+[node name="AddSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel"]
+[node name="GridHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 20
+text = "Grid"
+theme_type_variation = &"HeaderSmall"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer"]
+[node name="GridRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 layout_mode = 2
-theme = ExtResource("1_pgjiq")
-theme_override_constants/separation = 40
 
-[node name="GridSize" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 4
-alignment = 1
-
-[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize"]
-layout_mode = 2
-text = "Grid size:"
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="GridColumns" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="GridColumns" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
 tooltip_text = "Columns"
 min_value = 1.0
 max_value = 1024.0
@@ -187,15 +172,14 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="X" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="X" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow"]
 layout_mode = 2
 text = "×"
 
-[node name="GridRows" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="GridRows" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
 tooltip_text = "Rows"
 min_value = 1.0
 max_value = 1024.0
@@ -203,25 +187,22 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="SpriteSize" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
+[node name="GridSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 layout_mode = 2
-theme_override_constants/separation = 4
-alignment = 1
 
-[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize"]
+[node name="SpriteHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 layout_mode = 2
-text = "Sprite size:"
+text = "Sprite size"
+theme_type_variation = &"HeaderSmall"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize"]
+[node name="SpriteRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
 layout_mode = 2
-theme_override_constants/separation = 10
 
-[node name="SpriteWidth" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="SpriteWidth" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
-tooltip_text = "Length"
+tooltip_text = "Width"
 min_value = 1.0
 max_value = 16384.0
 value = 1.0
@@ -229,15 +210,14 @@ alignment = 2
 select_all_on_focus = true
 suffix = "px"
 
-[node name="X" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="X" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
 layout_mode = 2
 text = "×"
 
-[node name="SpriteHeight" type="SpinBox" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="SpriteHeight" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
 tooltip_text = "Height"
 min_value = 1.0
 max_value = 16384.0
@@ -246,44 +226,51 @@ alignment = 2
 select_all_on_focus = true
 suffix = "px"
 
-[node name="KeepRatio" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="KeepRatio" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 4
 tooltip_text = "Keep aspect ratio"
 toggle_mode = true
 button_pressed = true
 icon = ExtResource("8_link")
 flat = true
 
-[node name="HalfSize" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="ScaleRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+layout_mode = 2
+
+[node name="HalfSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 3
 tooltip_text = "Half size"
 text = "½×"
-flat = true
 
-[node name="DoubleSize" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="DoubleSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 3
 tooltip_text = "Double size"
 text = "2×"
-flat = true
 
-[node name="OriginalSize" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="OriginalSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 3
 tooltip_text = "Original size"
 text = "1:1"
-flat = true
 
-[node name="ResizeFilter" type="OptionButton" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+[node name="FilterRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+layout_mode = 2
+
+[node name="FilterLabel" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/FilterRow"]
+layout_mode = 2
+text = "Filter"
+size_flags_horizontal = 3
+
+[node name="ResizeFilter" type="OptionButton" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/FilterRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 3
 tooltip_text = "How pixels are blended when resizing. Nearest keeps pixel art sharp."
 item_count = 5
 popup/item_0/text = "Nearest"
@@ -297,46 +284,70 @@ popup/item_3/id = 3
 popup/item_4/text = "Lanczos"
 popup/item_4/id = 4
 
-[node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
+[node name="SpriteSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+layout_mode = 2
+
+[node name="OutputHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+layout_mode = 2
+text = "Output"
+theme_type_variation = &"HeaderSmall"
+
+[node name="SheetSize" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 × 0 px"
+tooltip_text = "Size of the exported image"
+
+[node name="ExportImage" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+tooltip_text = "Export the spritesheet image (Ctrl+E)"
+text = "Export Image"
+
+[node name="ExportSettings" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Export Settings…"
+flat = true
+
+[node name="PreviewArea" parent="Layout/Split" instance=ExtResource("6_q2y6a")]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="StatusBar" type="PanelContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StatusBar"
+
+[node name="StatusMargin" type="MarginContainer" parent="Layout/StatusBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_bottom = 3
+
+[node name="StatusRow" type="HBoxContainer" parent="Layout/StatusBar/StatusMargin"]
+layout_mode = 2
 theme_override_constants/separation = 20
-alignment = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer"]
-layout_mode = 2
-theme_override_constants/separation = 0
-alignment = 1
-
-[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer"]
-layout_mode = 2
-text = "Spritesheet size:"
-horizontal_alignment = 2
-vertical_alignment = 1
-
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 2
-
-[node name="SpritesheetWidth" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer/HBoxContainer"]
+[node name="SheetInfo" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0 "
-horizontal_alignment = 2
-vertical_alignment = 1
+text = "No frames"
+theme_type_variation = &"StatusLabel"
 
-[node name="X" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "×"
-
-[node name="SpritesheetHeight" type="Label" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/ExportContainer/VBoxContainer/HBoxContainer"]
+[node name="CellInfo" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0 "
-horizontal_alignment = 2
-vertical_alignment = 1
+text = ""
+size_flags_horizontal = 3
+theme_type_variation = &"StatusLabel"
+text_overrun_behavior = 3
 
-[node name="PreviewArea" parent="VBoxContainer/HBoxContainer/VBoxContainer" instance=ExtResource("6_q2y6a")]
+[node name="Legend" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
+text = ""
+theme_type_variation = &"StatusLabel"

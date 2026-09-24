@@ -28,12 +28,14 @@ const DEFAULTS := {
 	&"ui_scale": 0.0,
 	&"confirm_grid_shrink": true,
 	&"restore_session": false,
+	&"show_status_bar": true,
 	# Remembered between runs
 	&"last_session": "",
 	&"recent_files": [],
+	&"sidebar_width": 0,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
-const REMEMBERED: Array[StringName] = [&"last_session", &"recent_files"]
+const REMEMBERED: Array[StringName] = [&"last_session", &"recent_files", &"sidebar_width"]
 const MAX_RECENT_FILES := 10
 
 ## Where settings are saved. Tests use their own file.

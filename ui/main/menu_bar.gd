@@ -56,7 +56,16 @@ const MENUS := {
 		&"",
 		&"name_row",
 	],
-	"View": [&"zoom_in", &"zoom_out", &"zoom_reset", &"zoom_fit", &"", &"toggle_animation"],
+	"View":
+	[
+		&"zoom_in",
+		&"zoom_out",
+		&"zoom_reset",
+		&"zoom_fit",
+		&"",
+		&"toggle_animation",
+		&"toggle_status_bar"
+	],
 	"Help": [&"show_shortcuts"],
 }
 
