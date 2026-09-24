@@ -63,3 +63,13 @@ func test_usage_errors() -> void:
 	assert_eq(run(["--pack", dir, "--export", "x", "--out", "y"])[0], "2", "two commands")
 	assert_eq(run(["--export", dir.path_join("missing.sbelli"), "--out", "y.png"])[0], "1")
 	assert_eq(run(["--help"])[0], "0")
+
+
+func test_metadata_option() -> void:
+	var out := dir.path_join("with_meta.png")
+	var result := run(
+		["--pack", dir.path_join("frames"), "--out", out, "--metadata", "godot", "--fps", "10"]
+	)
+	assert_eq(result[0], "0", str(result))
+	assert_true(FileAccess.file_exists(dir.path_join("with_meta.tres")))
+	assert_eq(run(["--pack", dir.path_join("frames"), "--out", out, "--metadata", "xml"])[0], "2")

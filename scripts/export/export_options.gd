@@ -4,6 +4,7 @@ extends RefCounted
 ## [member Spritesheet.export_settings], except the JPG options which are user settings.
 
 enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
+enum MetadataFormat { NONE, JSON, GODOT }
 
 ## Colour behind every frame. Formats without transparency (JPG) always use an opaque colour.
 var background := Color.TRANSPARENT
@@ -23,6 +24,11 @@ var sprite_name_pattern := "{index}"
 var only_selected := false
 var existing_files := Existing.ADD_NUMBER
 
+## Also written next to exported images, for game engines
+var metadata := MetadataFormat.NONE
+## Frames per second of animations in metadata
+var animation_fps := 12.0
+
 const _SHEET_KEYS: Array[StringName] = [
 	&"background",
 	&"padding",
@@ -31,6 +37,8 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"sprite_name_pattern",
 	&"only_selected",
 	&"existing_files",
+	&"metadata",
+	&"animation_fps",
 ]
 
 

@@ -85,3 +85,60 @@ func test_settings_saved_in_project_and_undoable() -> void:
 	assert_eq(back.padding, 3)
 	assert_eq(back.background, Color(0.5, 0.25, 1))
 	assert_eq(back.sprite_name_pattern, "{row_name}")
+
+
+func test_json_metadata_with_tags() -> void:
+	sheet.move_frame(Vector2i(2, 0), Vector2i(0, 1))
+	sheet.set_grid_size(Vector2i(2, 2))
+	sheet.set_row_name(0, "idle")
+	sheet.set_row_name(1, "walk")
+	var options := ExportOptions.new()
+	options.metadata = ExportOptions.MetadataFormat.JSON
+	options.spacing = 2
+	var path := dir.path_join("meta.png")
+	assert_eq(SpritesheetExporter.save_image(sheet.get_image(options), path), OK)
+	assert_eq(Metadata.write_for_image(sheet, options, path), OK)
+	var json: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string(dir.path_join("meta.json"))
+	)
+	assert_eq(json.frames.size(), 3)
+	assert_eq(
+		json.frames["1.png"].frame, {"x": 6.0, "y": 0.0, "w": 4.0, "h": 4.0}, "spacing applied"
+	)
+	assert_eq(json.meta.frameTags.size(), 2)
+	assert_eq(
+		json.meta.frameTags[1], {"name": "walk", "from": 2.0, "to": 2.0, "direction": "forward"}
+	)
+
+
+func test_godot_sprite_frames() -> void:
+	sheet.set_row_name(0, "run")
+	var options := ExportOptions.new()
+	options.metadata = ExportOptions.MetadataFormat.GODOT
+	options.animation_fps = 8
+	var path := dir.path_join("hero.png")
+	assert_eq(Metadata.write_for_image(sheet, options, path), OK)
+	var text := FileAccess.get_file_as_string(dir.path_join("hero.tres"))
+	assert_true(text.begins_with('[gd_resource type="SpriteFrames"'))
+	assert_true(text.contains('path="hero.png"'), "texture next to the resource")
+	assert_true(text.contains("region = Rect2(8, 0, 4, 4)"))
+	assert_true(text.contains('"name": &"run"'))
+	assert_true(text.contains('"speed": 8.0'))
+	# The resource must be valid for Godot's parser
+	var copy := "res://_metadata_check.tres"
+	var file := FileAccess.open(copy, FileAccess.WRITE)
+	file.store_string(text.replace('path="hero.png"', 'path="res://icon.svg"'))
+	file.close()
+	var frames: SpriteFrames = ResourceLoader.load(copy, "", ResourceLoader.CACHE_MODE_IGNORE)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(copy))
+	assert_true(frames != null, "loads as SpriteFrames")
+	if frames:
+		assert_eq(frames.get_frame_count(&"run"), 3)
+		assert_eq(frames.get_animation_speed(&"run"), 8.0)
+
+
+func test_default_animation_without_row_names() -> void:
+	var animations := Metadata.animations(sheet)
+	assert_eq(animations.size(), 1)
+	assert_eq(animations[0].name, "default")
+	assert_eq(animations[0].indices, [0, 1, 2])

@@ -15,6 +15,8 @@ var pattern := LineEdit.new()
 var pattern_example := Label.new()
 var only_selected := CheckBox.new()
 var existing := OptionButton.new()
+var metadata := OptionButton.new()
+var animation_fps := SpinBox.new()
 var advanced_toggle := CheckButton.new()
 var padding := SpinBox.new()
 var spacing := SpinBox.new()
@@ -62,6 +64,23 @@ func _init() -> void:
 		existing.add_item(label)
 	sprites.add_child(existing)
 
+	box.add_child(_heading("Metadata (Export Image)"))
+	var meta := _grid()
+	box.add_child(meta)
+	meta.add_child(_label("Also write"))
+	for label in ["Nothing", "JSON (TexturePacker, Aseprite tags)", "Godot SpriteFrames (.tres)"]:
+		metadata.add_item(label)
+	metadata.tooltip_text = "A file next to the image that tells game engines where each frame is"
+	meta.add_child(metadata)
+	meta.add_child(_label("Animation speed"))
+	animation_fps.min_value = 1
+	animation_fps.max_value = 120
+	animation_fps.step = 0.5
+	animation_fps.suffix = "fps"
+	animation_fps.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	animation_fps.tooltip_text = "Frames per second. Each named row is one animation."
+	meta.add_child(animation_fps)
+
 	advanced_toggle.text = "Advanced options"
 	advanced_toggle.tooltip_text = "Padding, spacing and edge extrusion for game engines"
 	box.add_child(advanced_toggle)
@@ -91,6 +110,8 @@ func _init() -> void:
 	pattern.focus_exited.connect(_changed)
 	only_selected.toggled.connect(_changed.unbind(1))
 	existing.item_selected.connect(_changed.unbind(1))
+	metadata.item_selected.connect(_changed.unbind(1))
+	animation_fps.value_changed.connect(_changed.unbind(1))
 	for spin: SpinBox in [padding, spacing, extrude]:
 		spin.value_changed.connect(_changed.unbind(1))
 
@@ -115,6 +136,9 @@ func refresh() -> void:
 		pattern.text = options.sprite_name_pattern
 	only_selected.button_pressed = options.only_selected
 	existing.select(options.existing_files)
+	metadata.select(options.metadata)
+	animation_fps.set_value_no_signal(options.animation_fps)
+	animation_fps.editable = options.metadata != ExportOptions.MetadataFormat.NONE
 	padding.set_value_no_signal(options.padding)
 	spacing.set_value_no_signal(options.spacing)
 	extrude.set_value_no_signal(options.extrude)
@@ -142,6 +166,8 @@ func _options_from_controls() -> ExportOptions:
 	options.sprite_name_pattern = pattern.text if pattern.text.strip_edges() else "{index}"
 	options.only_selected = only_selected.button_pressed
 	options.existing_files = existing.selected as ExportOptions.Existing
+	options.metadata = metadata.selected as ExportOptions.MetadataFormat
+	options.animation_fps = animation_fps.value
 	options.padding = int(padding.value)
 	options.spacing = int(spacing.value)
 	options.extrude = int(extrude.value)

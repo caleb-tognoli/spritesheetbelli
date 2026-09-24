@@ -20,7 +20,9 @@ Options:
   --sprite-size <width>x<height> Resize the sprites
   --padding <px>                 Empty pixels around the sheet
   --spacing <px>                 Empty pixels between cells
-  --extrude <px>                 Repeat frame edges outward"""
+  --extrude <px>                 Repeat frame edges outward
+  --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file
+  --fps <n>                      Animation speed in the metadata (default 12)"""
 
 const COMMANDS: Array[String] = ["--pack", "--export", "--help"]
 
@@ -66,6 +68,16 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 	for key: String in ["padding", "spacing", "extrude"]:
 		if options.has("--" + key):
 			export.set(key, int(options["--" + key]))
+	if options.has("--metadata"):
+		var formats := {
+			"json": ExportOptions.MetadataFormat.JSON, "godot": ExportOptions.MetadataFormat.GODOT
+		}
+		if not formats.has(options["--metadata"]):
+			say.call("Error: --metadata must be json or godot.")
+			return 2
+		export.metadata = formats[options["--metadata"]]
+	if options.has("--fps"):
+		export.animation_fps = float(options["--fps"])
 	sheet.set_export_settings(export.to_dictionary())
 	if options.has("--sprite-size"):
 		var size := _parse_size(options["--sprite-size"])
@@ -155,6 +167,8 @@ static func _write(sheet: Spritesheet, path: String, export: ExportOptions, say:
 	else:
 		path = SpritesheetExporter.with_image_extension(path)
 		error = SpritesheetExporter.save_image(sheet.get_image(export), path, export)
+	if error == OK and not ProjectFile.is_project_path(path):
+		error = Metadata.write_for_image(sheet, export, path)
 	if error != OK:
 		say.call("Error: could not write %s (%s)" % [path, error_string(error)])
 		return 1

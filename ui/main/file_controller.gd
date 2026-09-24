@@ -347,6 +347,14 @@ func export_image_to(path: String) -> bool:
 		return false
 
 	var message := "Exported %s in %s." % [path.get_file(), path.get_base_dir().get_file()]
+	var metadata_error := Metadata.write_for_image(
+		Global.spritesheet, options, path, Settings.get_value(&"index_start")
+	)
+	if metadata_error != OK:
+		Notify.error("Could not write the metadata (%s)." % error_string(metadata_error))
+		return false
+	if options.metadata != ExportOptions.MetadataFormat.NONE:
+		message += "\nAlso wrote %s." % Metadata.get_path_for_image(path, options).get_file()
 	if (
 		not SpritesheetExporter.supports_transparency(path)
 		and ImageUtils.has_transparency(spritesheet_image)
