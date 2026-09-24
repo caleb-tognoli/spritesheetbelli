@@ -44,6 +44,8 @@ const MENUS := {
 		&"rotate_cw",
 		&"rotate_ccw",
 		&"",
+		&"trim",
+		&"color_key",
 		&"replace_image",
 		&"",
 		&"insert_cell",

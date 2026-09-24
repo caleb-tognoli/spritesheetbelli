@@ -49,6 +49,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 var shortcuts_dialog := ShortcutsDialog.new()
 var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
+var color_key_dialog := ColorKeyDialog.new()
 
 
 func _ready() -> void:
@@ -96,6 +97,15 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
 	add_child(settings_window)
+	add_child(color_key_dialog)
+	color_key_dialog.color_chosen.connect(
+		func(color: Color, tolerance: float) -> void:
+			edit_selection(
+				"Remove background",
+				func(coords: Array[Vector2i]) -> void:
+					Global.spritesheet.color_key_frames(coords, color, tolerance)
+			)
+	)
 	files.restore_session.call_deferred()
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
@@ -202,6 +212,18 @@ func _register_actions() -> void:
 		&"duplicate",
 		"Duplicate",
 		func() -> void: add_images("Duplicate", get_selected_images()),
+		has_selection
+	)
+	add.call(
+		&"trim",
+		"Trim Transparent Borders",
+		edit_selection.bind("Trim", sheet.trim_frames),
+		has_selection
+	)
+	add.call(
+		&"color_key",
+		"Remove Background Colour…",
+		func() -> void: color_key_dialog.open(sheet.frames[preview.get_selected_coords()[0]]),
 		has_selection
 	)
 	add.call(

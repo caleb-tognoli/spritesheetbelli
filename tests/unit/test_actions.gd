@@ -131,3 +131,17 @@ func test_insert_and_remove_cell() -> void:
 	main.preview.set_selected_coords([Vector2i(2, 0)] as Array[Vector2i])
 	Actions.run(&"remove_cell")
 	assert_color(Global.spritesheet.frames[Vector2i(2, 0)], Vector2i.ZERO, Color.BLUE)
+
+
+func test_trim_and_color_key_actions() -> void:
+	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill(Color.MAGENTA)
+	img.fill_rect(Rect2i(4, 4, 8, 8), Color.RED)
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind([img] as Array[Image]))
+	main.preview.set_selected_coords([Vector2i(3, 0)] as Array[Vector2i])
+	Actions.run(&"color_key")
+	assert_eq(main.color_key_dialog.picker.color, Color.MAGENTA, "suggests the corner colour")
+	main.color_key_dialog.confirmed.emit()
+	main.color_key_dialog.hide()
+	Actions.run(&"trim")
+	assert_eq(Global.spritesheet.frames[Vector2i(3, 0)].get_size(), Vector2i(8, 8))
