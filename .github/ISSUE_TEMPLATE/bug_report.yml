@@ -1,0 +1,35 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        1. Added 10 sprites with Add Sprite(s)
+        2. Pressed Ctrl+Z
+        3. Only 9 were removed
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown in Help > About
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows, macOS, Linux, Web, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files or screenshots
+      description: If it happens with a particular image or project, attaching it helps a lot.
