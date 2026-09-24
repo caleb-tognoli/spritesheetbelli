@@ -508,7 +508,7 @@ func set_frame_scale(new_scale: Vector2, filter := _scale_filter) -> void:
 
 ## Scales frames so that the cell size becomes [param size]
 func resize_sprites(size: Vector2i, filter := _scale_filter) -> void:
-	var base := _base_sprite_size()
+	var base := get_base_sprite_size()
 	if base.x <= 0 or base.y <= 0 or size.x <= 0 or size.y <= 0:
 		return
 	set_frame_scale(Vector2(size) / Vector2(base), filter)
@@ -527,7 +527,8 @@ func get_image(options := ExportOptions.new()) -> Image:
 #endregion
 
 
-func _base_sprite_size() -> Vector2i:
+## The cell size without [member frame_scale]
+func get_base_sprite_size() -> Vector2i:
 	var size := Vector2i.ZERO
 	for img in _frames.values():
 		size = size.max(img.get_size())

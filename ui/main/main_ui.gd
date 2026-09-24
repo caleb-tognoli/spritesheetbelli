@@ -1,5 +1,8 @@
 extends Control
 
+const LINK_ICON := preload("res://assets/icons/Link.svg")
+const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
+
 @onready var add_spritesheet_window: AddSpritesheetWindow = $AddSpritesheetWindow
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
@@ -12,6 +15,7 @@ extends Control
 @onready var grid_columns: SpinBox = %GridColumns
 @onready var sprite_width: SpinBox = %SpriteWidth
 @onready var sprite_height: SpinBox = %SpriteHeight
+@onready var keep_ratio_btn: Button = %KeepRatio
 @onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
 @onready var spritesheet_width: Label = %SpritesheetWidth
@@ -48,25 +52,10 @@ func _ready() -> void:
 		func(columns: float):
 			set_spritesheet_grid_size(int(columns), Global.spritesheet.grid_size.y)
 	)
-	sprite_width.value_changed.connect(
-		func(value: float):
-			if Global.spritesheet.sprite_size.x <= 0:
-				return
-			var width := int(value)
-			var height: int = (
-				(Global.spritesheet.sprite_size.y * width) / Global.spritesheet.sprite_size.x
-			)
-			resize_sprites(Vector2i(width, height))
-	)
-	sprite_height.value_changed.connect(
-		func(value: float):
-			if Global.spritesheet.sprite_size.y <= 0:
-				return
-			var height := int(value)
-			var width: int = (
-				(Global.spritesheet.sprite_size.x * height) / Global.spritesheet.sprite_size.y
-			)
-			resize_sprites(Vector2i(width, height))
+	sprite_width.value_changed.connect(func(width: float): set_sprite_size(int(width), -1))
+	sprite_height.value_changed.connect(func(height: float): set_sprite_size(-1, int(height)))
+	keep_ratio_btn.toggled.connect(
+		func(on: bool): keep_ratio_btn.icon = LINK_ICON if on else UNLINK_ICON
 	)
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
 	# Loading the opened file is not an unsaved change
@@ -128,6 +117,25 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 
 	if not failed_files.is_empty():
 		show_notification_dialog("Error", "Could not load: %s." % ", ".join(failed_files))
+
+
+## Resizes sprites to the given width or height (-1 = unchanged), keeping the
+## ratio of the original frames when Keep aspect ratio is on
+func set_sprite_size(width: int, height: int) -> void:
+	var sheet := Global.spritesheet
+	var base := sheet.get_base_sprite_size()
+	if base.x <= 0 or base.y <= 0:
+		return
+	var new_size := sheet.sprite_size
+	if width >= 0:
+		new_size.x = width
+		if keep_ratio_btn.button_pressed:
+			new_size.y = roundi(width * base.y / float(base.x))
+	if height >= 0:
+		new_size.y = height
+		if keep_ratio_btn.button_pressed:
+			new_size.x = roundi(height * base.x / float(base.y))
+	resize_sprites(new_size)
 
 
 func resize_sprites(new_size: Vector2i) -> void:

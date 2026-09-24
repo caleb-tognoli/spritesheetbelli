@@ -162,3 +162,12 @@ func test_opening_a_file_is_not_an_unsaved_change() -> void:
 	assert_eq(Global.filepath, path)
 	Global.spritesheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
 	assert_true(Global.has_unsaved_changes, "later edits are changes")
+
+
+func test_keep_ratio_resize_rounds() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED, Vector2i(32, 24))] as Array[Image])
+	main.sprite_width.value = 33
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(33, 25))
+	main.keep_ratio_btn.button_pressed = false
+	main.sprite_height.value = 10
+	assert_eq(Global.spritesheet.sprite_size, Vector2i(33, 10))

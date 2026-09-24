@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="6_q2y6a"]
 [ext_resource type="Script" path="res://ui/main/menu_bar.gd" id="7_rk3ov"]
 [ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://assets/icons/SpriteSheet.svg" id="7_wpt02"]
+[ext_resource type="Texture2D" path="res://assets/icons/Link.svg" id="8_link"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qlfvo"]
 bg_color = Color(0, 0, 0, 1)
@@ -291,6 +292,16 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 suffix = "px"
+
+[node name="KeepRatio" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer/SpriteSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Keep aspect ratio"
+toggle_mode = true
+button_pressed = true
+icon = ExtResource("8_link")
+flat = true
 
 [node name="ExportContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/Panel/MarginContainer/HBoxContainer"]
 layout_mode = 2
