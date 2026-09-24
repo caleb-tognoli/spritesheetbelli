@@ -1,0 +1,94 @@
+name: Release
+
+# Push a tag like v0.2.0 to build every platform, attach the builds to a GitHub
+# release and publish the web version to GitHub Pages. Run it by hand to get the
+# builds as workflow artifacts without releasing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot and export templates
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot and export templates
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          cd ~/godot
+          curl -sSLo godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && rm godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+          curl -sSLo templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q -j templates.tpz -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          rm templates.tpz
+
+      - name: Export
+        run: |
+          export PATH="$HOME/godot:$PATH"
+          mkdir -p build/windows build/linux build/macos build/web
+          # Keep Godot from importing the exported files
+          touch build/.gdignore
+          godot --headless --import || true
+          godot --headless --export-release "Windows" build/windows/spritesheetbelli.exe
+          godot --headless --export-release "Linux" build/linux/spritesheetbelli.x86_64
+          godot --headless --export-release "macOS" build/macos/spritesheetbelli.zip
+          godot --headless --export-release "Web" build/web/index.html
+
+      - name: Package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          (cd build/windows && zip -q "../../dist/spritesheetbelli-${VERSION}-windows.zip" spritesheetbelli.exe)
+          (cd build/linux && chmod +x spritesheetbelli.x86_64 && tar -czf "../../dist/spritesheetbelli-${VERSION}-linux.tar.gz" spritesheetbelli.x86_64)
+          cp build/macos/spritesheetbelli.zip "dist/spritesheetbelli-${VERSION}-macos.zip"
+          (cd build/web && zip -q -r "../../dist/spritesheetbelli-${VERSION}-web.zip" .)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: builds
+          path: dist/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+
+  pages:
+    # Needs Settings > Pages > Source set to "GitHub Actions"
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: export
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+permissions:
+  contents: write
