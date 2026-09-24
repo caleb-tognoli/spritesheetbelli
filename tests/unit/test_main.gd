@@ -24,7 +24,7 @@ func save_images(colors: Dictionary) -> void:
 
 func test_added_sprites_are_sorted_and_deduplicated() -> void:
 	save_images({"f1.png": Color.RED, "f2.png": Color.GREEN, "f10.png": Color.BLUE})
-	main.files.add_sprites_from_paths(
+	await main.files.add_sprites_from_paths(
 		PackedStringArray(
 			[
 				dir.path_join("f10.png"),
@@ -244,7 +244,7 @@ func test_dropping_files() -> void:
 	var note := FileAccess.open(folder.path_join("notes.txt"), FileAccess.WRITE)
 	note.close()
 
-	main.files.open_dropped_files(PackedStringArray([folder]))
+	await main.files.open_dropped_files(PackedStringArray([folder]))
 	assert_eq(Global.spritesheet.frames.size(), 2, "folder: images only")
 	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "a2 first")
 

@@ -5,6 +5,10 @@ var message_dialog := AcceptDialog.new()
 var confirm_dialog := ConfirmationDialog.new()
 var _confirm_action: Callable
 var _toasts := VBoxContainer.new()
+var _progress_overlay := ColorRect.new()
+var _progress_label := Label.new()
+var _progress_bar := ProgressBar.new()
+var _progress_started := 0
 
 
 func _ready() -> void:
@@ -33,6 +37,7 @@ func _ready() -> void:
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toasts.alignment = BoxContainer.ALIGNMENT_END
 	layer.add_child(_toasts)
+	_build_progress_overlay(layer)
 
 
 func message(title: String, text: String) -> void:
@@ -58,6 +63,49 @@ func toast(text: String, seconds := 3.0) -> void:
 	tween.tween_interval(seconds)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.4)
 	tween.tween_callback(panel.queue_free)
+
+
+## Shows a progress bar over the window, which also blocks clicks. Nothing appears for
+## the first quarter second, so quick tasks don't flash it.
+func progress(text: String, done: int, total: int) -> void:
+	var now := Time.get_ticks_msec()
+	if _progress_started == 0:
+		_progress_started = now
+	if now - _progress_started < 250 and not _progress_overlay.visible:
+		return
+	_progress_overlay.visible = true
+	_progress_label.text = "%s %d of %d" % [text, done, total]
+	_progress_bar.max_value = maxi(total, 1)
+	_progress_bar.value = done
+
+
+func hide_progress() -> void:
+	_progress_started = 0
+	_progress_overlay.visible = false
+
+
+func is_progress_visible() -> bool:
+	return _progress_overlay.visible
+
+
+func _build_progress_overlay(layer: CanvasLayer) -> void:
+	_progress_overlay.color = Color(0, 0, 0, 0.35)
+	_progress_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_progress_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_progress_overlay.visible = false
+	layer.add_child(_progress_overlay)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_progress_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"Toast"
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(320, 0)
+	panel.add_child(box)
+	box.add_child(_progress_label)
+	_progress_bar.show_percentage = false
+	box.add_child(_progress_bar)
 
 
 ## Messages shown right now, newest last

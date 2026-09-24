@@ -117,15 +117,18 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 		func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0
 	)
 
+	var loaded := await ImageLoader.load_all(
+		PackedStringArray(sorted_paths),
+		func(done: int, total: int) -> void: Notify.progress("Loading images", done, total)
+	)
+	Notify.hide_progress()
 	var imgs: Array[Image] = []
 	var failed_files: PackedStringArray = []
-	for path in sorted_paths:
-		var img := Image.load_from_file(path)
-		if img:
-			img.resource_name = path.get_file()
-			imgs.append(img)
+	for i in loaded.size():
+		if loaded[i]:
+			imgs.append(loaded[i])
 		else:
-			failed_files.append(path.get_file())
+			failed_files.append(sorted_paths[i].get_file())
 	Global.document.perform(
 		"Add sprites", Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"))
 	)
@@ -146,7 +149,7 @@ func add_sprites_from_folder(folder: String) -> void:
 	if paths.is_empty():
 		Notify.error("There are no images in %s." % folder.get_file())
 		return
-	add_sprites_from_paths(paths)
+	await add_sprites_from_paths(paths)
 
 
 static func get_images_in_folder(folder: String) -> PackedStringArray:
@@ -179,7 +182,7 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
 		show_add_spritesheet_window(images[0])
 	else:
-		add_sprites_from_paths(images)
+		await add_sprites_from_paths(images)
 
 
 func show_add_spritesheet_window(spritesheet_path: String) -> void:
