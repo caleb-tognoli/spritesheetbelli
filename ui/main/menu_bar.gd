@@ -38,7 +38,7 @@ const MENUS := {
 		&"",
 		&"delete_frames",
 	],
-	"View": [&"zoom_in", &"zoom_out", &"zoom_reset", &"zoom_fit"],
+	"View": [&"zoom_in", &"zoom_out", &"zoom_reset", &"zoom_fit", &"", &"toggle_animation"],
 	"Help": [&"show_shortcuts"],
 }
 

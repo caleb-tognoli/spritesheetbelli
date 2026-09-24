@@ -28,3 +28,14 @@ static func flatten(img: Image, background: Color) -> Image:
 	flat.fill(Color(background, 1.0))
 	flat.blend_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), Vector2i.ZERO)
 	return flat
+
+
+## A tileable checkerboard texture with squares of [param square] pixels
+static func checker_texture(
+	square: int, dark := Color(0.36, 0.36, 0.36), light := Color(0.42, 0.42, 0.42)
+) -> ImageTexture:
+	var img := Image.create_empty(square * 2, square * 2, false, Image.FORMAT_RGBA8)
+	img.fill(light)
+	img.fill_rect(Rect2i(0, 0, square, square), dark)
+	img.fill_rect(Rect2i(square, square, square, square), dark)
+	return ImageTexture.create_from_image(img)

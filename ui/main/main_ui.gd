@@ -17,7 +17,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 ]
 
 @onready var files: FileController = $Files
-@onready var preview_area: Control = %PreviewArea
+@onready var preview_area: PreviewArea = %PreviewArea
 @onready var grid_rows: SpinBox = %GridRows
 @onready var grid_columns: SpinBox = %GridColumns
 @onready var sprite_width: SpinBox = %SpriteWidth
@@ -158,6 +158,15 @@ func _register_actions() -> void:
 		func() -> void: preview.set_zoom(1, preview.get_viewport_rect().size / 2)
 	)
 	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
+	var animation := preview_area.animation_preview
+	Actions.add(
+		&"toggle_animation",
+		"Animation Preview",
+		func() -> void: animation.visible = not animation.visible,
+		has_frames,
+		null,
+		func() -> bool: return animation.visible
+	)
 
 	add.call(&"undo", "Undo", Global.document.undo, Global.document.can_undo)
 	add.call(&"redo", "Redo", Global.document.redo, Global.document.can_redo)

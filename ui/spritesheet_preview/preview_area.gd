@@ -10,8 +10,17 @@ extends Control
 @onready var zoom: Label = %Zoom
 @onready var container: SubViewportContainer = $PreviewContainer
 
+var animation_preview := AnimationPreview.new()
+
 
 func _ready() -> void:
+	animation_preview.preview = spritesheet_preview
+	animation_preview.visible = false
+	add_child(animation_preview)
+	animation_preview.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	animation_preview.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	animation_preview.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	animation_preview.position -= Vector2(10, 44)
 	update_ui()
 	spritesheet_preview.preview_updated.connect(update_ui)
 	select_all_btn.pressed.connect(select_all.bind(true))
