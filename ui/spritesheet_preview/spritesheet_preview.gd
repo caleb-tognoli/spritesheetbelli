@@ -228,9 +228,14 @@ func fit_to_view() -> void:
 		camera.position = -Vector2(50, 50) / camera.zoom
 		queue_redraw()
 		return
-	var fit := (view - Vector2.ONE * MARGIN * 2) / content
+	# Row names are drawn left of the grid at a fixed size on screen
+	var names_width := 0.0
+	for row_name: String in spritesheet.row_names.values():
+		names_width = maxf(names_width, ThemeDB.fallback_font.get_string_size(row_name).x + 16)
+	var usable := view - Vector2(MARGIN * 2 + names_width, MARGIN * 2)
+	var fit := usable / content
 	set_zoom(minf(fit.x, fit.y))
-	camera.position = content / 2 - view / 2 / camera.zoom
+	camera.position = content / 2 - (view + Vector2(names_width, 0)) / 2 / camera.zoom
 
 
 ## Whether cell indices are big enough on screen to be drawn
