@@ -39,7 +39,17 @@ A small desktop tool made with Godot.</p>
 ## Download
 
 Builds for Windows, macOS, Linux and the web are attached to each
-[release](https://github.com/caleb-tognoli/spritesheetbelli/releases).
+[release](https://github.com/caleb-tognoli/spritesheetbelli/releases). The web version
+runs in the browser: opening files uses the browser's file picker and saving downloads
+the result.
+
+### Publishing a release
+
+Push a tag such as `v0.2.0`. The Release workflow builds every platform, attaches the
+builds to a GitHub release and publishes the web version to GitHub Pages (set
+*Settings > Pages > Source* to *GitHub Actions* once). To also publish on itch.io, add
+the repository variable `ITCH_GAME` (like `your-name/spritesheetbelli`) and the secret
+`BUTLER_API_KEY`.
 
 ## Keyboard shortcuts
 

@@ -90,5 +90,29 @@ jobs:
       - id: deploy
         uses: actions/deploy-pages@v4
 
+  itch:
+    # Optional: set the repository variable ITCH_GAME (e.g. "your-name/spritesheetbelli")
+    # and the secret BUTLER_API_KEY (from https://itch.io/user/settings/api-keys)
+    if: startsWith(github.ref, 'refs/tags/') && vars.ITCH_GAME != ''
+    needs: export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: builds
+          path: dist
+      - name: Push to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_GAME: ${{ vars.ITCH_GAME }}
+        run: |
+          curl -sSLo butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip && chmod +x butler
+          VERSION="${GITHUB_REF_NAME#v}"
+          ./butler push dist/*-windows.zip "$ITCH_GAME:windows" --userversion "$VERSION"
+          ./butler push dist/*-linux.tar.gz "$ITCH_GAME:linux" --userversion "$VERSION"
+          ./butler push dist/*-macos.zip "$ITCH_GAME:mac" --userversion "$VERSION"
+          ./butler push dist/*-web.zip "$ITCH_GAME:html5" --userversion "$VERSION"
+
 permissions:
   contents: write
