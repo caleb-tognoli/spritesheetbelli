@@ -49,11 +49,12 @@ static func save_image(img: Image, path: String, options := ExportOptions.new())
 ## Saves every frame as its own PNG named after its index on the grid.
 ## Returns the paths written, or an empty array and the error through [param errors].
 static func export_sprites(
-	sheet: Spritesheet, folder: String, errors: PackedStringArray = []
+	sheet: Spritesheet, folder: String, errors: PackedStringArray = [], index_start := 0
 ) -> PackedStringArray:
 	var written: PackedStringArray = []
 	for coord in sheet.get_sorted_coords():
-		var path := _unique_path(folder.path_join(str(sheet.index_of(coord))), ".png")
+		var index := sheet.index_of(coord) + index_start
+		var path := _unique_path(folder.path_join(str(index)), ".png")
 		var error := sheet.get_cell_image(coord).save_png(path)
 		if error != OK:
 			errors.append("%s (%s)" % [path.get_file(), error_string(error)])

@@ -66,7 +66,8 @@ func update_tooltip(coord: Vector2i) -> void:
 static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 	if not sheet.is_inside(coord):
 		return ""
-	var position := "Cell %d (column %d, row %d)" % [sheet.index_of(coord), coord.x, coord.y]
+	var index: int = sheet.index_of(coord) + Settings.get_value(&"index_start")
+	var position := "Cell %d (column %d, row %d)" % [index, coord.x, coord.y]
 	if sheet.has_frame(coord):
 		var source := sheet.frames[coord]
 		var size := sheet.get_frame_image(coord).get_size()

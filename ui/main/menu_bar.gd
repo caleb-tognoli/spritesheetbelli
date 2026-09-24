@@ -20,6 +20,7 @@ const MENUS := {
 		&"add_folder",
 		&"add_spritesheet",
 		&"",
+		&"settings",
 		&"quit",
 	],
 	"Edit":

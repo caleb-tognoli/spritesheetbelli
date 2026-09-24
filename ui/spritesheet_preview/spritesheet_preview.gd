@@ -20,12 +20,10 @@ signal move_requested(coords: Array[Vector2i], offset: Vector2i, copy: bool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid.
 signal hover_changed(coord: Vector2i)
 
-const GRID_COLOR := Color(0.85, 0.85, 0.85, 0.5)
 const SELECTION_COLOR := Color(0.2, 0.55, 0.95)
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.8)
 const HOVER_COLOR := Color(1, 1, 1, 0.08)
 const CHECKER_COLORS: Array[Color] = [Color(0.36, 0.36, 0.36), Color(0.42, 0.42, 0.42)]
-const MOUSE_WHEEL_ZOOM_FORCE := 0.2
 const MAX_ZOOM := 32.0
 const MIN_ZOOM := 0.02
 ## Minimum on-screen size of a cell for its index to be shown
@@ -38,9 +36,16 @@ const NO_CELL := Vector2i(-1, -1)
 enum Drag { NONE, PENDING, BOX, MOVE, PAN }
 
 @export var able_to_lock_spaces := true
-@export var show_indices := true
-@export var show_grid := true
-@export var show_checkerboard := true
+
+# Set from Settings
+var show_indices := true
+var show_grid := true
+var show_checkerboard := true
+var grid_color := Color.WHITE
+var background_color := Color.BLACK
+var checker_size := 8
+var zoom_speed := 0.2
+var index_start := 0
 
 var spritesheet: Spritesheet = Spritesheet.new():
 	set = set_spritesheet
@@ -67,6 +72,20 @@ var _pan_key_held := false
 func _ready() -> void:
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	Settings.changed.connect(apply_settings.unbind(1))
+	apply_settings()
+
+
+func apply_settings() -> void:
+	show_grid = Settings.get_value(&"show_grid")
+	show_indices = Settings.get_value(&"show_indices")
+	show_checkerboard = Settings.get_value(&"show_checkerboard")
+	grid_color = Settings.get_value(&"grid_color")
+	background_color = Settings.get_value(&"background_color")
+	checker_size = Settings.get_value(&"checker_size")
+	zoom_speed = Settings.get_value(&"zoom_speed")
+	index_start = Settings.get_value(&"index_start")
+	queue_redraw()
 
 
 func set_spritesheet(value: Spritesheet) -> void:
@@ -244,9 +263,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
 	match event.button_index:
 		MOUSE_BUTTON_WHEEL_UP when event.pressed:
-			set_zoom(camera.zoom.x * (1 + MOUSE_WHEEL_ZOOM_FORCE * event.factor), event.position)
+			set_zoom(camera.zoom.x * (1 + zoom_speed * event.factor), event.position)
 		MOUSE_BUTTON_WHEEL_DOWN when event.pressed:
-			set_zoom(camera.zoom.x / (1 + MOUSE_WHEEL_ZOOM_FORCE * event.factor), event.position)
+			set_zoom(camera.zoom.x / (1 + zoom_speed * event.factor), event.position)
 		MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
 				_start_drag(Drag.PAN, event.position)
@@ -401,6 +420,7 @@ func _set_hovered_cell(cell: Vector2i) -> void:
 
 
 func _draw() -> void:
+	draw_rect(_visible_world_rect(), background_color)
 	var cell_size := Vector2(spritesheet.sprite_size)
 	if cell_size.x <= 0 or cell_size.y <= 0 or spritesheet.grid_size == Vector2i.ZERO:
 		return
@@ -409,7 +429,7 @@ func _draw() -> void:
 
 	if show_checkerboard:
 		# Checker squares stay the same size on screen
-		var scale_factor := 8.0 * pixel
+		var scale_factor := checker_size * pixel
 		draw_set_transform(Vector2.ZERO, 0, Vector2.ONE * scale_factor)
 		var rect := Rect2(sheet_rect.position / scale_factor, sheet_rect.size / scale_factor)
 		draw_texture_rect(_checker, rect, true)
@@ -466,13 +486,13 @@ func _draw_grid(cell_size: Vector2, pixel: float) -> void:
 	var size := cell_size * Vector2(spritesheet.grid_size)
 	for row in spritesheet.grid_size.y + 1:
 		draw_line(
-			Vector2(0, row * cell_size.y), Vector2(size.x, row * cell_size.y), GRID_COLOR, pixel
+			Vector2(0, row * cell_size.y), Vector2(size.x, row * cell_size.y), grid_color, pixel
 		)
 	for column in spritesheet.grid_size.x + 1:
 		draw_line(
 			Vector2(column * cell_size.x, 0),
 			Vector2(column * cell_size.x, size.y),
-			GRID_COLOR,
+			grid_color,
 			pixel
 		)
 
@@ -500,7 +520,7 @@ func _draw_indices(visible_rect: Rect2) -> void:
 			continue
 		# Text is drawn unscaled so it keeps the same size at any zoom
 		draw_set_transform(rect.position, 0, inverse_zoom)
-		var text := str(spritesheet.index_of(coord))
+		var text := str(spritesheet.index_of(coord) + index_start)
 		var position := Vector2(6, 4 + INDEX_FONT_SIZE)
 		draw_string_outline(
 			font, position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE, 6, Color.BLACK

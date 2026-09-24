@@ -30,6 +30,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var preview: SpritesheetPreview = preview_area.spritesheet_preview
 
 var shortcuts_dialog := ShortcutsDialog.new()
+var settings_window := SettingsWindow.new()
 
 
 func _ready() -> void:
@@ -61,6 +62,8 @@ func _ready() -> void:
 	)
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
+	add_child(settings_window)
+	files.restore_session.call_deferred()
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS)
 	preview.preview_updated.connect(Actions.refresh)
@@ -109,6 +112,7 @@ func _register_actions() -> void:
 		"Add Spritesheet…",
 		files.popup_file_dialog.bind(files.open_spritesheet_dialog)
 	)
+	add.call(&"settings", "Settings…", func() -> void: settings_window.popup_centered())
 	add.call(
 		&"quit", "Quit", func() -> void: files.confirm_unsaved_changes("quitting", get_tree().quit)
 	)
@@ -193,7 +197,10 @@ func resize_sprites(new_size: Vector2i) -> void:
 	if new_size.x <= 0 or new_size.y <= 0:
 		set_text_params(Global.spritesheet)
 		return
-	Global.document.perform("Resize sprites", Global.spritesheet.resize_sprites.bind(new_size))
+	var filter: Image.Interpolation = Settings.get_value(&"resize_filter")
+	Global.document.perform(
+		"Resize sprites", Global.spritesheet.resize_sprites.bind(new_size, filter)
+	)
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:
@@ -219,7 +226,7 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 		"Resize grid", Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))
 	)
 
-	if frames_outside_count > 0:
+	if frames_outside_count > 0 and Settings.get_value(&"confirm_grid_shrink"):
 		Notify.confirm(
 			"Confirm resize",
 			(

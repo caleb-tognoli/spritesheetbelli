@@ -98,6 +98,8 @@ func add_selected_frames_to_global() -> void:
 	var imgs: Array[Image] = []
 	for coord in preview_area.spritesheet_preview.get_selected_coords():
 		imgs.append(spritesheet.frames[coord])
-	Global.document.perform("Add frames", Global.spritesheet.add_frames.bind(imgs))
+	Global.document.perform(
+		"Add frames", Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"))
+	)
 	frames_added.emit()
 	close_requested.emit()

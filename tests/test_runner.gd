@@ -9,6 +9,11 @@ func _ready() -> void:
 	# The headless window is tiny, which makes popups complain about their position
 	get_window().size = Vector2i(1280, 800)
 
+	# Never touch the real settings
+	DirAccess.make_dir_recursive_absolute("user://tests")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://tests/settings.cfg"))
+	Settings.load_settings("user://tests/settings.cfg")
+
 	var filter := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--filter="):

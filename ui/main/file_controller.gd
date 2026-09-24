@@ -101,7 +101,9 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 			imgs.append(img)
 		else:
 			failed_files.append(path.get_file())
-	Global.document.perform("Add sprites", Global.spritesheet.add_frames.bind(imgs))
+	Global.document.perform(
+		"Add sprites", Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"))
+	)
 
 	if not failed_files.is_empty():
 		Notify.error("Could not load: %s." % ", ".join(failed_files))
@@ -167,7 +169,9 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 
 func save_sprites(folder: String) -> void:
 	var errors: PackedStringArray = []
-	var written := SpritesheetExporter.export_sprites(Global.spritesheet, folder, errors)
+	var written := SpritesheetExporter.export_sprites(
+		Global.spritesheet, folder, errors, Settings.get_value(&"index_start")
+	)
 	if not errors.is_empty():
 		Notify.error("Could not save: %s." % ", ".join(errors))
 		return
@@ -232,6 +236,7 @@ func save_project(path: String) -> bool:
 
 	Global.document.path = path
 	Global.document.mark_saved()
+	Settings.set_value(&"last_session", path)
 	if after_save.is_valid():
 		var action := after_save
 		after_save = Callable()
@@ -247,7 +252,15 @@ func open_project(path: String) -> bool:
 		Notify.error(result.error)
 		return false
 	Global.document.load_state(result.state, path, result.extra.get("export_path", ""))
+	Settings.set_value(&"last_session", path)
 	return true
+
+
+## Reopens the last project when the setting is on
+func restore_session() -> void:
+	var last: String = Settings.get_value(&"last_session")
+	if Settings.get_value(&"restore_session") and last and FileAccess.file_exists(last):
+		open_project(last)
 
 
 ## Opens a project, or an image through the Add Spritesheet window
@@ -280,7 +293,7 @@ func export_image_to(path: String) -> bool:
 
 	var spritesheet_image := Global.spritesheet.get_image()
 	path = SpritesheetExporter.with_image_extension(path)
-	var options := ExportOptions.new()
+	var options := ExportOptions.from_settings()
 	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
 
 	if error != OK:
