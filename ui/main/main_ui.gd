@@ -50,6 +50,7 @@ var shortcuts_dialog := ShortcutsDialog.new()
 var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key_dialog := ColorKeyDialog.new()
+var row_name_dialog := RowNameDialog.new()
 
 
 func _ready() -> void:
@@ -98,6 +99,12 @@ func _ready() -> void:
 	add_child(shortcuts_dialog)
 	add_child(settings_window)
 	add_child(color_key_dialog)
+	add_child(row_name_dialog)
+	row_name_dialog.name_chosen.connect(
+		func(row: int, row_name: String) -> void:
+			Global.document.perform("Name row", Global.spritesheet.set_row_name.bind(row, row_name))
+	)
+	preview.row_name_requested.connect(open_row_name_dialog)
 	color_key_dialog.color_chosen.connect(
 		func(color: Color, tolerance: float) -> void:
 			edit_selection(
@@ -227,6 +234,12 @@ func _register_actions() -> void:
 		has_selection
 	)
 	add.call(
+		&"name_row",
+		"Name Row…",
+		func() -> void: open_row_name_dialog(preview.get_selected_coords()[0].y),
+		has_selection
+	)
+	add.call(
 		&"replace_image",
 		"Replace Image…",
 		func() -> void: files.replace_frame_image(preview.get_selected_coords()[0]),
@@ -279,6 +292,10 @@ func _register_actions() -> void:
 	add.call(
 		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
 	)
+
+
+func open_row_name_dialog(row: int) -> void:
+	row_name_dialog.open(row, Global.spritesheet.row_names.get(row, ""))
 
 
 func get_selected_images() -> Array[Image]:

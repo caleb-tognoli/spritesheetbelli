@@ -19,6 +19,8 @@ signal lock_requested(coord: Vector2i, locked: bool)
 signal move_requested(coords: Array[Vector2i], offset: Vector2i, copy: bool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid.
 signal hover_changed(coord: Vector2i)
+## The user double-clicked left of a row to name it
+signal row_name_requested(row: int)
 
 const SELECTION_COLOR := Color(0.2, 0.55, 0.95)
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.8)
@@ -285,6 +287,14 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 
 
 func _on_left_press(event: InputEventMouseButton) -> void:
+	if event.double_click:
+		var world := screen_to_world(event.position)
+		var row := (
+			floori(world.y / spritesheet.sprite_size.y) if spritesheet.sprite_size.y > 0 else -1
+		)
+		if world.x < 0 and row >= 0 and row < spritesheet.grid_size.y:
+			row_name_requested.emit(row)
+			return
 	if _pan_key_held:
 		_start_drag(Drag.PAN, event.position)
 		return
@@ -454,6 +464,7 @@ func _draw() -> void:
 	_draw_selection(pixel)
 	if is_index_visible():
 		_draw_indices(visible_rect)
+	_draw_row_names(cell_size)
 	if _drag == Drag.BOX:
 		var box := _box_rect()
 		draw_rect(box, Color(SELECTION_COLOR, 0.15))
@@ -526,6 +537,29 @@ func _draw_indices(visible_rect: Rect2) -> void:
 			font, position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE, 6, Color.BLACK
 		)
 		draw_string(font, position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
+	draw_set_transform(Vector2.ZERO)
+
+
+## Row names, right-aligned just left of the grid
+func _draw_row_names(cell_size: Vector2) -> void:
+	const FONT_SIZE := 13
+	var font := ThemeDB.fallback_font
+	for row in spritesheet.row_names:
+		if row >= spritesheet.grid_size.y:
+			continue
+		var text: String = spritesheet.row_names[row]
+		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
+		var middle := Vector2(0, (row + 0.5) * cell_size.y)
+		draw_set_transform(middle, 0, Vector2.ONE / camera.zoom)
+		draw_string(
+			font,
+			Vector2(-width - 8, FONT_SIZE / 3.0),
+			text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			FONT_SIZE,
+			Color(0.8, 0.85, 1.0)
+		)
 	draw_set_transform(Vector2.ZERO)
 
 

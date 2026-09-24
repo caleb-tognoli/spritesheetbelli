@@ -145,3 +145,15 @@ func test_trim_and_color_key_actions() -> void:
 	main.color_key_dialog.hide()
 	Actions.run(&"trim")
 	assert_eq(Global.spritesheet.frames[Vector2i(3, 0)].get_size(), Vector2i(8, 8))
+
+
+func test_name_row() -> void:
+	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
+	Actions.run(&"name_row")
+	assert_true(main.row_name_dialog.visible)
+	main.row_name_dialog.line_edit.text = "walk"
+	main.row_name_dialog.confirmed.emit()
+	main.row_name_dialog.hide()
+	assert_eq(Global.spritesheet.row_names.get(0), "walk")
+	Global.document.undo()
+	assert_false(Global.spritesheet.row_names.has(0))

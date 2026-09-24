@@ -50,6 +50,8 @@ const MENUS := {
 		&"",
 		&"insert_cell",
 		&"remove_cell",
+		&"",
+		&"name_row",
 	],
 	"View": [&"zoom_in", &"zoom_out", &"zoom_reset", &"zoom_fit", &"", &"toggle_animation"],
 	"Help": [&"show_shortcuts"],
