@@ -569,11 +569,18 @@ func _draw_indices(visible_cells: Rect2i) -> void:
 		# Text is drawn unscaled so it keeps the same size at any zoom
 		draw_set_transform(rect.position, 0, inverse_zoom)
 		var text := str(spritesheet.index_of(coord) + index_start)
-		var position := Vector2(6, 4 + INDEX_FONT_SIZE)
+		var text_position := Vector2(6, 4 + INDEX_FONT_SIZE)
 		draw_string_outline(
-			font, position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE, 6, Color.BLACK
+			font,
+			text_position,
+			text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			INDEX_FONT_SIZE,
+			6,
+			Color.BLACK
 		)
-		draw_string(font, position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
+		draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
 	draw_set_transform(Vector2.ZERO)
 
 

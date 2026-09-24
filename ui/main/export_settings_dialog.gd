@@ -178,8 +178,8 @@ func _options_from_controls() -> ExportOptions:
 
 func _update_labels(options: ExportOptions) -> void:
 	var sheet := Global.spritesheet
-	var size := SpritesheetExporter.get_image_size(sheet, options)
-	image_size.text = "%d×%d px" % [size.x, size.y]
+	var total_size := SpritesheetExporter.get_image_size(sheet, options)
+	image_size.text = "%d×%d px" % [total_size.x, total_size.y]
 	var coords := sheet.get_sorted_coords()
 	if coords.is_empty():
 		pattern_example.text = ""

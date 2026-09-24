@@ -17,18 +17,18 @@ func _ready() -> void:
 func add(
 	id: StringName,
 	label: String,
-	run: Callable,
+	on_run: Callable,
 	can_run := Callable(),
 	icon: Texture2D = null,
-	is_checked := Callable(),
+	checked := Callable(),
 ) -> AppAction:
 	var action := AppAction.new()
 	action.id = id
 	action.label = label
-	action.run = run
+	action.run = on_run
 	action.can_run = can_run
 	action.icon = icon
-	action.is_checked = is_checked
+	action.is_checked = checked
 	_actions[id] = action
 	refresh()
 	return action

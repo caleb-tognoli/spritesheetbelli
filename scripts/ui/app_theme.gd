@@ -71,11 +71,11 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		&"Button", &"MenuButton", &"OptionButton", &"CheckBox", &"CheckButton"
 	]:
 		var is_flat := type in [&"MenuButton", &"CheckBox", &"CheckButton"]
-		theme.set_stylebox("normal", type, flat if is_flat else normal)
+		theme.set_stylebox("normal", type, (flat as StyleBox) if is_flat else normal)
 		theme.set_stylebox("hover", type, hover)
 		theme.set_stylebox("pressed", type, pressed)
 		theme.set_stylebox("hover_pressed", type, pressed)
-		theme.set_stylebox("disabled", type, flat if is_flat else disabled)
+		theme.set_stylebox("disabled", type, (flat as StyleBox) if is_flat else disabled)
 		theme.set_stylebox("focus", type, focus)
 		theme.set_color("font_color", type, p.text)
 		theme.set_color("font_hover_color", type, p.text)

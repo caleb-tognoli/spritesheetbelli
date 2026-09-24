@@ -50,10 +50,10 @@ func test_background() -> void:
 
 func test_sprite_name_pattern() -> void:
 	sheet.set_row_name(0, "walk")
-	var name := SpritesheetExporter.format_sprite_name(
+	var sprite_name := SpritesheetExporter.format_sprite_name(
 		"{row_name}_{frame:2}", sheet, Vector2i(2, 0), 1
 	)
-	assert_eq(name, "walk_03")
+	assert_eq(sprite_name, "walk_03")
 	assert_eq(SpritesheetExporter.format_sprite_name("a/b{index}", sheet, Vector2i(1, 0)), "a_b1")
 
 

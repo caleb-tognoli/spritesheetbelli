@@ -444,25 +444,31 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	grid_columns.set_value_no_signal(spritesheet.grid_size.x)
 	sprite_width.set_value_no_signal(spritesheet.sprite_size.x)
 	sprite_height.set_value_no_signal(spritesheet.sprite_size.y)
-	var size := SpritesheetExporter.get_image_size(
+	var image_size := SpritesheetExporter.get_image_size(
 		spritesheet, ExportOptions.from_sheet(spritesheet)
 	)
-	sheet_size.text = "%d × %d px" % [size.x, size.y]
+	sheet_size.text = "%d × %d px" % [image_size.x, image_size.y]
 	update_sheet_info()
 	resize_filter.select(get_resize_filter())
 
 
-## Frame count, grid and image size in the status bar
+## Frame count, grid and image image_size in the status bar
 func update_sheet_info() -> void:
 	var sheet := Global.spritesheet
 	if sheet.is_empty():
 		sheet_info.text = tr("No frames. Add sprites or drop images here.")
 	else:
 		var selected := preview.get_selected_coords().size()
-		var size := SpritesheetExporter.get_image_size(sheet, ExportOptions.from_sheet(sheet))
+		var image_size := SpritesheetExporter.get_image_size(sheet, ExportOptions.from_sheet(sheet))
 		sheet_info.text = (
 			tr("%d frames · %d×%d grid · %d×%d px")
-			% [sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y, size.x, size.y]
+			% [
+				sheet.frames.size(),
+				sheet.grid_size.x,
+				sheet.grid_size.y,
+				image_size.x,
+				image_size.y
+			]
 		)
 		if selected:
 			sheet_info.text += " · " + tr("%d selected") % selected

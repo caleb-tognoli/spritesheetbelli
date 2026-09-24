@@ -113,9 +113,9 @@ func popup_file_dialog(dialog: FileDialog) -> void:
 ## file picker and saving writes into the browser, then downloads the file
 func _web_file_dialog(dialog: FileDialog) -> void:
 	var images := WebFiles.IMAGE_TYPES
-	var name := Global.document.get_display_name().get_basename()
-	if name.is_empty():
-		name = "spritesheet"
+	var base_name := Global.document.get_display_name().get_basename()
+	if base_name.is_empty():
+		base_name = "spritesheet"
 	match dialog:
 		open_sprites_dialog:
 			WebFiles.pick(images, true, add_sprites_from_paths)
@@ -134,13 +134,13 @@ func _web_file_dialog(dialog: FileDialog) -> void:
 				func(paths: PackedStringArray) -> void: dialog.file_selected.emit(paths[0])
 			)
 		save_project_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(name + ".sbelli"))
+			dialog.file_selected.emit(WebFiles.output_path(base_name + ".sbelli"))
 		export_image_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(name + ".png"))
+			dialog.file_selected.emit(WebFiles.output_path(base_name + ".png"))
 		export_atlas_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(name + "_atlas.png"))
+			dialog.file_selected.emit(WebFiles.output_path(base_name + "_atlas.png"))
 		save_sprites_dialog:
-			var folder := WebFiles.output_path(name + "_sprites")
+			var folder := WebFiles.output_path(base_name + "_sprites")
 			DirAccess.make_dir_recursive_absolute(folder)
 			for file in DirAccess.get_files_at(folder):
 				DirAccess.remove_absolute(folder.path_join(file))
