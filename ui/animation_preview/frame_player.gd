@@ -1,7 +1,8 @@
 class_name FramePlayer
 extends VBoxContainer
 ## Plays cells of a spritesheet, with buttons to go back to the first frame, play or
-## pause, and step to the previous or next frame.
+## pause, step to the previous or next frame, and show the previous frame faintly behind
+## the current one (onion skin).
 
 ## The shown frame changed, e.g. to highlight it elsewhere
 signal frame_changed(cell: Vector2i)
@@ -11,6 +12,9 @@ const PAUSE_ICON := preload("res://assets/icons/Pause.svg")
 const START_ICON := preload("res://assets/icons/PlayStartBackwards.svg")
 const PREVIOUS_ICON := preload("res://assets/icons/PagePrevious.svg")
 const NEXT_ICON := preload("res://assets/icons/PageNext.svg")
+const ONION_ICON := preload("res://assets/icons/Duplicate.svg")
+## How visible the previous frame is with onion skin
+const ONION_ALPHA := 0.3
 
 var sheet: Spritesheet:
 	set = set_sheet
@@ -27,6 +31,7 @@ var start_button := Button.new()
 var play_button := Button.new()
 var previous_button := Button.new()
 var next_button := Button.new()
+var onion_button := Button.new()
 var counter := Label.new()
 ## Holds the buttons, so owners can add their own controls next to them
 var controls := HBoxContainer.new()
@@ -42,6 +47,7 @@ var _direction := 1
 var _elapsed := 0.0
 var _textures: Dictionary[Image, ImageTexture] = {}
 var _stage := TextureRect.new()
+var _onion := TextureRect.new()
 var _display := TextureRect.new()
 
 
@@ -51,11 +57,13 @@ func _init() -> void:
 	_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_stage.custom_minimum_size = Vector2(160, 120)
 	add_child(_stage)
-	_display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_display.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_display.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_stage.add_child(_display)
+	for layer: TextureRect in [_onion, _display]:
+		layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		layer.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		layer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		layer.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		_stage.add_child(layer)
+	_onion.modulate.a = ONION_ALPHA
 
 	add_child(controls)
 	for button: Button in [start_button, previous_button, play_button, next_button]:
@@ -71,11 +79,31 @@ func _init() -> void:
 	next_button.tooltip_text = "Next frame"
 	next_button.pressed.connect(step.bind(1))
 	play_button.pressed.connect(func() -> void: playing = not playing)
+	onion_button.flat = true
+	onion_button.toggle_mode = true
+	onion_button.icon = ONION_ICON
+	onion_button.tooltip_text = "Onion skin: show the previous frame faintly"
+	onion_button.toggled.connect(
+		func(on: bool) -> void:
+			if Settings.get_value(&"onion_skin") != on:
+				Settings.set_value(&"onion_skin", on)
+			_show_current()
+	)
+	controls.add_child(onion_button)
 	counter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	counter.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	counter.theme_type_variation = &"StatusLabel"
 	controls.add_child(counter)
 	playing = true
+
+
+func _ready() -> void:
+	onion_button.set_pressed_no_signal(Settings.get_value(&"onion_skin"))
+	Settings.changed.connect(
+		func(key: StringName) -> void:
+			if key == &"onion_skin":
+				onion_button.button_pressed = Settings.get_value(&"onion_skin")
+	)
 
 
 func set_sheet(value: Spritesheet) -> void:
@@ -120,6 +148,19 @@ func get_cells() -> Array[Vector2i]:
 
 func get_current_cell() -> Vector2i:
 	return _cells[_position] if _position < _cells.size() else Spritesheet.NO_CELL
+
+
+## The frame shown before the current one while playing, or NO_CELL at the start of an
+## animation that plays once
+func get_previous_cell() -> Vector2i:
+	if _cells.size() < 2:
+		return Spritesheet.NO_CELL
+	var previous := _position - _direction
+	if mode == SheetAnimation.Mode.PING_PONG and (previous < 0 or previous >= _cells.size()):
+		previous = _position + _direction
+	elif mode == SheetAnimation.Mode.ONCE and previous < 0:
+		return Spritesheet.NO_CELL
+	return _cells[posmod(previous, _cells.size())]
 
 
 ## Shows the first frame, without changing whether it plays
@@ -185,11 +226,19 @@ func _show_current() -> void:
 	play_button.disabled = _cells.size() < 2
 	if cell == Spritesheet.NO_CELL:
 		_display.texture = null
+		_onion.texture = null
 		counter.text = tr("No frames")
 		return
+	_display.texture = _texture(cell)
+	var previous := get_previous_cell()
+	var show_onion := onion_button.button_pressed and previous != Spritesheet.NO_CELL
+	_onion.texture = _texture(previous) if show_onion else null
+	counter.text = "%d / %d" % [_position + 1, _cells.size()]
+	frame_changed.emit(cell)
+
+
+func _texture(cell: Vector2i) -> ImageTexture:
 	var source := sheet.frames[cell]
 	if not _textures.has(source):
 		_textures[source] = ImageTexture.create_from_image(sheet.get_cell_image(cell))
-	_display.texture = _textures[source]
-	counter.text = "%d / %d" % [_position + 1, _cells.size()]
-	frame_changed.emit(cell)
+	return _textures[source]

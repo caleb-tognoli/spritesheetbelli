@@ -24,6 +24,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
   durations from Aseprite JSON are kept. The Animations window shows how long a cycle
   takes.
+- Onion skin in the animation players: a button shows the previous frame faintly behind
+  the current one.
 - History panel (View > History, Ctrl+H): every undo step; click one to go back to it.
 - Progress overlay for slow work, such as resizing many big sprites, which now happens
   on worker threads.

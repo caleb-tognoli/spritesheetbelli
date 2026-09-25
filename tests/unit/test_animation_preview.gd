@@ -147,3 +147,26 @@ func test_animation_window() -> void:
 	window.delete_button.pressed.emit()
 	assert_true(sheet.animations.is_empty())
 	window.hide()
+
+
+func test_onion_skin_shows_the_previous_frame() -> void:
+	var sheet := Spritesheet.new()
+	for i in 3:
+		sheet.add_frames([make_image(Color(i / 3.0, 0, 0))] as Array[Image])
+	var player := FramePlayer.new()
+	add_child(player)
+	player.sheet = sheet
+	player.set_cells(sheet.get_sorted_coords())
+	assert_eq(player.get_previous_cell(), Vector2i(2, 0), "loops back to the last frame")
+	player.mode = SheetAnimation.Mode.ONCE
+	assert_eq(player.get_previous_cell(), Spritesheet.NO_CELL, "nothing before the start")
+	player.step(1)
+	assert_eq(player.get_previous_cell(), Vector2i(0, 0))
+
+	Settings.set_value(&"onion_skin", true)
+	assert_true(player.onion_button.button_pressed, "follows the setting")
+	assert_true(player._onion.texture != null, "previous frame shown")
+	player.onion_button.button_pressed = false
+	assert_true(player._onion.texture == null, "hidden again")
+	assert_false(Settings.get_value(&"onion_skin"), "remembered")
+	player.queue_free()
