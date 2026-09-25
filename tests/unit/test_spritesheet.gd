@@ -236,3 +236,13 @@ func test_ping_pong_playback() -> void:
 		animation.get_playback_cells(sheet),
 		[Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(1, 0)] as Array[Vector2i]
 	)
+
+
+func test_frame_numbers() -> void:
+	assert_eq(SheetAnimation.parse_numbers("0-3, 5 9-7").numbers, [0, 1, 2, 3, 5, 9, 8, 7])
+	assert_eq(SheetAnimation.parse_numbers("2,x").error, "x")
+	assert_eq(SheetAnimation.parse_numbers("1-2-3").error, "1-2-3")
+	assert_eq(SheetAnimation.format_numbers([0, 1, 2, 3, 5, 9, 8, 7] as Array[int]), "0-3, 5, 9-7")
+	assert_eq(
+		SheetAnimation.format_numbers([4, 5, 7] as Array[int]), "4, 5, 7", "two in a row stay apart"
+	)

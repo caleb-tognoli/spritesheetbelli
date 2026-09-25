@@ -1,7 +1,7 @@
 class_name AnimationWindow
 extends AcceptDialog
-## A bigger preview where animations are made and edited: which frames (a range or the
-## selected ones), how fast and how they repeat. Every change can be undone.
+## A bigger preview where animations are made and edited: which frames (sprite numbers
+## and ranges such as "0-3, 5"), how fast and how they repeat. Every change can be undone.
 
 const ADD_ICON := preload("res://assets/icons/Add.svg")
 const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
@@ -23,9 +23,7 @@ var new_button := Button.new()
 var delete_button := Button.new()
 var player := FramePlayer.new()
 var name_edit := LineEdit.new()
-var from_spin := SpinBox.new()
-var to_spin := SpinBox.new()
-var use_selection_button := Button.new()
+var frames_edit := LineEdit.new()
 var frames_info := Label.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
@@ -46,9 +44,6 @@ func _init() -> void:
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(200, 0)
 	layout.add_child(left)
-	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list.fixed_icon_size = Vector2i(16, 16)
-	left.add_child(list)
 	var buttons := HBoxContainer.new()
 	left.add_child(buttons)
 	new_button.text = "New"
@@ -59,6 +54,9 @@ func _init() -> void:
 	delete_button.icon = REMOVE_ICON
 	delete_button.tooltip_text = "Delete the animation"
 	buttons.add_child(delete_button)
+	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list.fixed_icon_size = Vector2i(16, 16)
+	left.add_child(list)
 
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -79,47 +77,44 @@ func _init() -> void:
 	name_edit.placeholder_text = "walk"
 	_add_property("Name", name_edit)
 
-	var range_box := HBoxContainer.new()
-	for spin: SpinBox in [from_spin, to_spin]:
-		spin.min_value = 0
-		spin.allow_greater = true
-		spin.tooltip_text = "Cell numbers as shown in the sheet"
-	var from_label := Label.new()
-	from_label.text = "From"
-	range_box.add_child(from_label)
-	range_box.add_child(from_spin)
-	var to_label := Label.new()
-	to_label.text = "to"
-	range_box.add_child(to_label)
-	range_box.add_child(to_spin)
-	use_selection_button.text = "Use Selected"
-	use_selection_button.tooltip_text = "Play the frames selected in the sheet, in order"
-	range_box.add_child(use_selection_button)
-	_add_property("Frames", range_box)
-	frames_info.theme_type_variation = &"StatusLabel"
-	_add_property("", frames_info)
-
+	# Speed and type share a row
+	var timing := HBoxContainer.new()
+	timing.add_theme_constant_override("separation", 12)
 	fps_spin.min_value = 0.5
 	fps_spin.max_value = 120
 	fps_spin.step = 0.5
 	fps_spin.suffix = "fps"
 	fps_spin.tooltip_text = "Frames per second"
-	_add_property("Speed", fps_spin)
+	fps_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	timing.add_child(fps_spin)
+	var type_label := Label.new()
+	type_label.text = "Type"
+	timing.add_child(type_label)
 	for each_mode in MODES:
 		mode_option.add_icon_item(
 			MODE_ICONS[each_mode], SheetAnimation.MODE_NAMES[each_mode], each_mode
 		)
 	mode_option.tooltip_text = "Once plays to the end, Loop starts over, Ping-pong plays back"
-	_add_property("Type", mode_option)
+	mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	timing.add_child(mode_option)
+	_add_property("Speed", timing)
+
+	frames_edit.placeholder_text = "0-7"
+	frames_edit.tooltip_text = (
+		"Sprite numbers as shown in the sheet, in playing order. Ranges like 0-7 count "
+		+ "up, 7-0 counts down. Separate them with commas: 0-3, 5, 8"
+	)
+	_add_property("Frames", frames_edit)
+	frames_info.theme_type_variation = &"StatusLabel"
+	_add_property("", frames_info)
 
 	list.item_selected.connect(func(_index: int) -> void: _show_selected())
 	new_button.pressed.connect(add_animation)
 	delete_button.pressed.connect(remove_animation)
 	name_edit.text_submitted.connect(func(_text: String) -> void: _apply())
 	name_edit.focus_exited.connect(_apply)
-	from_spin.value_changed.connect(func(_value: float) -> void: _apply_range())
-	to_spin.value_changed.connect(func(_value: float) -> void: _apply_range())
-	use_selection_button.pressed.connect(use_selection)
+	frames_edit.text_submitted.connect(func(_text: String) -> void: _apply_frames())
+	frames_edit.focus_exited.connect(_apply_frames)
 	fps_spin.value_changed.connect(func(_value: float) -> void: _apply())
 	mode_option.item_selected.connect(func(_index: int) -> void: _apply())
 
@@ -131,9 +126,8 @@ func _ready() -> void:
 			if visible:
 				refresh()
 	)
-	for spin: SpinBox in [from_spin, to_spin, fps_spin]:
-		spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		SpinScroll.enable(spin)
+	fps_spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	SpinScroll.enable(fps_spin)
 
 
 ## Shows the window with the animation at [param index] selected (-1: the first)
@@ -185,15 +179,6 @@ func remove_animation() -> void:
 		Global.document.perform("Delete animation", Global.spritesheet.remove_animation.bind(index))
 
 
-## Makes the selected animation play the frames selected in the sheet
-func use_selection() -> void:
-	var cells := _selected_cells()
-	if cells.is_empty():
-		Notify.message("Use Selected", "Select frames in the sheet first.")
-		return
-	_edit(func(animation: SheetAnimation) -> void: animation.cells = cells)
-
-
 func _show_selected() -> void:
 	var index := get_selected()
 	var has_animation := index >= 0
@@ -208,18 +193,9 @@ func _show_selected() -> void:
 	_updating = true
 	if not name_edit.has_focus():
 		name_edit.text = animation.name
-	var start: int = Settings.get_value(&"index_start")
-	var cells := animation.cells
-	var first := sheet.index_of(cells[0]) if not cells.is_empty() else 0
-	var last := sheet.index_of(cells[-1]) if not cells.is_empty() else 0
-	for spin: SpinBox in [from_spin, to_spin]:
-		spin.min_value = start
-	from_spin.set_value_no_signal(first + start)
-	to_spin.set_value_no_signal(last + start)
-	var frame_count := animation.get_frame_cells(sheet).size()
-	frames_info.text = tr("%d frames") % frame_count
-	if not _is_range(cells):
-		frames_info.text = tr("%d frames, picked one by one") % frame_count
+	if not frames_edit.has_focus():
+		frames_edit.text = _format_cells(animation.cells)
+	_show_frames_info(animation.get_frame_cells(sheet).size(), animation.cells.size())
 	fps_spin.set_value_no_signal(animation.fps)
 	mode_option.select(mode_option.get_item_index(animation.mode))
 	_updating = false
@@ -241,19 +217,39 @@ func _apply() -> void:
 	)
 
 
-## Plays every cell from the From number to the To number, backwards when To is smaller
-func _apply_range() -> void:
-	if _updating:
+## Plays the sprites whose numbers are typed in the frames field
+func _apply_frames() -> void:
+	if _updating or get_selected() < 0:
+		return
+	var parsed := SheetAnimation.parse_numbers(frames_edit.text)
+	if parsed.has("error"):
+		frames_info.text = tr('Can\'t read "%s". Use numbers and ranges like 0-3, 5') % parsed.error
+		frames_info.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
 		return
 	var sheet := Global.spritesheet
 	var start: int = Settings.get_value(&"index_start")
-	var first := int(from_spin.value) - start
-	var last := int(to_spin.value) - start
 	var cells: Array[Vector2i] = []
-	var step := 1 if last >= first else -1
-	for index in range(first, last + step, step):
-		cells.append(sheet.coord_of(index))
+	for number: int in parsed.numbers:
+		if number >= start:
+			cells.append(sheet.coord_of(number - start))
 	_edit(func(animation: SheetAnimation) -> void: animation.cells = cells)
+	_show_selected()
+
+
+func _show_frames_info(with_frames: int, total: int) -> void:
+	frames_info.remove_theme_color_override("font_color")
+	frames_info.text = tr("%d frames") % with_frames
+	if total > with_frames:
+		frames_info.text += tr(" (%d empty cells are skipped)") % (total - with_frames)
+
+
+## The numbers of [param cells] as typed in the frames field
+func _format_cells(cells: Array[Vector2i]) -> String:
+	var start: int = Settings.get_value(&"index_start")
+	var numbers: Array[int] = []
+	for cell in cells:
+		numbers.append(Global.spritesheet.index_of(cell) + start)
+	return SheetAnimation.format_numbers(numbers)
 
 
 ## Changes the selected animation with [param change] as one undoable step
@@ -279,22 +275,9 @@ func _suggest_name(cells: Array[Vector2i]) -> String:
 	return "animation"
 
 
-## Whether [param cells] are consecutive cells in reading order
-func _is_range(cells: Array[Vector2i]) -> bool:
-	var sheet := Global.spritesheet
-	if cells.size() < 2:
-		return true
-	var step := sheet.index_of(cells[1]) - sheet.index_of(cells[0])
-	if absi(step) != 1:
-		return false
-	for i in range(2, cells.size()):
-		if sheet.index_of(cells[i]) - sheet.index_of(cells[i - 1]) != step:
-			return false
-	return true
-
-
 func _add_property(text: String, control: Control) -> void:
 	var label := Label.new()
 	label.text = text
 	_properties.add_child(label)
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_properties.add_child(control)

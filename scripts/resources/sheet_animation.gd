@@ -56,3 +56,43 @@ func get_playback_cells(sheet: Spritesheet) -> Array[Vector2i]:
 		back.reverse()
 		played.append_array(back)
 	return played
+
+
+## Reads frame numbers such as "0-3, 5, 9-7": single numbers and ranges, which count
+## down when the first number is bigger. Returns [code]{"numbers": Array[int]}[/code], or
+## [code]{"error": String}[/code] naming the part that couldn't be read.
+static func parse_numbers(text: String) -> Dictionary:
+	var numbers: Array[int] = []
+	for part in text.replace(",", " ").split(" ", false):
+		var ends := part.split("-", false)
+		var valid := ends.size() in [1, 2] and ends[0].is_valid_int()
+		valid = valid and (ends.size() == 1 or ends[1].is_valid_int())
+		valid = valid and part.count("-") == ends.size() - 1
+		if not valid:
+			return {"error": part}
+		var first := int(ends[0])
+		var last := int(ends[-1])
+		var step := 1 if last >= first else -1
+		for number in range(first, last + step, step):
+			numbers.append(number)
+	return {"numbers": numbers}
+
+
+## Writes [param numbers] the way [method parse_numbers] reads them, with runs as ranges
+static func format_numbers(numbers: Array[int]) -> String:
+	var parts: PackedStringArray = []
+	var i := 0
+	while i < numbers.size():
+		var end := i
+		var step := 0
+		if i + 1 < numbers.size() and absi(numbers[i + 1] - numbers[i]) == 1:
+			step = numbers[i + 1] - numbers[i]
+			while end + 1 < numbers.size() and numbers[end + 1] - numbers[end] == step:
+				end += 1
+		if end - i >= 2:
+			parts.append("%d-%d" % [numbers[i], numbers[end]])
+		else:
+			for j in range(i, end + 1):
+				parts.append(str(numbers[j]))
+		i = end + 1
+	return ", ".join(parts)

@@ -122,8 +122,18 @@ func test_animation_window() -> void:
 	var sheet := Global.spritesheet
 	assert_eq(sheet.animations.size(), 1)
 	assert_eq(sheet.animations[0].cells, [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
-	window.from_spin.value = 0
-	assert_eq(sheet.animations[0].cells.size(), 3, "from 0 to 2")
+	assert_eq(window.frames_edit.text, "1, 2")
+	window.frames_edit.text = "2-0, 2"
+	window.frames_edit.text_submitted.emit(window.frames_edit.text)
+	assert_eq(
+		sheet.animations[0].cells,
+		[Vector2i(2, 0), Vector2i(1, 0), Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i],
+		"frames by number, in the typed order"
+	)
+	window.frames_edit.text = "1, oops"
+	window.frames_edit.text_submitted.emit(window.frames_edit.text)
+	assert_true("oops" in window.frames_info.text, "explains what it couldn't read")
+	assert_eq(sheet.animations[0].cells.size(), 4, "unchanged")
 	window.fps_spin.value = 20
 	window.mode_option.select(window.mode_option.get_item_index(SheetAnimation.Mode.PING_PONG))
 	window.mode_option.item_selected.emit(window.mode_option.selected)
