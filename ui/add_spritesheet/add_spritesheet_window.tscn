@@ -44,13 +44,14 @@ layout_mode = 2
 theme_override_constants/separation = 15
 alignment = 1
 
-[node name="GridSize" type="VBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="GridSize" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+size_flags_vertical = 4
+theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize"]
 layout_mode = 2
-text = "Grid size:"
+text = "Grid"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize"]
 layout_mode = 2
@@ -83,13 +84,14 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="Offset" type="VBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="Offset" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset"]
 layout_mode = 2
-text = "Offset:"
+custom_minimum_size = Vector2(70, 0)
+text = "Offset"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset"]
 layout_mode = 2
@@ -117,13 +119,14 @@ alignment = 2
 suffix = "px"
 select_all_on_focus = true
 
-[node name="Spacing" type="VBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="Spacing" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing"]
 layout_mode = 2
-text = "Spacing:"
+custom_minimum_size = Vector2(70, 0)
+text = "Spacing"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing"]
 layout_mode = 2
@@ -154,7 +157,7 @@ select_all_on_focus = true
 [node name="SliceInfo" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 8
+size_flags_vertical = 4
 text = "Cell size: 0×0 px"
 
 [node name="PreviewArea" parent="VBoxContainer" instance=ExtResource("1_625nm")]

@@ -1,8 +1,7 @@
 class_name AddSpritesheetWindow
 extends Window
 
-const COLLAPSED_ICON := preload("res://assets/icons/GuiTreeArrowRight.svg")
-const EXPANDED_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
+const DROPDOWN_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
 
 signal canceled
 ## Emitted after frames were added to the open spritesheet
@@ -22,8 +21,9 @@ signal frames_added
 @export var spritesheet_image: Image
 
 var spritesheet: Spritesheet
-## Shows the rarely needed offset and spacing fields
+## Opens the rarely needed offset and spacing fields in a floating panel
 var more_options_btn := Button.new()
+var more_options_popup := PopupPanel.new()
 
 
 func _ready() -> void:
@@ -47,25 +47,31 @@ func _ready() -> void:
 		field.value_changed.connect(
 			func(_value: float) -> void:
 				update_grid_size(spritesheet.grid_size.x, spritesheet.grid_size.y)
+				_update_options_label()
 		)
 
-	# Offset and spacing are rarely needed, so they're hidden until asked for
+	# Offset and spacing are rarely needed, so they're in a panel that drops down
 	var offset_box := offset_x.get_parent().get_parent() as Control
 	var spacing_box := spacing_x.get_parent().get_parent() as Control
-	more_options_btn.text = "Offset & Spacing"
-	more_options_btn.toggle_mode = true
-	more_options_btn.flat = true
-	more_options_btn.size_flags_vertical = Control.SIZE_SHRINK_END
+	more_options_btn.icon = DROPDOWN_ICON
+	more_options_btn.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	more_options_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	more_options_btn.tooltip_text = "For sheets with a margin around or gaps between the frames"
 	offset_box.add_sibling(more_options_btn)
-	offset_box.get_parent().move_child(more_options_btn, offset_box.get_index())
-	more_options_btn.toggled.connect(
-		func(on: bool) -> void:
-			offset_box.visible = on
-			spacing_box.visible = on
-			more_options_btn.icon = EXPANDED_ICON if on else COLLAPSED_ICON
+	var fields := VBoxContainer.new()
+	fields.add_theme_constant_override("separation", 8)
+	more_options_popup.add_child(fields)
+	add_child(more_options_popup)
+	for box: Control in [offset_box, spacing_box]:
+		box.reparent(fields, false)
+		LabelLink.link(box.get_child(0) as Label, box.get_child(1) as Control)
+	more_options_btn.pressed.connect(
+		func() -> void:
+			var below := more_options_btn.get_global_rect()
+			below.position.y += below.size.y + 4
+			more_options_popup.popup_on_parent(Rect2i(Rect2(below.position, Vector2.ZERO)))
 	)
-	more_options_btn.toggled.emit(false)
+	_update_options_label()
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 	preview_area.spritesheet_preview.able_to_move_frames = false
@@ -83,7 +89,7 @@ func setup(img: Image, file_name := "") -> void:
 	spritesheet_image = img
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
-	more_options_btn.button_pressed = false
+	_update_options_label()
 
 	var guessed_size := GridGuesser.guess(img, file_name)
 	update_grid_size(guessed_size.x, guessed_size.y)
@@ -162,6 +168,18 @@ func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
 			parts.append("%d px on the right" % unused.x)
 		if unused.y > 0:
 			parts.append("%d px at the bottom" % unused.y)
-		slice_info.text += tr("\n%s not used") % " and ".join(parts)
+		slice_info.text += tr(" · %s not used") % " and ".join(parts)
 		slice_info.tooltip_text = "The image doesn't divide evenly into this grid"
 		slice_info.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+
+
+## Shows the offset and spacing on the button when they're set
+func _update_options_label() -> void:
+	var offset := Vector2i(int(offset_x.value), int(offset_y.value))
+	var spacing := Vector2i(int(spacing_x.value), int(spacing_y.value))
+	var parts: PackedStringArray = []
+	if offset != Vector2i.ZERO:
+		parts.append(tr("Offset %d×%d") % [offset.x, offset.y])
+	if spacing != Vector2i.ZERO:
+		parts.append(tr("Spacing %d×%d") % [spacing.x, spacing.y])
+	more_options_btn.text = " · ".join(parts) if parts else tr("Offset & Spacing")
