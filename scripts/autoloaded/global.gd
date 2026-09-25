@@ -31,7 +31,7 @@ func _ready() -> void:
 
 ## Frees the nodes held in [param holder]'s variables that were never added to the tree,
 ## such as dialogs when the command line quits before the window is set up
-static func free_unused_nodes(holder: Object) -> void:
+func free_unused_nodes(holder: Object) -> void:
 	for property in holder.get_property_list():
 		if property.type != TYPE_OBJECT:
 			continue
