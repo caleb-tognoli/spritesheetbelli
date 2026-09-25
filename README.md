@@ -9,7 +9,8 @@ A small desktop tool made with Godot.</p>
 
 ## Features
 
-- **Build sheets from sprites.** Add image files, whole folders or dropped files. They're
+- **Build sheets from sprites.** Add image files (PNG, JPG, WebP, animated GIF), whole
+  folders or dropped files. They're
   sorted by name and placed in the first free cell, after the last frame or on a new row.
 - **Cut sheets into frames.** The grid size is guessed from the file name
   (`hero_32x32.png`, `walk_8x2.png`) or from the gaps between sprites; offset and spacing

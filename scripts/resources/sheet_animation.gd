@@ -27,6 +27,25 @@ static func create(
 	return animation
 
 
+## An animation of [param anim_cells] shown for [param seconds] each: the shortest frame
+## sets the speed, and longer ones are held for more frames. Without timing (missing or
+## zero seconds), it plays at 12 fps.
+static func create_timed(
+	anim_name: String, anim_cells: Array[Vector2i], seconds: Array[float]
+) -> SheetAnimation:
+	var animation := create(anim_name, anim_cells)
+	if seconds.size() < anim_cells.size() or seconds.any(func(s: float) -> bool: return s <= 0):
+		return animation
+	var shortest: float = seconds.min()
+	animation.fps = clampf(1.0 / shortest, 0.1, 120.0)
+	var durations: Array[float] = []
+	for i in anim_cells.size():
+		durations.append(snappedf(seconds[i] / shortest, 0.01))
+	if durations.any(func(duration: float) -> bool: return duration != 1.0):
+		animation.durations = durations
+	return animation
+
+
 static func from_dictionary(data: Dictionary) -> SheetAnimation:
 	var animation := SheetAnimation.new()
 	animation.name = str(data.get("name", "animation"))

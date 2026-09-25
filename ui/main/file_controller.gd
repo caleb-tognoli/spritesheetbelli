@@ -3,7 +3,7 @@ extends Node
 ## Opening, saving, exporting and adding files, with the dialogs they need.
 
 const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
-const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp ; Images"
+const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp, *.gif ; Images"
 const DATA_FILTER := "*.json ; Spritesheet data (TexturePacker, Aseprite)"
 ## Work above these sizes shows a "please wait" overlay first
 const SLOW_PIXELS := 4_000_000
@@ -158,7 +158,7 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 		func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0
 	)
 
-	var loaded := await ImageLoader.load_all(
+	var loaded := await ImageLoader.load_all_frames(
 		PackedStringArray(sorted_paths),
 		func(done: int, total: int) -> void: Notify.progress("Loading images", done, total)
 	)
@@ -166,10 +166,9 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 	var imgs: Array[Image] = []
 	var failed_files: PackedStringArray = []
 	for i in loaded.size():
-		if loaded[i]:
-			imgs.append(loaded[i])
-		else:
+		if loaded[i].is_empty():
 			failed_files.append(sorted_paths[i].get_file())
+		imgs.append_array(loaded[i])
 	Global.document.perform(
 		"Add sprites", Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"))
 	)
@@ -202,7 +201,8 @@ static func get_images_in_folder(folder: String) -> PackedStringArray:
 
 
 static func is_image_path(path: String) -> bool:
-	return path.get_extension().to_lower() in SpritesheetExporter.IMAGE_EXTENSIONS
+	var extension := path.get_extension().to_lower()
+	return extension in SpritesheetExporter.IMAGE_EXTENSIONS or extension == GifDecoder.EXTENSION
 
 
 ## Files dropped on the window: a project is opened, one image goes through the
@@ -234,7 +234,49 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 	)
 
 
+## Adds the frames of an animated GIF in a new row, named after the file, with an
+## animation that plays them at the GIF's speed
+func add_gif(path: String) -> void:
+	var gif := GifDecoder.load_file(path)
+	if gif.has("error"):
+		set_filepath_when_opening_spritesheet = false
+		Notify.error(tr(gif.error))
+		return
+	var opening := set_filepath_when_opening_spritesheet
+	if opening:
+		set_filepath_when_opening_spritesheet = false
+		Settings.add_recent_file(path)
+		Global.document.reset()
+	var frames: Array[Image] = gif.frames
+	var seconds: Array[float] = gif.delays
+	var anim_name := path.get_file().get_basename()
+	var add := func(sheet: Spritesheet) -> void:
+		var row := sheet.get_first_free_row()
+		var cells: Array[Vector2i] = []
+		for i in frames.size():
+			cells.append(Vector2i(i, row))
+			sheet.set_frame(cells[i], frames[i])
+		sheet.set_row_name(row, anim_name)
+		if frames.size() > 1:
+			var animation := SheetAnimation.create_timed(
+				sheet.get_unique_animation_name(anim_name), cells, seconds
+			)
+			if not gif.loop:
+				animation.mode = SheetAnimation.Mode.ONCE
+			sheet.add_animation(animation)
+	if opening:
+		var opened := Spritesheet.new()
+		add.call(opened)
+		Global.document.load_state(opened.get_state())
+		Global.document.history_start = "Opened %s" % path.get_file()
+	else:
+		Global.document.perform("Add GIF", add.bind(Global.spritesheet))
+
+
 func _show_add_spritesheet_window(spritesheet_path: String) -> void:
+	if GifDecoder.is_gif_path(spritesheet_path):
+		add_gif(spritesheet_path)
+		return
 	# A data file brings its image, and an image brings the data file next to it
 	var data: SheetData = null
 	var data_path := ""

@@ -161,10 +161,11 @@ func to_spritesheet(img: Image) -> Spritesheet:
 		# The exact frames when they're listed, which tags can't always describe
 		if animation_frames.has(tag.name):
 			indices = animation_frames[tag.name]
+		var seconds: Array[float] = []
 		for i: int in indices:
 			tag_cells.append(cells[i])
-		var animation := SheetAnimation.create(tag.name, tag_cells)
-		_set_timing(animation, indices)
+			seconds.append(frames[i].duration / 1000.0)
+		var animation := SheetAnimation.create_timed(tag.name, tag_cells, seconds)
 		if tag.direction.begins_with("pingpong"):
 			animation.mode = SheetAnimation.Mode.PING_PONG
 		elif tag.repeat == 1:
@@ -201,25 +202,6 @@ func _rows_by_tag() -> Array[Dictionary]:
 	if used != tags.size():
 		rows.clear()
 	return rows
-
-
-## Gives [param animation] the speed and durations of the frames at [param indices]: the
-## shortest frame is one frame long, and longer ones are shown for more frames
-func _set_timing(animation: SheetAnimation, indices: Array) -> void:
-	var shortest := 0
-	for i: int in indices:
-		if frames[i].duration <= 0:
-			return
-		shortest = frames[i].duration if shortest == 0 else mini(shortest, frames[i].duration)
-	animation.fps = clampf(1000.0 / shortest, 0.1, 120.0)
-	var durations: Array[float] = []
-	var timed := false
-	for i: int in indices:
-		var duration := snappedf(float(frames[i].duration) / shortest, 0.01)
-		durations.append(duration)
-		timed = timed or duration != 1.0
-	if timed:
-		animation.durations = durations
 
 
 func _add_frame(frame_name: String, entry: Dictionary) -> void:
