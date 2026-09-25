@@ -53,3 +53,35 @@ func test_texture_packer_json() -> void:
 	assert_true(frame.trimmed)
 	assert_eq(frame.spriteSourceSize, {"x": 2.0, "y": 2.0, "w": 4.0, "h": 4.0})
 	assert_eq(json.meta.image, "a.png")
+
+
+func test_same_frames_are_packed_once() -> void:
+	var sheet := Spritesheet.new()
+	var blink := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	blink.fill_rect(Rect2i(2, 2, 6, 6), Color.RED)
+	var moved := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	moved.fill_rect(Rect2i(8, 8, 6, 6), Color.RED)
+	sheet.add_frames([blink, make_image(Color.BLUE, Vector2i(6, 6)), blink, moved] as Array[Image])
+	var packed := AtlasPacker.pack(sheet)
+	var regions: Array = packed.regions
+	assert_eq(regions.size(), 4, "a region for every frame")
+	assert_eq(regions[2].rect, regions[0].rect, "shared place")
+	assert_eq(regions[3].rect, regions[0].rect, "same pixels elsewhere in the cell")
+	assert_eq(regions[3].source_rect.position, Vector2i(8, 8), "keeps its own place")
+	assert_ne(regions[1].rect, regions[0].rect)
+	var image: Image = packed.image
+	assert_true(image.get_width() * image.get_height() <= 2 * 36 * 2, str(image.get_size()))
+
+
+func test_power_of_two_atlas() -> void:
+	var sheet := Spritesheet.new()
+	sheet.add_frames(
+		(
+			[make_image(Color.RED, Vector2i(20, 12)), make_image(Color.BLUE, Vector2i(9, 5))]
+			as Array[Image]
+		)
+	)
+	var size: Vector2i = AtlasPacker.pack(sheet, 0, 0, true).image.get_size()
+	assert_eq(size.x, nearest_po2(size.x))
+	assert_eq(size.y, nearest_po2(size.y))
+	assert_true(size.x >= 20 and size.y >= 12)

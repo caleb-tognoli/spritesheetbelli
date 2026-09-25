@@ -74,6 +74,7 @@ var advanced_toggle := Button.new()
 var padding := SpinBox.new()
 var spacing := SpinBox.new()
 var extrude := SpinBox.new()
+var power_of_two := CheckBox.new()
 var output_info := Label.new()
 
 var _settings := _grid()
@@ -175,6 +176,9 @@ func _init() -> void:
 		),
 		[T.IMAGE, T.GODOT, T.JSON, T.ATLAS]
 	)
+	power_of_two.text = "Power-of-two size"
+	power_of_two.tooltip_text = "Makes the atlas 256, 512, 1024… px wide and tall"
+	_add_row(_advanced, "", power_of_two, [T.ATLAS])
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -190,6 +194,7 @@ func _init() -> void:
 	pattern.text_changed.connect(_changed.unbind(1))
 	only_selected.toggled.connect(_changed.unbind(1))
 	existing.item_selected.connect(_changed.unbind(1))
+	power_of_two.toggled.connect(_changed.unbind(1))
 	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude]:
 		spin.value_changed.connect(_changed.unbind(1))
 	jpg_background.color_changed.connect(_changed.unbind(1))
@@ -221,7 +226,10 @@ func refresh() -> void:
 	padding.set_value_no_signal(options.padding)
 	spacing.set_value_no_signal(options.spacing)
 	extrude.set_value_no_signal(options.extrude)
-	advanced_toggle.button_pressed = options.padding or options.spacing or options.extrude
+	power_of_two.set_pressed_no_signal(options.power_of_two)
+	advanced_toggle.button_pressed = (
+		options.padding or options.spacing or options.extrude or options.power_of_two
+	)
 	_updating = false
 	_update_labels(options)
 
@@ -260,6 +268,7 @@ func _options() -> ExportOptions:
 	options.padding = int(padding.value)
 	options.spacing = int(spacing.value)
 	options.extrude = int(extrude.value)
+	options.power_of_two = power_of_two.button_pressed
 	return options
 
 

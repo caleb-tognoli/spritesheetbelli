@@ -1,5 +1,6 @@
 class_name AtlasPacker
 ## Packs trimmed frames tightly into one texture atlas with the MaxRects algorithm.
+## Frames with the same pixels are packed once and share their place in the atlas.
 
 const MAX_SIZE := 16384
 
@@ -14,42 +15,67 @@ class Region:
 	var coord: Vector2i
 
 
-## Packs every frame of [param sheet]. Returns [code]{"image": Image, "regions":
-## Array[Region]}[/code], or an empty image when the frames don't fit.
-static func pack(sheet: Spritesheet, spacing := 0, extrude := 0) -> Dictionary:
-	var items: Array[Dictionary] = []
+## Packs every frame of [param sheet]. With [param power_of_two], the atlas is as wide
+## and tall as powers of two, which some older engines and GPUs need. Returns
+## [code]{"image": Image, "regions": Array[Region]}[/code] with a region for every frame,
+## or an empty image and no regions when the frames don't fit.
+static func pack(
+	sheet: Spritesheet, spacing := 0, extrude := 0, power_of_two := false
+) -> Dictionary:
+	var images: Array[Image] = []  # Trimmed pixels, each only once
+	var by_hash := {}  # Indices into images by the hash of their pixels
+	var items: Array[Dictionary] = []  # Every frame, with the index of its pixels
 	for coord in sheet.get_sorted_coords():
 		var cell := sheet.get_cell_image(coord)
 		var used := cell.get_used_rect()
 		if used.size == Vector2i.ZERO:
 			used = Rect2i(0, 0, 1, 1)
-		items.append({"coord": coord, "image": cell.get_region(used), "source_rect": used})
+		var pixels := _find_or_add(images, by_hash, cell.get_region(used))
+		items.append({"coord": coord, "pixels": pixels, "source_rect": used})
 
 	var margin := spacing + extrude * 2
 	var sizes: Array[Vector2i] = []
-	for item in items:
-		sizes.append(item.image.get_size() + Vector2i.ONE * margin)
+	for img in images:
+		sizes.append(img.get_size() + Vector2i.ONE * margin)
 	var placement := find_smallest_packing(sizes)
 	if placement.is_empty():
 		return {"image": Image.create_empty(1, 1, false, Image.FORMAT_RGBA8), "regions": []}
 
-	var atlas_size: Vector2i = placement.size - Vector2i.ONE * spacing
-	var atlas := Image.create_empty(
-		maxi(1, atlas_size.x), maxi(1, atlas_size.y), false, Image.FORMAT_RGBA8
-	)
-	var regions: Array[Region] = []
-	for i in items.size():
-		var img: Image = items[i].image
-		var region := Region.new()
-		region.coord = items[i].coord
-		region.rect = Rect2i(placement.positions[i] + Vector2i.ONE * extrude, img.get_size())
-		region.source_rect = items[i].source_rect
-		region.source_size = sheet.sprite_size
-		atlas.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), region.rect.position)
+	var atlas_size: Vector2i = (placement.size - Vector2i.ONE * spacing).max(Vector2i.ONE)
+	if power_of_two:
+		atlas_size = Vector2i(nearest_po2(atlas_size.x), nearest_po2(atlas_size.y))
+	var atlas := Image.create_empty(atlas_size.x, atlas_size.y, false, Image.FORMAT_RGBA8)
+	var rects: Array[Rect2i] = []
+	for i in images.size():
+		var rect := Rect2i(placement.positions[i] + Vector2i.ONE * extrude, images[i].get_size())
+		atlas.blit_rect(images[i], Rect2i(Vector2i.ZERO, rect.size), rect.position)
 		if extrude > 0:
-			SpritesheetExporter.extrude_edges(atlas, region.rect, extrude)
+			SpritesheetExporter.extrude_edges(atlas, rect, extrude)
+		rects.append(rect)
+	var regions: Array[Region] = []
+	for item in items:
+		var region := Region.new()
+		region.coord = item.coord
+		region.rect = rects[item.pixels]
+		region.source_rect = item.source_rect
+		region.source_size = sheet.sprite_size
 		regions.append(region)
 	return {"image": atlas, "regions": regions}
+
+
+## The index of an image in [param images] with the same pixels as [param img], adding
+## it when there's none. [param by_hash] groups the indices by the pixels' hash.
+static func _find_or_add(images: Array[Image], by_hash: Dictionary, img: Image) -> int:
+	var data := img.get_data()
+	var key := hash([img.get_size(), data])
+	for index: int in by_hash.get(key, []):
+		if images[index].get_size() == img.get_size() and images[index].get_data() == data:
+			return index
+	if not by_hash.has(key):
+		by_hash[key] = []
+	by_hash[key].append(images.size())
+	images.append(img)
+	return images.size() - 1
 
 
 ## Tries several widths and keeps the packing with the smallest area.

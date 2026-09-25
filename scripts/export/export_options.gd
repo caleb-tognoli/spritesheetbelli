@@ -32,6 +32,8 @@ var padding := 0
 var spacing := 0
 ## Pixels by which each frame's edges are repeated outward, against texture bleeding
 var extrude := 0
+## Makes a packed atlas as wide and tall as powers of two
+var power_of_two := false
 
 ## File name for exported sprites. See [method SpritesheetExporter.format_sprite_name].
 var sprite_name_pattern := "{index}"
@@ -66,6 +68,7 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"padding",
 	&"spacing",
 	&"extrude",
+	&"power_of_two",
 	&"sprite_name_pattern",
 	&"only_selected",
 	&"existing_files",

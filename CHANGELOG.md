@@ -46,6 +46,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.
+- Packed atlases store frames that look the same only once; their JSON entries share
+  the place. Advanced has a power-of-two size option for engines that need one.
 - Trimming keeps the pixels where they were in the cell, so trimming all frames of an
   animation shrinks the cells without making it jump. Flipping and rotating move a
   nudged frame with it.

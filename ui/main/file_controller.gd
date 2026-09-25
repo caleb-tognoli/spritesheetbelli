@@ -500,7 +500,7 @@ func export_atlas(path: String) -> bool:
 func _export_atlas(path: String) -> bool:
 	var sheet := Global.spritesheet
 	var options := ExportOptions.from_sheet(sheet)
-	var packed := AtlasPacker.pack(sheet, options.spacing, options.extrude)
+	var packed := AtlasPacker.pack(sheet, options.spacing, options.extrude, options.power_of_two)
 	var image: Image = packed.image
 	if packed.regions.is_empty():
 		Notify.error(tr("The frames don't fit in a %d px atlas.") % AtlasPacker.MAX_SIZE)
