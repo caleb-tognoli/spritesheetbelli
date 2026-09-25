@@ -408,8 +408,12 @@ func choose_export_path() -> void:
 		popup_file_dialog(save_sprites_dialog)
 		return
 	var extension := options.get_file_extension()
-	var names := {"png": "PNG Images", "jpg": "JPEG Images", "webp": "WebP Images"}
-	var patterns := {"png": "*.png", "jpg": "*.jpg, *.jpeg, *.jpe", "webp": "*.webp"}
+	var names := {
+		"png": "PNG Images", "jpg": "JPEG Images", "webp": "WebP Images", "gif": "GIF Images"
+	}
+	var patterns := {
+		"png": "*.png", "jpg": "*.jpg, *.jpeg, *.jpe", "webp": "*.webp", "gif": "*.gif"
+	}
 	export_file_dialog.filters = ["%s ; %s" % [patterns[extension], names[extension]]]
 	export_file_dialog.title = "Export"
 	var suggested := suggested_export_path(options)
@@ -428,14 +432,51 @@ static func suggested_export_path(options: ExportOptions) -> String:
 		base_name = "spritesheet"
 	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
 		base_name += "_atlas"
+	if options.target == ExportOptions.Target.GIF and options.gif_animation:
+		base_name += "_" + options.gif_animation.validate_filename()
 	return folder.path_join(base_name + "." + options.get_file_extension())
 
 
 ## Exports to [param path] what the sheet's export settings say
 func export_to(path: String) -> bool:
-	if ExportOptions.from_sheet(Global.spritesheet).target == ExportOptions.Target.ATLAS:
-		return await export_atlas(path)
+	match ExportOptions.from_sheet(Global.spritesheet).target:
+		ExportOptions.Target.ATLAS:
+			return await export_atlas(path)
+		ExportOptions.Target.GIF:
+			return await export_gif(path)
 	return await export_image_to(path)
+
+
+## Writes the animation chosen in the export settings as an animated GIF
+func export_gif(path: String) -> bool:
+	var sheet := Global.spritesheet
+	var options := ExportOptions.from_sheet(sheet)
+	path = path.get_basename() + ".gif"
+	var animation := options.get_gif_animation(sheet)
+	var data := GifEncoder.animation_frames(
+		sheet, animation, options.animation_fps, options.gif_scale, options.background
+	)
+	if data.frames.is_empty():
+		Notify.error("The animation has no frames.")
+		return false
+	var frames: Array[Image] = data.frames
+	var bytes := await GifEncoder.encode(
+		frames,
+		data.delays,
+		data.loop,
+		func(done: int, total: int) -> void: Notify.progress("Making the GIF", done, total)
+	)
+	Notify.hide_progress()
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		var error := FileAccess.get_open_error()
+		Notify.error(tr("Could not export to %s (%s).") % [path, error_string(error)])
+		return false
+	file.store_buffer(bytes)
+	file.close()
+	WebFiles.download(path)
+	Notify.toast(tr("Exported %s (%d frames).") % [path.get_file(), frames.size()])
+	return true
 
 
 func export_image_to(path: String) -> bool:

@@ -10,6 +10,7 @@ enum Target {
 	GODOT,  ## The spritesheet image and a Godot SpriteFrames resource
 	JSON,  ## The spritesheet image and a JSON file (Aseprite and TexturePacker style)
 	ATLAS,  ## Trimmed frames packed tightly, with a JSON file
+	GIF,  ## One animation as an animated GIF
 }
 enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
 enum MetadataFormat { NONE, JSON, GODOT }
@@ -60,6 +61,10 @@ var metadata: MetadataFormat:
 					target = Target.IMAGE
 ## Frames per second of animations in metadata
 var animation_fps := 12.0
+## The animation exported as a GIF, by name. Empty: every frame.
+var gif_animation := ""
+## How many times bigger GIF frames are than the sprites
+var gif_scale := 1
 
 const _SHEET_KEYS: Array[StringName] = [
 	&"target",
@@ -73,6 +78,8 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"only_selected",
 	&"existing_files",
 	&"animation_fps",
+	&"gif_animation",
+	&"gif_scale",
 ]
 
 
@@ -120,7 +127,17 @@ func get_file_extension() -> String:
 			return image_format
 		Target.SPRITES:
 			return ""
+		Target.GIF:
+			return "gif"
 	return "png"
+
+
+## The animation of [param sheet] a GIF export plays, or null for every frame
+func get_gif_animation(sheet: Spritesheet) -> SheetAnimation:
+	for animation in sheet.animations:
+		if animation.name == gif_animation:
+			return animation
+	return null
 
 
 ## The per-sheet values, for [method Spritesheet.set_export_settings]

@@ -24,6 +24,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
   durations from Aseprite JSON are kept. The Animations window shows how long a cycle
   takes.
+- Export an animation as an animated GIF, scaled up with sharp pixels. It plays like the
+  animation: its speed, frame durations, ping-pong and play-once.
 - Rows: Frame > Insert Row (Ctrl+Insert), Remove Row (Ctrl+Shift+Delete) and Move Row
   Up/Down (Ctrl+Shift+Up/Down). Row names, locked cells and animations move along.
 - Mirror an animation in the Animations window: its frames are flipped into a new row

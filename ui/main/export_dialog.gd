@@ -49,6 +49,16 @@ const TARGETS := [
 			+ "possible into a PNG, with a JSON file that says where each one is."
 		),
 	},
+	{
+		"target": T.GIF,
+		"name": "Animated GIF",
+		"icon": preload("res://assets/icons/Animation.svg"),
+		"about":
+		(
+			"One animation as a GIF, to share or put on a page. GIF has no partial "
+			+ "transparency and at most 255 colours; sheets with more are reduced."
+		),
+	},
 ]
 const PATTERN_HELP := (
 	"Tokens: {index} {row} {column} {row_name} {frame} {name}\n"
@@ -75,6 +85,8 @@ var padding := SpinBox.new()
 var spacing := SpinBox.new()
 var extrude := SpinBox.new()
 var power_of_two := CheckBox.new()
+var gif_animation := OptionButton.new()
+var gif_scale := SpinBox.new()
 var output_info := Label.new()
 
 var _settings := _grid()
@@ -131,14 +143,21 @@ func _init() -> void:
 	background_picker.custom_minimum_size = Vector2(60, 0)
 	background_box.add_child(background_check)
 	background_box.add_child(background_picker)
-	_add_row(_settings, "Background", background_box, [T.IMAGE, T.GODOT, T.JSON])
+	_add_row(_settings, "Background", background_box, [T.IMAGE, T.GODOT, T.JSON, T.GIF])
+	gif_animation.tooltip_text = "Which animation the GIF plays"
+	_add_row(_settings, "Animation", gif_animation, [T.GIF])
+	gif_scale.min_value = 1
+	gif_scale.max_value = 16
+	gif_scale.suffix = "×"
+	gif_scale.tooltip_text = "Makes the GIF bigger, keeping pixels sharp"
+	_add_row(_settings, "Scale", gif_scale, [T.GIF])
 
 	animation_fps.min_value = 1
 	animation_fps.max_value = 120
 	animation_fps.step = 0.5
 	animation_fps.suffix = "fps"
 	animation_fps.tooltip_text = "Frames per second of the animations"
-	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.GODOT, T.JSON])
+	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.GODOT, T.JSON, T.GIF])
 
 	pattern.custom_minimum_size = Vector2(200, 0)
 	pattern.placeholder_text = "{index}"
@@ -195,7 +214,8 @@ func _init() -> void:
 	only_selected.toggled.connect(_changed.unbind(1))
 	existing.item_selected.connect(_changed.unbind(1))
 	power_of_two.toggled.connect(_changed.unbind(1))
-	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude]:
+	gif_animation.item_selected.connect(_changed.unbind(1))
+	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
 	jpg_background.color_changed.connect(_changed.unbind(1))
 	confirmed.connect(_on_confirmed)
@@ -203,7 +223,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	about_to_popup.connect(refresh)
-	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude]:
+	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude, gif_scale]:
 		spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		SpinScroll.enable(spin)
 
@@ -227,6 +247,13 @@ func refresh() -> void:
 	spacing.set_value_no_signal(options.spacing)
 	extrude.set_value_no_signal(options.extrude)
 	power_of_two.set_pressed_no_signal(options.power_of_two)
+	gif_animation.clear()
+	gif_animation.add_item("All frames")
+	for animation in Global.spritesheet.animations:
+		gif_animation.add_item(animation.name)
+		if animation.name == options.gif_animation:
+			gif_animation.select(gif_animation.item_count - 1)
+	gif_scale.set_value_no_signal(options.gif_scale)
 	advanced_toggle.button_pressed = (
 		options.padding or options.spacing or options.extrude or options.power_of_two
 	)
@@ -269,6 +296,10 @@ func _options() -> ExportOptions:
 	options.spacing = int(spacing.value)
 	options.extrude = int(extrude.value)
 	options.power_of_two = power_of_two.button_pressed
+	options.gif_animation = (
+		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
+	)
+	options.gif_scale = int(gif_scale.value)
 	return options
 
 
@@ -310,6 +341,13 @@ func _update_labels(options: ExportOptions) -> void:
 			)
 		T.ATLAS:
 			output_info.text = tr("The size is found when packing")
+		T.GIF:
+			var animation := options.get_gif_animation(sheet)
+			var count := (
+				animation.get_playback_cells(sheet).size() if animation else sheet.frames.size()
+			)
+			var gif_size := sheet.sprite_size * options.gif_scale
+			output_info.text = tr("%d frames of %d×%d px") % [count, gif_size.x, gif_size.y]
 		_:
 			var image_size := SpritesheetExporter.get_image_size(sheet, options)
 			output_info.text = tr("Image size: %d×%d px") % [image_size.x, image_size.y]
@@ -330,8 +368,10 @@ func _update_visibility(options: ExportOptions) -> void:
 		for control: Control in row.controls:
 			control.visible = shown
 	_pattern_label.text = "File names" if options.target == T.SPRITES else "Frame names"
-	# Animations have their own speed; this one is for animations made from rows
-	if not Global.spritesheet.animations.is_empty():
+	# Animations have their own speed; this one is for animations made from rows, and
+	# for a GIF of every frame
+	var own_speed := options.target == T.GIF and options.gif_animation != ""
+	if not Global.spritesheet.animations.is_empty() and options.target != T.GIF or own_speed:
 		_fps_label.visible = false
 		animation_fps.visible = false
 	advanced_toggle.visible = any_advanced
