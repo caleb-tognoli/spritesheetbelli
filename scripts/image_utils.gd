@@ -52,6 +52,48 @@ static func color_key(img: Image, color: Color, tolerance := 0.1) -> void:
 	img.set_data(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8, data)
 
 
+## [param img] with an outline of [param thickness] pixels in [param color] around its
+## pixels (those at least half opaque). The image grows by the thickness on every side,
+## so the outline always fits. With [param corners], diagonal neighbours are outlined too,
+## which makes square corners instead of round ones.
+static func outline(img: Image, color: Color, thickness := 1, corners := false) -> Image:
+	var size := img.get_size() + Vector2i.ONE * thickness * 2
+	var result := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	result.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), Vector2i.ONE * thickness)
+	var data := result.get_data()
+	var solid := PackedByteArray()
+	solid.resize(size.x * size.y)
+	for i in solid.size():
+		solid[i] = 1 if data[i * 4 + 3] >= 128 else 0
+	var inside := solid.duplicate()
+	var neighbours: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+	if corners:
+		neighbours.append_array(
+			[Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(1, 1)]
+		)
+	# Grow the solid area one pixel at a time
+	for step in thickness:
+		var grown := solid.duplicate()
+		for y in size.y:
+			for x in size.x:
+				if solid[y * size.x + x]:
+					continue
+				for offset in neighbours:
+					var n := Vector2i(x, y) + offset
+					if n.x >= 0 and n.y >= 0 and n.x < size.x and n.y < size.y:
+						if solid[n.y * size.x + n.x]:
+							grown[y * size.x + x] = 1
+							break
+		solid = grown
+	var rgba := PackedByteArray([color.r8, color.g8, color.b8, color.a8])
+	for i in solid.size():
+		if solid[i] and not inside[i]:
+			for channel in 4:
+				data[i * 4 + channel] = rgba[channel]
+	result.set_data(size.x, size.y, false, Image.FORMAT_RGBA8, data)
+	return result
+
+
 ## Whether any pixel is not fully opaque
 static func has_transparency(img: Image) -> bool:
 	return img.detect_alpha() != Image.ALPHA_NONE

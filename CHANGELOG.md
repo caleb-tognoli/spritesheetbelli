@@ -31,6 +31,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Adding a GIF as sprites adds every frame.
 - Export an animation as an animated GIF, scaled up with sharp pixels. It plays like the
   animation: its speed, frame durations, ping-pong and play-once.
+- Frame > Add Outline… draws an outline of any colour and thickness around the selected
+  frames, with round or square corners.
 - Rows: Frame > Insert Row (Ctrl+Insert), Remove Row (Ctrl+Shift+Delete) and Move Row
   Up/Down (Ctrl+Shift+Up/Down). Row names, locked cells and animations move along.
 - Mirror an animation in the Animations window: its frames are flipped into a new row

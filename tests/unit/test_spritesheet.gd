@@ -279,3 +279,29 @@ func test_insert_remove_and_move_rows() -> void:
 		sheet.animations[0].cells, [Vector2i(0, 0)] as Array[Vector2i], "removed cell dropped"
 	)
 	assert_eq(sheet.row_names, {0: "row2", 2: "row0"} as Dictionary[int, String])
+
+
+func test_outline() -> void:
+	var img := Image.create_empty(4, 4, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(1, 1, 2, 2), Color.RED)
+	var round := ImageUtils.outline(img, Color.BLACK, 1)
+	assert_eq(round.get_size(), Vector2i(6, 6))
+	assert_color(round, Vector2i(2, 2), Color.RED, "inside kept")
+	assert_color(round, Vector2i(1, 2), Color.BLACK, "left of it")
+	assert_eq(round.get_pixel(1, 1).a, 0.0, "corner left out")
+	var square := ImageUtils.outline(img, Color.BLACK, 2, true)
+	assert_eq(square.get_size(), Vector2i(8, 8))
+	assert_color(square, Vector2i(1, 1), Color.BLACK, "two pixels out, diagonally")
+	assert_eq(square.get_pixel(0, 0).a, 0.0)
+
+	sheet.add_frames([img, make_image(Color.BLUE, Vector2i(8, 8))] as Array[Image])
+	sheet.nudge_frames([Vector2i(0, 0)] as Array[Vector2i], Vector2i(1, 0))
+	var before := sheet.get_frame_rect_in_cell(Vector2i(0, 0))
+	sheet.edit_frames(
+		[Vector2i(0, 0)] as Array[Vector2i],
+		func(frame: Image) -> Image: return ImageUtils.outline(frame, Color.BLACK),
+		func(origin: Vector2i, _size: Vector2i, _img: Image) -> Vector2i:
+			return origin - Vector2i.ONE
+	)
+	var after := sheet.get_frame_rect_in_cell(Vector2i(0, 0))
+	assert_eq(after.position, before.position - Vector2i.ONE, "pixels stay in place")

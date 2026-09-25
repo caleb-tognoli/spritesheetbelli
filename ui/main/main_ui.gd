@@ -90,6 +90,7 @@ var shortcuts_dialog := ShortcutsDialog.new()
 var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key_dialog := ColorKeyDialog.new()
+var outline_dialog := OutlineDialog.new()
 var row_name_dialog := RowNameDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
@@ -174,6 +175,7 @@ func _ready() -> void:
 	add_child(shortcuts_dialog)
 	add_child(settings_window)
 	add_child(color_key_dialog)
+	add_child(outline_dialog)
 	add_child(row_name_dialog)
 	add_child(export_dialog)
 	export_dialog.export_requested.connect(files.choose_export_path)
@@ -190,6 +192,7 @@ func _ready() -> void:
 	)
 	preview.row_name_requested.connect(open_row_name_dialog)
 	color_key_dialog.color_chosen.connect(remove_background)
+	outline_dialog.outline_chosen.connect(add_outline)
 	files.restore_session.call_deferred()
 	files.get_selected_coords = preview.get_selected_coords
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
@@ -355,6 +358,12 @@ func _register_actions() -> void:
 		has_selection
 	)
 	add.call(
+		&"add_outline",
+		"Add Outline…",
+		func() -> void: outline_dialog.popup_centered(),
+		has_selection
+	)
+	add.call(
 		&"name_row",
 		"Name Row…",
 		func() -> void: open_row_name_dialog(preview.get_selected_coords()[0].y),
@@ -516,6 +525,22 @@ func add_images(action_name: String, images: Array[Image]) -> void:
 		action_name, Global.spritesheet.add_frames.bind(images, mode)
 	)
 	preview.set_selected_coords(coords)
+
+
+## Outlines the selected frames. The frames grow on every side, so frames with an origin
+## of their own move back by the thickness to stay in place.
+func add_outline(color: Color, thickness: int, corners: bool) -> void:
+	edit_selection(
+		"Outline",
+		func(coords: Array[Vector2i]) -> void:
+			Global.spritesheet.edit_frames(
+				coords,
+				func(img: Image) -> Image:
+					return ImageUtils.outline(img, color, thickness, corners),
+				func(origin: Vector2i, _size: Vector2i, _img: Image) -> Vector2i:
+					return origin - Vector2i.ONE * thickness
+			)
+	)
 
 
 ## Makes pixels close to [param color] transparent in the selected frames. Big frames

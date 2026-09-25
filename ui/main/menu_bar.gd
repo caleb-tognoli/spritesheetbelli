@@ -51,6 +51,7 @@ const MENUS := {
 		&"align_center",
 		&"align_bottom",
 		&"color_key",
+		&"add_outline",
 		&"replace_image",
 		&"",
 		&"insert_cell",

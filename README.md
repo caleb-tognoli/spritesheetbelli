@@ -19,7 +19,7 @@ A small desktop tool made with Godot.</p>
   every frame is; trimmed and rotated frames are restored and tags become animations.
   Without one, the sprites are found by the transparent space around them.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
-  colour, replace, cut/copy/paste (also images copied in other apps), duplicate, insert or
+  colour, add an outline, replace, cut/copy/paste (also images copied in other apps), duplicate, insert or
   remove cells, insert, remove or reorder rows. Everything can be undone.
 - **Line frames up.** Nudge frames inside their cells with Alt+arrow keys or align their
   bottoms; trimming keeps every pixel where it was, so animations don't jump.
