@@ -175,6 +175,8 @@ func _add_row(category: String, row: Array) -> void:
 	label.text = row[1]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# A wrapped label needs a width, or it's measured one word per line
+	label.custom_minimum_size = Vector2(220, 0)
 	box.add_child(label)
 	var control := _create_control(key, row[2], row.slice(3))
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL

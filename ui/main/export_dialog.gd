@@ -103,6 +103,8 @@ func _init() -> void:
 	right.add_theme_constant_override("separation", 12)
 	layout.add_child(right)
 	about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# A wrapped label needs a width, or it's measured one word per line
+	about.custom_minimum_size = Vector2(380, 0)
 	about.theme_type_variation = &"StatusLabel"
 	right.add_child(about)
 	right.add_child(_settings)
