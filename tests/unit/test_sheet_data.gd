@@ -180,3 +180,24 @@ func test_finds_data_next_to_image() -> void:
 	var data := SheetData.load_file(dir.path_join("hero.json"))
 	assert_eq(data.get_image_path(dir.path_join("hero.json")), image_path)
 	assert_eq(SheetData.find_for_image(dir.path_join("other.png")), "")
+
+
+func test_scattered_animations_round_trip() -> void:
+	var sheet := Spritesheet.new()
+	for i in 4:
+		sheet.add_frames([make_image(Color(i / 4.0, 0, 1))] as Array[Image])
+	var cells: Array[Vector2i] = [Vector2i(3, 0), Vector2i(0, 0), Vector2i(2, 0)]
+	var blink := SheetAnimation.create("blink", cells, 10)
+	blink.durations = [2.0, 1.0, 1.0] as Array[float]
+	sheet.add_animation(blink)
+	var frames := Metadata.grid_frames(sheet, ExportOptions.new())
+	var json := Metadata.sheet_json(sheet, frames, "a.png", Vector2i(64, 16), 12)
+	var parsed: Dictionary = JSON.parse_string(json)
+	assert_eq(parsed.meta.animations, {"blink": ["3.png", "0.png", "2.png"]})
+
+	var imported := SheetData.parse_json(json).to_spritesheet(sheet.get_image())
+	var animation := imported.animations[0]
+	var numbers := animation.cells.map(func(cell: Vector2i) -> int: return imported.index_of(cell))
+	assert_eq(numbers, [3, 0, 2], "the exact frames, not the range of the tag")
+	assert_eq(animation.durations, [2.0, 1.0, 1.0] as Array[float])
+	assert_eq(animation.fps, 10.0)

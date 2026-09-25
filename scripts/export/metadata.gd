@@ -21,14 +21,7 @@ static func write_for_image(
 			frames, animations(sheet), image_path.get_file(), options.animation_fps
 		)
 	else:
-		text = texture_packer_json(
-			frames,
-			image_path.get_file(),
-			size,
-			frame_tags(sheet),
-			options.animation_fps,
-			frame_durations(sheet, options.animation_fps)
-		)
+		text = sheet_json(sheet, frames, image_path.get_file(), size, options.animation_fps)
 	var file := FileAccess.open(get_path_for_image(image_path, options), FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
@@ -115,6 +108,37 @@ static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 		by_row[row].indices.append(i)
 	for row: int in by_row:
 		result.append(by_row[row])
+	return result
+
+
+## TexturePacker-style JSON for [param frames] of [param sheet] (from [method grid_frames]
+## or [method atlas_frames]), with its animations as frame tags and frame lists, and how
+## long each frame is shown
+static func sheet_json(
+	sheet: Spritesheet, frames: Array[Dictionary], image_file: String, size: Vector2i, fps: float
+) -> String:
+	return texture_packer_json(
+		frames,
+		image_file,
+		size,
+		frame_tags(sheet),
+		fps,
+		frame_durations(sheet, fps),
+		animation_frame_names(sheet, frames)
+	)
+
+
+## The frame names of every animation in playing order, by animation name, for animations
+## that frame tags can't describe exactly. Empty when the sheet has no animations or rows.
+static func animation_frame_names(sheet: Spritesheet, frames: Array[Dictionary]) -> Dictionary:
+	var result := {}
+	if sheet.row_names.is_empty() and sheet.animations.is_empty():
+		return result
+	for animation in animations(sheet):
+		var names := []
+		for index: int in animation.indices:
+			names.append(frames[index].name)
+		result[animation.name] = names
 	return result
 
 
@@ -222,7 +246,8 @@ static func sprite_frames_tres(
 ## JSON in the TexturePacker "hash" format, readable by most engines and tools.
 ## [param tags] are added as Aseprite-style "frameTags", and with [param fps] each frame
 ## gets an Aseprite-style duration in milliseconds, or the one in [param durations] (by
-## frame index, see [method frame_durations]).
+## frame index, see [method frame_durations]). [param animation_names] lists the frames
+## of each animation in "animations" (see [method animation_frame_names]).
 static func texture_packer_json(
 	frames: Array[Dictionary],
 	image_file: String,
@@ -230,6 +255,7 @@ static func texture_packer_json(
 	tags: Array[Dictionary] = [],
 	fps := 0.0,
 	durations := {},
+	animation_names := {},
 ) -> String:
 	var entries := {}
 	for index in frames.size():
@@ -261,6 +287,8 @@ static func texture_packer_json(
 			"frameTags": tags,
 		},
 	}
+	if not animation_names.is_empty():
+		data.meta.animations = animation_names
 	return JSON.stringify(data, "\t", false)
 
 

@@ -515,7 +515,9 @@ func _export_atlas(path: String) -> bool:
 		var file := FileAccess.open(json_path, FileAccess.WRITE)
 		if file:
 			file.store_string(
-				Metadata.texture_packer_json(frames, path.get_file(), image.get_size())
+				Metadata.sheet_json(
+					sheet, frames, path.get_file(), image.get_size(), options.animation_fps
+				)
 			)
 			file.close()
 		else:

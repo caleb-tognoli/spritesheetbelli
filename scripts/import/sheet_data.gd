@@ -27,6 +27,9 @@ var frames: Array[Frame] = []
 ## Aseprite-style frame tags: [code]{"name": String, "from": int, "to": int,
 ## "direction": String, "repeat": int}[/code], with valid frame indices only
 var tags: Array[Dictionary] = []
+## Frames of each animation in playing order, by animation name, from the "animations"
+## that spritesheetbelli writes: [code]{"walk": Array[int]}[/code] of frame indices
+var animation_frames: Dictionary[String, Array] = {}
 ## Why the data couldn't be read, or empty
 var error := ""
 
@@ -88,6 +91,8 @@ static func parse_json(text: String) -> SheetData:
 	for tag: Variant in meta.get("frameTags", []):
 		if tag is Dictionary:
 			data._add_tag(tag)
+	if meta.get("animations") is Dictionary:
+		data._add_animation_frames(meta.animations)
 	return data
 
 
@@ -150,14 +155,16 @@ func to_spritesheet(img: Image) -> Spritesheet:
 		sheet.set_row_name(row, row_names[row])
 	for tag in tags:
 		var tag_cells: Array[Vector2i] = []
-		for i: int in range(tag.from, tag.to + 1):
+		var indices: Array = range(tag.from, tag.to + 1)
+		if tag.direction in ["reverse", "pingpong_reverse"]:
+			indices.reverse()
+		# The exact frames when they're listed, which tags can't always describe
+		if animation_frames.has(tag.name):
+			indices = animation_frames[tag.name]
+		for i: int in indices:
 			tag_cells.append(cells[i])
-		if tag.direction in ["reverse", "pingpong_reverse"]:
-			tag_cells.reverse()
 		var animation := SheetAnimation.create(tag.name, tag_cells)
-		_set_timing(animation, tag.from, tag.to)
-		if tag.direction in ["reverse", "pingpong_reverse"]:
-			animation.durations.reverse()
+		_set_timing(animation, indices)
 		if tag.direction.begins_with("pingpong"):
 			animation.mode = SheetAnimation.Mode.PING_PONG
 		elif tag.repeat == 1:
@@ -196,18 +203,18 @@ func _rows_by_tag() -> Array[Dictionary]:
 	return rows
 
 
-## Gives [param animation] the speed and durations of frames [param from] to [param to]:
-## the shortest frame is one frame long, and longer ones are shown for more frames
-func _set_timing(animation: SheetAnimation, from: int, to: int) -> void:
+## Gives [param animation] the speed and durations of the frames at [param indices]: the
+## shortest frame is one frame long, and longer ones are shown for more frames
+func _set_timing(animation: SheetAnimation, indices: Array) -> void:
 	var shortest := 0
-	for i in range(from, to + 1):
+	for i: int in indices:
 		if frames[i].duration <= 0:
 			return
 		shortest = frames[i].duration if shortest == 0 else mini(shortest, frames[i].duration)
 	animation.fps = clampf(1000.0 / shortest, 0.1, 120.0)
 	var durations: Array[float] = []
 	var timed := false
-	for i in range(from, to + 1):
+	for i: int in indices:
 		var duration := snappedf(float(frames[i].duration) / shortest, 0.01)
 		durations.append(duration)
 		timed = timed or duration != 1.0
@@ -233,6 +240,21 @@ func _add_frame(frame_name: String, entry: Dictionary) -> void:
 	frame.source_size = frame.source_size.max(Vector2i.ONE)
 	frame.duration = maxi(0, int(entry.get("duration", 0)))
 	frames.append(frame)
+
+
+func _add_animation_frames(lists: Dictionary) -> void:
+	var index_of := {}
+	for i in frames.size():
+		index_of[frames[i].name] = i
+	for animation_name: Variant in lists:
+		if not lists[animation_name] is Array:
+			continue
+		var indices := []
+		for frame_name: Variant in lists[animation_name]:
+			if index_of.has(frame_name):
+				indices.append(index_of[frame_name])
+		if not indices.is_empty():
+			animation_frames[str(animation_name)] = indices
 
 
 func _add_tag(tag: Dictionary) -> void:
