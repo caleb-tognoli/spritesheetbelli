@@ -46,6 +46,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   in Cell (C) puts them back in the middle. Cells grow to hold them, and projects keep
   where every frame is.
 
+- Command line: `--cut <image>` cuts a spritesheet (grid, data file or `--detect`) or
+  an animated GIF; `--atlas` writes a packed atlas; an `--out` ending in `.gif` writes an
+  animated GIF (`--animation`, `--scale`); `--pack` takes GIFs too.
+
 ### Changed
 - A toolbar above the preview: select and move tools (Q, W), select all/none with the
   selection count, and zoom buttons around the zoom level, which fits the view.

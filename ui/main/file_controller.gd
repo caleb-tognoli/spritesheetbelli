@@ -247,30 +247,16 @@ func add_gif(path: String) -> void:
 		set_filepath_when_opening_spritesheet = false
 		Settings.add_recent_file(path)
 		Global.document.reset()
-	var frames: Array[Image] = gif.frames
-	var seconds: Array[float] = gif.delays
-	var anim_name := path.get_file().get_basename()
-	var add := func(sheet: Spritesheet) -> void:
-		var row := sheet.get_first_free_row()
-		var cells: Array[Vector2i] = []
-		for i in frames.size():
-			cells.append(Vector2i(i, row))
-			sheet.set_frame(cells[i], frames[i])
-		sheet.set_row_name(row, anim_name)
-		if frames.size() > 1:
-			var animation := SheetAnimation.create_timed(
-				sheet.get_unique_animation_name(anim_name), cells, seconds
-			)
-			if not gif.loop:
-				animation.mode = SheetAnimation.Mode.ONCE
-			sheet.add_animation(animation)
+	var row_name := path.get_file().get_basename()
 	if opening:
 		var opened := Spritesheet.new()
-		add.call(opened)
+		GifDecoder.add_to_sheet(opened, gif, row_name)
 		Global.document.load_state(opened.get_state())
 		Global.document.history_start = "Opened %s" % path.get_file()
 	else:
-		Global.document.perform("Add GIF", add.bind(Global.spritesheet))
+		Global.document.perform(
+			"Add GIF", GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, row_name)
+		)
 
 
 func _show_add_spritesheet_window(spritesheet_path: String) -> void:
@@ -516,32 +502,21 @@ func export_again() -> bool:
 ## Writes the animation chosen in the export settings as an animated GIF
 func export_gif(path: String) -> bool:
 	var sheet := Global.spritesheet
-	var options := ExportOptions.from_sheet(sheet)
-	path = path.get_basename() + ".gif"
-	var animation := options.get_gif_animation(sheet)
-	var data := GifEncoder.animation_frames(
-		sheet, animation, options.animation_fps, options.gif_scale, options.background
-	)
-	if data.frames.is_empty():
-		Notify.error("The animation has no frames.")
-		return false
-	var frames: Array[Image] = data.frames
-	var bytes := await GifEncoder.encode(
-		frames,
-		data.delays,
-		data.loop,
+	var result := await GifEncoder.write(
+		sheet,
+		ExportOptions.from_sheet(sheet),
+		path,
 		func(done: int, total: int) -> void: Notify.progress("Making the GIF", done, total)
 	)
 	Notify.hide_progress()
-	var file := FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		var error := FileAccess.get_open_error()
-		Notify.error(tr("Could not export to %s (%s).") % [path, error_string(error)])
+	if result.error == ERR_DOES_NOT_EXIST:
+		Notify.error("The animation has no frames.")
 		return false
-	file.store_buffer(bytes)
-	file.close()
-	WebFiles.download(path)
-	Notify.toast(tr("Exported %s (%d frames).") % [path.get_file(), frames.size()])
+	if result.error != OK:
+		Notify.error(tr("Could not export to %s (%s).") % [result.path, error_string(result.error)])
+		return false
+	WebFiles.download(result.path)
+	Notify.toast(tr("Exported %s (%d frames).") % [result.path.get_file(), result.frames])
 	return true
 
 
@@ -606,44 +581,22 @@ func export_atlas(path: String) -> bool:
 
 func _export_atlas(path: String) -> bool:
 	var sheet := Global.spritesheet
-	var options := ExportOptions.from_sheet(sheet)
-	var packed := AtlasPacker.pack(sheet, options.spacing, options.extrude, options.power_of_two)
-	var image: Image = packed.image
-	if packed.regions.is_empty():
+	var result := AtlasPacker.write(
+		sheet, ExportOptions.from_sheet(sheet), path, Settings.get_value(&"index_start")
+	)
+	if result.error == ERR_OUT_OF_MEMORY:
 		Notify.error(tr("The frames don't fit in a %d px atlas.") % AtlasPacker.MAX_SIZE)
 		return false
-	path = path.get_basename() + ".png"
-	var json_path := path.get_basename() + ".json"
-	var frames := Metadata.atlas_frames(
-		sheet, packed.regions, options, Settings.get_value(&"index_start")
-	)
-	var error := image.save_png(path)
-	if error == OK:
-		var file := FileAccess.open(json_path, FileAccess.WRITE)
-		if file:
-			file.store_string(
-				Metadata.sheet_json(
-					sheet, frames, path.get_file(), image.get_size(), options.animation_fps
-				)
-			)
-			file.close()
-		else:
-			error = FileAccess.get_open_error()
-	if error != OK:
-		Notify.error(tr("Could not export the atlas (%s).") % error_string(error))
+	if result.error != OK:
+		Notify.error(tr("Could not export the atlas (%s).") % error_string(result.error))
 		return false
-	WebFiles.download(path)
-	WebFiles.download(json_path)
+	WebFiles.download(result.path)
+	WebFiles.download(result.json_path)
+	var size: Vector2i = result.size
 	Notify.toast(
 		(
 			tr("Packed %d frames into %s (%d×%d px) and %s.")
-			% [
-				frames.size(),
-				path.get_file(),
-				image.get_width(),
-				image.get_height(),
-				json_path.get_file()
-			]
+			% [result.frames, result.path.get_file(), size.x, size.y, result.json_path.get_file()]
 		)
 	)
 	return true

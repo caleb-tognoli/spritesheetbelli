@@ -109,6 +109,28 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 	return {"frames": frames, "delays": delays, "loop": loop}
 
 
+## Adds the frames of [param gif] (from [method decode]) to [param sheet] in a new row
+## named [param row_name], with an animation that plays them the way the GIF does
+static func add_to_sheet(sheet: Spritesheet, gif: Dictionary, row_name: String) -> void:
+	var frames: Array[Image] = gif.frames
+	var seconds: Array[float] = gif.delays
+	var row := sheet.get_first_free_row()
+	var cells: Array[Vector2i] = []
+	sheet.begin_batch()
+	for i in frames.size():
+		cells.append(Vector2i(i, row))
+		sheet.set_frame(cells[i], frames[i])
+	sheet.set_row_name(row, row_name)
+	if frames.size() > 1:
+		var animation := SheetAnimation.create_timed(
+			sheet.get_unique_animation_name(row_name), cells, seconds
+		)
+		if not gif.loop:
+			animation.mode = SheetAnimation.Mode.ONCE
+		sheet.add_animation(animation)
+	sheet.end_batch()
+
+
 ## GIF's LZW decompression of [param data] into at most [param count] palette indices
 static func decompress(data: PackedByteArray, min_code_size: int, count: int) -> PackedByteArray:
 	var output := PackedByteArray()

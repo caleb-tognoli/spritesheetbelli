@@ -100,6 +100,13 @@ spritesheetbelli --headless -- --pack ./frames --out hero.png --columns 8 --meta
 
 # Export a saved project, also writing every frame as its own PNG
 spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./hero_frames
+
+# Cut a packed sheet into frames by the space around the sprites
+spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
+
+# Pack a project tightly with a JSON file, and make a GIF of its walk animation
+spritesheetbelli --headless -- --export hero.sbelli --out hero_atlas.png --atlas
+spritesheetbelli --headless -- --export hero.sbelli --out walk.gif --animation walk --scale 4
 ```
 
 Run with `--help` for every option. The exit code is 0 on success, 1 on errors and 2 on

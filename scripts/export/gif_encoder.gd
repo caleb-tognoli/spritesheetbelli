@@ -73,6 +73,35 @@ static func encode(
 	return out.data_array
 
 
+## Writes the animation [param options] choose from [param sheet] as a GIF at
+## [param path]. Returns [code]{"error": Error, "path": String, "frames": int}[/code];
+## the error is ERR_DOES_NOT_EXIST when the animation has no frames.
+static func write(
+	sheet: Spritesheet, options: ExportOptions, path: String, on_progress := Callable()
+) -> Dictionary:
+	path = path.get_basename() + ".gif"
+	var data := animation_frames(
+		sheet,
+		options.get_gif_animation(sheet),
+		options.animation_fps,
+		options.gif_scale,
+		options.background
+	)
+	var frames: Array[Image] = data.frames
+	var result := {"error": OK, "path": path, "frames": frames.size()}
+	if frames.is_empty():
+		result.error = ERR_DOES_NOT_EXIST
+		return result
+	var bytes := await encode(frames, data.delays, data.loop, on_progress)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		result.error = FileAccess.get_open_error()
+		return result
+	file.store_buffer(bytes)
+	file.close()
+	return result
+
+
 ## The frames and delays of [param animation] in [param sheet] as [method encode] takes
 ## them: [code]{"frames": Array[Image], "delays": Array[float], "loop": bool}[/code].
 ## Without an animation, every frame is played at [param fps]. Frames are scaled up

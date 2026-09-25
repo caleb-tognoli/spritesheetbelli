@@ -14,7 +14,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if Cli.is_cli(args):
 		cli_mode = true
-		get_tree().quit(Cli.run(args))
+		get_tree().quit(await Cli.run(args))
 		return
 	document.changed.connect(update_window_title)
 	update_window_title()

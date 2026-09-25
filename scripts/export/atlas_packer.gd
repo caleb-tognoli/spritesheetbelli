@@ -78,6 +78,41 @@ static func _find_or_add(images: Array[Image], by_hash: Dictionary, img: Image) 
 	return images.size() - 1
 
 
+## Packs [param sheet] as [param options] say and writes the atlas PNG to [param path]
+## with a JSON file next to it. Returns [code]{"error": Error, "path": String,
+## "json_path": String, "frames": int, "size": Vector2i}[/code]; the error is
+## ERR_OUT_OF_MEMORY when the frames don't fit.
+static func write(
+	sheet: Spritesheet, options: ExportOptions, path: String, index_start := 0
+) -> Dictionary:
+	var packed := pack(sheet, options.spacing, options.extrude, options.power_of_two)
+	var image: Image = packed.image
+	path = path.get_basename() + ".png"
+	var result := {
+		"error": OK,
+		"path": path,
+		"json_path": path.get_basename() + ".json",
+		"frames": packed.regions.size(),
+		"size": image.get_size(),
+	}
+	if packed.regions.is_empty():
+		result.error = ERR_OUT_OF_MEMORY
+		return result
+	var frames := Metadata.atlas_frames(sheet, packed.regions, options, index_start)
+	result.error = image.save_png(path)
+	if result.error != OK:
+		return result
+	var file := FileAccess.open(result.json_path, FileAccess.WRITE)
+	if file == null:
+		result.error = FileAccess.get_open_error()
+		return result
+	file.store_string(
+		Metadata.sheet_json(sheet, frames, path.get_file(), image.get_size(), options.animation_fps)
+	)
+	file.close()
+	return result
+
+
 ## Tries several widths and keeps the packing with the smallest area.
 ## Returns [code]{"size": Vector2i, "positions": Array[Vector2i]}[/code] or empty.
 static func find_smallest_packing(sizes: Array[Vector2i]) -> Dictionary:
