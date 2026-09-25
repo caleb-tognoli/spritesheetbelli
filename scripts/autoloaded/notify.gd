@@ -17,6 +17,7 @@ func _ready() -> void:
 		dialog.min_size = Vector2i(400, 0)
 		dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		add_child(dialog)
+		_return_when_hidden(dialog)
 	confirm_dialog.confirmed.connect(
 		func() -> void:
 			var action := _confirm_action
@@ -146,6 +147,35 @@ func confirm(title: String, text: String, action: Callable, ok_text := "OK") -> 
 	_popup(confirm_dialog)
 
 
+## Shows [param dialog] over whatever is open. A modal window can only be opened from the
+## window on top, so the dialog moves there while it's shown, e.g. over Settings.
 func _popup(dialog: AcceptDialog) -> void:
+	var host := _top_window(dialog)
+	if dialog.get_parent() != host:
+		dialog.reparent(host, false)
 	dialog.reset_size()
 	dialog.popup_centered()
+
+
+## The innermost visible modal window, or the main window when none is open
+func _top_window(except: Window) -> Window:
+	var top: Window = get_tree().root
+	var depth := -1
+	for node in get_tree().root.find_children("*", "Window", true, false):
+		var window := node as Window
+		if window == except or not window.visible or not window.exclusive:
+			continue
+		var window_depth := window.get_path().get_name_count()
+		if window_depth > depth:
+			top = window
+			depth = window_depth
+	return top
+
+
+## Brings a dialog back once closed, so it isn't freed with the window it was shown over
+func _return_when_hidden(dialog: AcceptDialog) -> void:
+	dialog.visibility_changed.connect(
+		func() -> void:
+			if not dialog.visible and dialog.get_parent() != self:
+				dialog.reparent.call_deferred(self, false)
+	)

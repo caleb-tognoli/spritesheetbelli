@@ -113,3 +113,18 @@ func test_recent_files_menu() -> void:
 	assert_true(Settings.get_recent_files().is_empty())
 	main.queue_free()
 	Global.document.reset()
+
+
+func test_messages_open_over_modal_windows() -> void:
+	var window := SettingsWindow.new()
+	add_child(window)
+	window.popup_centered()
+	window.custom_action.emit(&"reset")
+	assert_true(Notify.confirm_dialog.visible)
+	assert_eq(Notify.confirm_dialog.get_parent(), window, "shown over the settings")
+	Notify.confirm_dialog.hide()
+	await get_tree().process_frame
+	assert_eq(Notify.confirm_dialog.get_parent(), Notify, "back once closed")
+	window.queue_free()
+	await get_tree().process_frame
+	assert_true(is_instance_valid(Notify.confirm_dialog))
