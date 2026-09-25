@@ -91,6 +91,7 @@ func test_box_selection() -> void:
 
 
 func test_dragging_frames_moves_them() -> void:
+	preview.tool = SpritesheetPreview.Tool.MOVE
 	click(Vector2i(0, 0))
 	drag(at(Vector2i(0, 0)), at(Vector2i(1, 1)))
 	var sheet := Global.spritesheet
@@ -108,7 +109,41 @@ func test_dragging_selects_when_moving_is_off() -> void:
 	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "box selection")
 
 
+func test_select_tool_drags_a_box_even_from_a_frame() -> void:
+	drag(at(Vector2i(0, 0)), at(Vector2i(1, 0)))
+	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
+	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+
+
+func test_move_tool_moves_the_selection_from_anywhere() -> void:
+	preview.tool = SpritesheetPreview.Tool.MOVE
+	preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	drag(at(Vector2i(3, 0)), at(Vector2i(3, 1)))
+	var sheet := Global.spritesheet
+	assert_color(sheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.RED)
+	assert_color(sheet.frames[Vector2i(1, 1)], Vector2i.ZERO, Color.GREEN)
+	assert_eq(selected(), [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
+
+
+func test_move_tool_without_selection_moves_the_dragged_frame() -> void:
+	preview.tool = SpritesheetPreview.Tool.MOVE
+	drag(at(Vector2i(2, 0)), at(Vector2i(2, 1)))
+	assert_color(Global.spritesheet.frames[Vector2i(2, 1)], Vector2i.ZERO, Color.BLUE)
+
+
+func test_tool_actions() -> void:
+	Actions.run(&"tool_move")
+	assert_eq(preview.tool, SpritesheetPreview.Tool.MOVE)
+	assert_true(main.preview_area.move_tool_btn.button_pressed)
+	assert_true(Actions.is_checked(&"tool_move"))
+	Actions.run(&"tool_select")
+	assert_true(main.preview_area.select_tool_btn.button_pressed)
+	preview.able_to_move_frames = false
+	assert_eq(preview.tool, SpritesheetPreview.Tool.SELECT)
+
+
 func test_alt_drag_copies() -> void:
+	preview.tool = SpritesheetPreview.Tool.MOVE
 	drag(at(Vector2i(0, 0)), at(Vector2i(0, 1)), true)
 	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED)
 	assert_color(Global.spritesheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.RED)

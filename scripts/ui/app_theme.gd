@@ -50,6 +50,11 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	for variation: StringName in [&"SidebarPanel", &"MenuPanel", &"StatusBar"]:
 		theme.set_type_variation(variation, "PanelContainer")
 		theme.set_stylebox("panel", variation, _box(p.surface))
+	theme.set_type_variation(&"Toolbar", "PanelContainer")
+	var toolbar := _box(p.surface, 0, Vector4(6, 3, 6, 3))
+	toolbar.border_color = p.border
+	toolbar.border_width_bottom = 1
+	theme.set_stylebox("panel", &"Toolbar", toolbar)
 	var toast := _box(Color(p.accent, 0.95), 6, Vector4(12, 8, 12, 8))
 	theme.set_type_variation(&"Toast", "PanelContainer")
 	theme.set_stylebox("panel", &"Toast", toast)
@@ -99,6 +104,16 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		theme.set_color("icon_pressed_color", type, p.accent)
 		theme.set_color("icon_hover_pressed_color", type, p.accent)
 		theme.set_color("icon_disabled_color", type, Color(p.text_muted, 0.5))
+	# Toolbar buttons are flat until hovered or pressed, like Godot's
+	theme.set_type_variation(&"ToolbarButton", "Button")
+	var tool_margins := Vector4(5, 3, 5, 3)
+	theme.set_stylebox("normal", &"ToolbarButton", _box(Color.TRANSPARENT, 4, tool_margins))
+	theme.set_stylebox("hover", &"ToolbarButton", _box(p.hover, 4, tool_margins))
+	theme.set_stylebox("pressed", &"ToolbarButton", _box(Color(p.accent, 0.25), 4, tool_margins))
+	theme.set_stylebox(
+		"hover_pressed", &"ToolbarButton", _box(Color(p.accent, 0.35), 4, tool_margins)
+	)
+	theme.set_stylebox("disabled", &"ToolbarButton", _box(Color.TRANSPARENT, 4, tool_margins))
 	# Toggle buttons in the sidebar stay subtle when on
 	theme.set_stylebox("pressed", "CheckBox", flat)
 	theme.set_stylebox("hover_pressed", "CheckBox", hover)

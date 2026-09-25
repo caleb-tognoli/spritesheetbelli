@@ -324,11 +324,16 @@ func test_empty_hint_and_toasts() -> void:
 	assert_true(Notify.get_toasts()[-1].begins_with("Exported toast.png"))
 
 
-func test_zoom_presets() -> void:
-	var menu: PopupMenu = main.preview_area.zoom.get_popup()
-	menu.id_pressed.emit(PreviewArea.ZOOM_PRESETS.find(4.0))
-	assert_eq(main.preview.camera.zoom.x, 4.0)
-	assert_eq(main.preview_area.zoom.text, "400%")
+func test_zoom_buttons() -> void:
+	var area: PreviewArea = main.preview_area
+	main.preview.set_zoom(1)
+	area.zoom_in_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "125%")
+	area.zoom_out_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "100%")
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	area.zoom_label_btn.pressed.emit()
+	assert_true(main.preview.camera.zoom.x > 4.0, "the percentage fits the view")
 
 
 func test_formatted_text_is_translatable() -> void:

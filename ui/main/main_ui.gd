@@ -19,8 +19,10 @@ const ICONS := {
 	&"copy": preload("res://assets/icons/ActionCopy.svg"),
 	&"paste": preload("res://assets/icons/ActionPaste.svg"),
 	&"duplicate": preload("res://assets/icons/Duplicate.svg"),
-	&"select_all": preload("res://assets/icons/ListSelect.svg"),
-	&"select_none": preload("res://assets/icons/Clear.svg"),
+	&"select_all": PreviewArea.SELECT_ALL_ICON,
+	&"select_none": PreviewArea.SELECT_NONE_ICON,
+	&"tool_select": PreviewArea.SELECT_ICON,
+	&"tool_move": PreviewArea.MOVE_ICON,
 	&"flip_h": preload("res://assets/icons/MirrorX.svg"),
 	&"flip_v": preload("res://assets/icons/MirrorY.svg"),
 	&"rotate_cw": preload("res://assets/icons/RotateRight.svg"),
@@ -31,8 +33,8 @@ const ICONS := {
 	&"insert_cell": preload("res://assets/icons/InsertBefore.svg"),
 	&"remove_cell": preload("res://assets/icons/RemoveInternal.svg"),
 	&"delete_frames": preload("res://assets/icons/Remove.svg"),
-	&"zoom_in": preload("res://assets/icons/ZoomMore.svg"),
-	&"zoom_out": preload("res://assets/icons/ZoomLess.svg"),
+	&"zoom_in": PreviewArea.ZOOM_IN_ICON,
+	&"zoom_out": PreviewArea.ZOOM_OUT_ICON,
 	&"zoom_reset": preload("res://assets/icons/ZoomReset.svg"),
 	&"zoom_fit": preload("res://assets/icons/CenterView.svg"),
 	&"edit_animations": preload("res://assets/icons/Animation.svg"),
@@ -116,8 +118,6 @@ func _ready() -> void:
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	export_btn.pressed.connect(Actions.run.bind(&"export"))
 	export_btn.icon = ICONS[&"export"]
-	preview_area.select_all_btn.icon = ICONS[&"select_all"]
-	preview_area.select_none_btn.icon = ICONS[&"select_none"]
 	get_window().min_size = Vector2i(820, 520)
 	split.split_offset = Settings.get_value(&"sidebar_width")
 	split.dragged.connect(func(offset: int) -> void: Settings.set_value(&"sidebar_width", offset))
@@ -250,6 +250,18 @@ func _register_actions() -> void:
 		&"quit", "Quit", func() -> void: files.confirm_unsaved_changes("quitting", get_tree().quit)
 	)
 
+	for tool: Array in [
+		[&"tool_select", "Select Mode", SpritesheetPreview.Tool.SELECT],
+		[&"tool_move", "Move Mode", SpritesheetPreview.Tool.MOVE],
+	]:
+		Actions.add(
+			tool[0],
+			tool[1],
+			preview_area.set_tool.bind(tool[2]),
+			Callable(),
+			ICONS[tool[0]],
+			func() -> bool: return preview.tool == tool[2]
+		)
 	add.call(&"select_all", "Select All", preview_area.select_all.bind(true), has_frames)
 	add.call(&"select_none", "Select None", preview_area.select_all.bind(false), has_selection)
 	add.call(

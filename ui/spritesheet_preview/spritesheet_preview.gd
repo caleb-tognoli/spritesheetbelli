@@ -5,9 +5,10 @@ extends Node2D
 ## Everything is drawn by this node, so large sheets need no node per cell.
 ## Frame textures are cached per image and only created for new images.
 ##
-## Mouse: click to select, Ctrl+click to toggle, Shift+click for a range, drag on empty
-## space for a box selection, drag frames to move them (Alt+drag copies), click an
-## empty cell to lock it. Middle drag or Space+drag pans, the wheel zooms.
+## Mouse: click to select, Ctrl+click to toggle, Shift+click for a range, click an empty
+## cell to lock it. Dragging depends on [member tool]: the select tool draws a selection
+## box, the move tool moves frames (Alt+drag copies). Middle drag or Space+drag pans, the
+## wheel zooms.
 
 ## Emitted when the spritesheet or the selection changed
 signal preview_updated
@@ -17,6 +18,7 @@ signal zoom_changed(zoom: float)
 signal lock_requested(coord: Vector2i, locked: bool)
 ## The user dragged frames to another place
 signal move_requested(coords: Array[Vector2i], offset: Vector2i, copy: bool)
+signal tool_changed(tool: Tool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid.
 signal hover_changed(coord: Vector2i)
 ## The user double-clicked left of a row to name it
@@ -38,10 +40,26 @@ const DRAG_THRESHOLD := 4.0
 const NO_CELL := Vector2i(-1, -1)
 
 enum Drag { NONE, PENDING, BOX, MOVE, PAN }
+## What dragging does
+enum Tool {
+	SELECT,  ## Draws a selection box
+	MOVE,  ## Moves the selected frames, or the dragged frame when none are selected
+}
 
 @export var able_to_lock_spaces := true
-## When off, dragging a frame selects with a box instead of moving it
-@export var able_to_move_frames := true
+## When off, frames can't be moved and dragging always selects
+@export var able_to_move_frames := true:
+	set(value):
+		able_to_move_frames = value
+		if not value:
+			tool = Tool.SELECT
+var tool := Tool.SELECT:
+	set(value):
+		if not able_to_move_frames:
+			value = Tool.SELECT
+		if value != tool:
+			tool = value
+			tool_changed.emit(tool)
 
 # Set from Settings
 var show_indices := true
@@ -68,6 +86,8 @@ var _drag := Drag.NONE
 var _drag_start_screen := Vector2.ZERO
 var _drag_start_camera := Vector2.ZERO
 var _drag_start_cell := NO_CELL
+## The start cell even outside the grid, for moving
+var _drag_start_unclamped := Vector2i.ZERO
 var _drag_additive := false
 var _box_end_world := Vector2.ZERO
 var _move_offset := Vector2i.ZERO
@@ -314,6 +334,7 @@ func _on_left_press(event: InputEventMouseButton) -> void:
 		return
 	_start_drag(Drag.PENDING, event.position)
 	_drag_start_cell = get_cell_at_screen_position(event.position)
+	_drag_start_unclamped = _cell_unclamped(screen_to_world(event.position))
 	_drag_additive = event.is_command_or_control_pressed() or event.shift_pressed
 
 
@@ -396,7 +417,7 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 			queue_redraw()
 		Drag.MOVE:
 			var cell := _cell_unclamped(screen_to_world(event.position))
-			var offset := cell - _drag_start_cell
+			var offset := cell - _drag_start_unclamped
 			# Keep every moved frame inside the positive quadrant
 			for coord in _selected:
 				offset = offset.max(-coord)
@@ -407,8 +428,10 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 ## Turns a pending press into a box selection or a move
 func _begin_real_drag() -> void:
-	if spritesheet.has_frame(_drag_start_cell) and not _drag_additive and able_to_move_frames:
-		if not is_selected(_drag_start_cell):
+	var can_move := tool == Tool.MOVE and able_to_move_frames and not _drag_additive
+	if can_move and (not _selected.is_empty() or spritesheet.has_frame(_drag_start_cell)):
+		# The selection moves from wherever it's dragged; without one, the dragged frame
+		if _selected.is_empty():
 			set_selected_coords([_drag_start_cell] as Array[Vector2i])
 		_drag = Drag.MOVE
 		_move_offset = Vector2i.ZERO

@@ -35,6 +35,9 @@ const MENUS := {
 		&"",
 		&"select_all",
 		&"select_none",
+		&"",
+		&"tool_select",
+		&"tool_move",
 	],
 	"Frame":
 	[

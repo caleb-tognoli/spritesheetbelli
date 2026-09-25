@@ -98,6 +98,16 @@ remove_cell={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":true,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194312,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
 ]
 }
+tool_select={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"command_or_control_autoremap":false,"alt_pressed":false,"shift_pressed":false,"pressed":false,"keycode":81,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+tool_move={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"command_or_control_autoremap":false,"alt_pressed":false,"shift_pressed":false,"pressed":false,"keycode":87,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
 toggle_history={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"command_or_control_autoremap":true,"alt_pressed":false,"shift_pressed":false,"pressed":false,"keycode":72,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
@@ -232,7 +242,7 @@ show_shortcuts={
 
 [internationalization]
 
-locale/translations_pot_files=PackedStringArray("res://scripts/autoloaded/actions.gd", "res://scripts/autoloaded/global.gd", "res://scripts/autoloaded/notify.gd", "res://scripts/autoloaded/settings.gd", "res://scripts/document.gd", "res://scripts/export/atlas_packer.gd", "res://scripts/export/export_options.gd", "res://scripts/export/metadata.gd", "res://scripts/export/spritesheet_exporter.gd", "res://scripts/frame_clipboard.gd", "res://scripts/grid_guesser.gd", "res://scripts/image_loader.gd", "res://scripts/image_utils.gd", "res://scripts/project_file.gd", "res://scripts/resources/spritesheet.gd", "res://scripts/slicer.gd", "res://scripts/ui/action_popup_menu.gd", "res://scripts/ui/app_action.gd", "res://scripts/ui/app_theme.gd", "res://scripts/ui/shortcuts_dialog.gd", "res://ui/add_spritesheet/add_spritesheet_window.gd", "res://ui/add_spritesheet/add_spritesheet_window.tscn", "res://ui/animation_preview/animation_preview.gd", "res://ui/animation_preview/animation_window.gd", "res://ui/animation_preview/frame_player.gd", "res://ui/main/color_key_dialog.gd", "res://ui/main/export_dialog.gd", "res://ui/main/history_panel.gd", "res://ui/main/file_controller.gd", "res://ui/main/main.tscn", "res://ui/main/main_ui.gd", "res://ui/main/menu_bar.gd", "res://ui/main/recent_files_menu.gd", "res://ui/main/row_name_dialog.gd", "res://ui/settings/settings_window.gd", "res://ui/spritesheet_preview/center_view.gd", "res://ui/spritesheet_preview/preview_area.gd", "res://ui/spritesheet_preview/preview_area.tscn", "res://ui/spritesheet_preview/spritesheet_preview.gd")
+locale/translations_pot_files=PackedStringArray("res://scripts/autoloaded/actions.gd", "res://scripts/autoloaded/global.gd", "res://scripts/autoloaded/notify.gd", "res://scripts/autoloaded/settings.gd", "res://scripts/document.gd", "res://scripts/export/atlas_packer.gd", "res://scripts/export/export_options.gd", "res://scripts/export/metadata.gd", "res://scripts/export/spritesheet_exporter.gd", "res://scripts/frame_clipboard.gd", "res://scripts/grid_guesser.gd", "res://scripts/image_loader.gd", "res://scripts/image_utils.gd", "res://scripts/project_file.gd", "res://scripts/resources/spritesheet.gd", "res://scripts/slicer.gd", "res://scripts/ui/action_popup_menu.gd", "res://scripts/ui/app_action.gd", "res://scripts/ui/app_theme.gd", "res://scripts/ui/shortcuts_dialog.gd", "res://ui/add_spritesheet/add_spritesheet_window.gd", "res://ui/add_spritesheet/add_spritesheet_window.tscn", "res://ui/animation_preview/animation_preview.gd", "res://ui/animation_preview/animation_window.gd", "res://ui/animation_preview/frame_player.gd", "res://ui/main/color_key_dialog.gd", "res://ui/main/export_dialog.gd", "res://ui/main/history_panel.gd", "res://ui/main/file_controller.gd", "res://ui/main/main.tscn", "res://ui/main/main_ui.gd", "res://ui/main/menu_bar.gd", "res://ui/main/recent_files_menu.gd", "res://ui/main/row_name_dialog.gd", "res://ui/settings/settings_window.gd", "res://ui/spritesheet_preview/preview_area.gd", "res://ui/spritesheet_preview/preview_area.tscn", "res://ui/spritesheet_preview/spritesheet_preview.gd")
 
 [rendering]
 

@@ -1,15 +1,10 @@
-[gd_scene load_steps=15 format=3 uid="uid://dr85rkajtgbvy"]
+[gd_scene format=3 uid="uid://dr85rkajtgbvy"]
 
 [ext_resource type="Theme" uid="uid://cnu73lcdoioiq" path="res://resources/themes/preview_area_theme.tres" id="1_4ihnc"]
 [ext_resource type="Script" path="res://scripts/ui/action_popup_menu.gd" id="9_actmenu"]
 [ext_resource type="Script" path="res://ui/spritesheet_preview/preview_area.gd" id="2_olheg"]
 [ext_resource type="Theme" uid="uid://diypk7yex32r5" path="res://resources/themes/popup_menu_theme.tres" id="3_3bjsy"]
 [ext_resource type="Script" path="res://ui/spritesheet_preview/spritesheet_preview.gd" id="3_ejlv6"]
-[ext_resource type="Texture2D" uid="uid://2awyv2ldg0y5" path="res://assets/icons/CenterView.svg" id="4_eb4du"]
-[ext_resource type="Script" path="res://ui/spritesheet_preview/center_view.gd" id="5_p2elb"]
-
-[sub_resource type="Theme" id="Theme_kqwoj"]
-default_font_size = 11
 
 [node name="PreviewArea" type="Control"]
 layout_mode = 3
@@ -28,88 +23,47 @@ size = Vector2i(122, 113)
 theme = ExtResource("3_3bjsy")
 script = ExtResource("9_actmenu")
 
-[node name="PreviewContainer" type="SubViewportContainer" parent="."]
+[node name="Layout" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 3
+mouse_filter = 1
+theme_override_constants/separation = 0
+
+[node name="Toolbar" type="PanelContainer" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Toolbar"
+
+[node name="Stage" type="Control" parent="Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 1
+
+[node name="PreviewContainer" type="SubViewportContainer" parent="Layout/Stage"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="PreviewContainer"]
+[node name="SubViewport" type="SubViewport" parent="Layout/Stage/PreviewContainer"]
 handle_input_locally = false
-size = Vector2i(1000, 648)
+size = Vector2i(1000, 600)
 render_target_update_mode = 4
 
-[node name="SpritesheetPreview" type="Node2D" parent="PreviewContainer/SubViewport"]
+[node name="SpritesheetPreview" type="Node2D" parent="Layout/Stage/PreviewContainer/SubViewport"]
 unique_name_in_owner = true
 script = ExtResource("3_ejlv6")
 
-[node name="Camera2D" type="Camera2D" parent="PreviewContainer/SubViewport/SpritesheetPreview"]
+[node name="Camera2D" type="Camera2D" parent="Layout/Stage/PreviewContainer/SubViewport/SpritesheetPreview"]
 position = Vector2(-50, -50)
 anchor_mode = 0
 editor_draw_screen = false
-
-[node name="MarginContainer" type="MarginContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 2
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 8
-
-[node name="SelectionOptions" type="HBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 8
-theme = SubResource("Theme_kqwoj")
-theme_override_constants/separation = 10
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/SelectionOptions"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="SelectAll" type="Button" parent="MarginContainer/SelectionOptions/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(85, 0)
-layout_mode = 2
-text = "Select All"
-
-[node name="SelectNone" type="Button" parent="MarginContainer/SelectionOptions/HBoxContainer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(85, 0)
-layout_mode = 2
-text = "Select None"
-
-[node name="NumSelected" type="Label" parent="MarginContainer/SelectionOptions"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "0 selected"
-vertical_alignment = 1
-
-[node name="CameraOptions" type="HBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 0
-theme_override_constants/separation = 10
-alignment = 2
-
-[node name="Zoom" type="MenuButton" parent="MarginContainer/CameraOptions"]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Zoom"
-text = "100%"
-
-[node name="CenterView" type="Button" parent="MarginContainer/CameraOptions" node_paths=PackedStringArray("preview")]
-layout_mode = 2
-icon = ExtResource("4_eb4du")
-flat = true
-script = ExtResource("5_p2elb")
-preview = NodePath("../../../PreviewContainer/SubViewport/SpritesheetPreview")
