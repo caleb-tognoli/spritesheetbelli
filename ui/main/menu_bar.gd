@@ -14,7 +14,7 @@ const SUBMENUS := {
 	&"align_menu":
 	[
 		"Align in Cell",
-		[&"align_top", &"align_bottom", &"align_left", &"align_right", &"", &"align_center"],
+		[&"align_top", &"align_bottom", &"align_left", &"align_right", &"align_center"],
 		preload("res://assets/icons/ControlAlignCenter.svg"),
 	],
 	&"rows_menu":

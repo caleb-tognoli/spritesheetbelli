@@ -161,3 +161,26 @@ func test_name_row() -> void:
 	assert_eq(Global.spritesheet.row_names.get(0), "walk")
 	Global.document.undo()
 	assert_false(Global.spritesheet.row_names.has(0))
+
+
+func test_align_shortcuts() -> void:
+	var expected := {
+		&"align_top": "Alt+T",
+		&"align_bottom": "Alt+B",
+		&"align_left": "Alt+L",
+		&"align_right": "Alt+R",
+		&"align_center": "Alt+C",
+	}
+	for id: StringName in expected:
+		assert_eq(Actions.get_shortcut_text(id), expected[id], id)
+	var sheet := Global.spritesheet
+	sheet.set_frame(Vector2i(0, 0), make_image(Color.RED, Vector2i(8, 8)))
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	await get_tree().process_frame
+	var event := InputEventKey.new()
+	event.keycode = KEY_B
+	event.alt_pressed = true
+	event.pressed = true
+	get_viewport().push_input(event)
+	await get_tree().process_frame
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)).end.y, 16, "at the bottom")

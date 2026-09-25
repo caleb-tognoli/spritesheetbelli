@@ -46,7 +46,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Error dialogs when an image would be bigger than Godot or the format allows.
 - Frames can be moved inside their cells: in the move mode, arrow keys move the selected
   frames by a pixel (8 with Shift), and Frame > Align in Cell puts them against the top,
-  bottom (B), left or right of their cells or in the middle (C). Cells grow to hold moved
+  bottom, left or right of their cells or in the middle (Alt+T, B, L, R, C). Cells grow to hold moved
   frames, and projects keep where every frame is.
 - Command line: `--cut <image>` cuts a spritesheet (grid, data file or `--detect`) or
   an animated GIF; `--atlas` writes a packed atlas; an `--out` ending in `.gif` writes an

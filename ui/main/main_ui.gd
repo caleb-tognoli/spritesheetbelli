@@ -45,6 +45,7 @@ const ICONS := {
 	&"align_right": preload("res://assets/icons/ControlAlignCenterRight.svg"),
 	&"align_center": preload("res://assets/icons/ControlAlignCenter.svg"),
 	&"add_outline": preload("res://assets/icons/Rectangle.svg"),
+	&"trim": preload("res://assets/icons/RegionEdit.svg"),
 	&"insert_row": preload("res://assets/icons/ExpandTree.svg"),
 	&"remove_row": preload("res://assets/icons/CollapseTree.svg"),
 	&"move_row_up": preload("res://assets/icons/MoveUp.svg"),

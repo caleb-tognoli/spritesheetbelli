@@ -79,7 +79,7 @@ Press **F1** in the app for the full list. The most useful:
 | Delete frames / Remove cells | Delete / Shift+Delete |
 | Flip / Rotate | H, V / R, Shift+R |
 | Trim transparent borders | T |
-| Align to the bottom / centre of the cell | B / C |
+| Align in cell: top / bottom / left / right / centre | Alt+T / B / L / R / C |
 | Move frames inside their cells (move mode) | Arrow keys (Shift for 8 pixels) |
 | Name row | F2 |
 | Insert / remove row | Ctrl+Insert / Ctrl+Shift+Delete |
