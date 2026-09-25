@@ -383,6 +383,54 @@ func _register_actions() -> void:
 		has_selection
 	)
 
+	add.call(
+		&"insert_row",
+		"Insert Row",
+		func() -> void:
+			var row := preview.get_selected_coords()[0].y
+			var moved: Array[Vector2i] = []
+			for coord in preview.get_selected_coords():
+				moved.append(coord + Vector2i.DOWN if coord.y >= row else coord)
+			Global.document.perform("Insert row", sheet.insert_row.bind(row))
+			preview.set_selected_coords(moved),
+		has_selection
+	)
+	add.call(
+		&"remove_row",
+		"Remove Row",
+		func() -> void:
+			var rows := _selected_rows()
+			rows.reverse()
+			preview.set_selected_coords([] as Array[Vector2i])
+			Global.document.perform(
+				"Remove rows",
+				func() -> void:
+					for row in rows:
+						sheet.remove_row(row)
+			),
+		has_selection
+	)
+	for move: Array in [
+		[&"move_row_up", "Move Row Up", -1], [&"move_row_down", "Move Row Down", 1]
+	]:
+		add.call(
+			move[0],
+			move[1],
+			func() -> void:
+				var row := preview.get_selected_coords()[0].y
+				var by: int = move[2]
+				var moved: Array[Vector2i] = []
+				for coord in preview.get_selected_coords():
+					moved.append(coord + Vector2i(0, by) if coord.y == row else coord)
+				Global.document.perform("Move row", sheet.move_row.bind(row, by))
+				preview.set_selected_coords(moved),
+			func() -> bool:
+				if preview.get_selected_coords().is_empty():
+					return false
+				var target: int = preview.get_selected_coords()[0].y + move[2]
+				return target >= 0 and target < sheet.grid_size.y
+		)
+
 	add.call(&"zoom_in", "Zoom In", preview.zoom_by.bind(1.25))
 	add.call(&"zoom_out", "Zoom Out", preview.zoom_by.bind(0.8))
 	add.call(
@@ -425,6 +473,16 @@ func _register_actions() -> void:
 	add.call(
 		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
 	)
+
+
+## Rows with a selected frame, from top to bottom
+func _selected_rows() -> Array[int]:
+	var rows: Array[int] = []
+	for coord in preview.get_selected_coords():
+		if coord.y not in rows:
+			rows.append(coord.y)
+	rows.sort()
+	return rows
 
 
 func open_row_name_dialog(row: int) -> void:

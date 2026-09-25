@@ -24,6 +24,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
   durations from Aseprite JSON are kept. The Animations window shows how long a cycle
   takes.
+- Rows: Frame > Insert Row (Ctrl+Insert), Remove Row (Ctrl+Shift+Delete) and Move Row
+  Up/Down (Ctrl+Shift+Up/Down). Row names, locked cells and animations move along.
 - Mirror an animation in the Animations window: its frames are flipped into a new row
   and a copy of the animation plays them, named walk_left for walk_right.
 - Onion skin in the animation players: a button shows the previous frame faintly behind

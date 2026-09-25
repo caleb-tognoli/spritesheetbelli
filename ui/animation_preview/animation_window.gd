@@ -186,7 +186,7 @@ func mirror_animation() -> void:
 	if index < 0:
 		return
 	var added: int = Global.document.perform(
-		"Mirror animation", Global.spritesheet.mirror_animation.bind(index)
+		"Mirror animation", SheetAnimation.mirror.bind(Global.spritesheet, index)
 	)
 	refresh()
 	if added >= 0:

@@ -246,3 +246,36 @@ func test_frame_numbers() -> void:
 	assert_eq(
 		SheetAnimation.format_numbers([4, 5, 7] as Array[int]), "4, 5, 7", "two in a row stay apart"
 	)
+
+
+func test_insert_remove_and_move_rows() -> void:
+	sheet.set_grid_size(Vector2i(2, 3))
+	for y in 3:
+		sheet.set_frame(Vector2i(0, y), make_image(Color(y / 3.0, 0, 0)))
+		sheet.set_row_name(y, "row%d" % y)
+	var bottom := sheet.frames[Vector2i(0, 2)]
+	sheet.set_locked(Vector2i(1, 2), true)
+	sheet.nudge_frames([Vector2i(0, 2)] as Array[Vector2i], Vector2i(1, 0))
+	sheet.add_animation(SheetAnimation.create("a", [Vector2i(0, 1), Vector2i(0, 2)]))
+
+	sheet.insert_row(1)
+	assert_eq(sheet.grid_size, Vector2i(2, 4))
+	assert_eq(sheet.frames[Vector2i(0, 3)], bottom)
+	assert_true(sheet.has_frame_origin(Vector2i(0, 3)), "origin moved along")
+	assert_true(sheet.is_locked(Vector2i(1, 3)), "lock moved along")
+	assert_eq(sheet.row_names, {0: "row0", 2: "row1", 3: "row2"} as Dictionary[int, String])
+	assert_eq(sheet.animations[0].cells, [Vector2i(0, 2), Vector2i(0, 3)] as Array[Vector2i])
+
+	sheet.move_row(3, -3)
+	assert_eq(sheet.frames[Vector2i(0, 0)], bottom)
+	assert_eq(sheet.row_names.get(0), "row2")
+	assert_eq(sheet.row_names.get(3), "row0")
+	sheet.move_row(0, -1)
+	assert_eq(sheet.frames[Vector2i(0, 0)], bottom, "can't move out of the grid")
+
+	sheet.remove_row(2)
+	assert_eq(sheet.grid_size, Vector2i(2, 3))
+	assert_eq(
+		sheet.animations[0].cells, [Vector2i(0, 0)] as Array[Vector2i], "removed cell dropped"
+	)
+	assert_eq(sheet.row_names, {0: "row2", 2: "row0"} as Dictionary[int, String])

@@ -56,6 +56,10 @@ const MENUS := {
 		&"remove_cell",
 		&"",
 		&"name_row",
+		&"insert_row",
+		&"remove_row",
+		&"move_row_up",
+		&"move_row_down",
 	],
 	"View":
 	[

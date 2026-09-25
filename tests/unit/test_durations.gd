@@ -119,7 +119,7 @@ func test_mirror_animation() -> void:
 	sheet.add_animation(animation)
 	sheet.nudge_frames([Vector2i(1, 0)] as Array[Vector2i], Vector2i(3, 0))
 
-	var index := sheet.mirror_animation(0)
+	var index := SheetAnimation.mirror(sheet, 0)
 	assert_eq(index, 1)
 	var mirrored := sheet.animations[1]
 	assert_eq(mirrored.name, "walk_left")
@@ -132,5 +132,5 @@ func test_mirror_animation() -> void:
 	assert_eq(
 		sheet.get_frame_origin(Vector2i(1, 1)).x, -sheet.get_frame_origin(Vector2i(1, 0)).x - 16
 	)
-	assert_eq(Spritesheet.mirrored_name("run"), "run_flipped")
-	assert_eq(Spritesheet.mirrored_name("Left punch"), "Right punch")
+	assert_eq(SheetAnimation.mirrored_name("run"), "run_flipped")
+	assert_eq(SheetAnimation.mirrored_name("Left punch"), "Right punch")

@@ -232,11 +232,6 @@ func has_frame_origin(coord: Vector2i) -> bool:
 	return _origins.has(coord)
 
 
-## Origins of frames that aren't centred. Read only.
-func get_frame_origins() -> Dictionary[Vector2i, Vector2i]:
-	return _origins
-
-
 #region Batching
 
 
@@ -607,6 +602,77 @@ func remove_cell(coord: Vector2i) -> void:
 	_changed()
 
 
+## Inserts an empty row at [param row], moving it and the rows below down
+func insert_row(row: int) -> void:
+	if row < 0 or row > _grid_size.y or _grid_size.x == 0:
+		return
+	_move_rows(func(y: int) -> int: return y + 1 if y >= row else y)
+	_grid_size.y += 1
+	_changed()
+
+
+## Removes [param row] with its frames, moving the rows below up
+func remove_row(row: int) -> void:
+	if row < 0 or row >= _grid_size.y:
+		return
+	_move_rows(
+		func(y: int) -> int:
+			if y == row:
+				return -1
+			return y - 1 if y > row else y
+	)
+	_grid_size.y -= 1
+	if _grid_size.y == 0:
+		_grid_size = Vector2i.ZERO
+	_changed()
+
+
+## Swaps [param row] with the row [param by] rows away, inside the grid
+func move_row(row: int, by: int) -> void:
+	var target := row + by
+	if by == 0 or row < 0 or row >= _grid_size.y or target < 0 or target >= _grid_size.y:
+		return
+	_move_rows(
+		func(y: int) -> int:
+			if y == row:
+				return target
+			return row if y == target else y
+	)
+	_changed()
+
+
+## Moves everything in each row to the row [param map] returns for it, or drops it for -1
+func _move_rows(map: Callable) -> void:
+	var cell_map := func(cell: Vector2i) -> Vector2i:
+		var y: int = map.call(cell.y)
+		return NO_CELL if y < 0 else Vector2i(cell.x, y)
+	var frames: Dictionary[Vector2i, Image] = {}
+	for cell in _frames:
+		var moved: Vector2i = cell_map.call(cell)
+		if moved != NO_CELL:
+			frames[moved] = _frames[cell]
+	_frames = frames
+	var origins: Dictionary[Vector2i, Vector2i] = {}
+	for cell in _origins:
+		var moved: Vector2i = cell_map.call(cell)
+		if moved != NO_CELL:
+			origins[moved] = _origins[cell]
+	_origins = origins
+	var locked: Array[Vector2i] = []
+	for cell in _locked:
+		var moved: Vector2i = cell_map.call(cell)
+		if moved != NO_CELL:
+			locked.append(moved)
+	_locked = locked
+	var row_names: Dictionary[int, String] = {}
+	for row in _row_names:
+		var moved: int = map.call(row)
+		if moved >= 0:
+			row_names[moved] = _row_names[row]
+	_row_names = row_names
+	_remap_animation_cells(cell_map)
+
+
 #endregion
 
 #region Animations
@@ -634,51 +700,6 @@ func remove_animation(index: int) -> void:
 		return
 	_animations.remove_at(index)
 	_changed()
-
-
-## Adds a copy of the animation at [param index] with its frames flipped horizontally in
-## a new row below every frame, e.g. walk_left from walk_right. Returns the new
-## animation's index, or -1 when it has no frames.
-func mirror_animation(index: int) -> int:
-	if index < 0 or index >= _animations.size():
-		return -1
-	var source := SheetAnimation.from_dictionary(_animations[index])
-	var row := get_first_free_row()
-	var copies := {}  # Source cell to its mirrored copy
-	for cell in source.get_frame_cells(self):
-		if not copies.has(cell):
-			copies[cell] = Vector2i(copies.size(), row)
-	if copies.is_empty():
-		return -1
-	var mirrored := SheetAnimation.from_dictionary(_animations[index])
-	mirrored.name = get_unique_animation_name(mirrored_name(source.name))
-	mirrored.cells.clear()
-	mirrored.durations.clear()
-	for i in source.cells.size():
-		if copies.has(source.cells[i]):
-			mirrored.cells.append(copies[source.cells[i]])
-			mirrored.durations.append(source.get_duration(i))
-	begin_batch()
-	for cell: Vector2i in copies:
-		set_frame(copies[cell], _frames[cell])
-		_set_origin(copies[cell], _origins.get(cell))
-	var targets: Array[Vector2i] = []
-	targets.assign(copies.values())
-	flip_frames(targets, true)
-	set_row_name(row, mirrored.name)
-	var new_index := add_animation(mirrored)
-	end_batch()
-	return new_index
-
-
-## The name of a mirrored copy: left and right swapped, or else "_flipped" added
-static func mirrored_name(animation_name: String) -> String:
-	for pair: Array in [["right", "left"], ["Right", "Left"], ["RIGHT", "LEFT"]]:
-		if pair[0] in animation_name:
-			return animation_name.replace(pair[0], pair[1])
-		if pair[1] in animation_name:
-			return animation_name.replace(pair[1], pair[0])
-	return animation_name + "_flipped"
 
 
 ## A name not used by any animation, based on [param base]
