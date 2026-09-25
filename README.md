@@ -16,6 +16,7 @@ A small desktop tool made with Godot.</p>
   handle sheets that aren't packed edge to edge.
 - **Unpack packed sheets.** A TexturePacker or Aseprite JSON next to the image says where
   every frame is; trimmed and rotated frames are restored and tags become animations.
+  Without one, the sprites are found by the transparent space around them.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
   colour, replace, cut/copy/paste (also images copied in other apps), duplicate, insert or
   remove cells. Everything can be undone.

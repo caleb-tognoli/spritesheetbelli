@@ -20,11 +20,21 @@ signal frames_added
 
 @export var spritesheet_image: Image
 
+## How the image is cut into frames
+enum Cut {
+	GRID,  ## In a grid of equal cells
+	DETECT,  ## Every group of pixels surrounded by transparency is a frame
+	DATA,  ## Where the data file says
+}
+
 var spritesheet: Spritesheet
 ## Where the frames are, from a data file exported with the image, or null
 var sheet_data: SheetData
-## Switches between the frames from [member sheet_data] and cutting a grid
-var data_toggle := CheckButton.new()
+var cut_option := OptionButton.new()
+## Settings for finding sprites
+var detect_box := HBoxContainer.new()
+var merge_distance := SpinBox.new()
+var align_option := OptionButton.new()
 ## Opens the rarely needed offset and spacing fields in a floating panel
 var more_options_btn := Button.new()
 var more_options_popup := PopupPanel.new()
@@ -77,11 +87,7 @@ func _ready() -> void:
 	)
 	_update_options_label()
 
-	var grid_box := grid_columns.get_parent().get_parent() as Control
-	grid_box.add_sibling(data_toggle)
-	grid_box.get_parent().move_child(data_toggle, 0)
-	data_toggle.tooltip_text = "Cut the frames where the data file says they are"
-	data_toggle.toggled.connect(func(_on: bool) -> void: _slice())
+	_build_cut_controls()
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 	preview_area.spritesheet_preview.able_to_move_frames = false
@@ -106,24 +112,48 @@ func setup(img: Image, file_name := "", data: SheetData = null, data_name := "")
 	var guessed_size := GridGuesser.guess(img, file_name)
 	grid_columns.set_value_no_signal(guessed_size.x)
 	grid_rows.set_value_no_signal(guessed_size.y)
-	data_toggle.visible = data != null
-	data_toggle.text = tr("Use %s") % data_name
-	data_toggle.set_pressed_no_signal(data != null)
-	_slice()
+	cut_option.clear()
+	cut_option.add_item("Grid", Cut.GRID)
+	cut_option.add_item("Find sprites", Cut.DETECT)
+	if data:
+		cut_option.add_item(tr("Data: %s") % data_name, Cut.DATA)
+	set_cut(Cut.DATA if data else Cut.GRID)
 
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
 	preview_area.spritesheet_preview.set_zoom(1)
 
 
-## Cuts the image with the data file when it's used, or else with the grid fields
+func get_cut() -> Cut:
+	return cut_option.get_selected_id() as Cut
+
+
+## Cuts the image another way. Cutting with data needs a data file.
+func set_cut(cut: Cut) -> void:
+	var index := cut_option.get_item_index(cut)
+	if index >= 0:
+		cut_option.select(index)
+	_slice()
+
+
 func _slice() -> void:
-	var use_data := sheet_data != null and data_toggle.button_pressed
+	var cut := get_cut()
 	for control: Control in [grid_columns.get_parent().get_parent(), more_options_btn]:
-		control.visible = not use_data
-	if not use_data:
-		update_grid_size(int(grid_columns.value), int(grid_rows.value))
-		return
-	spritesheet = sheet_data.to_spritesheet(spritesheet_image)
+		control.visible = cut == Cut.GRID
+	detect_box.visible = cut == Cut.DETECT
+	match cut:
+		Cut.GRID:
+			update_grid_size(int(grid_columns.value), int(grid_rows.value))
+		Cut.DATA:
+			_show_cut(sheet_data.to_spritesheet(spritesheet_image))
+		Cut.DETECT:
+			var rows := SpriteDetector.detect(spritesheet_image, int(merge_distance.value))
+			var alignment := align_option.get_selected_id() as Spritesheet.Alignment
+			_show_cut(SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment))
+
+
+## Shows frames that were cut without a grid
+func _show_cut(sheet: Spritesheet) -> void:
+	spritesheet = sheet
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
 	slice_info.remove_theme_color_override("font_color")
@@ -131,6 +161,44 @@ func _slice() -> void:
 	slice_info.text = tr("%d frames") % spritesheet.frames.size()
 	if not spritesheet.animations.is_empty():
 		slice_info.text += tr(" · %d animations") % spritesheet.animations.size()
+
+
+func _build_cut_controls() -> void:
+	var grid_box := grid_columns.get_parent().get_parent() as Control
+	var cut_box := HBoxContainer.new()
+	var cut_label := Label.new()
+	cut_label.text = "Cut"
+	cut_box.add_child(cut_label)
+	cut_box.add_child(cut_option)
+	cut_option.tooltip_text = (
+		"Grid: equal cells. Find sprites: every group of pixels surrounded by transparency."
+		+ " Data: where the data file exported with the image says."
+	)
+	cut_option.item_selected.connect(func(_index: int) -> void: _slice())
+	LabelLink.link(cut_label, cut_option)
+	grid_box.add_sibling(cut_box)
+	grid_box.get_parent().move_child(cut_box, 0)
+
+	var merge_label := Label.new()
+	merge_label.text = "Join parts within"
+	merge_distance.max_value = 64
+	merge_distance.suffix = "px"
+	merge_distance.tooltip_text = "Parts of a sprite closer than this, like a spark, stay together"
+	merge_distance.value_changed.connect(func(_value: float) -> void: _slice())
+	SpinScroll.enable(merge_distance)
+	var align_label := Label.new()
+	align_label.text = "Align"
+	align_option.add_item("Centre", Spritesheet.Alignment.CENTER)
+	align_option.add_item("Bottom", Spritesheet.Alignment.BOTTOM)
+	align_option.tooltip_text = "Bottom keeps the feet of characters on one line"
+	align_option.item_selected.connect(func(_index: int) -> void: _slice())
+	for control: Control in [merge_label, merge_distance, align_label, align_option]:
+		detect_box.add_child(control)
+	LabelLink.link(merge_label, merge_distance)
+	LabelLink.link(align_label, align_option)
+	detect_box.add_theme_constant_override("separation", 8)
+	detect_box.visible = false
+	cut_box.add_sibling(detect_box)
 
 
 func on_preview_update() -> void:
@@ -175,6 +243,8 @@ func add_spritesheet_to_global() -> void:
 			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 			for coord: Vector2i in spritesheet.frames:
 				target.set_frame(coord + offset, spritesheet.frames[coord])
+				if spritesheet.has_frame_origin(coord):
+					target.set_frame_origin(coord + offset, spritesheet.get_frame_origin(coord))
 			for row: int in spritesheet.row_names:
 				target.set_row_name(row + offset.y, spritesheet.row_names[row])
 			for animation in spritesheet.animations:
@@ -193,10 +263,17 @@ func add_spritesheet_to_global() -> void:
 
 func add_selected_frames_to_global() -> void:
 	var imgs: Array[Image] = []
-	for coord in preview_area.spritesheet_preview.get_selected_coords():
+	var selected := preview_area.spritesheet_preview.get_selected_coords()
+	for coord in selected:
 		imgs.append(spritesheet.frames[coord])
+	var target := Global.spritesheet
 	Global.document.perform(
-		"Add frames", Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"))
+		"Add frames",
+		func() -> void:
+			var added := target.add_frames(imgs, Settings.get_value(&"add_mode"))
+			for i in added.size():
+				if spritesheet.has_frame_origin(selected[i]):
+					target.set_frame_origin(added[i], spritesheet.get_frame_origin(selected[i]))
 	)
 	frames_added.emit()
 	close_requested.emit()

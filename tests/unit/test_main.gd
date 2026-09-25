@@ -460,11 +460,11 @@ func test_opening_an_image_uses_its_data_file() -> void:
 	Global.spritesheet.add_frames([make_image(Color.GREEN)] as Array[Image])
 	await main.files.show_add_spritesheet_window(dir.path_join("packed_hero.json"))
 	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
-	assert_true(window.data_toggle.visible and window.data_toggle.button_pressed)
+	assert_eq(window.get_cut(), AddSpritesheetWindow.Cut.DATA)
 	assert_eq(window.spritesheet.frames.size(), 2)
-	window.data_toggle.button_pressed = false
+	window.set_cut(AddSpritesheetWindow.Cut.GRID)
 	assert_eq(window.spritesheet.animations.size(), 0, "back to cutting a grid")
-	window.data_toggle.button_pressed = true
+	window.set_cut(AddSpritesheetWindow.Cut.DATA)
 	window.add_spritesheet_to_global()
 	var sheet := Global.spritesheet
 	assert_eq(sheet.frames[Vector2i(1, 1)].get_size(), Vector2i(22, 16))

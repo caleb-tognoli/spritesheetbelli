@@ -741,6 +741,13 @@ func trim_frames(coords: Array[Vector2i]) -> void:
 	)
 
 
+## Places the frame at [param coord] at [param origin], see [method get_frame_origin]
+func set_frame_origin(coord: Vector2i, origin: Vector2i) -> void:
+	if has_frame(coord) and _origins.get(coord) != origin:
+		_origins[coord] = origin
+		_changed()
+
+
 ## Moves frames inside their cells by [param offset] unscaled pixels
 func nudge_frames(coords: Array[Vector2i], offset: Vector2i) -> void:
 	if offset == Vector2i.ZERO:
