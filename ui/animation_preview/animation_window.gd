@@ -5,6 +5,7 @@ extends AcceptDialog
 
 const ADD_ICON := preload("res://assets/icons/Add.svg")
 const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
+const MIRROR_ICON := preload("res://assets/icons/MirrorX.svg")
 const ANIMATION_ICON := preload("res://assets/icons/Animation.svg")
 const MODE_ICONS := {
 	SheetAnimation.Mode.ONCE: preload("res://assets/icons/PlayStart.svg"),
@@ -21,6 +22,7 @@ var preview: SpritesheetPreview
 var list := ItemList.new()
 var new_button := Button.new()
 var delete_button := Button.new()
+var mirror_button := Button.new()
 var player := FramePlayer.new()
 var name_edit := LineEdit.new()
 var frames_edit := LineEdit.new()
@@ -51,6 +53,9 @@ func _init() -> void:
 	new_button.tooltip_text = "A new animation of the selected frames, or of every frame"
 	new_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(new_button)
+	mirror_button.icon = MIRROR_ICON
+	mirror_button.tooltip_text = "Mirrored copy: the frames flipped into a new row"
+	buttons.add_child(mirror_button)
 	delete_button.icon = REMOVE_ICON
 	delete_button.tooltip_text = "Delete the animation"
 	buttons.add_child(delete_button)
@@ -112,6 +117,7 @@ func _init() -> void:
 	list.item_selected.connect(func(_index: int) -> void: _show_selected())
 	new_button.pressed.connect(add_animation)
 	delete_button.pressed.connect(remove_animation)
+	mirror_button.pressed.connect(mirror_animation)
 	name_edit.text_submitted.connect(func(_text: String) -> void: _apply())
 	name_edit.focus_exited.connect(_apply)
 	frames_edit.text_submitted.connect(func(_text: String) -> void: _apply_frames())
@@ -174,6 +180,20 @@ func add_animation() -> void:
 	name_edit.select_all()
 
 
+## Adds a mirrored copy of the selected animation and selects it
+func mirror_animation() -> void:
+	var index := get_selected()
+	if index < 0:
+		return
+	var added: int = Global.document.perform(
+		"Mirror animation", Global.spritesheet.mirror_animation.bind(index)
+	)
+	refresh()
+	if added >= 0:
+		list.select(added)
+		_show_selected()
+
+
 func remove_animation() -> void:
 	var index := get_selected()
 	if index >= 0:
@@ -186,6 +206,7 @@ func _show_selected() -> void:
 	_properties.visible = has_animation
 	player.visible = has_animation
 	delete_button.disabled = not has_animation
+	mirror_button.disabled = not has_animation
 	empty_hint.visible = not has_animation
 	if not has_animation:
 		return

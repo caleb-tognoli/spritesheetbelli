@@ -636,6 +636,51 @@ func remove_animation(index: int) -> void:
 	_changed()
 
 
+## Adds a copy of the animation at [param index] with its frames flipped horizontally in
+## a new row below every frame, e.g. walk_left from walk_right. Returns the new
+## animation's index, or -1 when it has no frames.
+func mirror_animation(index: int) -> int:
+	if index < 0 or index >= _animations.size():
+		return -1
+	var source := SheetAnimation.from_dictionary(_animations[index])
+	var row := get_first_free_row()
+	var copies := {}  # Source cell to its mirrored copy
+	for cell in source.get_frame_cells(self):
+		if not copies.has(cell):
+			copies[cell] = Vector2i(copies.size(), row)
+	if copies.is_empty():
+		return -1
+	var mirrored := SheetAnimation.from_dictionary(_animations[index])
+	mirrored.name = get_unique_animation_name(mirrored_name(source.name))
+	mirrored.cells.clear()
+	mirrored.durations.clear()
+	for i in source.cells.size():
+		if copies.has(source.cells[i]):
+			mirrored.cells.append(copies[source.cells[i]])
+			mirrored.durations.append(source.get_duration(i))
+	begin_batch()
+	for cell: Vector2i in copies:
+		set_frame(copies[cell], _frames[cell])
+		_set_origin(copies[cell], _origins.get(cell))
+	var targets: Array[Vector2i] = []
+	targets.assign(copies.values())
+	flip_frames(targets, true)
+	set_row_name(row, mirrored.name)
+	var new_index := add_animation(mirrored)
+	end_batch()
+	return new_index
+
+
+## The name of a mirrored copy: left and right swapped, or else "_flipped" added
+static func mirrored_name(animation_name: String) -> String:
+	for pair: Array in [["right", "left"], ["Right", "Left"], ["RIGHT", "LEFT"]]:
+		if pair[0] in animation_name:
+			return animation_name.replace(pair[0], pair[1])
+		if pair[1] in animation_name:
+			return animation_name.replace(pair[1], pair[0])
+	return animation_name + "_flipped"
+
+
 ## A name not used by any animation, based on [param base]
 func get_unique_animation_name(base := "animation") -> String:
 	var used := {}

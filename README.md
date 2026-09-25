@@ -26,7 +26,8 @@ A small desktop tool made with Godot.</p>
   Nearest for sharp pixel art.
 - **Animations:** make named animations from a range of cells or the selected frames,
   each with its own speed and loop, ping-pong or play-once, and frames that are held
-  longer (`0-3, 4*2`); preview them and export them.
+  longer (`0-3, 4*2`); mirror walk_right into walk_left; preview them with onion skin
+  and export them.
 - **Name rows** as animations (idle, walk, jump); names are used in exports.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
   `walk_{frame:2}`; or a tightly packed atlas. One Export dialog shows only the settings

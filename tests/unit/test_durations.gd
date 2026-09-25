@@ -105,3 +105,32 @@ func test_durations_are_saved() -> void:
 	var loaded := Spritesheet.new()
 	loaded.set_state(ProjectFile.load(path).state)
 	assert_eq(loaded.animations[0].durations, animation.durations)
+
+
+func test_mirror_animation() -> void:
+	var img := Image.create_empty(8, 8, false, Image.FORMAT_RGBA8)
+	img.set_pixel(0, 0, Color.RED)
+	sheet.set_frame(Vector2i(0, 0), img)
+	sheet.set_row_name(0, "walk_right")
+	var animation := SheetAnimation.create("walk_right", sheet.get_sorted_coords().slice(0, 2), 8)
+	animation.cells.append(Vector2i(0, 0))
+	animation.durations = [2.0, 1.0, 1.0] as Array[float]
+	animation.mode = SheetAnimation.Mode.PING_PONG
+	sheet.add_animation(animation)
+	sheet.nudge_frames([Vector2i(1, 0)] as Array[Vector2i], Vector2i(3, 0))
+
+	var index := sheet.mirror_animation(0)
+	assert_eq(index, 1)
+	var mirrored := sheet.animations[1]
+	assert_eq(mirrored.name, "walk_left")
+	assert_eq(sheet.row_names.get(1), "walk_left")
+	assert_eq(mirrored.cells, [Vector2i(0, 1), Vector2i(1, 1), Vector2i(0, 1)] as Array[Vector2i])
+	assert_eq(mirrored.durations, [2.0, 1.0, 1.0] as Array[float])
+	assert_eq(mirrored.fps, 8.0)
+	assert_eq(mirrored.mode, SheetAnimation.Mode.PING_PONG)
+	assert_color(sheet.frames[Vector2i(0, 1)], Vector2i(7, 0), Color.RED, "flipped")
+	assert_eq(
+		sheet.get_frame_origin(Vector2i(1, 1)).x, -sheet.get_frame_origin(Vector2i(1, 0)).x - 16
+	)
+	assert_eq(Spritesheet.mirrored_name("run"), "run_flipped")
+	assert_eq(Spritesheet.mirrored_name("Left punch"), "Right punch")
