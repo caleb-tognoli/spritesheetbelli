@@ -45,7 +45,7 @@ func _ready() -> void:
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
 	open_dialog.file_selected.connect(open_path)
-	save_sprites_dialog.dir_selected.connect(save_sprites)
+	save_sprites_dialog.dir_selected.connect(export_to)
 	export_file_dialog.file_selected.connect(export_to)
 	save_project_dialog.file_selected.connect(save_project)
 	save_project_dialog.canceled.connect(func() -> void: after_save = Callable())
@@ -309,11 +309,11 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
-func save_sprites(folder: String) -> void:
-	await Notify.run_busy("Exporting sprites", _save_sprites.bind(folder), _is_big_sheet())
+func save_sprites(folder: String) -> bool:
+	return await Notify.run_busy("Exporting sprites", _save_sprites.bind(folder), _is_big_sheet())
 
 
-func _save_sprites(folder: String) -> void:
+func _save_sprites(folder: String) -> bool:
 	var errors: PackedStringArray = []
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	var coords: Array[Vector2i] = []
@@ -326,15 +326,16 @@ func _save_sprites(folder: String) -> void:
 					'No frames are selected. Select frames or turn off "Only selected frames" when exporting.'
 				)
 			)
-			return
+			return false
 	var written := SpritesheetExporter.export_sprites(
 		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
 	)
 	if not errors.is_empty():
 		Notify.error(tr("Could not save: %s.") % ", ".join(errors))
-		return
+		return false
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
 	Notify.toast(tr("Saved %d images to %s.") % [written.size(), folder.get_file()])
+	return true
 
 
 func _create_unsaved_changes_dialog() -> void:
@@ -388,7 +389,9 @@ func save_project(path: String) -> bool:
 
 func _save_project(path: String) -> bool:
 	path = ProjectFile.with_extension(path)
-	var extra := {"export_path": Global.document.export_path}
+	var extra := {
+		"export_path": Global.document.export_path, "last_export": Global.document.last_export
+	}
 	var error := ProjectFile.save(Global.spritesheet, path, extra)
 	if error != OK:
 		Notify.error(tr("Could not save %s (%s).") % [path.get_file(), error_string(error)])
@@ -421,6 +424,7 @@ func _open_project(path: String) -> bool:
 		Notify.error(result.error)
 		return false
 	Global.document.load_state(result.state, path, result.extra.get("export_path", ""))
+	Global.document.last_export = str(result.extra.get("last_export", ""))
 	Settings.set_value(&"last_session", path)
 	Settings.add_recent_file(path)
 	return true
@@ -481,12 +485,32 @@ static func suggested_export_path(options: ExportOptions) -> String:
 
 ## Exports to [param path] what the sheet's export settings say
 func export_to(path: String) -> bool:
+	var exported := false
 	match ExportOptions.from_sheet(Global.spritesheet).target:
 		ExportOptions.Target.ATLAS:
-			return await export_atlas(path)
+			exported = await export_atlas(path)
 		ExportOptions.Target.GIF:
-			return await export_gif(path)
-	return await export_image_to(path)
+			exported = await export_gif(path)
+		ExportOptions.Target.SPRITES:
+			exported = await save_sprites(path)
+		_:
+			exported = await export_image_to(path)
+	if exported:
+		Global.document.last_export = path
+	return exported
+
+
+## Exports the same way to the same place as last time, without asking
+func export_again() -> bool:
+	var path := Global.document.last_export
+	if path.is_empty():
+		return false
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	var extension := options.get_file_extension()
+	# The export type changed since: same name, the new type's extension
+	if extension and path.get_extension().to_lower() != extension:
+		path = path.get_basename() + "." + extension
+	return await export_to(path)
 
 
 ## Writes the animation chosen in the export settings as an animated GIF

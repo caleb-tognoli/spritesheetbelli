@@ -24,6 +24,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
   durations from Aseprite JSON are kept. The Animations window shows how long a cycle
   takes.
+- File > Export Again (Ctrl+Shift+E) repeats the last export to the same place without
+  asking. Projects remember where that was.
 - Animated GIFs can be opened, added as a spritesheet or dropped: the frames go in a
   new row named after the file, with an animation at the GIF's speed and frame times.
   Adding a GIF as sprites adds every frame.

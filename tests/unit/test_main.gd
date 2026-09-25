@@ -470,3 +470,32 @@ func test_opening_an_image_uses_its_data_file() -> void:
 	assert_eq(sheet.frames[Vector2i(1, 1)].get_size(), Vector2i(22, 16))
 	assert_eq(sheet.row_names.get(1), "walk")
 	assert_eq(sheet.animations[0].cells, [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
+
+
+func test_export_again() -> void:
+	assert_false(Actions.is_enabled(&"export_again"), "nothing exported yet")
+	Global.spritesheet.add_frames([make_image(Color.RED), make_image(Color.BLUE)] as Array[Image])
+	var path := dir.path_join("again.png")
+	DirAccess.remove_absolute(path)
+	assert_true(await main.files.export_to(path))
+	assert_eq(Global.document.last_export, path)
+	await get_tree().process_frame
+	assert_true(Actions.is_enabled(&"export_again"))
+	DirAccess.remove_absolute(path)
+	assert_true(await main.files.export_again())
+	assert_true(FileAccess.file_exists(path), "written again")
+
+	# Another export type since: the same name with its extension
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	options.target = ExportOptions.Target.GIF
+	Global.spritesheet.set_export_settings(options.to_dictionary())
+	DirAccess.remove_absolute(dir.path_join("again.gif"))
+	assert_true(await main.files.export_again())
+	assert_true(FileAccess.file_exists(dir.path_join("again.gif")))
+
+	var project := dir.path_join("again.sbelli")
+	assert_true(main.files.save_project(project))
+	Global.document.reset()
+	assert_eq(Global.document.last_export, "")
+	assert_true(main.files.open_project(project))
+	assert_eq(Global.document.last_export, dir.path_join("again.gif"), "kept in the project")

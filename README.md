@@ -69,7 +69,7 @@ Press **F1** in the app for the full list. The most useful:
 | --- | --- |
 | Add sprites / spritesheet | Ctrl+I / Ctrl+Shift+I |
 | Save project / Save As | Ctrl+S / Ctrl+Shift+S |
-| Export | Ctrl+E |
+| Export / Export again | Ctrl+E / Ctrl+Shift+E |
 | Undo / Redo | Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z |
 | Cut / Copy / Paste / Duplicate | Ctrl+X / Ctrl+C / Ctrl+V / Ctrl+D |
 | Select all / none | Ctrl+A / Esc |

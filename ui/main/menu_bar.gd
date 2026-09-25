@@ -14,6 +14,7 @@ const MENUS := {
 		&"save_as",
 		&"",
 		&"export",
+		&"export_again",
 		&"",
 		&"add_sprites",
 		&"add_folder",

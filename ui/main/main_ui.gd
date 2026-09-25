@@ -245,6 +245,12 @@ func _register_actions() -> void:
 	add.call(&"save_as", "Save As…", files.save_as, has_frames)
 	add.call(&"export", "Export…", func() -> void: export_dialog.popup_centered(), has_frames)
 	add.call(
+		&"export_again",
+		"Export Again",
+		files.export_again,
+		func() -> bool: return has_frames.call() and Global.document.last_export != ""
+	)
+	add.call(
 		&"add_sprites", "Add Sprite(s)…", files.popup_file_dialog.bind(files.open_sprites_dialog)
 	)
 	add.call(&"add_folder", "Add Folder…", files.popup_file_dialog.bind(files.open_folder_dialog))
