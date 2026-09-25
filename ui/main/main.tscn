@@ -1,18 +1,18 @@
 [gd_scene format=3 uid="uid://byoh7fhk7x54x"]
 
-[ext_resource type="Script" path="res://ui/main/main_ui.gd" id="1_o3sot"]
+[ext_resource type="Script" uid="uid://bcalca1fhnhtn" path="res://ui/main/main_ui.gd" id="1_o3sot"]
 [ext_resource type="Theme" uid="uid://djdxrtim7a6av" path="res://resources/themes/left_bar_theme.tres" id="5_itfh2"]
 [ext_resource type="PackedScene" uid="uid://d2j21cyiaw56v" path="res://ui/add_spritesheet/add_spritesheet_window.tscn" id="5_waa3t"]
 [ext_resource type="Texture2D" uid="uid://dkerv3ip4g7lj" path="res://assets/icons/Add.svg" id="5_x1m0q"]
 [ext_resource type="Theme" uid="uid://cqh2k83suxn5l" path="res://resources/themes/menu_bar.tres" id="6_by5vc"]
 [ext_resource type="PackedScene" uid="uid://dr85rkajtgbvy" path="res://ui/spritesheet_preview/preview_area.tscn" id="6_q2y6a"]
-[ext_resource type="Script" path="res://ui/main/menu_bar.gd" id="7_rk3ov"]
-[ext_resource type="Script" path="res://ui/main/file_controller.gd" id="10_files"]
-[ext_resource type="Script" path="res://ui/main/history_panel.gd" id="11_history"]
+[ext_resource type="Script" uid="uid://rhtuorux2t78" path="res://ui/main/menu_bar.gd" id="7_rk3ov"]
 [ext_resource type="Texture2D" uid="uid://chq2yry3hpy6c" path="res://assets/icons/SpriteSheet.svg" id="7_wpt02"]
-[ext_resource type="Texture2D" path="res://assets/icons/Link.svg" id="8_link"]
+[ext_resource type="Texture2D" uid="uid://3jpkfh0hyod3" path="res://assets/icons/Link.svg" id="8_link"]
+[ext_resource type="Script" uid="uid://ctwlyg4n3odn0" path="res://ui/main/file_controller.gd" id="10_files"]
+[ext_resource type="Script" uid="uid://b5qiq6t17j0wt" path="res://ui/main/history_panel.gd" id="11_history"]
 
-[node name="Main" type="Control"]
+[node name="Main" type="Control" unique_id=1567927908]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,14 +21,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_o3sot")
 
-[node name="AddSpritesheetWindow" parent="." instance=ExtResource("5_waa3t")]
+[node name="AddSpritesheetWindow" parent="." unique_id=275344923 instance=ExtResource("5_waa3t")]
 
-[node name="Files" type="Node" parent="." node_paths=PackedStringArray("add_spritesheet_window")]
+[node name="Files" type="Node" parent="." unique_id=641897207 node_paths=PackedStringArray("add_spritesheet_window")]
 script = ExtResource("10_files")
 add_spritesheet_window = NodePath("../AddSpritesheetWindow")
 
-[node name="OpenSpritesDialog" type="FileDialog" parent="Files"]
-title = "Add Sprite(s)"
+[node name="OpenSpritesDialog" type="FileDialog" parent="Files" unique_id=1607317939]
+title = "Open File(s)"
 size = Vector2i(324, 180)
 ok_button_text = "Open"
 file_mode = 1
@@ -36,9 +36,9 @@ access = 2
 filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
 use_native_dialog = true
 
-[node name="OpenSpritesheetDialog" type="FileDialog" parent="Files"]
+[node name="OpenSpritesheetDialog" type="FileDialog" parent="Files" unique_id=1399913805]
 auto_translate_mode = 1
-title = "Add Spritesheet"
+title = "Open a File"
 size = Vector2i(312, 175)
 ok_button_text = "Open"
 file_mode = 0
@@ -46,24 +46,24 @@ access = 2
 filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
 use_native_dialog = true
 
-[node name="SaveSpritesDialog" type="FileDialog" parent="Files"]
-title = "Export Sprites to Folder"
+[node name="SaveSpritesDialog" type="FileDialog" parent="Files" unique_id=2058307897]
+title = "Open a Directory"
 size = Vector2i(454, 175)
 ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 use_native_dialog = true
 
-[node name="ExportFileDialog" type="FileDialog" parent="Files"]
-title = "Export"
+[node name="ExportFileDialog" type="FileDialog" parent="Files" unique_id=547570530]
 auto_translate_mode = 1
+title = "Export"
 size = Vector2i(454, 175)
 ok_button_text = "Save"
 access = 2
 filters = PackedStringArray("*.png; PNG Images", "*.jpg, *.jpeg, *.jpe; JPEG Images", "*.webp; WebP Images")
 use_native_dialog = true
 
-[node name="Background" type="Panel" parent="."]
+[node name="Background" type="Panel" parent="." unique_id=941109527]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -72,7 +72,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Layout" type="VBoxContainer" parent="."]
+[node name="Layout" type="VBoxContainer" parent="." unique_id=28618399]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -81,40 +81,39 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="MenuPanel" type="PanelContainer" parent="Layout"]
+[node name="MenuPanel" type="PanelContainer" parent="Layout" unique_id=243133169]
 layout_mode = 2
 theme_type_variation = &"MenuPanel"
 
-[node name="MenuMargin" type="MarginContainer" parent="Layout/MenuPanel"]
+[node name="MenuMargin" type="MarginContainer" parent="Layout/MenuPanel" unique_id=916488527]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_right = 8
 
-[node name="MenuBar" type="MenuBar" parent="Layout/MenuPanel/MenuMargin"]
+[node name="MenuBar" type="MenuBar" parent="Layout/MenuPanel/MenuMargin" unique_id=965301464]
 unique_name_in_owner = true
 layout_mode = 2
 theme = ExtResource("6_by5vc")
 flat = true
 script = ExtResource("7_rk3ov")
 
-[node name="Split" type="HSplitContainer" parent="Layout"]
+[node name="Split" type="HSplitContainer" parent="Layout" unique_id=2107842752]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-split_offset = 0
 
-[node name="Sidebar" type="PanelContainer" parent="Layout/Split"]
+[node name="Sidebar" type="PanelContainer" parent="Layout/Split" unique_id=1149668062]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(230, 0)
 layout_mode = 2
 theme = ExtResource("5_itfh2")
 theme_type_variation = &"SidebarPanel"
 
-[node name="Scroll" type="ScrollContainer" parent="Layout/Split/Sidebar"]
+[node name="Scroll" type="ScrollContainer" parent="Layout/Split/Sidebar" unique_id=1547919631]
 layout_mode = 2
 horizontal_scroll_mode = 0
 
-[node name="Margin" type="MarginContainer" parent="Layout/Split/Sidebar/Scroll"]
+[node name="Margin" type="MarginContainer" parent="Layout/Split/Sidebar/Scroll" unique_id=332560687]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_left = 14
@@ -122,16 +121,16 @@ theme_override_constants/margin_top = 14
 theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 14
 
-[node name="Sections" type="VBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin"]
+[node name="Sections" type="VBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin" unique_id=1442250780]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AddHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="AddHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1968014061]
 layout_mode = 2
-text = "Add"
 theme_type_variation = &"HeaderSmall"
+text = "Add"
 
-[node name="AddSprites" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="AddSprites" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1140066213]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -140,7 +139,7 @@ text = "Add Sprite(s)"
 icon = ExtResource("5_x1m0q")
 alignment = 0
 
-[node name="AddSpritesheet" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="AddSpritesheet" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=50982951]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
@@ -149,18 +148,18 @@ text = "Add Spritesheet"
 icon = ExtResource("7_wpt02")
 alignment = 0
 
-[node name="AddSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="AddSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=878569213]
 layout_mode = 2
 
-[node name="GridHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="GridHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=985672963]
 layout_mode = 2
-text = "Grid"
 theme_type_variation = &"HeaderSmall"
+text = "Grid"
 
-[node name="GridRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="GridRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=783479860]
 layout_mode = 2
 
-[node name="GridColumns" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow"]
+[node name="GridColumns" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow" unique_id=1703272795]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -171,11 +170,11 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="X" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow"]
+[node name="X" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow" unique_id=920268854]
 layout_mode = 2
 text = "×"
 
-[node name="GridRows" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow"]
+[node name="GridRows" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/GridRow" unique_id=116394526]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -186,18 +185,18 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="GridSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="GridSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=850791847]
 layout_mode = 2
 
-[node name="SpriteHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="SpriteHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=973865755]
 layout_mode = 2
-text = "Sprite size"
 theme_type_variation = &"HeaderSmall"
+text = "Sprite size"
 
-[node name="SpriteRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="SpriteRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1154404866]
 layout_mode = 2
 
-[node name="SpriteWidth" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
+[node name="SpriteWidth" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow" unique_id=204522634]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -206,14 +205,14 @@ min_value = 1.0
 max_value = 16384.0
 value = 1.0
 alignment = 2
-select_all_on_focus = true
 suffix = "px"
+select_all_on_focus = true
 
-[node name="X" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
+[node name="X" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow" unique_id=769338587]
 layout_mode = 2
 text = "×"
 
-[node name="SpriteHeight" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
+[node name="SpriteHeight" type="SpinBox" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow" unique_id=2055709389]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -222,10 +221,10 @@ min_value = 1.0
 max_value = 16384.0
 value = 1.0
 alignment = 2
-select_all_on_focus = true
 suffix = "px"
+select_all_on_focus = true
 
-[node name="KeepRatio" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow"]
+[node name="KeepRatio" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow" unique_id=1366264970]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Keep aspect ratio"
@@ -234,46 +233,46 @@ button_pressed = true
 icon = ExtResource("8_link")
 flat = true
 
-[node name="ScaleRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="ScaleRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1093878071]
 layout_mode = 2
 
-[node name="HalfSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
+[node name="HalfSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow" unique_id=1722792763]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Half size"
 text = "½×"
 
-[node name="DoubleSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
+[node name="DoubleSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow" unique_id=85346507]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Double size"
 text = "2×"
 
-[node name="TripleSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
+[node name="TripleSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow" unique_id=524741522]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Triple size"
 text = "3×"
 
-[node name="OriginalSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow"]
+[node name="OriginalSize" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/ScaleRow" unique_id=2033748728]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 tooltip_text = "Original size"
 text = "1:1"
 
-[node name="FilterRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="FilterRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=594007850]
 layout_mode = 2
 
-[node name="FilterLabel" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/FilterRow"]
+[node name="FilterLabel" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/FilterRow" unique_id=1683928238]
 layout_mode = 2
-text = "Filter"
 size_flags_horizontal = 3
+text = "Filter"
 
-[node name="ResizeFilter" type="OptionButton" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/FilterRow"]
+[node name="ResizeFilter" type="OptionButton" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/FilterRow" unique_id=1504869635]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -290,75 +289,72 @@ popup/item_3/id = 3
 popup/item_4/text = "Lanczos"
 popup/item_4/id = 4
 
-[node name="SpriteSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="SpriteSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1227047310]
 layout_mode = 2
 
-[node name="OutputHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="OutputHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1449985200]
 layout_mode = 2
-text = "Output"
 theme_type_variation = &"HeaderSmall"
+text = "Output"
 
-[node name="SheetSize" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="SheetSize" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1550338558]
 unique_name_in_owner = true
 layout_mode = 2
-text = "0 × 0 px"
 tooltip_text = "Size of the exported image"
+text = "0 × 0 px"
 
-[node name="Export" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections"]
+[node name="Export" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=134434247]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 tooltip_text = "Export the spritesheet as an image, sprites or for a game engine (Ctrl+E)"
 text = "Export…"
 
-[node name="PreviewSplit" type="HSplitContainer" parent="Layout/Split"]
+[node name="PreviewSplit" type="HSplitContainer" parent="Layout/Split" unique_id=832355176]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PreviewArea" parent="Layout/Split/PreviewSplit" instance=ExtResource("6_q2y6a")]
+[node name="PreviewArea" parent="Layout/Split/PreviewSplit" unique_id=1166460088 instance=ExtResource("6_q2y6a")]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
 
-[node name="HistoryPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit"]
+[node name="HistoryPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit" unique_id=349232644]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 script = ExtResource("11_history")
 
-[node name="StatusBar" type="PanelContainer" parent="Layout"]
+[node name="StatusBar" type="PanelContainer" parent="Layout" unique_id=312207990]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"StatusBar"
 
-[node name="StatusMargin" type="MarginContainer" parent="Layout/StatusBar"]
+[node name="StatusMargin" type="MarginContainer" parent="Layout/StatusBar" unique_id=1622419759]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_right = 10
 theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 3
 
-[node name="StatusRow" type="HBoxContainer" parent="Layout/StatusBar/StatusMargin"]
+[node name="StatusRow" type="HBoxContainer" parent="Layout/StatusBar/StatusMargin" unique_id=139229116]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="SheetInfo" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow"]
+[node name="SheetInfo" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow" unique_id=609541867]
 unique_name_in_owner = true
 layout_mode = 2
-text = "No frames"
 theme_type_variation = &"StatusLabel"
+text = "No frames"
 
-[node name="CellInfo" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow"]
+[node name="CellInfo" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow" unique_id=521052604]
 unique_name_in_owner = true
 layout_mode = 2
-text = ""
 size_flags_horizontal = 3
 theme_type_variation = &"StatusLabel"
 text_overrun_behavior = 3
 
-[node name="Legend" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow"]
+[node name="Legend" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow" unique_id=1205700407]
 unique_name_in_owner = true
 layout_mode = 2
-text = ""
 theme_type_variation = &"StatusLabel"
