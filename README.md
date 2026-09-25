@@ -70,6 +70,7 @@ Press **F1** in the app for the full list. The most useful:
 | Trim transparent borders | T |
 | Name row | F2 |
 | Zoom / Actual size / Fit | Ctrl+= and Ctrl+- / Ctrl+0 / F |
+| Select / move tool | Q / W |
 | Animation preview | P |
 
 In the preview: click selects, Ctrl+click toggles, Shift+click selects a range, drag on

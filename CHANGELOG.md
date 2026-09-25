@@ -16,7 +16,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Error dialogs when an image would be bigger than Godot or the format allows.
 
 ### Changed
-- The animation player has play/stop and previous/next frame buttons.
+- A toolbar above the preview: select and move tools (Q, W), select all/none with the
+  selection count, and zoom buttons around the zoom level, which fits the view.
+- The animation player has back to start, previous frame, play/pause and next frame.
+- Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7.
+- Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.
 - Offset and spacing in Add Spritesheet are hidden until needed.
 - One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
