@@ -35,11 +35,25 @@ func set_actions(ids: Array[StringName], submenus := {}) -> void:
 			add_item(action.label)
 		if action.icon:
 			set_item_icon(index, action.icon)
+			set_item_icon_modulate(index, _icon_modulate())
 		set_item_metadata(index, id)
 		var shortcut := Actions.get_shortcut(id)
 		if shortcut:
 			set_item_shortcut(index, shortcut)
 	update_items()
+
+
+## Icons are light grey; tinting them like the text keeps them visible on light themes
+func _icon_modulate() -> Color:
+	var text := get_theme_color("font_color")
+	return Color(minf(text.r / 0.88, 1), minf(text.g / 0.88, 1), minf(text.b / 0.88, 1))
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_THEME_CHANGED:
+		for i in item_count:
+			if get_item_icon(i):
+				set_item_icon_modulate(i, _icon_modulate())
 
 
 ## Refreshes enabled and checked states

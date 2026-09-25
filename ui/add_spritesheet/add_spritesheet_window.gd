@@ -30,6 +30,8 @@ func _ready() -> void:
 	close_requested.connect(hide)
 	close_requested.connect(canceled.emit)
 	add_selected_frames_btn.pressed.connect(add_selected_frames_to_global)
+	add_selected_frames_btn.icon = preload("res://assets/icons/Add.svg")
+	add_spritesheet_btn.icon = preload("res://assets/icons/SpriteSheet.svg")
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
 	preview_area.spritesheet_preview.selection_changed.connect(on_preview_update)
 	grid_columns.value_changed.connect(

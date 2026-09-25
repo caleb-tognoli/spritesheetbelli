@@ -1,15 +1,43 @@
 extends Control
 
+const SAVE_ICON := preload("res://assets/icons/Save.svg")
 const LINK_ICON := preload("res://assets/icons/Link.svg")
 const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
 const ICONS := {
+	&"new": preload("res://assets/icons/New.svg"),
+	&"open": preload("res://assets/icons/Load.svg"),
+	&"save": SAVE_ICON,
+	&"save_as": SAVE_ICON,
+	&"export": preload("res://assets/icons/ExternalLink.svg"),
 	&"add_sprites": preload("res://assets/icons/Add.svg"),
+	&"add_folder": preload("res://assets/icons/Folder.svg"),
 	&"add_spritesheet": preload("res://assets/icons/SpriteSheet.svg"),
+	&"settings": preload("res://assets/icons/Tools.svg"),
+	&"undo": preload("res://assets/icons/Undo.svg"),
+	&"redo": preload("res://assets/icons/Redo.svg"),
+	&"cut": preload("res://assets/icons/ActionCut.svg"),
+	&"copy": preload("res://assets/icons/ActionCopy.svg"),
+	&"paste": preload("res://assets/icons/ActionPaste.svg"),
+	&"duplicate": preload("res://assets/icons/Duplicate.svg"),
+	&"select_all": preload("res://assets/icons/ListSelect.svg"),
+	&"select_none": preload("res://assets/icons/Clear.svg"),
 	&"flip_h": preload("res://assets/icons/MirrorX.svg"),
 	&"flip_v": preload("res://assets/icons/MirrorY.svg"),
 	&"rotate_cw": preload("res://assets/icons/RotateRight.svg"),
 	&"rotate_ccw": preload("res://assets/icons/RotateLeft.svg"),
+	&"color_key": preload("res://assets/icons/ColorPick.svg"),
+	&"name_row": preload("res://assets/icons/Rename.svg"),
+	&"replace_image": preload("res://assets/icons/Image.svg"),
+	&"insert_cell": preload("res://assets/icons/InsertBefore.svg"),
+	&"remove_cell": preload("res://assets/icons/RemoveInternal.svg"),
 	&"delete_frames": preload("res://assets/icons/Remove.svg"),
+	&"zoom_in": preload("res://assets/icons/ZoomMore.svg"),
+	&"zoom_out": preload("res://assets/icons/ZoomLess.svg"),
+	&"zoom_reset": preload("res://assets/icons/ZoomReset.svg"),
+	&"zoom_fit": preload("res://assets/icons/CenterView.svg"),
+	&"edit_animations": preload("res://assets/icons/Animation.svg"),
+	&"about": preload("res://assets/icons/Info.svg"),
+	&"show_shortcuts": preload("res://assets/icons/Keyboard.svg"),
 }
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
@@ -86,6 +114,9 @@ func _ready() -> void:
 	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	export_btn.pressed.connect(Actions.run.bind(&"export"))
+	export_btn.icon = ICONS[&"export"]
+	preview_area.select_all_btn.icon = ICONS[&"select_all"]
+	preview_area.select_none_btn.icon = ICONS[&"select_none"]
 	get_window().min_size = Vector2i(820, 520)
 	split.split_offset = Settings.get_value(&"sidebar_width")
 	split.dragged.connect(func(offset: int) -> void: Settings.set_value(&"sidebar_width", offset))

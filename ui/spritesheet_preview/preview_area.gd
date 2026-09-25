@@ -27,6 +27,7 @@ func _ready() -> void:
 	add_child(empty_hint)
 	move_child(empty_hint, container.get_index() + 1)
 
+	zoom.icon = preload("res://assets/icons/Zoom.svg")
 	var zoom_menu := zoom.get_popup()
 	for preset in ZOOM_PRESETS:
 		zoom_menu.add_item("%d%%" % roundi(preset * 100), ZOOM_PRESETS.find(preset))
