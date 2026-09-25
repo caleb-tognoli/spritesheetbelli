@@ -47,7 +47,7 @@ const ICONS := {
 	&"add_outline": preload("res://assets/icons/Rectangle.svg"),
 	&"trim": preload("res://assets/icons/RegionEdit.svg"),
 	&"toggle_grid": preload("res://assets/icons/GridToggle.svg"),
-	&"toggle_indices": preload("res://assets/icons/int.svg"),
+	&"toggle_indices": preload("res://assets/icons/FrameNumbers.svg"),
 	&"toggle_animation": preload("res://assets/icons/AnimatedTexture.svg"),
 	&"insert_row": preload("res://assets/icons/ExpandTree.svg"),
 	&"remove_row": preload("res://assets/icons/CollapseTree.svg"),
