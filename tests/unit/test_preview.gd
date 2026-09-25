@@ -199,3 +199,20 @@ func test_arrow_keys_move_selection() -> void:
 	assert_eq(selected(), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i], "shift extends")
 	key(KEY_DOWN)
 	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "no frame below: stays")
+
+
+func test_arrow_keys_move_frames_in_the_move_mode() -> void:
+	click(Vector2i(0, 0))
+	click(Vector2i(1, 0), true)
+	Actions.run(&"tool_move")
+	key(KEY_RIGHT)
+	var sheet := Global.spritesheet
+	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "selection kept")
+	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-7, -8), "a pixel right")
+	assert_eq(sheet.get_frame_origin(Vector2i(1, 0)), Vector2i(-7, -8), "every selected frame")
+	assert_false(sheet.has_frame_origin(Vector2i(2, 0)))
+	key(KEY_UP, true)
+	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-7, -16), "8 pixels with Shift")
+	Actions.run(&"tool_select")
+	key(KEY_RIGHT)
+	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "the select mode selects")

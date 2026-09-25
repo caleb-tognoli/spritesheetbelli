@@ -126,3 +126,45 @@ func test_scaled_origins() -> void:
 	assert_eq(sheet.sprite_size, Vector2i(20, 16))
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(4, 0, 16, 16))
 	assert_eq(sheet.get_base_sprite_size(), Vector2i(10, 8))
+
+
+func test_align_keeps_the_cell_size() -> void:
+	sheet.add_frames(
+		(
+			[make_image(Color.RED, Vector2i(8, 8)), make_image(Color.BLUE, Vector2i(12, 16))]
+			as Array[Image]
+		)
+	)
+	var small := [Vector2i(0, 0)] as Array[Vector2i]
+	sheet.align_frames(small, Spritesheet.Alignment.BOTTOM)
+	assert_eq(sheet.sprite_size, Vector2i(12, 16), "the cell doesn't grow")
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(2, 8, 8, 8))
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(1, 0)), Rect2i(0, 0, 12, 16), "others stay")
+	sheet.align_frames(small, Spritesheet.Alignment.TOP)
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(2, 0, 8, 8))
+	sheet.align_frames(small, Spritesheet.Alignment.RIGHT)
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(4, 0, 8, 8), "keeps the top")
+	sheet.align_frames(small, Spritesheet.Alignment.LEFT)
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(0, 0, 8, 8))
+	sheet.align_frames(small, Spritesheet.Alignment.CENTER)
+	assert_false(sheet.has_frame_origin(Vector2i(0, 0)), "back in the middle")
+	assert_eq(sheet.sprite_size, Vector2i(12, 16))
+
+
+func test_align_brings_a_moved_frame_back_in_line() -> void:
+	sheet.add_frames(
+		(
+			[make_image(Color.RED, Vector2i(8, 8)), make_image(Color.BLUE, Vector2i(8, 16))]
+			as Array[Image]
+		)
+	)
+	var small := [Vector2i(0, 0)] as Array[Vector2i]
+	sheet.nudge_frames(small, Vector2i(0, 10))
+	assert_eq(sheet.sprite_size, Vector2i(8, 22))
+	sheet.align_frames(small, Spritesheet.Alignment.BOTTOM)
+	assert_eq(sheet.sprite_size, Vector2i(8, 16), "the cell shrinks back")
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(0, 8, 8, 8))
+	# Aligning every frame uses the whole cell
+	sheet.align_frames(sheet.get_sorted_coords(), Spritesheet.Alignment.TOP)
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(0, 0, 8, 8))
+	assert_eq(sheet.sprite_size, Vector2i(8, 16))

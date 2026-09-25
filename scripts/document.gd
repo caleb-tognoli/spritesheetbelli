@@ -126,6 +126,7 @@ func get_display_name() -> String:
 	return export_path.get_file()
 
 
-## Empties the document and forgets its file and history
+## Empties the document and forgets its file and history. The new sheet resizes with
+## the filter chosen in the settings.
 func reset() -> void:
-	load_state({})
+	load_state({"scale_filter": Settings.get_value(&"resize_filter")})

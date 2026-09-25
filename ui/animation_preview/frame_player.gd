@@ -12,7 +12,7 @@ const PAUSE_ICON := preload("res://assets/icons/Pause.svg")
 const START_ICON := preload("res://assets/icons/PlayStartBackwards.svg")
 const PREVIOUS_ICON := preload("res://assets/icons/PagePrevious.svg")
 const NEXT_ICON := preload("res://assets/icons/PageNext.svg")
-const ONION_ICON := preload("res://assets/icons/Duplicate.svg")
+const ONION_ICON := preload("res://assets/icons/Onion.svg")
 ## How visible the previous frame is with onion skin
 const ONION_ALPHA := 0.3
 

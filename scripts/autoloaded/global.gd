@@ -16,6 +16,7 @@ func _ready() -> void:
 		cli_mode = true
 		get_tree().quit(await Cli.run(args))
 		return
+	document.reset()
 	document.changed.connect(update_window_title)
 	update_window_title()
 	Settings.changed.connect(

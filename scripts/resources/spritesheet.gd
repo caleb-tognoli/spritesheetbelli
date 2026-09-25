@@ -646,12 +646,12 @@ func _move_rows(map: Callable) -> void:
 	var cell_map := func(cell: Vector2i) -> Vector2i:
 		var y: int = map.call(cell.y)
 		return NO_CELL if y < 0 else Vector2i(cell.x, y)
-	var frames: Dictionary[Vector2i, Image] = {}
+	var moved_frames: Dictionary[Vector2i, Image] = {}
 	for cell in _frames:
 		var moved: Vector2i = cell_map.call(cell)
 		if moved != NO_CELL:
-			frames[moved] = _frames[cell]
-	_frames = frames
+			moved_frames[moved] = _frames[cell]
+	_frames = moved_frames
 	var origins: Dictionary[Vector2i, Vector2i] = {}
 	for cell in _origins:
 		var moved: Vector2i = cell_map.call(cell)
@@ -664,12 +664,12 @@ func _move_rows(map: Callable) -> void:
 		if moved != NO_CELL:
 			locked.append(moved)
 	_locked = locked
-	var row_names: Dictionary[int, String] = {}
+	var moved_names: Dictionary[int, String] = {}
 	for row in _row_names:
 		var moved: int = map.call(row)
 		if moved >= 0:
-			row_names[moved] = _row_names[row]
-	_row_names = row_names
+			moved_names[moved] = _row_names[row]
+	_row_names = moved_names
 	_remap_animation_cells(cell_map)
 
 
@@ -832,31 +832,43 @@ func nudge_frames(coords: Array[Vector2i], offset: Vector2i) -> void:
 		_changed()
 
 
-## Lines frames up inside their cells. [constant Alignment.CENTER] centres them again;
-## the other alignments put that edge of every frame on one line and centre the other way.
+## Puts frames against an edge of their cells, or in the middle, without growing the
+## cells. The edges are the other frames' when the frame fits between them (so a frame
+## moved out lines up with the rest again), else the whole cell's.
 func align_frames(coords: Array[Vector2i], alignment: Alignment) -> void:
-	var changed := false
+	var others: Array[Vector2i] = []
+	for coord in _frames:
+		if coord not in coords:
+			others.append(coord)
+	var cell := _frame_bounds(Vector2.ONE)
+	var rest := _bounds_of(others, Vector2.ONE)
+	var aligned := false
 	for coord in coords:
 		if not has_frame(coord):
 			continue
-		if alignment == Alignment.CENTER:
-			changed = _origins.erase(coord) or changed
-			continue
 		var size := _frames[coord].get_size()
-		var origin := -_half_up(size)
+		var fits_x := size.x <= rest.size.x or alignment in [Alignment.TOP, Alignment.BOTTOM]
+		var fits_y := size.y <= rest.size.y or alignment in [Alignment.LEFT, Alignment.RIGHT]
+		var bounds := rest if fits_x and fits_y else cell
+		var origin := get_frame_origin(coord)
 		match alignment:
-			Alignment.BOTTOM:
-				origin.y = -size.y
 			Alignment.TOP:
-				origin.y = 0
+				origin.y = bounds.position.y
+			Alignment.BOTTOM:
+				origin.y = bounds.end.y - size.y
 			Alignment.LEFT:
-				origin.x = 0
+				origin.x = bounds.position.x
 			Alignment.RIGHT:
-				origin.x = -size.x
-		if _origins.get(coord) != origin:
+				origin.x = bounds.end.x - size.x
+			Alignment.CENTER:
+				origin = bounds.position + (bounds.size - size) / 2
+		if origin == -_half_up(size):
+			# Where it would be without an origin of its own
+			aligned = _origins.erase(coord) or aligned
+		elif _origins.get(coord) != origin:
 			_origins[coord] = origin
-			changed = true
-	if changed:
+			aligned = true
+	if aligned:
 		_changed()
 
 
@@ -933,22 +945,27 @@ static func _half_up(size: Vector2i) -> Vector2i:
 	return (size + Vector2i.ONE) / 2
 
 
-## The frame at [param frame_scale], relative to the point every frame is placed around
-func _placed_rect(coord: Vector2i, frame_scale: Vector2) -> Rect2i:
+## The frame at [param at_scale], relative to the point every frame is placed around
+func _placed_rect(coord: Vector2i, at_scale: Vector2) -> Rect2i:
 	var size := _frames[coord].get_size()
-	if frame_scale != Vector2.ONE:
-		size = Vector2i((Vector2(size) * frame_scale).round()).max(Vector2i.ONE)
+	if at_scale != Vector2.ONE:
+		size = Vector2i((Vector2(size) * at_scale).round()).max(Vector2i.ONE)
 	if not _origins.has(coord):
 		return Rect2i(-_half_up(size), size)
-	return Rect2i(Vector2i((Vector2(_origins[coord]) * frame_scale).round()), size)
+	return Rect2i(Vector2i((Vector2(_origins[coord]) * at_scale).round()), size)
 
 
-## The smallest rectangle holding every frame at [param frame_scale], placed around the
+## The smallest rectangle holding every frame at [param at_scale], placed around the
 ## same point
-func _frame_bounds(frame_scale: Vector2) -> Rect2i:
+func _frame_bounds(at_scale: Vector2) -> Rect2i:
+	return _bounds_of(_frames.keys(), at_scale)
+
+
+## The smallest rectangle holding the frames at [param coords], or an empty one
+func _bounds_of(coords: Array, at_scale: Vector2) -> Rect2i:
 	var bounds := Rect2i()
-	for coord in _frames:
-		var rect := _placed_rect(coord, frame_scale)
+	for coord: Vector2i in coords:
+		var rect := _placed_rect(coord, at_scale)
 		bounds = rect if bounds.size == Vector2i.ZERO else bounds.merge(rect)
 	return bounds
 

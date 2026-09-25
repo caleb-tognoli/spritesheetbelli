@@ -38,6 +38,17 @@ const ICONS := {
 	&"zoom_reset": preload("res://assets/icons/ZoomReset.svg"),
 	&"zoom_fit": preload("res://assets/icons/CenterView.svg"),
 	&"edit_animations": preload("res://assets/icons/Animation.svg"),
+	&"export_again": preload("res://assets/icons/Reload.svg"),
+	&"align_top": preload("res://assets/icons/ControlAlignCenterTop.svg"),
+	&"align_bottom": preload("res://assets/icons/ControlAlignCenterBottom.svg"),
+	&"align_left": preload("res://assets/icons/ControlAlignCenterLeft.svg"),
+	&"align_right": preload("res://assets/icons/ControlAlignCenterRight.svg"),
+	&"align_center": preload("res://assets/icons/ControlAlignCenter.svg"),
+	&"add_outline": preload("res://assets/icons/Rectangle.svg"),
+	&"insert_row": preload("res://assets/icons/ExpandTree.svg"),
+	&"remove_row": preload("res://assets/icons/CollapseTree.svg"),
+	&"move_row_up": preload("res://assets/icons/MoveUp.svg"),
+	&"move_row_down": preload("res://assets/icons/MoveDown.svg"),
 	&"about": preload("res://assets/icons/Info.svg"),
 	&"show_shortcuts": preload("res://assets/icons/Keyboard.svg"),
 }
@@ -50,13 +61,12 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 	&"paste",
 	&"duplicate",
 	&"",
-	&"flip_h",
-	&"flip_v",
-	&"rotate_cw",
-	&"rotate_ccw",
+	&"transform_menu",
+	&"align_menu",
 	&"",
 	&"insert_cell",
 	&"remove_cell",
+	&"rows_menu",
 	&"",
 	&"delete_frames",
 ]
@@ -197,7 +207,7 @@ func _ready() -> void:
 	files.get_selected_coords = preview.get_selected_coords
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
-	preview_area.set_context_actions(CONTEXT_ACTIONS)
+	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	preview_area.empty_hint.text = (
 		"Drop images, folders or a .sbelli project here\n"
 		+ "or use Add Sprite(s) and Add Spritesheet (Ctrl+I, Ctrl+Shift+I)"
@@ -339,18 +349,19 @@ func _register_actions() -> void:
 		edit_selection.bind("Trim", sheet.trim_frames),
 		has_selection
 	)
-	add.call(
-		&"align_center",
-		"Centre in Cell",
-		edit_selection.bind("Centre", sheet.align_frames.bind(Spritesheet.Alignment.CENTER)),
-		has_selection
-	)
-	add.call(
-		&"align_bottom",
-		"Align to Bottom",
-		edit_selection.bind("Align", sheet.align_frames.bind(Spritesheet.Alignment.BOTTOM)),
-		has_selection
-	)
+	for align: Array in [
+		[&"align_top", "Top", Spritesheet.Alignment.TOP],
+		[&"align_bottom", "Bottom", Spritesheet.Alignment.BOTTOM],
+		[&"align_left", "Left", Spritesheet.Alignment.LEFT],
+		[&"align_right", "Right", Spritesheet.Alignment.RIGHT],
+		[&"align_center", "Centre", Spritesheet.Alignment.CENTER],
+	]:
+		add.call(
+			align[0],
+			align[1],
+			edit_selection.bind("Align", sheet.align_frames.bind(align[2])),
+			has_selection
+		)
 	add.call(
 		&"color_key",
 		"Remove Background Colour…",
@@ -527,46 +538,58 @@ func add_images(action_name: String, images: Array[Image]) -> void:
 	preview.set_selected_coords(coords)
 
 
-## Outlines the selected frames. The frames grow on every side, so frames with an origin
-## of their own move back by the thickness to stay in place.
+## Outlines the selected frames. The frames grow on every side, so they move back by the
+## thickness to keep their pixels in place.
 func add_outline(color: Color, thickness: int, corners: bool) -> void:
-	edit_selection(
+	await edit_selection_in_background(
 		"Outline",
-		func(coords: Array[Vector2i]) -> void:
-			Global.spritesheet.edit_frames(
-				coords,
-				func(img: Image) -> Image:
-					return ImageUtils.outline(img, color, thickness, corners),
-				func(origin: Vector2i, _size: Vector2i, _img: Image) -> Vector2i:
-					return origin - Vector2i.ONE * thickness
-			)
+		"Adding outlines",
+		func(img: Image) -> Image: return ImageUtils.outline(img, color, thickness, corners),
+		func(origin: Vector2i, _size: Vector2i, _img: Image) -> Vector2i:
+			return origin - Vector2i.ONE * thickness
 	)
 
 
-## Makes pixels close to [param color] transparent in the selected frames. Big frames
-## take a while, so they're processed on worker threads with a progress bar.
+## Makes pixels close to [param color] transparent in the selected frames
 func remove_background(color: Color, tolerance: float) -> void:
+	await edit_selection_in_background(
+		"Remove background",
+		"Removing background",
+		func(img: Image) -> Image:
+			ImageUtils.color_key(img, color, tolerance)
+			return img
+	)
+
+
+## Replaces each selected frame with [code]edit.call(copy_of_it)[/code], worked out on
+## worker threads with a progress bar when it takes a while, then applied as one undoable
+## step. [param move] gives frames new origins, as in [method Spritesheet.edit_frames].
+func edit_selection_in_background(
+	action_name: String, progress_text: String, edit: Callable, move := Callable()
+) -> void:
 	var sheet := Global.spritesheet
 	var coords := preview.get_selected_coords()
 	var sources: Array[Image] = []
 	for coord in coords:
 		sources.append(sheet.frames[coord])
-	var keyed := await Parallel.map(
+	var results := await Parallel.map(
 		sources.size(),
-		func(i: int) -> Image:
-			var img := sources[i].duplicate() as Image
-			ImageUtils.color_key(img, color, tolerance)
-			return img,
-		func(done: int, total: int) -> void: Notify.progress("Removing background", done, total)
+		func(i: int) -> Image: return edit.call(sources[i].duplicate()),
+		func(done: int, total: int) -> void: Notify.progress(progress_text, done, total)
 	)
 	Notify.hide_progress()
 	Global.document.perform(
-		"Remove background",
+		action_name,
 		func() -> void:
 			for i in coords.size():
 				# Skip frames that changed in the meantime
 				if sheet.frames.get(coords[i]) == sources[i]:
-					sheet.replace_frame(coords[i], keyed[i])
+					var result: Image = results[i]
+					sheet.edit_frames(
+						[coords[i]] as Array[Vector2i],
+						func(_copy: Image) -> Image: return result,
+						move
+					)
 	)
 
 
@@ -650,11 +673,9 @@ func _prepare_scaled_images() -> void:
 	_prepare_scaled_images()
 
 
+## The sheet's filter. New sheets start with the one chosen in the settings.
 func get_resize_filter() -> Image.Interpolation:
-	var sheet := Global.spritesheet
-	if sheet.frame_scale != Vector2.ONE:
-		return sheet.scale_filter
-	return Settings.get_value(&"resize_filter")
+	return Global.spritesheet.scale_filter
 
 
 func set_text_params(spritesheet: Spritesheet) -> void:

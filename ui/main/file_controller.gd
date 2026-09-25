@@ -250,6 +250,7 @@ func add_gif(path: String) -> void:
 	var row_name := path.get_file().get_basename()
 	if opening:
 		var opened := Spritesheet.new()
+		opened.set_frame_scale(Vector2.ONE, Settings.get_value(&"resize_filter"))
 		GifDecoder.add_to_sheet(opened, gif, row_name)
 		Global.document.load_state(opened.get_state())
 		Global.document.history_start = "Opened %s" % path.get_file()

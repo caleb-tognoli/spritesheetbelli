@@ -499,3 +499,56 @@ func test_export_again() -> void:
 	assert_eq(Global.document.last_export, "")
 	assert_true(main.files.open_project(project))
 	assert_eq(Global.document.last_export, dir.path_join("again.gif"), "kept in the project")
+
+
+func test_resize_filter_sticks_at_the_original_size() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	main.resize_filter.select(Image.INTERPOLATE_BILINEAR)
+	main.resize_filter.item_selected.emit(Image.INTERPOLATE_BILINEAR)
+	await get_tree().process_frame
+	assert_eq(main.resize_filter.selected, Image.INTERPOLATE_BILINEAR)
+	assert_eq(Global.spritesheet.scale_filter, Image.INTERPOLATE_BILINEAR)
+	Settings.set_value(&"resize_filter", Image.INTERPOLATE_CUBIC)
+	Global.document.reset()
+	await get_tree().process_frame
+	assert_eq(main.resize_filter.selected, Image.INTERPOLATE_CUBIC, "new sheets use the setting")
+	Settings.set_value(&"resize_filter", Image.INTERPOLATE_NEAREST)
+
+
+func test_context_menu_submenus() -> void:
+	var menu: ActionPopupMenu = main.preview_area.options_menu
+	var labels: Array[String] = []
+	for i in menu.item_count:
+		labels.append(menu.get_item_text(i))
+	for label: String in ["Transform", "Align in Cell", "Rows"]:
+		assert_true(label in labels, label)
+		var index := labels.find(label)
+		assert_ne(menu.get_item_submenu_node(index), null, label + " opens a submenu")
+		assert_ne(menu.get_item_icon(index), null, label + " has an icon")
+	assert_false("Flip Horizontally" in labels, "flipping is in Transform")
+	var rows := menu.get_item_submenu_node(labels.find("Rows")) as ActionPopupMenu
+	assert_eq(rows.get_item_text(0), "Insert Row")
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	main.preview.select_all()
+	await get_tree().process_frame
+	rows.index_pressed.emit(0)
+	assert_eq(Global.spritesheet.grid_size.y, 2, "runs the action")
+
+
+func test_outline_keeps_frames_in_place() -> void:
+	var img := Image.create_empty(8, 8, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(2, 2, 4, 4), Color.RED)
+	Global.spritesheet.add_frames([img, make_image(Color.BLUE, Vector2i(8, 8))] as Array[Image])
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	Global.document.perform(
+		"Nudge",
+		Global.spritesheet.nudge_frames.bind([Vector2i(0, 0)] as Array[Vector2i], Vector2i(1, 0))
+	)
+	var before := Global.spritesheet.get_frame_origin(Vector2i(0, 0))
+	await main.add_outline(Color.BLACK, 2, true)
+	var after := Global.spritesheet.get_frame_origin(Vector2i(0, 0))
+	assert_eq(Global.spritesheet.frames[Vector2i(0, 0)].get_size(), Vector2i(12, 12))
+	assert_eq(after, before - Vector2i(2, 2), "the pixels stay in place")
+	await main.remove_background(Color.BLACK, 0.05)
+	assert_true(Global.spritesheet.has_frame_origin(Vector2i(0, 0)), "keeps its place")
+	assert_eq(Global.document.get_history()[-1], "Remove background")

@@ -18,7 +18,7 @@ signal zoom_changed(zoom: float)
 signal lock_requested(coord: Vector2i, locked: bool)
 ## The user dragged frames to another place
 signal move_requested(coords: Array[Vector2i], offset: Vector2i, copy: bool)
-## The user pressed Alt+arrow keys to move frames inside their cells
+## The user pressed arrow keys in the move mode to move frames inside their cells
 signal nudge_requested(coords: Array[Vector2i], offset: Vector2i)
 signal tool_changed(tool: Tool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid.
@@ -355,12 +355,13 @@ func _on_left_release(event: InputEventMouseButton) -> void:
 			queue_redraw()
 
 
-## Pixels Shift+Alt+arrow keys move frames inside their cells
+## Pixels Shift+arrow keys move frames inside their cells in the move mode
 const BIG_NUDGE := 8
 
 
-## Arrow keys move the selection to the next frame in that direction; Shift extends it.
-## Alt+arrow keys move the selected frames inside their cells, by 8 pixels with Shift.
+## In the select mode, arrow keys move the selection to the next frame in that direction
+## and Shift extends it. In the move mode, they move the selected frames inside their
+## cells, by 8 pixels with Shift.
 func _handle_arrow_key(event: InputEventKey) -> bool:
 	var directions := {
 		KEY_LEFT: Vector2i.LEFT,
@@ -371,8 +372,8 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 	if not directions.has(event.keycode) or spritesheet.is_empty():
 		return false
 	var direction: Vector2i = directions[event.keycode]
-	if event.alt_pressed:
-		if not _selected.is_empty() and able_to_move_frames:
+	if tool == Tool.MOVE:
+		if not _selected.is_empty():
 			nudge_requested.emit(
 				get_selected_coords(), direction * (BIG_NUDGE if event.shift_pressed else 1)
 			)

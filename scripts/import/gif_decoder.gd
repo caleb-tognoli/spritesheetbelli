@@ -55,9 +55,9 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 				break
 			var label := bytes[at]
 			at += 1
-			var data := _read_sub_blocks(bytes, at)
-			at = data.end
-			var content: PackedByteArray = data.bytes
+			var extension := _read_sub_blocks(bytes, at)
+			at = extension.end
+			var content: PackedByteArray = extension.bytes
 			if label == 0xF9 and content.size() >= 4:
 				disposal = (content[0] >> 2) & 0x07
 				delay = content.decode_u16(1) / 100.0

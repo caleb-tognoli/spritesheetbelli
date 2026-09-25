@@ -38,11 +38,11 @@ static func create_timed(
 		return animation
 	var shortest: float = seconds.min()
 	animation.fps = clampf(1.0 / shortest, 0.1, 120.0)
-	var durations: Array[float] = []
+	var held: Array[float] = []
 	for i in anim_cells.size():
-		durations.append(snappedf(seconds[i] / shortest, 0.01))
-	if durations.any(func(duration: float) -> bool: return duration != 1.0):
-		animation.durations = durations
+		held.append(snappedf(seconds[i] / shortest, 0.01))
+	if held.any(func(duration: float) -> bool: return duration != 1.0):
+		animation.durations = held
 	return animation
 
 
@@ -177,7 +177,7 @@ static func mirrored_name(animation_name: String) -> String:
 ## [code]{"error": String}[/code] naming the part that couldn't be read.
 static func parse_numbers(text: String) -> Dictionary:
 	var numbers: Array[int] = []
-	var durations: Array[float] = []
+	var held: Array[float] = []
 	for part in text.replace(",", " ").replace(" *", "*").replace("* ", "*").split(" ", false):
 		var duration := 1.0
 		var range_text := part
@@ -198,15 +198,14 @@ static func parse_numbers(text: String) -> Dictionary:
 		var step := 1 if last >= first else -1
 		for number in range(first, last + step, step):
 			numbers.append(number)
-			durations.append(duration)
-	return {"numbers": numbers, "durations": durations}
+			held.append(duration)
+	return {"numbers": numbers, "durations": held}
 
 
 ## Writes [param numbers] the way [method parse_numbers] reads them, with runs as ranges.
-## [param durations] are added to the numbers they're not 1 for.
-static func format_numbers(numbers: Array[int], durations: Array[float] = []) -> String:
-	var duration_of := func(index: int) -> float:
-		return durations[index] if index < durations.size() else 1.0
+## [param held] durations are added to the numbers they're not 1 for.
+static func format_numbers(numbers: Array[int], held: Array[float] = []) -> String:
+	var duration_of := func(index: int) -> float: return held[index] if index < held.size() else 1.0
 	var parts: PackedStringArray = []
 	var i := 0
 	while i < numbers.size():

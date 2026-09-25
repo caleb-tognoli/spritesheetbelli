@@ -24,15 +24,25 @@ func _fill() -> void:
 	for menu: String in MainMenuBar.MENUS:
 		_add_row(menu, "", true)
 		for id: StringName in MainMenuBar.MENUS[menu]:
-			if not id.is_empty() and Actions.has(id):
-				_add_row(
-					Actions.get_action(id).label.trim_suffix("…"), Actions.get_shortcut_text(id)
-				)
+			# Actions in submenus are listed where the submenu is, named after it
+			if MainMenuBar.SUBMENUS.has(id):
+				var submenu: Array = MainMenuBar.SUBMENUS[id]
+				for inside: StringName in submenu[1]:
+					_add_action_row(inside, submenu[0] + ": ")
+			else:
+				_add_action_row(id)
 	_add_row("Preview", "", true)
 	_add_row("Pan", "Middle mouse drag")
 	_add_row("Zoom", "Mouse wheel")
 	_add_row("Select frames", "Click or drag")
-	_add_row("Move frames in their cells", "Alt+Arrow keys")
+	_add_row("Select the next frame", "Arrow keys (Shift adds)")
+	_add_row("Move frames in their cells (move mode)", "Arrow keys (Shift: 8 px)")
+
+
+func _add_action_row(id: StringName, prefix := "") -> void:
+	if not id.is_empty() and Actions.has(id):
+		var label := Actions.get_action(id).label.trim_suffix("…")
+		_add_row(prefix + label, Actions.get_shortcut_text(id))
 
 
 func _add_row(text: String, shortcut: String, heading := false) -> void:

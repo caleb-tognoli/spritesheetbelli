@@ -20,7 +20,6 @@ var select_tool_btn := _tool_button(SELECT_ICON)
 var move_tool_btn := _tool_button(MOVE_ICON)
 var select_all_btn := _tool_button(SELECT_ALL_ICON, "Select all frames (Ctrl+A)")
 var select_none_btn := _tool_button(SELECT_NONE_ICON, "Clear the selection (Esc)")
-var num_selected := Label.new()
 var zoom_out_btn := _tool_button(ZOOM_OUT_ICON, "Zoom out (Ctrl+Minus)")
 var zoom_label_btn := _tool_button(null, "Fit to view (F)")
 var zoom_in_btn := _tool_button(ZOOM_IN_ICON, "Zoom in (Ctrl+Equal)")
@@ -65,7 +64,8 @@ func _build_toolbar() -> void:
 	var tools := ButtonGroup.new()
 	select_tool_btn.tooltip_text = "Select mode (Q): click or drag to select frames"
 	move_tool_btn.tooltip_text = (
-		"Move mode (W): drag to move the selected frames, or the dragged one. " + "Alt+drag copies."
+		"Move mode (W): drag to move the selected frames, or the dragged one; Alt+drag "
+		+ "copies. Arrow keys move the selected frames inside their cells."
 	)
 	for button: Button in [select_tool_btn, move_tool_btn]:
 		button.toggle_mode = true
@@ -80,8 +80,6 @@ func _build_toolbar() -> void:
 	# Selection
 	bar.add_child(select_all_btn)
 	bar.add_child(select_none_btn)
-	num_selected.theme_type_variation = &"StatusLabel"
-	bar.add_child(num_selected)
 	select_all_btn.pressed.connect(select_all.bind(true))
 	select_none_btn.pressed.connect(select_all.bind(false))
 
@@ -142,16 +140,14 @@ func update_ui() -> void:
 	move_tool_btn.set_pressed_no_signal(moving)
 	container.mouse_default_cursor_shape = (Control.CURSOR_MOVE if moving else Control.CURSOR_ARROW)
 
-	var selection_size := spritesheet_preview.get_selected_coords().size()
-	var selection_empty := is_empty or selection_size == 0
+	var selection_empty := is_empty or spritesheet_preview.get_selected_coords().is_empty()
 	select_none_btn.visible = not selection_empty
-	num_selected.visible = not selection_empty
-	num_selected.text = tr("%d selected") % selection_size
 
 
-## Actions offered when right-clicking the preview
-func set_context_actions(ids: Array[StringName]) -> void:
-	options_menu.set_actions(ids)
+## Actions offered when right-clicking the preview, with [param submenus] as in
+## [method ActionPopupMenu.set_actions]
+func set_context_actions(ids: Array[StringName], submenus := {}) -> void:
+	options_menu.set_actions(ids, submenus)
 
 
 func select_all(select: bool) -> void:

@@ -3,6 +3,27 @@ extends MenuBar
 ## The main menu, built from [code]Actions[/code]. An empty id is a separator.
 
 const POPUP_THEME := preload("res://resources/themes/popup_menu_theme.tres")
+## Submenus of actions, shown when hovering them: [code][label, action ids, icon][/code]
+const SUBMENUS := {
+	&"transform_menu":
+	[
+		"Transform",
+		[&"flip_h", &"flip_v", &"", &"rotate_cw", &"rotate_ccw"],
+		preload("res://assets/icons/ToolRotate.svg"),
+	],
+	&"align_menu":
+	[
+		"Align in Cell",
+		[&"align_top", &"align_bottom", &"align_left", &"align_right", &"", &"align_center"],
+		preload("res://assets/icons/ControlAlignCenter.svg"),
+	],
+	&"rows_menu":
+	[
+		"Rows",
+		[&"insert_row", &"remove_row", &"", &"move_row_up", &"move_row_down", &"", &"name_row"],
+		preload("res://assets/icons/Panels2.svg"),
+	],
+}
 const MENUS := {
 	"File":
 	[
@@ -47,21 +68,15 @@ const MENUS := {
 		&"rotate_cw",
 		&"rotate_ccw",
 		&"",
+		&"align_menu",
 		&"trim",
-		&"align_center",
-		&"align_bottom",
 		&"color_key",
 		&"add_outline",
 		&"replace_image",
 		&"",
 		&"insert_cell",
 		&"remove_cell",
-		&"",
-		&"name_row",
-		&"insert_row",
-		&"remove_row",
-		&"move_row_up",
-		&"move_row_down",
+		&"rows_menu",
 	],
 	"View":
 	[
@@ -101,4 +116,6 @@ func build() -> void:
 		add_child(popup)
 		var ids: Array[StringName] = []
 		ids.assign(MENUS[title])
-		popup.set_actions(ids, {&"open_recent": ["Open Recent", recent_files]})
+		var submenus := SUBMENUS.duplicate()
+		submenus[&"open_recent"] = ["Open Recent", recent_files]
+		popup.set_actions(ids, submenus)
