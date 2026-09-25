@@ -102,7 +102,8 @@ func _init() -> void:
 	frames_edit.placeholder_text = "0-7"
 	frames_edit.tooltip_text = (
 		"Sprite numbers as shown in the sheet, in playing order. Ranges like 0-7 count "
-		+ "up, 7-0 counts down. Separate them with commas: 0-3, 5, 8"
+		+ "up, 7-0 counts down. Separate them with commas: 0-3, 5, 8\n"
+		+ "Add *2 to show a frame twice as long: 0-3, 4*2, 5*0.5"
 	)
 	_add_property("Frames", frames_edit)
 	frames_info.theme_type_variation = &"StatusLabel"
@@ -194,14 +195,14 @@ func _show_selected() -> void:
 	if not name_edit.has_focus():
 		name_edit.text = animation.name
 	if not frames_edit.has_focus():
-		frames_edit.text = _format_cells(animation.cells)
-	_show_frames_info(animation.get_frame_cells(sheet).size(), animation.cells.size())
+		frames_edit.text = _format_cells(animation.cells, animation.durations)
+	_show_frames_info(animation, sheet)
 	fps_spin.set_value_no_signal(animation.fps)
 	mode_option.select(mode_option.get_item_index(animation.mode))
 	_updating = false
 	player.fps = animation.fps
 	player.mode = animation.mode
-	player.set_cells(animation.cells)
+	player.set_cells(animation.cells, animation.durations)
 
 
 func _apply() -> void:
@@ -223,33 +224,49 @@ func _apply_frames() -> void:
 		return
 	var parsed := SheetAnimation.parse_numbers(frames_edit.text)
 	if parsed.has("error"):
-		frames_info.text = tr('Can\'t read "%s". Use numbers and ranges like 0-3, 5') % parsed.error
+		frames_info.text = (
+			tr('Can\'t read "%s". Use numbers and ranges like 0-3, 5*2') % parsed.error
+		)
 		frames_info.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
 		return
 	var sheet := Global.spritesheet
 	var start: int = Settings.get_value(&"index_start")
 	var cells: Array[Vector2i] = []
-	for number: int in parsed.numbers:
+	var durations: Array[float] = []
+	for i: int in parsed.numbers.size():
+		var number: int = parsed.numbers[i]
 		if number >= start:
 			cells.append(sheet.coord_of(number - start))
-	_edit(func(animation: SheetAnimation) -> void: animation.cells = cells)
+			durations.append(parsed.durations[i])
+	var timed := durations.any(func(duration: float) -> bool: return duration != 1.0)
+	if not timed:
+		durations.clear()
+	_edit(
+		func(animation: SheetAnimation) -> void:
+			animation.cells = cells
+			animation.durations = durations
+	)
 	_show_selected()
 
 
-func _show_frames_info(with_frames: int, total: int) -> void:
+func _show_frames_info(animation: SheetAnimation, sheet: Spritesheet) -> void:
+	var with_frames := animation.get_frame_cells(sheet).size()
+	var total := animation.cells.size()
 	frames_info.remove_theme_color_override("font_color")
 	frames_info.text = tr("%d frames") % with_frames
+	if with_frames > 0:
+		frames_info.text += tr(", %.2f s") % animation.get_length(sheet)
 	if total > with_frames:
 		frames_info.text += tr(" (%d empty cells are skipped)") % (total - with_frames)
 
 
 ## The numbers of [param cells] as typed in the frames field
-func _format_cells(cells: Array[Vector2i]) -> String:
+func _format_cells(cells: Array[Vector2i], durations: Array[float] = []) -> String:
 	var start: int = Settings.get_value(&"index_start")
 	var numbers: Array[int] = []
 	for cell in cells:
 		numbers.append(Global.spritesheet.index_of(cell) + start)
-	return SheetAnimation.format_numbers(numbers)
+	return SheetAnimation.format_numbers(numbers, durations)
 
 
 ## Changes the selected animation with [param change] as one undoable step

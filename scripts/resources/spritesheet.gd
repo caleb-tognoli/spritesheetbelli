@@ -654,11 +654,16 @@ func get_unique_animation_name(base := "animation") -> String:
 func _remap_animation_cells(map: Callable) -> void:
 	for data in _animations:
 		var cells: Array[Vector2i] = []
-		for cell: Vector2i in data.cells:
-			var mapped: Vector2i = map.call(cell)
+		var durations: Array[float] = []
+		var old_durations: Array = data.get("durations", [])
+		for i: int in data.cells.size():
+			var mapped: Vector2i = map.call(data.cells[i])
 			if mapped != NO_CELL:
 				cells.append(mapped)
+				durations.append(old_durations[i] if i < old_durations.size() else 1.0)
 		data.cells = cells
+		if data.has("durations"):
+			data.durations = durations
 
 
 #endregion

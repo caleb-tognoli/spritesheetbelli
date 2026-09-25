@@ -139,7 +139,7 @@ func to_spritesheet(img: Image) -> Spritesheet:
 			var group: Dictionary = tag_rows[row]
 			if group.name:
 				row_names[row] = group.name
-			for column in group.count:
+			for column: int in group.count:
 				cells.append(Vector2i(column, row))
 
 	var sheet := Spritesheet.new()
@@ -150,11 +150,14 @@ func to_spritesheet(img: Image) -> Spritesheet:
 		sheet.set_row_name(row, row_names[row])
 	for tag in tags:
 		var tag_cells: Array[Vector2i] = []
-		for i in range(tag.from, tag.to + 1):
+		for i: int in range(tag.from, tag.to + 1):
 			tag_cells.append(cells[i])
 		if tag.direction in ["reverse", "pingpong_reverse"]:
 			tag_cells.reverse()
-		var animation := SheetAnimation.create(tag.name, tag_cells, _fps(tag.from, tag.to))
+		var animation := SheetAnimation.create(tag.name, tag_cells)
+		_set_timing(animation, tag.from, tag.to)
+		if tag.direction in ["reverse", "pingpong_reverse"]:
+			animation.durations.reverse()
 		if tag.direction.begins_with("pingpong"):
 			animation.mode = SheetAnimation.Mode.PING_PONG
 		elif tag.repeat == 1:
@@ -193,14 +196,23 @@ func _rows_by_tag() -> Array[Dictionary]:
 	return rows
 
 
-## Frames per second of frames [param from] to [param to], from their durations
-func _fps(from: int, to: int) -> float:
-	var total := 0
+## Gives [param animation] the speed and durations of frames [param from] to [param to]:
+## the shortest frame is one frame long, and longer ones are shown for more frames
+func _set_timing(animation: SheetAnimation, from: int, to: int) -> void:
+	var shortest := 0
 	for i in range(from, to + 1):
 		if frames[i].duration <= 0:
-			return 12.0
-		total += frames[i].duration
-	return clampf(1000.0 * (to - from + 1) / total, 0.1, 120.0)
+			return
+		shortest = frames[i].duration if shortest == 0 else mini(shortest, frames[i].duration)
+	animation.fps = clampf(1000.0 / shortest, 0.1, 120.0)
+	var durations: Array[float] = []
+	var timed := false
+	for i in range(from, to + 1):
+		var duration := snappedf(float(frames[i].duration) / shortest, 0.01)
+		durations.append(duration)
+		timed = timed or duration != 1.0
+	if timed:
+		animation.durations = durations
 
 
 func _add_frame(frame_name: String, entry: Dictionary) -> void:

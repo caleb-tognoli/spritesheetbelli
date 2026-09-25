@@ -25,7 +25,8 @@ A small desktop tool made with Godot.</p>
 - **Resize without losing quality.** Sprites are always resized from the originals, with
   Nearest for sharp pixel art.
 - **Animations:** make named animations from a range of cells or the selected frames,
-  each with its own speed and loop, ping-pong or play-once; preview them and export them.
+  each with its own speed and loop, ping-pong or play-once, and frames that are held
+  longer (`0-3, 4*2`); preview them and export them.
 - **Name rows** as animations (idle, walk, jump); names are used in exports.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
   `walk_{frame:2}`; or a tightly packed atlas. One Export dialog shows only the settings

@@ -19,6 +19,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   with its own speed and type (once, loop or ping-pong), in View > Animations… or with
   the button on the animation preview. The preview can play any of them. Exports use
   them: SpriteFrames get their speed and looping, JSON gets frame tags.
+- Frames can be shown longer than others: in an animation's frames, `4*2` shows sprite 4
+  for two frames and `5*0.5` for half of one. The preview plays them that way, Godot
+  SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
+  durations from Aseprite JSON are kept. The Animations window shows how long a cycle
+  takes.
 - History panel (View > History, Ctrl+H): every undo step; click one to go back to it.
 - Progress overlay for slow work, such as resizing many big sprites, which now happens
   on worker threads.

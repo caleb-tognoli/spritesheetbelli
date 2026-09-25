@@ -22,7 +22,12 @@ static func write_for_image(
 		)
 	else:
 		text = texture_packer_json(
-			frames, image_path.get_file(), size, frame_tags(sheet), options.animation_fps
+			frames,
+			image_path.get_file(),
+			size,
+			frame_tags(sheet),
+			options.animation_fps,
+			frame_durations(sheet, options.animation_fps)
 		)
 	var file := FileAccess.open(get_path_for_image(image_path, options), FileAccess.WRITE)
 	if file == null:
@@ -60,8 +65,9 @@ static func grid_frames(
 
 ## The sheet's animations, or else one per row: each row with frames becomes one, named
 ## after the row. Without animations or row names, all frames form one "default" animation.
-## Returns [code]{"name": String, "indices": Array, "mode": SheetAnimation.Mode,
-## "fps": float}[/code] with indices into [method grid_frames]; fps is 0 when not set.
+## Returns [code]{"name": String, "indices": Array, "durations": Array, "mode":
+## SheetAnimation.Mode, "fps": float}[/code] with indices into [method grid_frames] and
+## how many frames each is shown for; fps is 0 when not set.
 static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 	var coords := sheet.get_sorted_coords()
 	var result: Array[Dictionary] = []
@@ -78,6 +84,7 @@ static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 					{
 						"name": animation.name,
 						"indices": indices,
+						"durations": Array(animation.get_frame_durations(sheet)),
 						"mode": animation.mode,
 						"fps": animation.fps
 					}
@@ -88,6 +95,7 @@ static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 			{
 				"name": "default",
 				"indices": range(coords.size()),
+				"durations": [],
 				"mode": SheetAnimation.Mode.LOOP,
 				"fps": 0.0
 			}
@@ -100,12 +108,31 @@ static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 			by_row[row] = {
 				"name": sheet.row_names.get(row, "row%d" % row),
 				"indices": [],
+				"durations": [],
 				"mode": SheetAnimation.Mode.LOOP,
 				"fps": 0.0,
 			}
 		by_row[row].indices.append(i)
 	for row: int in by_row:
 		result.append(by_row[row])
+	return result
+
+
+## How long each frame of [method grid_frames] is shown in milliseconds, by index: from
+## the first animation it's in, at that animation's speed or else [param fps]. Frames in
+## no animation are left out.
+static func frame_durations(sheet: Spritesheet, fps: float) -> Dictionary:
+	var result := {}
+	for animation in animations(sheet):
+		var animation_fps: float = animation.fps if animation.fps > 0 else fps
+		if animation_fps <= 0:
+			continue
+		var indices: Array = animation.indices
+		var durations: Array = animation.get("durations", [])
+		for i in indices.size():
+			if not result.has(indices[i]):
+				var duration: float = durations[i] if i < durations.size() else 1.0
+				result[indices[i]] = roundi(1000.0 * duration / animation_fps)
 	return result
 
 
@@ -160,14 +187,21 @@ static func sprite_frames_tres(
 	for animation in animation_list:
 		var frame_texts: PackedStringArray = []
 		var indices: Array = animation.indices.duplicate()
+		var durations: Array = animation.get("durations", []).duplicate()
+		durations.resize(indices.size())
+		durations = durations.map(
+			func(value: Variant) -> float: return 1.0 if value == null else float(value)
+		)
 		# SpriteFrames can't ping-pong, so the way back is written out
-		if animation.get("mode") == SheetAnimation.Mode.PING_PONG and indices.size() > 2:
-			var back := indices.slice(1, indices.size() - 1)
-			back.reverse()
-			indices.append_array(back)
-		for index: int in indices:
+		if animation.get("mode") == SheetAnimation.Mode.PING_PONG:
+			indices = SheetAnimation.ping_pong(indices)
+			durations = SheetAnimation.ping_pong(durations)
+		for i in indices.size():
 			frame_texts.append(
-				'{\n"duration": 1.0,\n"texture": SubResource("AtlasTexture_%d")\n}' % index
+				(
+					'{\n"duration": %s,\n"texture": SubResource("AtlasTexture_%d")\n}'
+					% [str(float(durations[i])), indices[i]]
+				)
 			)
 		animation_texts.append(
 			(
@@ -187,16 +221,19 @@ static func sprite_frames_tres(
 
 ## JSON in the TexturePacker "hash" format, readable by most engines and tools.
 ## [param tags] are added as Aseprite-style "frameTags", and with [param fps] each frame
-## gets an Aseprite-style duration in milliseconds.
+## gets an Aseprite-style duration in milliseconds, or the one in [param durations] (by
+## frame index, see [method frame_durations]).
 static func texture_packer_json(
 	frames: Array[Dictionary],
 	image_file: String,
 	image_size: Vector2i,
 	tags: Array[Dictionary] = [],
 	fps := 0.0,
+	durations := {},
 ) -> String:
 	var entries := {}
-	for frame in frames:
+	for index in frames.size():
+		var frame := frames[index]
 		var rect: Rect2i = frame.rect
 		var source: Rect2i = frame.get("source_rect", Rect2i(Vector2i.ZERO, rect.size))
 		var source_size: Vector2i = frame.get("source_size", rect.size)
@@ -207,7 +244,9 @@ static func texture_packer_json(
 			"spriteSourceSize": _rect(source),
 			"sourceSize": {"w": source_size.x, "h": source_size.y},
 		}
-		if fps > 0:
+		if durations.has(index):
+			entries[frame.name]["duration"] = durations[index]
+		elif fps > 0:
 			entries[frame.name]["duration"] = roundi(1000.0 / fps)
 	var data := {
 		"frames": entries,

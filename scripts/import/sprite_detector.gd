@@ -44,7 +44,7 @@ static func without_background(img: Image) -> Image:
 	var corner := img.get_pixel(0, 0)
 	if corner.a < 1.0 or last.x < 1 or last.y < 1:
 		return img
-	for point in [Vector2i(last.x, 0), Vector2i(0, last.y), last]:
+	for point: Vector2i in [Vector2i(last.x, 0), Vector2i(0, last.y), last]:
 		if not img.get_pixelv(point).is_equal_approx(corner):
 			return img
 	var copy := img.duplicate() as Image
@@ -83,7 +83,7 @@ static func to_spritesheet(
 	var sheet := Spritesheet.new()
 	sheet.begin_batch()
 	for row in rows.size():
-		for column in rows[row].size():
+		for column: int in rows[row].size():
 			var rect: Rect2i = rows[row][column]
 			sheet.set_frame(Vector2i(column, row), pixels.get_region(rect))
 	sheet.align_frames(sheet.get_sorted_coords(), alignment)

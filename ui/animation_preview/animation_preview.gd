@@ -85,7 +85,7 @@ func refresh() -> void:
 		var animation := animations[_animation_index]
 		player.fps = animation.fps
 		player.mode = animation.mode
-		player.set_cells(animation.cells)
+		player.set_cells(animation.cells, animation.durations)
 	else:
 		var selected := preview.get_selected_coords()
 		player.fps = SELECTION_FPS

@@ -31,7 +31,12 @@ var counter := Label.new()
 ## Holds the buttons, so owners can add their own controls next to them
 var controls := HBoxContainer.new()
 
+## What [method set_cells] got, before skipping empty cells
+var _source_cells: Array[Vector2i] = []
+var _source_durations: Array[float] = []
 var _cells: Array[Vector2i] = []
+## How long each of [member _cells] is shown, in frames
+var _durations: Array[float] = []
 var _position := 0
 var _direction := 1
 var _elapsed := 0.0
@@ -92,10 +97,18 @@ func set_playing(value: bool) -> void:
 		_show_current()
 
 
-## Plays [param cells] in order. Cells without a frame are skipped.
-func set_cells(cells: Array[Vector2i]) -> void:
+## Plays [param cells] in order, each for its number of frames in [param durations]
+## (1 when missing). Cells without a frame are skipped.
+func set_cells(cells: Array[Vector2i], durations: Array[float] = []) -> void:
 	var current := get_current_cell()
-	_cells.assign(cells.filter(sheet.has_frame) if sheet else cells)
+	_source_cells = cells.duplicate()
+	_source_durations = durations.duplicate()
+	_cells.clear()
+	_durations.clear()
+	for i in cells.size():
+		if sheet == null or sheet.has_frame(cells[i]):
+			_cells.append(cells[i])
+			_durations.append(durations[i] if i < durations.size() else 1.0)
 	# Stay on the same frame when it's still there
 	_position = maxi(_cells.find(current), 0)
 	_show_current()
@@ -130,10 +143,15 @@ func _process(delta: float) -> void:
 	if not is_visible_in_tree() or not playing or _cells.size() < 2:
 		return
 	_elapsed += delta
-	var frame_time := 1.0 / maxf(fps, 0.1)
-	while _elapsed >= frame_time:
-		_elapsed -= frame_time
+	while playing and _elapsed >= _frame_time():
+		_elapsed -= _frame_time()
 		_advance()
+
+
+## Seconds the current frame is shown
+func _frame_time() -> float:
+	var duration := _durations[_position] if _position < _durations.size() else 1.0
+	return duration / maxf(fps, 0.1)
 
 
 ## Moves to the next frame the way the animation repeats
@@ -156,7 +174,7 @@ func _advance() -> void:
 func _on_sheet_updated() -> void:
 	# Frames may have been edited or resized
 	_textures.clear()
-	set_cells(_cells)
+	set_cells(_source_cells, _source_durations)
 
 
 func _show_current() -> void:
