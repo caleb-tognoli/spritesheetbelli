@@ -67,6 +67,22 @@ func test_once_stops_at_the_end() -> void:
 	assert_eq(current(), Vector2i(0, 0), "playing again starts over")
 
 
+func test_pause_and_back_to_start() -> void:
+	advance()
+	advance()
+	animation.player.play_button.pressed.emit()
+	assert_false(animation.player.playing, "paused")
+	advance()
+	assert_eq(current(), Vector2i(2, 0), "stays while paused")
+	animation.player.play_button.pressed.emit()
+	advance()
+	assert_eq(current(), Vector2i(0, 0), "resumes where it was")
+	advance()
+	animation.player.start_button.pressed.emit()
+	assert_eq(current(), Vector2i(0, 0))
+	assert_true(animation.player.playing, "keeps playing from the start")
+
+
 func test_previous_and_next_frame_stop_playing() -> void:
 	animation.player.next_button.pressed.emit()
 	assert_eq(current(), Vector2i(1, 0))

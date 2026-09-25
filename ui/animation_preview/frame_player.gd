@@ -1,15 +1,16 @@
 class_name FramePlayer
 extends VBoxContainer
-## Plays cells of a spritesheet, with play/stop and previous/next frame buttons like
-## Godot's animation player.
+## Plays cells of a spritesheet, with buttons to go back to the first frame, play or
+## pause, and step to the previous or next frame.
 
 ## The shown frame changed, e.g. to highlight it elsewhere
 signal frame_changed(cell: Vector2i)
 
 const PLAY_ICON := preload("res://assets/icons/Play.svg")
-const STOP_ICON := preload("res://assets/icons/Stop.svg")
-const PREVIOUS_ICON := preload("res://assets/icons/PlayStartBackwards.svg")
-const NEXT_ICON := preload("res://assets/icons/PlayStart.svg")
+const PAUSE_ICON := preload("res://assets/icons/Pause.svg")
+const START_ICON := preload("res://assets/icons/PlayStartBackwards.svg")
+const PREVIOUS_ICON := preload("res://assets/icons/PagePrevious.svg")
+const NEXT_ICON := preload("res://assets/icons/PageNext.svg")
 
 var sheet: Spritesheet:
 	set = set_sheet
@@ -22,6 +23,7 @@ var mode := SheetAnimation.Mode.LOOP:
 var playing := true:
 	set = set_playing
 
+var start_button := Button.new()
 var play_button := Button.new()
 var previous_button := Button.new()
 var next_button := Button.new()
@@ -51,9 +53,12 @@ func _init() -> void:
 	_stage.add_child(_display)
 
 	add_child(controls)
-	for button: Button in [previous_button, play_button, next_button]:
+	for button: Button in [start_button, previous_button, play_button, next_button]:
 		button.flat = true
 		controls.add_child(button)
+	start_button.icon = START_ICON
+	start_button.tooltip_text = "Back to the first frame"
+	start_button.pressed.connect(go_to_start)
 	previous_button.icon = PREVIOUS_ICON
 	previous_button.tooltip_text = "Previous frame"
 	previous_button.pressed.connect(step.bind(-1))
@@ -79,8 +84,8 @@ func set_sheet(value: Spritesheet) -> void:
 
 func set_playing(value: bool) -> void:
 	playing = value
-	play_button.icon = STOP_ICON if playing else PLAY_ICON
-	play_button.tooltip_text = "Stop" if playing else "Play"
+	play_button.icon = PAUSE_ICON if playing else PLAY_ICON
+	play_button.tooltip_text = "Pause" if playing else "Play"
 	# Playing a finished one-shot animation starts it over
 	if playing and mode == SheetAnimation.Mode.ONCE and _position >= _cells.size() - 1:
 		_position = 0
@@ -102,6 +107,14 @@ func get_cells() -> Array[Vector2i]:
 
 func get_current_cell() -> Vector2i:
 	return _cells[_position] if _position < _cells.size() else Spritesheet.NO_CELL
+
+
+## Shows the first frame, without changing whether it plays
+func go_to_start() -> void:
+	_position = 0
+	_direction = 1
+	_elapsed = 0.0
+	_show_current()
 
 
 ## Shows the frame [param by] steps away, wrapping around, and stops playing
@@ -148,6 +161,7 @@ func _on_sheet_updated() -> void:
 
 func _show_current() -> void:
 	var cell := get_current_cell()
+	start_button.disabled = _cells.size() < 2
 	previous_button.disabled = _cells.size() < 2
 	next_button.disabled = _cells.size() < 2
 	play_button.disabled = _cells.size() < 2
