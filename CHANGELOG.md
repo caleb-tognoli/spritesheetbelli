@@ -6,6 +6,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 ## Unreleased
 
 ### Added
+- Packed spritesheets with a data file: opening or adding an image that has a
+  TexturePacker or Aseprite `.json` next to it (or opening the `.json` itself) cuts the
+  frames where the data says. Trimmed and rotated frames come back as they were drawn,
+  and frame tags become named rows and animations. A switch in Add Spritesheet goes back
+  to cutting a grid.
 - Animations: make named animations from a range of cells or the selected frames, each
   with its own speed and type (once, loop or ping-pong), in View > Animations… or with
   the button on the animation preview. The preview can play any of them. Exports use

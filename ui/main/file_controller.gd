@@ -4,6 +4,7 @@ extends Node
 
 const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
 const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp ; Images"
+const DATA_FILTER := "*.json ; Spritesheet data (TexturePacker, Aseprite)"
 ## Work above these sizes shows a "please wait" overlay first
 const SLOW_PIXELS := 4_000_000
 const SLOW_FILE_BYTES := 4_000_000
@@ -20,7 +21,7 @@ var unsaved_changes_dialog := ConfirmationDialog.new()
 var after_unsaved_changes: Callable
 var open_file_dialogs: Array[FileDialog] = []
 var open_dialog := _create_file_dialog(
-	"Open", FileDialog.FILE_MODE_OPEN_FILE, [PROJECT_FILTER, IMAGE_FILTER]
+	"Open", FileDialog.FILE_MODE_OPEN_FILE, [PROJECT_FILTER, IMAGE_FILTER, DATA_FILTER]
 )
 var save_project_dialog := _create_file_dialog(
 	"Save Project", FileDialog.FILE_MODE_SAVE_FILE, [PROJECT_FILTER]
@@ -40,6 +41,7 @@ var get_selected_coords := func() -> Array[Vector2i]: return []
 
 
 func _ready() -> void:
+	open_spritesheet_dialog.filters = [IMAGE_FILTER, DATA_FILTER]
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
 	open_dialog.file_selected.connect(open_path)
@@ -213,11 +215,11 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 			return
 		if DirAccess.dir_exists_absolute(path):
 			images.append_array(get_images_in_folder(path))
-		elif is_image_path(path):
+		elif is_image_path(path) or (SheetData.is_data_path(path) and paths.size() == 1):
 			images.append(path)
 
 	if images.is_empty():
-		Notify.error("Drop images, folders of images or a .sbelli project.")
+		Notify.error("Drop images, folders of images, a spritesheet data file or a project.")
 	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
 		await show_add_spritesheet_window(images[0])
 	else:
@@ -233,6 +235,22 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 
 
 func _show_add_spritesheet_window(spritesheet_path: String) -> void:
+	# A data file brings its image, and an image brings the data file next to it
+	var data: SheetData = null
+	var data_path := ""
+	if SheetData.is_data_path(spritesheet_path):
+		data_path = spritesheet_path
+		data = SheetData.load_file(data_path)
+		if data.error:
+			set_filepath_when_opening_spritesheet = false
+			Notify.error(tr(data.error))
+			return
+		spritesheet_path = data.get_image_path(data_path)
+	else:
+		data_path = SheetData.find_for_image(spritesheet_path)
+		if data_path:
+			data = SheetData.load_file(data_path)
+
 	var img := Image.load_from_file(spritesheet_path)
 	if not img:
 		set_filepath_when_opening_spritesheet = false
@@ -245,7 +263,7 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 		Global.document.reset()
 		Global.document.export_path = spritesheet_path
 		loading_opened_file = true
-	add_spritesheet_window.setup(img, spritesheet_path)
+	add_spritesheet_window.setup(img, spritesheet_path, data, data_path.get_file())
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 

@@ -14,6 +14,8 @@ A small desktop tool made with Godot.</p>
 - **Cut sheets into frames.** The grid size is guessed from the file name
   (`hero_32x32.png`, `walk_8x2.png`) or from the gaps between sprites; offset and spacing
   handle sheets that aren't packed edge to edge.
+- **Unpack packed sheets.** A TexturePacker or Aseprite JSON next to the image says where
+  every frame is; trimmed and rotated frames are restored and tags become animations.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
   colour, replace, cut/copy/paste (also images copied in other apps), duplicate, insert or
   remove cells. Everything can be undone.
@@ -124,6 +126,7 @@ editor settings).
 | `scripts/resources/spritesheet.gd` | The spritesheet data and every edit |
 | `scripts/document.gd` | The open document: file, unsaved state, undo history |
 | `scripts/export/` | Exporting images, sprites, atlases and metadata |
+| `scripts/import/` | Reading where frames are in packed sheets |
 | `scripts/autoloaded/` | Global state, actions and shortcuts, settings, dialogs |
 | `ui/main/` | The main window, menus and file handling |
 | `ui/spritesheet_preview/` | The preview that draws and edits the grid |

@@ -437,3 +437,36 @@ func test_history_panel() -> void:
 	assert_true(panel.list.is_selected(0))
 	Actions.run(&"toggle_history")
 	assert_false(panel.visible)
+
+
+func test_opening_an_image_uses_its_data_file() -> void:
+	var path := dir.path_join("packed_hero.png")
+	var img := Image.create_empty(32, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(0, 0, 10, 16), Color.RED)
+	img.fill_rect(Rect2i(10, 0, 22, 16), Color.BLUE)
+	img.save_png(path)
+	var data := {
+		"frames":
+		{
+			"a": {"frame": {"x": 0, "y": 0, "w": 10, "h": 16}},
+			"b": {"frame": {"x": 10, "y": 0, "w": 22, "h": 16}},
+		},
+		"meta": {"image": "packed_hero.png", "frameTags": [{"name": "walk", "from": 0, "to": 1}]},
+	}
+	var file := FileAccess.open(dir.path_join("packed_hero.json"), FileAccess.WRITE)
+	file.store_string(JSON.stringify(data))
+	file.close()
+
+	Global.spritesheet.add_frames([make_image(Color.GREEN)] as Array[Image])
+	await main.files.show_add_spritesheet_window(dir.path_join("packed_hero.json"))
+	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
+	assert_true(window.data_toggle.visible and window.data_toggle.button_pressed)
+	assert_eq(window.spritesheet.frames.size(), 2)
+	window.data_toggle.button_pressed = false
+	assert_eq(window.spritesheet.animations.size(), 0, "back to cutting a grid")
+	window.data_toggle.button_pressed = true
+	window.add_spritesheet_to_global()
+	var sheet := Global.spritesheet
+	assert_eq(sheet.frames[Vector2i(1, 1)].get_size(), Vector2i(22, 16))
+	assert_eq(sheet.row_names.get(1), "walk")
+	assert_eq(sheet.animations[0].cells, [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])

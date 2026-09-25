@@ -21,6 +21,10 @@ signal frames_added
 @export var spritesheet_image: Image
 
 var spritesheet: Spritesheet
+## Where the frames are, from a data file exported with the image, or null
+var sheet_data: SheetData
+## Switches between the frames from [member sheet_data] and cutting a grid
+var data_toggle := CheckButton.new()
 ## Opens the rarely needed offset and spacing fields in a floating panel
 var more_options_btn := Button.new()
 var more_options_popup := PopupPanel.new()
@@ -73,6 +77,12 @@ func _ready() -> void:
 	)
 	_update_options_label()
 
+	var grid_box := grid_columns.get_parent().get_parent() as Control
+	grid_box.add_sibling(data_toggle)
+	grid_box.get_parent().move_child(data_toggle, 0)
+	data_toggle.tooltip_text = "Cut the frames where the data file says they are"
+	data_toggle.toggled.connect(func(_on: bool) -> void: _slice())
+
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 	preview_area.spritesheet_preview.able_to_move_frames = false
 	# Show the whole sheet once the window has its size
@@ -84,18 +94,43 @@ func _ready() -> void:
 	)
 
 
-## Shows [param img] sliced into a guessed grid. [param file_name] can hold a size hint.
-func setup(img: Image, file_name := "") -> void:
+## Shows [param img] cut where [param data] says the frames are, or else sliced into a
+## guessed grid. [param file_name] can hold a size hint, [param data_name] names the data.
+func setup(img: Image, file_name := "", data: SheetData = null, data_name := "") -> void:
 	spritesheet_image = img
+	sheet_data = data
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
 	_update_options_label()
 
 	var guessed_size := GridGuesser.guess(img, file_name)
-	update_grid_size(guessed_size.x, guessed_size.y)
+	grid_columns.set_value_no_signal(guessed_size.x)
+	grid_rows.set_value_no_signal(guessed_size.y)
+	data_toggle.visible = data != null
+	data_toggle.text = tr("Use %s") % data_name
+	data_toggle.set_pressed_no_signal(data != null)
+	_slice()
 
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
 	preview_area.spritesheet_preview.set_zoom(1)
+
+
+## Cuts the image with the data file when it's used, or else with the grid fields
+func _slice() -> void:
+	var use_data := sheet_data != null and data_toggle.button_pressed
+	for control: Control in [grid_columns.get_parent().get_parent(), more_options_btn]:
+		control.visible = not use_data
+	if not use_data:
+		update_grid_size(int(grid_columns.value), int(grid_rows.value))
+		return
+	spritesheet = sheet_data.to_spritesheet(spritesheet_image)
+	preview_area.spritesheet_preview.spritesheet = spritesheet
+	on_preview_update()
+	slice_info.remove_theme_color_override("font_color")
+	slice_info.tooltip_text = ""
+	slice_info.text = tr("%d frames") % spritesheet.frames.size()
+	if not spritesheet.animations.is_empty():
+		slice_info.text += tr(" · %d animations") % spritesheet.animations.size()
 
 
 func on_preview_update() -> void:
@@ -140,6 +175,15 @@ func add_spritesheet_to_global() -> void:
 			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 			for coord: Vector2i in spritesheet.frames:
 				target.set_frame(coord + offset, spritesheet.frames[coord])
+			for row: int in spritesheet.row_names:
+				target.set_row_name(row + offset.y, spritesheet.row_names[row])
+			for animation in spritesheet.animations:
+				animation.name = target.get_unique_animation_name(animation.name)
+				var cells: Array[Vector2i] = []
+				for cell in animation.cells:
+					cells.append(cell + offset)
+				animation.cells = cells
+				target.add_animation(animation)
 			# Keep the added sheet's layout without touching free cells elsewhere
 			target.lock_free_cells(Rect2i(offset, spritesheet.grid_size))
 	)
