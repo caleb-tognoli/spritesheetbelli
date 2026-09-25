@@ -280,4 +280,5 @@ func _add_property(text: String, control: Control) -> void:
 	label.text = text
 	_properties.add_child(label)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	LabelLink.link(label, control)
 	_properties.add_child(control)

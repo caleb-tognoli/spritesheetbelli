@@ -165,6 +165,8 @@ func _ready() -> void:
 				"Resize filter", sheet.set_frame_scale.bind(sheet.frame_scale, filter)
 			)
 	)
+	# Clicking the Filter label opens the list, like clicking the list itself
+	LabelLink.link(resize_filter.get_parent().get_child(0) as Label, resize_filter)
 	keep_ratio_btn.toggled.connect(
 		func(on: bool) -> void: keep_ratio_btn.icon = LINK_ICON if on else UNLINK_ICON
 	)

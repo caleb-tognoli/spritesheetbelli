@@ -179,6 +179,7 @@ func _add_row(category: String, row: Array) -> void:
 	label.custom_minimum_size = Vector2(220, 0)
 	box.add_child(label)
 	var control := _create_control(key, row[2], row.slice(3))
+	LabelLink.link(label, control)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	control.tooltip_text = row[1]
 	box.add_child(control)

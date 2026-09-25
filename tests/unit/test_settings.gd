@@ -128,3 +128,24 @@ func test_messages_open_over_modal_windows() -> void:
 	window.queue_free()
 	await get_tree().process_frame
 	assert_true(is_instance_valid(Notify.confirm_dialog))
+
+
+func test_clicking_a_label_acts_on_its_control() -> void:
+	var label := Label.new()
+	var check := CheckBox.new()
+	add_child(label)
+	add_child(check)
+	LabelLink.link(label, check)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	label.gui_input.emit(click)
+	assert_true(check.button_pressed, "toggles the checkbox")
+	var option := OptionButton.new()
+	option.add_item("a")
+	add_child(option)
+	LabelLink.activate(option)
+	assert_true(option.get_popup().visible, "opens the dropdown")
+	option.get_popup().hide()
+	for node: Node in [label, check, option]:
+		node.queue_free()

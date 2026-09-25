@@ -54,6 +54,7 @@ const PATTERN_HELP := (
 	"Tokens: {index} {row} {column} {row_name} {frame} {name}\n"
 	+ "Add :3 to pad numbers, e.g. {index:3} gives 007"
 )
+const LABEL_WIDTH := 170
 const COLLAPSED_ICON := preload("res://assets/icons/GuiTreeArrowRight.svg")
 const EXPANDED_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
 
@@ -87,6 +88,8 @@ var _updating := false
 func _init() -> void:
 	title = "Export"
 	ok_button_text = "Export…"
+	# Big enough for every export type, so it doesn't change size when switching
+	min_size = Vector2i(760, 470)
 	var layout := HBoxContainer.new()
 	layout.add_theme_constant_override("separation", 16)
 	add_child(layout)
@@ -152,6 +155,10 @@ func _init() -> void:
 	advanced_toggle.toggle_mode = true
 	advanced_toggle.flat = true
 	advanced_toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	advanced_toggle.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	# No padding, so its arrow lines up with the labels
+	for style: StringName in [&"normal", &"hover", &"pressed", &"hover_pressed", &"focus"]:
+		advanced_toggle.add_theme_stylebox_override(style, StyleBoxEmpty.new())
 	advanced_toggle.tooltip_text = "Padding, spacing and edge extrusion for game engines"
 	right.add_child(advanced_toggle)
 	right.add_child(_advanced)
@@ -320,7 +327,6 @@ func _update_visibility(options: ExportOptions) -> void:
 		animation_fps.visible = false
 	advanced_toggle.visible = any_advanced
 	advanced_toggle.icon = EXPANDED_ICON if advanced_toggle.button_pressed else COLLAPSED_ICON
-	reset_size()
 
 
 ## Adds a labelled control shown only for [param for_targets] and, when given, only for
@@ -331,7 +337,10 @@ func _add_row(
 	var label := Label.new()
 	label.text = text
 	label.tooltip_text = control.tooltip_text
-	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	# The same label width in both grids lines their controls up
+	label.custom_minimum_size.x = LABEL_WIDTH
+	LabelLink.link(label, control)
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_child(label)
 	grid.add_child(control)
 	(
