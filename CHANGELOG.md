@@ -14,6 +14,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Progress overlay for slow work, such as resizing many big sprites, which now happens
   on worker threads.
 - Error dialogs when an image would be bigger than Godot or the format allows.
+- Frames can be moved inside their cells: Alt+arrow keys nudge the selected frames by a
+  pixel (8 with Shift), Frame > Align to Bottom (B) lines up their feet and Frame > Centre
+  in Cell (C) puts them back in the middle. Cells grow to hold them, and projects keep
+  where every frame is.
 
 ### Changed
 - A toolbar above the preview: select and move tools (Q, W), select all/none with the
@@ -22,6 +26,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.
+- Trimming keeps the pixels where they were in the cell, so trimming all frames of an
+  animation shrinks the cells without making it jump. Flipping and rotating move a
+  nudged frame with it.
 - Offset and spacing in Add Spritesheet are hidden until needed.
 - One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
   Packed Atlas and Export Settings. It asks what to export (spritesheet image, sprites,

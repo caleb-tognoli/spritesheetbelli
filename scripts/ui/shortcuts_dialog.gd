@@ -32,6 +32,7 @@ func _fill() -> void:
 	_add_row("Pan", "Middle mouse drag")
 	_add_row("Zoom", "Mouse wheel")
 	_add_row("Select frames", "Click or drag")
+	_add_row("Move frames in their cells", "Alt+Arrow keys")
 
 
 func _add_row(text: String, shortcut: String, heading := false) -> void:

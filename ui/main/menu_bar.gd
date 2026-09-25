@@ -47,6 +47,8 @@ const MENUS := {
 		&"rotate_ccw",
 		&"",
 		&"trim",
+		&"align_center",
+		&"align_bottom",
 		&"color_key",
 		&"replace_image",
 		&"",

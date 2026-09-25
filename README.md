@@ -17,6 +17,8 @@ A small desktop tool made with Godot.</p>
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
   colour, replace, cut/copy/paste (also images copied in other apps), duplicate, insert or
   remove cells. Everything can be undone.
+- **Line frames up.** Nudge frames inside their cells with Alt+arrow keys or align their
+  bottoms; trimming keeps every pixel where it was, so animations don't jump.
 - **Resize without losing quality.** Sprites are always resized from the originals, with
   Nearest for sharp pixel art.
 - **Animations:** make named animations from a range of cells or the selected frames,
@@ -68,6 +70,8 @@ Press **F1** in the app for the full list. The most useful:
 | Delete frames / Remove cells | Delete / Shift+Delete |
 | Flip / Rotate | H, V / R, Shift+R |
 | Trim transparent borders | T |
+| Align to bottom / Centre in cell | B / C |
+| Move frames inside their cells | Alt+arrow keys (Shift for 8 pixels) |
 | Name row | F2 |
 | Zoom / Actual size / Fit | Ctrl+= and Ctrl+- / Ctrl+0 / F |
 | Select / move tool | Q / W |

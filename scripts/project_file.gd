@@ -37,16 +37,15 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			var img: Image = sheet.frames[coords[i]]
 			var position: Vector2i = layout.positions[i]
 			atlas.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), position)
-			(
-				frames
-				. append(
-					{
-						"cell": [coords[i].x, coords[i].y],
-						"rect": [position.x, position.y, img.get_width(), img.get_height()],
-						"name": img.resource_name,
-					}
-				)
-			)
+			var frame := {
+				"cell": [coords[i].x, coords[i].y],
+				"rect": [position.x, position.y, img.get_width(), img.get_height()],
+				"name": img.resource_name,
+			}
+			if sheet.has_frame_origin(coords[i]):
+				var origin := sheet.get_frame_origin(coords[i])
+				frame.origin = [origin.x, origin.y]
+			frames.append(frame)
 		error = _write(zip, FRAMES_FILE, atlas.save_png_to_buffer())
 		if error != OK:
 			zip.close()
@@ -108,6 +107,7 @@ static func _read(zip: ZIPReader) -> Dictionary:
 			return {"error": TranslationServer.translate("The frames image is damaged.")}
 		atlas.convert(Image.FORMAT_RGBA8)
 	var frames: Dictionary[Vector2i, Image] = {}
+	var origins: Dictionary[Vector2i, Vector2i] = {}
 	for frame: Dictionary in data.get("frames", []):
 		var img := _read_frame(zip, atlas, frame)
 		if img == null:
@@ -119,7 +119,10 @@ static func _read(zip: ZIPReader) -> Dictionary:
 				)
 			}
 		img.resource_name = frame.get("name", "")
-		frames[_to_vector2i(frame.get("cell"))] = img
+		var cell := _to_vector2i(frame.get("cell"))
+		frames[cell] = img
+		if frame.get("origin") is Array:
+			origins[cell] = _to_vector2i(frame.origin)
 
 	var locked: Array[Vector2i] = []
 	for coord: Array in data.get("locked", []):
@@ -136,6 +139,7 @@ static func _read(zip: ZIPReader) -> Dictionary:
 	var state := {
 		"grid_size": _to_vector2i(data.get("grid_size", [0, 0])),
 		"frames": frames,
+		"origins": origins,
 		"locked": locked,
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),

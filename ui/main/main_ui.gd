@@ -217,6 +217,12 @@ func _ready() -> void:
 			)
 			preview.set_selected_coords(targets)
 	)
+	preview.nudge_requested.connect(
+		func(coords: Array[Vector2i], offset: Vector2i) -> void:
+			Global.document.perform(
+				"Nudge frames", Global.spritesheet.nudge_frames.bind(coords, offset)
+			)
+	)
 	preview.lock_requested.connect(
 		func(coord: Vector2i, locked: bool) -> void:
 			Global.document.perform(
@@ -322,6 +328,18 @@ func _register_actions() -> void:
 		&"trim",
 		"Trim Transparent Borders",
 		edit_selection.bind("Trim", sheet.trim_frames),
+		has_selection
+	)
+	add.call(
+		&"align_center",
+		"Centre in Cell",
+		edit_selection.bind("Centre", sheet.align_frames.bind(Spritesheet.Alignment.CENTER)),
+		has_selection
+	)
+	add.call(
+		&"align_bottom",
+		"Align to Bottom",
+		edit_selection.bind("Align", sheet.align_frames.bind(Spritesheet.Alignment.BOTTOM)),
 		has_selection
 	)
 	add.call(
