@@ -29,6 +29,17 @@ func _ready() -> void:
 	apply_theme()
 
 
+## Frees the nodes held in [param holder]'s variables that were never added to the tree,
+## such as dialogs when the command line quits before the window is set up
+static func free_unused_nodes(holder: Object) -> void:
+	for property in holder.get_property_list():
+		if property.type != TYPE_OBJECT:
+			continue
+		var value: Variant = holder.get(property.name)
+		if value is Node and is_instance_valid(value) and (value as Node).get_parent() == null:
+			(value as Node).free()
+
+
 ## Fills the project theme (an empty resource in project.godot) with the generated one,
 ## so every control and window uses it, whatever its parents are
 func apply_theme() -> void:

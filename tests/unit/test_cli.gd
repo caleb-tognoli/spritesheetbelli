@@ -73,3 +73,18 @@ func test_metadata_option() -> void:
 	assert_eq(result[0], "0", str(result))
 	assert_true(FileAccess.file_exists(dir.path_join("with_meta.tres")))
 	assert_eq(run(["--pack", dir.path_join("frames"), "--out", out, "--metadata", "xml"])[0], "2")
+
+
+class Holder:
+	var unused := AcceptDialog.new()
+	var used := Node.new()
+
+
+func test_unused_nodes_are_freed() -> void:
+	var holder := Holder.new()
+	add_child(holder.used)
+	var unused := holder.unused
+	Global.free_unused_nodes(holder)
+	assert_false(is_instance_valid(unused), "never added to the tree: freed")
+	assert_true(is_instance_valid(holder.used), "in the tree: kept")
+	holder.used.queue_free()

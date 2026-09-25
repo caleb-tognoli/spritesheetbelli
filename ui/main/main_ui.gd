@@ -98,6 +98,7 @@ var _was_empty := true
 func _ready() -> void:
 	# The command line doesn't need the window
 	if Global.cli_mode:
+		Global.free_unused_nodes(self)
 		queue_free()
 		return
 	# 0 is only shown while the spritesheet is empty
