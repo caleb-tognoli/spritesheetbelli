@@ -184,3 +184,32 @@ func test_align_shortcuts() -> void:
 	get_viewport().push_input(event)
 	await get_tree().process_frame
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)).end.y, 16, "at the bottom")
+
+
+func test_toolbar_buttons_follow_their_actions() -> void:
+	var area: PreviewArea = main.preview_area
+	var flip: Button = area._action_buttons[&"flip_h"]
+	assert_eq(flip.tooltip_text, "Flip Horizontally (H)")
+	main.preview.set_selected_coords([] as Array[Vector2i])
+	await get_tree().process_frame
+	assert_true(flip.disabled, "nothing selected")
+	var align_button: Button = area._menu_buttons.keys()[0]
+	assert_true(align_button.disabled)
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	await get_tree().process_frame
+	assert_false(flip.disabled)
+	assert_false(align_button.disabled)
+	var before: Image = Global.spritesheet.frames[Vector2i(0, 0)]
+	flip.pressed.emit()
+	assert_ne(Global.spritesheet.frames[Vector2i(0, 0)], before, "runs the action")
+
+	var grid: Button = area._action_buttons[&"toggle_grid"]
+	assert_true(grid.button_pressed)
+	grid.button_pressed = false
+	grid.pressed.emit()
+	await get_tree().process_frame
+	assert_false(Settings.get_value(&"show_grid"))
+	assert_false(main.preview.show_grid)
+	Settings.set_value(&"show_grid", true)
+	await get_tree().process_frame
+	assert_true(grid.button_pressed, "follows the setting")

@@ -53,8 +53,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   animated GIF (`--animation`, `--scale`); `--pack` takes GIFs too.
 
 ### Changed
-- A toolbar above the preview: select and move tools (Q, W), select all/none, and zoom
-  buttons around the zoom level, which fits the view.
+- A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
+  rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
+  animation preview (P), and zoom buttons around the zoom level, which fits the view.
 - The right-click menu groups flipping and rotating under Transform, and has Align in
   Cell and Rows submenus.
 - The animation player has back to start, previous frame, play/pause and next frame.

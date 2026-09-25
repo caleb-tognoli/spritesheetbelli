@@ -85,6 +85,7 @@ Press **F1** in the app for the full list. The most useful:
 | Insert / remove row | Ctrl+Insert / Ctrl+Shift+Delete |
 | Move row up / down | Ctrl+Shift+Up / Ctrl+Shift+Down |
 | Zoom / Actual size / Fit | Ctrl+= and Ctrl+- / Ctrl+0 / F |
+| Grid lines / Frame numbers | G / N |
 | Select / move tool | Q / W |
 | Animation preview | P |
 

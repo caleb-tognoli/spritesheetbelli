@@ -12,6 +12,8 @@ var _refresh_queued := false
 func _ready() -> void:
 	Global.spritesheet.updated.connect(refresh)
 	Global.document.changed.connect(refresh)
+	# Toggles can follow settings
+	Settings.changed.connect(refresh.unbind(1))
 
 
 func add(

@@ -46,6 +46,9 @@ const ICONS := {
 	&"align_center": preload("res://assets/icons/ControlAlignCenter.svg"),
 	&"add_outline": preload("res://assets/icons/Rectangle.svg"),
 	&"trim": preload("res://assets/icons/RegionEdit.svg"),
+	&"toggle_grid": preload("res://assets/icons/GridToggle.svg"),
+	&"toggle_indices": preload("res://assets/icons/int.svg"),
+	&"toggle_animation": preload("res://assets/icons/AnimatedTexture.svg"),
 	&"insert_row": preload("res://assets/icons/ExpandTree.svg"),
 	&"remove_row": preload("res://assets/icons/CollapseTree.svg"),
 	&"move_row_up": preload("res://assets/icons/MoveUp.svg"),
@@ -55,6 +58,12 @@ const ICONS := {
 }
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
+## Action buttons in the toolbar, in groups, and the view toggles next to the zoom
+const TOOLBAR_GROUPS := [
+	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
+	[&"align_menu", &"trim"],
+]
+const TOOLBAR_TOGGLES: Array[StringName] = [&"toggle_grid", &"toggle_indices", &"toggle_animation"]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
 	&"cut",
@@ -209,6 +218,7 @@ func _ready() -> void:
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
+	preview_area.set_toolbar_actions(TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS)
 	preview_area.empty_hint.text = (
 		"Drop images, folders or a .sbelli project here\n"
 		+ "or use Add Sprite(s) and Add Spritesheet (Ctrl+I, Ctrl+Shift+I)"
@@ -489,9 +499,21 @@ func _register_actions() -> void:
 		"Animation Preview",
 		func() -> void: animation.visible = not animation.visible,
 		has_frames,
-		null,
+		ICONS[&"toggle_animation"],
 		func() -> bool: return animation.visible
 	)
+	for toggle: Array in [
+		[&"toggle_grid", "Grid Lines", &"show_grid"],
+		[&"toggle_indices", "Frame Numbers", &"show_indices"],
+	]:
+		Actions.add(
+			toggle[0],
+			toggle[1],
+			func() -> void: Settings.set_value(toggle[2], not Settings.get_value(toggle[2])),
+			Callable(),
+			ICONS[toggle[0]],
+			func() -> bool: return Settings.get_value(toggle[2])
+		)
 
 	add.call(&"undo", "Undo", Global.document.undo, Global.document.can_undo)
 	add.call(&"redo", "Redo", Global.document.redo, Global.document.can_redo)

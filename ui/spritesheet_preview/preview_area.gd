@@ -1,7 +1,8 @@
 class_name PreviewArea
 extends Control
 ## The spritesheet preview with its toolbar: the select and move tools, selection
-## buttons and zoom, like the toolbar above Godot's 2D editor.
+## buttons, the actions given to [method set_toolbar_actions] and zoom, like the toolbar
+## above Godot's 2D editor.
 
 const SELECT_ICON := preload("res://assets/icons/ToolSelect.svg")
 const MOVE_ICON := preload("res://assets/icons/ToolMove.svg")
@@ -29,6 +30,13 @@ var empty_hint := Label.new()
 
 var _tool_group := HBoxContainer.new()
 var _tool_separator := VSeparator.new()
+## Action buttons after the selection buttons, and view toggles before the zoom
+var _edit_bar := HBoxContainer.new()
+var _view_bar := HBoxContainer.new()
+## Buttons that run actions, by action id, kept enabled and checked like their actions
+var _action_buttons: Dictionary[StringName, Button] = {}
+## Buttons that open a menu of actions, with the ids in it
+var _menu_buttons: Dictionary[Button, Array] = {}
 
 
 func _ready() -> void:
@@ -82,10 +90,14 @@ func _build_toolbar() -> void:
 	bar.add_child(select_none_btn)
 	select_all_btn.pressed.connect(select_all.bind(true))
 	select_none_btn.pressed.connect(select_all.bind(false))
+	for group: HBoxContainer in [_edit_bar, _view_bar]:
+		group.add_theme_constant_override("separation", 2)
+	bar.add_child(_edit_bar)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bar.add_child(spacer)
+	bar.add_child(_view_bar)
 
 	# Zoom, like Godot: the percentage fits the view
 	zoom_label_btn.custom_minimum_size.x = 56
@@ -142,6 +154,62 @@ func update_ui() -> void:
 
 	var selection_empty := is_empty or spritesheet_preview.get_selected_coords().is_empty()
 	select_none_btn.visible = not selection_empty
+
+
+## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids
+## after the selection buttons, each group after a separator, and [param view_ids] are
+## toggles before the zoom. An id in [param submenus] (as in
+## [method ActionPopupMenu.set_actions]) is a button that opens that menu.
+func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submenus := {}) -> void:
+	for group: Array in edit_groups:
+		_edit_bar.add_child(VSeparator.new())
+		for id: StringName in group:
+			_edit_bar.add_child(_action_button(id, submenus))
+	for id in view_ids:
+		_view_bar.add_child(_action_button(id, submenus))
+	_view_bar.add_child(VSeparator.new())
+	if not Actions.state_changed.is_connected(_refresh_action_buttons):
+		Actions.state_changed.connect(_refresh_action_buttons)
+	_refresh_action_buttons()
+
+
+func _action_button(id: StringName, submenus: Dictionary) -> Button:
+	if submenus.has(id):
+		var entry: Array = submenus[id]
+		var menu_button := _tool_button(entry[2] if entry.size() > 2 else null, entry[0])
+		var menu := ActionPopupMenu.new()
+		menu_button.add_child(menu)
+		var ids: Array[StringName] = []
+		ids.assign(entry[1])
+		menu.set_actions(ids, submenus)
+		menu_button.pressed.connect(
+			func() -> void:
+				var below := menu_button.get_screen_transform() * Vector2(0, menu_button.size.y)
+				menu.popup(Rect2i(Vector2i(below), Vector2i.ZERO))
+		)
+		_menu_buttons[menu_button] = ids
+		return menu_button
+	var action := Actions.get_action(id)
+	var button := _tool_button(action.icon, action.label.trim_suffix("…"))
+	var shortcut := Actions.get_shortcut_text(id)
+	if shortcut:
+		button.tooltip_text += " (%s)" % shortcut
+	button.toggle_mode = Actions.is_toggle(id)
+	button.pressed.connect(func() -> void: Actions.run(id))
+	_action_buttons[id] = button
+	return button
+
+
+func _refresh_action_buttons() -> void:
+	for id in _action_buttons:
+		var button := _action_buttons[id]
+		button.disabled = not Actions.is_enabled(id)
+		if button.toggle_mode:
+			button.set_pressed_no_signal(Actions.is_checked(id))
+	for button in _menu_buttons:
+		button.disabled = not _menu_buttons[button].any(
+			func(id: StringName) -> bool: return not id.is_empty() and Actions.is_enabled(id)
+		)
 
 
 ## Actions offered when right-clicking the preview, with [param submenus] as in

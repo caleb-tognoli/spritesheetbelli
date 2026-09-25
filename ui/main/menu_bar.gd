@@ -85,6 +85,8 @@ const MENUS := {
 		&"zoom_reset",
 		&"zoom_fit",
 		&"",
+		&"toggle_grid",
+		&"toggle_indices",
 		&"toggle_animation",
 		&"edit_animations",
 		&"toggle_history",
