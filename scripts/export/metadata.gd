@@ -315,5 +315,33 @@ static func atlas_frames(
 	return frames
 
 
+## A libGDX texture atlas (also read by Spine runtimes) for [param frames] of a packed
+## atlas (see [method atlas_frames]). Trimmed frames keep their original size and offset;
+## libGDX measures the offset from the bottom.
+static func libgdx_atlas(
+	frames: Array[Dictionary], image_file: String, image_size: Vector2i
+) -> String:
+	var lines: PackedStringArray = [
+		"",
+		image_file,
+		"size: %d, %d" % [image_size.x, image_size.y],
+		"format: RGBA8888",
+		"filter: Nearest, Nearest",
+		"repeat: none",
+	]
+	for frame in frames:
+		var rect: Rect2i = frame.rect
+		var source: Rect2i = frame.get("source_rect", Rect2i(Vector2i.ZERO, rect.size))
+		var source_size: Vector2i = frame.get("source_size", rect.size)
+		lines.append(str(frame.name).get_basename())
+		lines.append("  rotate: false")
+		lines.append("  xy: %d, %d" % [rect.position.x, rect.position.y])
+		lines.append("  size: %d, %d" % [rect.size.x, rect.size.y])
+		lines.append("  orig: %d, %d" % [source_size.x, source_size.y])
+		lines.append("  offset: %d, %d" % [source.position.x, source_size.y - source.end.y])
+		lines.append("  index: -1")
+	return "\n".join(lines) + "\n"
+
+
 static func _rect(rect: Rect2i) -> Dictionary:
 	return {"x": rect.position.x, "y": rect.position.y, "w": rect.size.x, "h": rect.size.y}

@@ -29,6 +29,7 @@ Options:
   --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file
   --fps <n>                      Animation speed in the metadata and GIFs (default 12)
   --atlas                        Write --out as a packed atlas with a JSON file
+  --atlas-data <json|atlas>      The atlas's data file: JSON or libGDX / Spine .atlas
   --animation <name>             The animation a GIF plays (default: the first one, or
                                  every frame when there are none)
   --scale <n>                    Make a GIF n times bigger
@@ -109,6 +110,11 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 			return 2
 	elif export.gif_animation.is_empty() and not sheet.animations.is_empty():
 		export.gif_animation = sheet.animations[0].name
+	if options.has("--atlas-data"):
+		if not ExportOptions.ATLAS_DATA_FORMATS.has(options["--atlas-data"]):
+			say.call("Error: --atlas-data must be json or atlas.")
+			return 2
+		export.atlas_data = options["--atlas-data"]
 	if options.has("--scale"):
 		export.gif_scale = clampi(int(options["--scale"]), 1, 16)
 	sheet.set_export_settings(export.to_dictionary())

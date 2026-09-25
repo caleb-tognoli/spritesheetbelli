@@ -63,7 +63,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   which frame tags can't do for scattered frames, and packed atlas JSON now has frame
   tags and durations too. Opening such a JSON brings the exact animations back.
 - Packed atlases store frames that look the same only once; their JSON entries share
-  the place. Advanced has a power-of-two size option for engines that need one.
+  the place. Advanced has a power-of-two size option for engines that need one, and the
+  data file can be a libGDX / Spine `.atlas` instead of JSON (`--atlas-data atlas` on
+  the command line).
 - Trimming keeps the pixels where they were in the cell, so trimming all frames of an
   animation shrinks the cells without making it jump. Flipping and rotating move a
   nudged frame with it.

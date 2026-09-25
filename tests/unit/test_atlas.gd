@@ -85,3 +85,23 @@ func test_power_of_two_atlas() -> void:
 	assert_eq(size.x, nearest_po2(size.x))
 	assert_eq(size.y, nearest_po2(size.y))
 	assert_true(size.x >= 20 and size.y >= 12)
+
+
+func test_libgdx_atlas() -> void:
+	var sheet := Spritesheet.new()
+	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(2, 3, 5, 8), Color.RED)
+	sheet.add_frames([img] as Array[Image])
+	sheet.set_row_name(0, "walk")
+	var options := ExportOptions.new()
+	options.sprite_name_pattern = "{row_name}_{frame}"
+	options.atlas_data = "atlas"
+	var path := OS.get_user_data_dir().path_join("tests/gdx.png")
+	var result := AtlasPacker.write(sheet, options, path)
+	assert_eq(result.error, OK)
+	assert_true(result.json_path.ends_with("gdx.atlas"))
+	var text := FileAccess.get_file_as_string(result.json_path)
+	assert_true("\ngdx.png\nsize: 5, 8\n" in text, text)
+	assert_true("\nwalk_0\n  rotate: false\n  xy: 0, 0\n  size: 5, 8\n" in text, text)
+	# 2 from the left, 16 - (3 + 8) = 5 from the bottom
+	assert_true("  orig: 16, 16\n  offset: 2, 5\n" in text, text)

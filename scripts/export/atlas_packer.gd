@@ -91,7 +91,7 @@ static func write(
 	var result := {
 		"error": OK,
 		"path": path,
-		"json_path": path.get_basename() + ".json",
+		"json_path": path.get_basename() + "." + options.atlas_data,
 		"frames": packed.regions.size(),
 		"size": image.get_size(),
 	}
@@ -106,9 +106,14 @@ static func write(
 	if file == null:
 		result.error = FileAccess.get_open_error()
 		return result
-	file.store_string(
-		Metadata.sheet_json(sheet, frames, path.get_file(), image.get_size(), options.animation_fps)
-	)
+	if options.atlas_data == "atlas":
+		file.store_string(Metadata.libgdx_atlas(frames, path.get_file(), image.get_size()))
+	else:
+		file.store_string(
+			Metadata.sheet_json(
+				sheet, frames, path.get_file(), image.get_size(), options.animation_fps
+			)
+		)
 	file.close()
 	return result
 

@@ -34,8 +34,9 @@ A small desktop tool made with Godot.</p>
   `walk_{frame:2}`; a tightly packed atlas; or an animation as an animated GIF. One Export dialog shows only the settings
   that matter for what you export; padding, spacing and edge extrusion are there when an
   engine needs them.
-- **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
-  Godot `SpriteFrames` resource with one animation per named row.
+- **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags), a
+  Godot `SpriteFrames` resource with one animation per named row, or a libGDX / Spine
+  `.atlas` for packed atlases.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original size.
 - Light and dark themes, an accent colour, interface scaling and a keyboard shortcut for
   every action.

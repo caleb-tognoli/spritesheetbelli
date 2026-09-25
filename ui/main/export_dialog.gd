@@ -46,7 +46,8 @@ const TARGETS := [
 		"about":
 		(
 			"Frames with their transparent borders trimmed, packed as tightly as "
-			+ "possible into a PNG, with a JSON file that says where each one is."
+			+ "possible into a PNG, with a JSON (or libGDX .atlas) file that says where "
+			+ "each one is."
 		),
 	},
 	{
@@ -85,6 +86,7 @@ var padding := SpinBox.new()
 var spacing := SpinBox.new()
 var extrude := SpinBox.new()
 var power_of_two := CheckBox.new()
+var atlas_data := OptionButton.new()
 var gif_animation := OptionButton.new()
 var gif_scale := SpinBox.new()
 var output_info := Label.new()
@@ -151,6 +153,10 @@ func _init() -> void:
 	gif_scale.suffix = "×"
 	gif_scale.tooltip_text = "Makes the GIF bigger, keeping pixels sharp"
 	_add_row(_settings, "Scale", gif_scale, [T.GIF])
+	for extension: String in ExportOptions.ATLAS_DATA_FORMATS:
+		atlas_data.add_item(ExportOptions.ATLAS_DATA_FORMATS[extension])
+	atlas_data.tooltip_text = "The file next to the atlas that says where each frame is"
+	_add_row(_settings, "Data file", atlas_data, [T.ATLAS])
 
 	animation_fps.min_value = 1
 	animation_fps.max_value = 120
@@ -215,6 +221,7 @@ func _init() -> void:
 	existing.item_selected.connect(_changed.unbind(1))
 	power_of_two.toggled.connect(_changed.unbind(1))
 	gif_animation.item_selected.connect(_changed.unbind(1))
+	atlas_data.item_selected.connect(_changed.unbind(1))
 	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
 	jpg_background.color_changed.connect(_changed.unbind(1))
@@ -254,6 +261,7 @@ func refresh() -> void:
 		if animation.name == options.gif_animation:
 			gif_animation.select(gif_animation.item_count - 1)
 	gif_scale.set_value_no_signal(options.gif_scale)
+	atlas_data.select(ExportOptions.ATLAS_DATA_FORMATS.keys().find(options.atlas_data))
 	advanced_toggle.button_pressed = (
 		options.padding or options.spacing or options.extrude or options.power_of_two
 	)
@@ -300,6 +308,7 @@ func _options() -> ExportOptions:
 		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
 	)
 	options.gif_scale = int(gif_scale.value)
+	options.atlas_data = ExportOptions.ATLAS_DATA_FORMATS.keys()[maxi(atlas_data.selected, 0)]
 	return options
 
 
