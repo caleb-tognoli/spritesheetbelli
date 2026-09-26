@@ -23,6 +23,7 @@ func add(
 	can_run := Callable(),
 	icon: Texture2D = null,
 	checked := Callable(),
+	available := Callable(),
 ) -> AppAction:
 	var action := AppAction.new()
 	action.id = id
@@ -31,6 +32,7 @@ func add(
 	action.can_run = can_run
 	action.icon = icon
 	action.is_checked = checked
+	action.is_available = available
 	_actions[id] = action
 	refresh()
 	return action
@@ -54,7 +56,17 @@ func get_ids() -> Array[StringName]:
 
 func is_enabled(id: StringName) -> bool:
 	var action: AppAction = _actions.get(id)
-	return action != null and (not action.can_run.is_valid() or action.can_run.call())
+	return (
+		is_available(id)
+		and action != null
+		and (not action.can_run.is_valid() or action.can_run.call())
+	)
+
+
+## Whether the action belongs in menus and toolbars right now, see [member AppAction.is_available]
+func is_available(id: StringName) -> bool:
+	var action: AppAction = _actions.get(id)
+	return action != null and (not action.is_available.is_valid() or action.is_available.call())
 
 
 func is_toggle(id: StringName) -> bool:

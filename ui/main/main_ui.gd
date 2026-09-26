@@ -57,15 +57,24 @@ const ICONS := {
 	&"move_row_down": preload("res://assets/icons/MoveDown.svg"),
 	&"about": preload("res://assets/icons/Info.svg"),
 	&"show_shortcuts": preload("res://assets/icons/Keyboard.svg"),
+	&"tool_pivot": PreviewArea.PIVOT_ICON,
+	&"layout_grid": preload("res://assets/icons/LayoutGrid.svg"),
+	&"layout_packed": preload("res://assets/icons/LayoutPacked.svg"),
+	&"pin_toggle": preload("res://assets/icons/Pin.svg"),
+	&"repack": RELOAD_ICON,
+	&"pivot_clear": preload("res://assets/icons/Clear.svg"),
 }
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
 ## Action buttons in the toolbar, in groups, and the view toggles next to the zoom
 const TOOLBAR_GROUPS := [
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
-	[&"align_menu", &"trim"],
+	[&"align_menu", &"pivot_menu", &"trim"],
+	[&"pin_toggle", &"repack"],
 ]
-const TOOLBAR_TOGGLES: Array[StringName] = [&"toggle_grid", &"toggle_indices", &"toggle_animation"]
+const TOOLBAR_TOGGLES: Array[StringName] = [
+	&"layout_grid", &"layout_packed", &"toggle_grid", &"toggle_indices", &"toggle_animation"
+]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
 	&"cut",
@@ -75,10 +84,12 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 	&"",
 	&"transform_menu",
 	&"align_menu",
+	&"pivot_menu",
 	&"",
 	&"insert_cell",
 	&"remove_cell",
 	&"rows_menu",
+	&"pin_toggle",
 	&"",
 	&"delete_frames",
 ]
@@ -118,6 +129,7 @@ var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
 var animation_window := AnimationWindow.new()
 var source_watcher := SourceWatcher.new()
+var layout_controller := LayoutController.new()
 var _was_empty := true
 
 
@@ -132,6 +144,8 @@ func _ready() -> void:
 		field.min_value = 0
 		SpinScroll.enable(field)
 	preview_area.spritesheet_preview.spritesheet = Global.spritesheet
+	add_child(layout_controller)
+	layout_controller.setup(self)
 	set_text_params(Global.spritesheet)
 	disable_if_empty()
 
@@ -221,6 +235,7 @@ func _ready() -> void:
 	files.get_selected_coords = preview.get_selected_coords
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
+	layout_controller.register_actions()
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	preview_area.set_toolbar_actions(TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS)
 	preview_area.empty_hint.text = (
@@ -757,6 +772,9 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 		spritesheet, ExportOptions.from_sheet(spritesheet)
 	)
 	sheet_size.text = "%d × %d px" % [image_size.x, image_size.y]
+	if spritesheet.layout == Spritesheet.Layout.PACKED:
+		sheet_size.text = AtlasPanel.describe(spritesheet)
+	layout_controller.update()
 	update_sheet_info()
 	resize_filter.select(get_resize_filter())
 
@@ -766,6 +784,11 @@ func update_sheet_info() -> void:
 	var sheet := Global.spritesheet
 	if sheet.is_empty():
 		sheet_info.text = tr("No frames. Add sprites or drop images here.")
+	elif sheet.layout == Spritesheet.Layout.PACKED:
+		sheet_info.text = tr("%d frames · %s") % [sheet.frames.size(), AtlasPanel.describe(sheet)]
+		var selected := preview.get_selected_coords().size()
+		if selected:
+			sheet_info.text += " · " + tr("%d selected") % selected
 	else:
 		var selected := preview.get_selected_coords().size()
 		var image_size := SpritesheetExporter.get_image_size(sheet, ExportOptions.from_sheet(sheet))

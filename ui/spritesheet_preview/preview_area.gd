@@ -6,6 +6,7 @@ extends Control
 
 const SELECT_ICON := preload("res://assets/icons/ToolSelect.svg")
 const MOVE_ICON := preload("res://assets/icons/ToolMove.svg")
+const PIVOT_ICON := preload("res://assets/icons/EditPivot.svg")
 const SELECT_ALL_ICON := preload("res://assets/icons/ListSelect.svg")
 const SELECT_NONE_ICON := preload("res://assets/icons/Clear.svg")
 const ZOOM_OUT_ICON := preload("res://assets/icons/ZoomLess.svg")
@@ -19,6 +20,7 @@ const ZOOM_IN_ICON := preload("res://assets/icons/ZoomMore.svg")
 
 var select_tool_btn := _tool_button(SELECT_ICON)
 var move_tool_btn := _tool_button(MOVE_ICON)
+var pivot_tool_btn := _tool_button(PIVOT_ICON)
 var select_all_btn := _tool_button(SELECT_ALL_ICON, "Select all frames (Ctrl+A)")
 var select_none_btn := _tool_button(SELECT_NONE_ICON, "Clear the selection (Esc)")
 var zoom_out_btn := _tool_button(ZOOM_OUT_ICON, "Zoom out (Ctrl+Minus)")
@@ -75,13 +77,17 @@ func _build_toolbar() -> void:
 		"Move mode (W): drag to move the selected frames, or the dragged one; Alt+drag "
 		+ "copies. Arrow keys move the selected frames inside their cells."
 	)
-	for button: Button in [select_tool_btn, move_tool_btn]:
+	pivot_tool_btn.tooltip_text = (
+		"Pivot mode (E): drag on a frame to put the pivot of the selected frames " + "there"
+	)
+	for button: Button in [select_tool_btn, move_tool_btn, pivot_tool_btn]:
 		button.toggle_mode = true
 		button.button_group = tools
 		_tool_group.add_child(button)
 	select_tool_btn.button_pressed = true
 	select_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.SELECT))
 	move_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.MOVE))
+	pivot_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.PIVOT))
 	bar.add_child(_tool_group)
 	bar.add_child(_tool_separator)
 
@@ -148,8 +154,11 @@ func update_ui() -> void:
 	_tool_group.visible = can_move
 	_tool_separator.visible = can_move
 	var moving := spritesheet_preview.tool == SpritesheetPreview.Tool.MOVE
-	select_tool_btn.set_pressed_no_signal(not moving)
+	select_tool_btn.set_pressed_no_signal(
+		spritesheet_preview.tool == SpritesheetPreview.Tool.SELECT
+	)
 	move_tool_btn.set_pressed_no_signal(moving)
+	pivot_tool_btn.set_pressed_no_signal(spritesheet_preview.tool == SpritesheetPreview.Tool.PIVOT)
 	container.mouse_default_cursor_shape = (Control.CURSOR_MOVE if moving else Control.CURSOR_ARROW)
 
 	var selection_empty := is_empty or spritesheet_preview.get_selected_coords().is_empty()
@@ -203,13 +212,26 @@ func _action_button(id: StringName, submenus: Dictionary) -> Button:
 func _refresh_action_buttons() -> void:
 	for id in _action_buttons:
 		var button := _action_buttons[id]
+		button.visible = Actions.is_available(id)
 		button.disabled = not Actions.is_enabled(id)
 		if button.toggle_mode:
 			button.set_pressed_no_signal(Actions.is_checked(id))
 	for button in _menu_buttons:
-		button.disabled = not _menu_buttons[button].any(
+		var ids: Array = _menu_buttons[button]
+		button.visible = ids.any(
+			func(id: StringName) -> bool: return not id.is_empty() and Actions.is_available(id)
+		)
+		button.disabled = not ids.any(
 			func(id: StringName) -> bool: return not id.is_empty() and Actions.is_enabled(id)
 		)
+	# A group's separator only shows when a button in the group does
+	var separator: VSeparator = null
+	for child: Control in _edit_bar.get_children():
+		if child is VSeparator:
+			separator = child
+			separator.visible = false
+		elif child.visible and separator:
+			separator.visible = true
 
 
 ## Actions offered when right-clicking the preview, with [param submenus] as in
@@ -228,6 +250,8 @@ func update_tooltip(coord: Vector2i) -> void:
 
 
 static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
+	if sheet.layout == Spritesheet.Layout.PACKED:
+		return describe_packed_frame(sheet, coord)
 	if not sheet.is_inside(coord):
 		return ""
 	var index: int = sheet.index_of(coord) + Settings.get_value(&"index_start")
@@ -263,3 +287,45 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 			TranslationServer.translate("Empty. Click to lock it so added sprites skip it.")
 		]
 	)
+
+
+## Describes a frame in the packed layout: its name, where it is and how it's packed
+static func describe_packed_frame(sheet: Spritesheet, coord: Vector2i) -> String:
+	var place: Dictionary = sheet.placements.get(coord, {})
+	if place.is_empty():
+		return ""
+	var index: int = sheet.index_of(coord) + Settings.get_value(&"index_start")
+	var lines := PackedStringArray()
+	var frame_name := sheet.frames[coord].resource_name
+	lines.append(
+		TranslationServer.translate("Frame %d") % index + (" · " + frame_name if frame_name else "")
+	)
+	var rect := PackedLayout.get_rect(sheet, coord)
+	lines.append(
+		(
+			TranslationServer.translate("Page %d at %d, %d · %d×%d px")
+			% [place.page + 1, rect.position.x, rect.position.y, rect.size.x, rect.size.y]
+		)
+	)
+	var notes := PackedStringArray()
+	if place.rotated:
+		notes.append(TranslationServer.translate("turned"))
+	if place.get("pinned", false):
+		notes.append(TranslationServer.translate("pinned"))
+	for other: Vector2i in sheet.placements:
+		var other_place: Dictionary = sheet.placements[other]
+		if (
+			other != coord
+			and other_place.page == place.page
+			and other_place.position == place.position
+		):
+			notes.append(
+				TranslationServer.translate("shares its place with a frame that looks the same")
+			)
+			break
+	if notes:
+		lines.append(", ".join(notes))
+	var link: Dictionary = sheet.frame_sources.get(coord, {})
+	if link:
+		lines.append(TranslationServer.translate("Linked to %s") % link.path)
+	return "\n".join(lines)

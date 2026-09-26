@@ -1,10 +1,15 @@
 class_name ActionPopupMenu
 extends PopupMenu
 ## A PopupMenu whose items are [code]Actions[/code], kept in sync with their state.
-## An empty id adds a separator. Submenus of actions work the same way.
+## An empty id adds a separator. Submenus of actions work the same way. Actions that aren't
+## available are left out, and the menu is built again when that changes.
 
 ## Submenus made by [method set_actions], freed when it's called again
 var _action_submenus: Array[ActionPopupMenu] = []
+## What the menu was made from, and the ids shown, to tell when to make it again
+var _ids: Array[StringName] = []
+var _submenus := {}
+var _shown: Array[StringName] = []
 
 
 func _ready() -> void:
@@ -21,7 +26,10 @@ func set_actions(ids: Array[StringName], submenus := {}) -> void:
 	for child in _action_submenus:
 		child.queue_free()
 	_action_submenus.clear()
-	for id in ids:
+	_ids = ids.duplicate()
+	_submenus = submenus
+	_shown = _available(ids, submenus)
+	for id in _shown:
 		if id.is_empty():
 			add_separator()
 			continue
@@ -82,8 +90,38 @@ func _notification(what: int) -> void:
 				set_item_icon_modulate(i, _icon_modulate())
 
 
-## Refreshes enabled and checked states
+## The ids to show: available actions, and submenus with any, without separators that
+## would have nothing on one side
+func _available(ids: Array[StringName], submenus: Dictionary) -> Array[StringName]:
+	var shown: Array[StringName] = []
+	for id in ids:
+		if id.is_empty():
+			if not shown.is_empty() and not shown[-1].is_empty():
+				shown.append(id)
+		elif submenus.has(id):
+			var entry: Array = submenus[id]
+			if not entry[1] is Array or _any_available(entry[1]):
+				shown.append(id)
+		elif Actions.is_available(id) or not Actions.has(id):
+			shown.append(id)
+	if not shown.is_empty() and shown[-1].is_empty():
+		shown.pop_back()
+	return shown
+
+
+static func _any_available(ids: Array) -> bool:
+	for id: StringName in ids:
+		if not id.is_empty() and Actions.is_available(id):
+			return true
+	return false
+
+
+## Refreshes enabled and checked states, and makes the menu again when other actions are
+## available
 func update_items() -> void:
+	if not _ids.is_empty() and _available(_ids, _submenus) != _shown:
+		set_actions(_ids, _submenus)
+		return
 	for i in item_count:
 		var id: Variant = get_item_metadata(i)
 		if id is StringName:

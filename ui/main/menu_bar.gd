@@ -17,6 +17,22 @@ const SUBMENUS := {
 		[&"align_top", &"align_bottom", &"align_left", &"align_right", &"align_center"],
 		preload("res://assets/icons/ControlAlignCenter.svg"),
 	],
+	&"pivot_menu":
+	[
+		"Pivot",
+		[
+			&"pivot_center",
+			&"pivot_top",
+			&"pivot_bottom",
+			&"pivot_left",
+			&"pivot_right",
+			&"pivot_top_left",
+			&"pivot_bottom_left",
+			&"",
+			&"pivot_clear",
+		],
+		preload("res://assets/icons/EditPivot.svg"),
+	],
 	&"rows_menu":
 	[
 		"Rows",
@@ -60,6 +76,7 @@ const MENUS := {
 		&"",
 		&"tool_select",
 		&"tool_move",
+		&"tool_pivot",
 	],
 	"Frame":
 	[
@@ -69,6 +86,7 @@ const MENUS := {
 		&"rotate_ccw",
 		&"",
 		&"align_menu",
+		&"pivot_menu",
 		&"trim",
 		&"color_key",
 		&"add_outline",
@@ -78,9 +96,15 @@ const MENUS := {
 		&"insert_cell",
 		&"remove_cell",
 		&"rows_menu",
+		&"",
+		&"pin_toggle",
+		&"repack",
 	],
 	"View":
 	[
+		&"layout_grid",
+		&"layout_packed",
+		&"",
 		&"zoom_in",
 		&"zoom_out",
 		&"zoom_reset",
