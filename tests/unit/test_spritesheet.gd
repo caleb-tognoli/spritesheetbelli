@@ -180,7 +180,7 @@ func test_undoing_a_resize_reuses_scaled_images() -> void:
 	sheet.set_state(state)
 	assert_true(sheet.get_frame_image(Vector2i.ZERO) == scaled)
 	FrameEdits.flip(sheet, [Vector2i.ZERO] as Array[Vector2i], true)
-	assert_false(sheet.is_frame_scaled(Vector2i.ZERO), "an edited frame is scaled again")
+	assert_false(sheet.scaled_frames.is_ready(Vector2i.ZERO), "an edited frame is scaled again")
 
 
 func test_prepare_scaled_images() -> void:
@@ -189,15 +189,15 @@ func test_prepare_scaled_images() -> void:
 		imgs.append(make_image(Color.RED, Vector2i(10, 6)))
 	sheet.add_frames(imgs)
 	sheet.set_frame_scale(Vector2(3, 3), Image.INTERPOLATE_BILINEAR)
-	assert_false(sheet.is_frame_scaled(Vector2i.ZERO))
-	assert_true(sheet.get_pending_scale_work() > 0)
+	assert_false(sheet.scaled_frames.is_ready(Vector2i.ZERO))
+	assert_true(sheet.scaled_frames.get_pending_work() > 0)
 	assert_eq(
 		sheet.get_frame_rect_in_cell(Vector2i(1, 0)).size, Vector2i(30, 18), "no scaling needed"
 	)
-	assert_false(sheet.is_frame_scaled(Vector2i(1, 0)))
-	await sheet.prepare_scaled_images()
-	assert_true(sheet.is_frame_scaled(Vector2i(3, 0)))
-	assert_eq(sheet.get_pending_scale_work(), 0)
+	assert_false(sheet.scaled_frames.is_ready(Vector2i(1, 0)))
+	await sheet.scaled_frames.prepare()
+	assert_true(sheet.scaled_frames.is_ready(Vector2i(3, 0)))
+	assert_eq(sheet.scaled_frames.get_pending_work(), 0)
 	assert_eq(sheet.get_frame_image(Vector2i(2, 0)).get_size(), Vector2i(30, 18))
 
 

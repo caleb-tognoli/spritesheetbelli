@@ -149,12 +149,9 @@ static func mirror(sheet: Spritesheet, index: int) -> int:
 			mirrored.durations.append(source.get_duration(i))
 	sheet.begin_batch()
 	for cell: Vector2i in copies:
-		sheet.set_frame(
-			copies[cell],
-			sheet.frames[cell],
-			sheet.frame_sources.get(cell, {}),
-			FrameSource.get_origin(sheet, cell)
-		)
+		var data := sheet.get_cell_data(cell)
+		data.erase("placement")
+		sheet.set_cell(copies[cell], data)
 	var targets: Array[Vector2i] = []
 	targets.assign(copies.values())
 	FrameEdits.flip(sheet, targets, true)

@@ -14,13 +14,15 @@ extends Resource
 signal updated
 
 const NO_CELL := Vector2i(-1, -1)
+## What a cell can hold besides its frame, see [method get_cell_data]
+const CELL_DATA_KEYS: Array[String] = ["origin", "source", "pivot", "placement"]
 
 enum AddMode {
 	FIRST_FREE,  ## Fill the first free, unlocked cell
 	APPEND,  ## After the last frame
 	NEW_ROW,  ## At the start of a new row below every frame
 }
-## How [method align_frames] lines frames up
+## How [method FrameEdits.align] lines frames up
 enum Alignment { CENTER, BOTTOM, TOP, LEFT, RIGHT }
 
 var grid_size: Vector2i:
@@ -62,6 +64,8 @@ var animations: Array[SheetAnimation]:
 		for data in _animations:
 			result.append(SheetAnimation.from_dictionary(data))
 		return result
+## The frames with [member frame_scale] applied, kept for reuse
+var scaled_frames: ScaledFrames
 ## How this sheet is exported, see [ExportOptions]. Read only.
 var export_settings: Dictionary:
 	get:
@@ -79,15 +83,19 @@ var _animations: Array[Dictionary] = []
 var _origins: Dictionary[Vector2i, Vector2i] = {}
 ## Where linked frames came from, see [FrameSource]. Never changed in place, only replaced.
 var _sources: Dictionary[Vector2i, Dictionary] = {}
+## Pivots of frames that have one, in unscaled pixels from the frame's top-left corner
+var _pivots: Dictionary[Vector2i, Vector2] = {}
+## Where frames are in the packed layout. Never changed in place, only replaced.
+var _placements: Dictionary[Vector2i, Dictionary] = {}
 var _sprite_size := Vector2i.ZERO
 ## The top-left of every cell, relative to the point frames are placed around
 var _cell_origin := Vector2i.ZERO
-## Scaled frames by scale and filter. The previous scale is kept too, so undoing a resize
-## doesn't scale everything again.
-var _scaled_caches: Dictionary[Vector3, Dictionary] = {}
-var _preparing := 0
 var _batch_depth := 0
 var _batch_changed := false
+
+
+func _init() -> void:
+	scaled_frames = ScaledFrames.new(self)
 
 
 func is_empty() -> bool:
@@ -129,82 +137,7 @@ func get_sorted_coords() -> Array[Vector2i]:
 
 ## The frame image with [member frame_scale] applied, at its own size
 func get_frame_image(coord: Vector2i) -> Image:
-	var source: Image = _frames.get(coord)
-	if source == null:
-		return null
-	if _scale == Vector2.ONE:
-		return source
-	var cache := _scaled_cache()
-	if not cache.has(source):
-		var img := source.duplicate()
-		var new_size := _scaled_size(source.get_size())
-		img.resize(new_size.x, new_size.y, _scale_filter)
-		cache[source] = img
-	return cache[source]
-
-
-## Whether the frame at [param coord] is already scaled, so getting it is quick
-func is_frame_scaled(coord: Vector2i) -> bool:
-	return _scale == Vector2.ONE or not _frames.has(coord) or _scaled_cache().has(_frames[coord])
-
-
-## Every scaled image kept for reuse, as a set
-func get_cached_scaled_images() -> Dictionary:
-	var images := {}
-	for cache: Dictionary in _scaled_caches.values():
-		for img: Image in cache.values():
-			images[img] = true
-	return images
-
-
-## Whether [method prepare_scaled_images] is running
-func is_preparing_scaled_images() -> bool:
-	return _preparing > 0
-
-
-## Roughly how many pixels still have to be scaled, to tell if it will take a while
-func get_pending_scale_work() -> int:
-	if _scale == Vector2.ONE:
-		return 0
-	var cache := _scaled_cache()
-	var work := 0
-	for source: Image in _frames.values():
-		if not cache.has(source):
-			var scaled := _scaled_size(source.get_size())
-			work += scaled.x * scaled.y + source.get_width() * source.get_height()
-	return work
-
-
-## Scales every frame that isn't scaled yet, on worker threads. If the scale changes in
-## the meantime, the results are dropped.
-func prepare_scaled_images(on_progress := Callable()) -> void:
-	if _scale == Vector2.ONE:
-		return
-	var key := _cache_key()
-	var cache := _scaled_cache()
-	var sources: Array[Image] = []
-	var sizes: Array[Vector2i] = []
-	for source: Image in _frames.values():
-		if not cache.has(source) and source not in sources:
-			sources.append(source)
-			sizes.append(_scaled_size(source.get_size()))
-	var filter := _scale_filter
-	_preparing += 1
-	var results := await Parallel.map(
-		sources.size(),
-		func(i: int) -> Image:
-			var img := sources[i].duplicate() as Image
-			img.resize(sizes[i].x, sizes[i].y, filter)
-			return img,
-		on_progress
-	)
-	_preparing -= 1
-	if _cache_key() != key:
-		return
-	cache = _scaled_cache()
-	for i in sources.size():
-		if not cache.has(sources[i]):
-			cache[sources[i]] = results[i]
+	return scaled_frames.get_image(coord)
 
 
 ## The scaled frame in a transparent cell of [member sprite_size]
@@ -238,6 +171,87 @@ func get_frame_origin(coord: Vector2i) -> Vector2i:
 ## Whether the frame has been moved away from the centre of its cell
 func has_frame_origin(coord: Vector2i) -> bool:
 	return _origins.has(coord)
+
+
+## Whether the frame has a pivot of its own
+func has_pivot(coord: Vector2i) -> bool:
+	return _pivots.has(coord)
+
+
+## The frame's pivot in unscaled pixels from its top-left corner: its own, or its centre
+func get_pivot(coord: Vector2i) -> Vector2:
+	if _pivots.has(coord):
+		return _pivots[coord]
+	var source: Image = _frames.get(coord)
+	return Vector2(source.get_size()) / 2.0 if source else Vector2.ZERO
+
+
+## Everything a cell holds: [code]{"image": Image}[/code], plus "origin", "source",
+## "pivot" and "placement" when it has them. Empty for a cell without a frame.
+func get_cell_data(coord: Vector2i) -> Dictionary:
+	if not _frames.has(coord):
+		return {}
+	var data := {"image": _frames[coord]}
+	var values := _cell_dicts()
+	for i in CELL_DATA_KEYS.size():
+		if values[i].has(coord):
+			data[CELL_DATA_KEYS[i]] = values[i][coord]
+	return data
+
+
+## Puts a frame with everything it holds (see [method get_cell_data]) at [param coord]
+func set_cell(coord: Vector2i, data: Dictionary) -> void:
+	var img: Image = data.get("image")
+	if img == null or img.is_empty() or coord.x < 0 or coord.y < 0:
+		return
+	begin_batch()
+	set_frame(coord, img, data.get("source", {}), data.get("origin"))
+	_set_or_erase(_pivots, coord, data.get("pivot"))
+	_set_or_erase(_placements, coord, data.get("placement"))
+	end_batch()
+
+
+## Adds frames with what they hold (see [method get_cell_data]) to free cells in order,
+## like [method add_frames], and returns where each one went
+func add_cells(cells: Array[Dictionary], mode := AddMode.FIRST_FREE) -> Array[Vector2i]:
+	var images: Array[Image] = []
+	for data in cells:
+		images.append(data.get("image"))
+	begin_batch()
+	var coords := add_frames(images, mode)
+	var i := 0
+	for data in cells:
+		var img: Image = data.get("image")
+		if img != null and not img.is_empty():
+			set_cell(coords[i], data)
+			i += 1
+	end_batch()
+	return coords
+
+
+## Gives frames a pivot in unscaled pixels from their top-left corners, or takes it away
+## for [code]null[/code]
+func set_pivots(coords: Array[Vector2i], pivot: Variant) -> void:
+	var changed := false
+	for coord in coords:
+		if has_frame(coord) and _pivots.get(coord) != pivot:
+			_set_or_erase(_pivots, coord, pivot)
+			changed = true
+	if changed:
+		_changed()
+
+
+## Renames a frame. Frames can share an image, so the frame gets a copy with the new name.
+func rename_frame(coord: Vector2i, new_name: String) -> void:
+	new_name = new_name.strip_edges()
+	if not has_frame(coord) or _frames[coord].resource_name == new_name:
+		return
+	var old: Image = _frames[coord]
+	var img: Image = old.duplicate()
+	img.resource_name = new_name
+	scaled_frames.alias(old, img)
+	_frames[coord] = img
+	_changed()
 
 
 #region Batching
@@ -293,6 +307,8 @@ func get_state() -> Dictionary:
 		"export": _export_settings.duplicate(),
 		"origins": _origins.duplicate(),
 		"sources": _sources.duplicate(),
+		"pivots": _pivots.duplicate(),
+		"placements": _placements.duplicate(),
 		"sprite_size": _sprite_size,
 		"cell_origin": _cell_origin,
 	}
@@ -309,6 +325,8 @@ func set_state(state: Dictionary) -> void:
 	_export_settings = state.get("export", {}).duplicate()
 	_origins.assign(state.get("origins", {}))
 	_sources.assign(state.get("sources", {}))
+	_pivots.assign(state.get("pivots", {}))
+	_placements.assign(state.get("placements", {}))
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_cell_origin = state.get("cell_origin", Vector2i.ZERO)
 	_changed()
@@ -577,16 +595,7 @@ func insert_empty_cell(coord: Vector2i) -> void:
 	if _grid_size.x == 0:
 		return
 	var start := index_of(coord)
-	var shifted: Dictionary[Vector2i, Image] = {}
-	for c in _frames:
-		var index := index_of(c)
-		shifted[coord_of(index + 1) if index >= start else c] = _frames[c]
-	_frames = shifted
-	_remap_cell_data(
-		func(c: Vector2i) -> Vector2i:
-			return coord_of(index_of(c) + 1) if index_of(c) >= start else c
-	)
-	_remap_animation_cells(
+	_remap_cells(
 		func(cell: Vector2i) -> Vector2i:
 			return coord_of(index_of(cell) + 1) if index_of(cell) >= start else cell
 	)
@@ -598,20 +607,13 @@ func insert_empty_cell(coord: Vector2i) -> void:
 ## Removes the cell at [param coord] and its frame, shifting later frames back
 func remove_cell(coord: Vector2i) -> void:
 	var start := index_of(coord)
-	var shifted: Dictionary[Vector2i, Image] = {}
-	for c in _frames:
-		var index := index_of(c)
-		if index == start:
-			continue
-		shifted[coord_of(index - 1) if index > start else c] = _frames[c]
-	_frames = shifted
-	var cell_map := func(cell: Vector2i) -> Vector2i:
-		var index := index_of(cell)
-		if index == start:
-			return NO_CELL
-		return coord_of(index - 1) if index > start else cell
-	_remap_cell_data(cell_map)
-	_remap_animation_cells(cell_map)
+	_remap_cells(
+		func(cell: Vector2i) -> Vector2i:
+			var index := index_of(cell)
+			if index == start:
+				return NO_CELL
+			return coord_of(index - 1) if index > start else cell
+	)
 	_changed()
 
 
@@ -659,13 +661,7 @@ func _move_rows(map: Callable) -> void:
 	var cell_map := func(cell: Vector2i) -> Vector2i:
 		var y: int = map.call(cell.y)
 		return NO_CELL if y < 0 else Vector2i(cell.x, y)
-	var moved_frames: Dictionary[Vector2i, Image] = {}
-	for cell in _frames:
-		var moved: Vector2i = cell_map.call(cell)
-		if moved != NO_CELL:
-			moved_frames[moved] = _frames[cell]
-	_frames = moved_frames
-	_remap_cell_data(cell_map)
+	_remap_cells(cell_map)
 	var locked: Array[Vector2i] = []
 	for cell in _locked:
 		var moved: Vector2i = cell_map.call(cell)
@@ -678,7 +674,19 @@ func _move_rows(map: Callable) -> void:
 		if moved >= 0:
 			moved_names[moved] = _row_names[row]
 	_row_names = moved_names
-	_remap_animation_cells(cell_map)
+
+
+## Moves every frame, with what its cell holds and the animations showing it, to the cell
+## [param map] returns for it, or drops it for NO_CELL
+func _remap_cells(map: Callable) -> void:
+	var moved_frames: Dictionary[Vector2i, Image] = {}
+	for cell in _frames:
+		var moved: Vector2i = map.call(cell)
+		if moved != NO_CELL:
+			moved_frames[moved] = _frames[cell]
+	_frames = moved_frames
+	_remap_cell_data(map)
+	_remap_animation_cells(map)
 
 
 #endregion
@@ -750,8 +758,15 @@ func _remap_animation_cells(map: Callable) -> void:
 ## origin, the old size and the new image. With [param move_centred], centred frames are
 ## moved too and get an origin of their own. [param op] describes the edit, so it's made
 ## again when a linked frame is reloaded, see [FrameEdits].
+## Pivots stay on the same point of the cell, unless [param turn_pivot] says where they go:
+## it's called with the pivot and the old size, and returns the pivot in the new image.
 func edit_frames(
-	coords: Array[Vector2i], edit: Callable, move := Callable(), move_centred := false, op := {}
+	coords: Array[Vector2i],
+	edit: Callable,
+	move := Callable(),
+	move_centred := false,
+	op := {},
+	turn_pivot := Callable()
 ) -> void:
 	var edited := false
 	for coord in coords:
@@ -765,22 +780,34 @@ func edit_frames(
 		if img != null and not img.is_empty():
 			# duplicate() doesn't copy the name
 			img.resource_name = old.resource_name
+			var old_position := _placed_rect(coord, Vector2.ONE).position
 			if move.is_valid() and (move_centred or _origins.has(coord)):
 				var origin: Vector2i = move.call(get_frame_origin(coord), old.get_size(), img)
 				_origins[coord] = origin
 			_frames[coord] = img
+			if _pivots.has(coord):
+				if turn_pivot.is_valid():
+					_pivots[coord] = turn_pivot.call(_pivots[coord], old.get_size())
+				else:
+					var moved_by := _placed_rect(coord, Vector2.ONE).position - old_position
+					_pivots[coord] -= Vector2(moved_by)
 			_record_op(coord, op)
 			edited = true
 	if edited:
 		_changed()
 
 
-## Places the frame at [param coord] at [param origin], see [method get_frame_origin]
+## Places the frame at [param coord] at [param origin], see [method get_frame_origin]. An
+## origin that centres the frame takes its own origin away.
 func set_frame_origin(coord: Vector2i, origin: Vector2i) -> void:
-	if has_frame(coord) and _origins.get(coord) != origin:
-		_record_move(coord, origin - get_frame_origin(coord))
-		_origins[coord] = origin
-		_changed()
+	if not has_frame(coord):
+		return
+	var centred := origin == -_half_up(_frames[coord].get_size())
+	if (centred and not _origins.has(coord)) or _origins.get(coord) == origin:
+		return
+	_record_move(coord, origin - get_frame_origin(coord))
+	_set_or_erase(_origins, coord, null if centred else origin)
+	_changed()
 
 
 ## Moves frames inside their cells by [param offset] unscaled pixels
@@ -794,47 +821,6 @@ func nudge_frames(coords: Array[Vector2i], offset: Vector2i) -> void:
 			_record_move(coord, offset)
 			moved = true
 	if moved:
-		_changed()
-
-
-## Puts frames against an edge of their cells, or in the middle, without growing the
-## cells. The edges are the other frames' when the frame fits between them (so a frame
-## moved out lines up with the rest again), else the whole cell's.
-func align_frames(coords: Array[Vector2i], alignment: Alignment) -> void:
-	var others: Array[Vector2i] = []
-	for coord in _frames:
-		if coord not in coords:
-			others.append(coord)
-	var cell := _frame_bounds(Vector2.ONE)
-	var rest := _bounds_of(others, Vector2.ONE)
-	var aligned := false
-	for coord in coords:
-		if not has_frame(coord):
-			continue
-		var size := _frames[coord].get_size()
-		var fits_x := size.x <= rest.size.x or alignment in [Alignment.TOP, Alignment.BOTTOM]
-		var fits_y := size.y <= rest.size.y or alignment in [Alignment.LEFT, Alignment.RIGHT]
-		var bounds := rest if fits_x and fits_y else cell
-		var origin := get_frame_origin(coord)
-		match alignment:
-			Alignment.TOP:
-				origin.y = bounds.position.y
-			Alignment.BOTTOM:
-				origin.y = bounds.end.y - size.y
-			Alignment.LEFT:
-				origin.x = bounds.position.x
-			Alignment.RIGHT:
-				origin.x = bounds.end.x - size.x
-			Alignment.CENTER:
-				origin = bounds.position + (bounds.size - size) / 2
-		_record_move(coord, origin - get_frame_origin(coord))
-		if origin == -_half_up(size):
-			# Where it would be without an origin of its own
-			aligned = _origins.erase(coord) or aligned
-		elif _origins.get(coord) != origin:
-			_origins[coord] = origin
-			aligned = true
-	if aligned:
 		_changed()
 
 
@@ -892,28 +878,6 @@ func get_base_sprite_size() -> Vector2i:
 	return _frame_bounds(Vector2.ONE).size
 
 
-func _cache_key() -> Vector3:
-	return Vector3(_scale.x, _scale.y, _scale_filter)
-
-
-func _scaled_cache() -> Dictionary:
-	var key := _cache_key()
-	if _scaled_caches.has(key):
-		# Most recently used last
-		var cache: Dictionary = _scaled_caches[key]
-		_scaled_caches.erase(key)
-		_scaled_caches[key] = cache
-		return cache
-	_scaled_caches[key] = {}
-	while _scaled_caches.size() > 2:
-		_scaled_caches.erase(_scaled_caches.keys()[0])
-	return _scaled_caches[key]
-
-
-func _scaled_size(size: Vector2i) -> Vector2i:
-	return Vector2i((Vector2(size) * _scale).round()).max(Vector2i.ONE)
-
-
 ## Half of [param size], rounded up: centring leaves the odd pixel on the right and bottom
 static func _half_up(size: Vector2i) -> Vector2i:
 	return (size + Vector2i.ONE) / 2
@@ -952,28 +916,36 @@ static func _set_or_erase(dictionary: Dictionary, key: Variant, value: Variant) 
 		dictionary[key] = value
 
 
-## Clears what a cell holds besides its frame: its origin and its source
+## What cells hold besides their frames, in the order of [constant CELL_DATA_KEYS]
+func _cell_dicts() -> Array[Dictionary]:
+	return [_origins, _sources, _pivots, _placements]
+
+
+## Clears what a cell holds besides its frame
 func _erase_cell_data(coord: Vector2i) -> void:
-	_origins.erase(coord)
-	_sources.erase(coord)
+	for values in _cell_dicts():
+		values.erase(coord)
 
 
-## A copy of every cell's origin and source, for [method _restore_cell_data]
+## A copy of what every cell holds besides its frame, for [method _restore_cell_data]
 func _save_cell_data() -> Array[Dictionary]:
-	return [_origins.duplicate(), _sources.duplicate()]
+	var saved: Array[Dictionary] = []
+	for values in _cell_dicts():
+		saved.append(values.duplicate())
+	return saved
 
 
-## Gives [param coord] the origin and source that [param from] had in [param saved]
+## Gives [param coord] what [param from] held in [param saved]
 func _restore_cell_data(coord: Vector2i, saved: Array[Dictionary], from: Vector2i) -> void:
-	_set_or_erase(_origins, coord, saved[0].get(from))
-	_set_or_erase(_sources, coord, saved[1].get(from))
+	var targets := _cell_dicts()
+	for i in targets.size():
+		_set_or_erase(targets[i], coord, saved[i].get(from))
 
 
-## Moves each cell's origin and source to the cell [param map] returns, or drops them
-## for NO_CELL
+## Moves what each cell holds to the cell [param map] returns, or drops it for NO_CELL
 func _remap_cell_data(map: Callable) -> void:
 	var saved := _save_cell_data()
-	var targets: Array[Dictionary] = [_origins, _sources]
+	var targets := _cell_dicts()
 	for i in targets.size():
 		targets[i].clear()
 		for cell: Vector2i in saved[i]:
@@ -992,11 +964,4 @@ func _update_sprite_size() -> void:
 	var bounds := _frame_bounds(_scale)
 	_sprite_size = bounds.size
 	_cell_origin = bounds.position
-	# Drop cached scaled images of frames that are gone
-	var alive := {}
-	for img: Image in _frames.values():
-		alive[img] = true
-	for cache: Dictionary in _scaled_caches.values():
-		for source: Image in cache.keys():
-			if not alive.has(source):
-				cache.erase(source)
+	scaled_frames.prune()

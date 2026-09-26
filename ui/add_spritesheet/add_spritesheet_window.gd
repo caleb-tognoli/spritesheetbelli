@@ -249,12 +249,7 @@ func add_spritesheet_to_global() -> void:
 			var offset := Vector2i(0, target.get_first_free_row())
 			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 			for coord: Vector2i in spritesheet.frames:
-				target.set_frame(
-					coord + offset,
-					spritesheet.frames[coord],
-					spritesheet.frame_sources.get(coord, {}),
-					FrameSource.get_origin(spritesheet, coord)
-				)
+				target.set_cell(coord + offset, spritesheet.get_cell_data(coord))
 			for row: int in spritesheet.row_names:
 				target.set_row_name(row + offset.y, spritesheet.row_names[row])
 			for animation in spritesheet.animations:
@@ -272,22 +267,12 @@ func add_spritesheet_to_global() -> void:
 
 
 func add_selected_frames_to_global() -> void:
-	var imgs: Array[Image] = []
-	var selected := preview_area.spritesheet_preview.get_selected_coords()
-	for coord in selected:
-		imgs.append(spritesheet.frames[coord])
+	var cells: Array[Dictionary] = []
+	for coord in preview_area.spritesheet_preview.get_selected_coords():
+		cells.append(spritesheet.get_cell_data(coord))
 	var target := Global.spritesheet
 	Global.document.perform(
-		"Add frames",
-		func() -> void:
-			var added := target.add_frames(imgs, Settings.get_value(&"add_mode"))
-			for i in added.size():
-				target.set_frame(
-					added[i],
-					imgs[i],
-					spritesheet.frame_sources.get(selected[i], {}),
-					FrameSource.get_origin(spritesheet, selected[i])
-				)
+		"Add frames", target.add_cells.bind(cells, Settings.get_value(&"add_mode"))
 	)
 	frames_added.emit()
 	close_requested.emit()

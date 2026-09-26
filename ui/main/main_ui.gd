@@ -349,13 +349,13 @@ func _register_actions() -> void:
 	add.call(
 		&"paste",
 		"Paste",
-		func() -> void: add_images("Paste", clipboard.get_images()),
+		func() -> void: add_cells("Paste", clipboard.get_cells()),
 		clipboard.has_content
 	)
 	add.call(
 		&"duplicate",
 		"Duplicate",
-		func() -> void: add_images("Duplicate", get_selected_images()),
+		func() -> void: add_cells("Duplicate", get_selected_cells()),
 		has_selection
 	)
 	add.call(
@@ -374,7 +374,7 @@ func _register_actions() -> void:
 		add.call(
 			align[0],
 			align[1],
-			edit_selection.bind("Align", sheet.align_frames.bind(align[2])),
+			edit_selection.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
 			has_selection
 		)
 	add.call(
@@ -558,25 +558,29 @@ func get_selected_linked_coords() -> Array[Vector2i]:
 	return coords
 
 
-func get_selected_images() -> Array[Image]:
-	var images: Array[Image] = []
+## The selected frames with what they hold, but not where they are in the packed layout,
+## see [method Spritesheet.get_cell_data]
+func get_selected_cells() -> Array[Dictionary]:
+	var cells: Array[Dictionary] = []
 	for coord in preview.get_selected_coords():
-		images.append(Global.spritesheet.frames[coord])
-	return images
+		var data := Global.spritesheet.get_cell_data(coord)
+		data.erase("placement")
+		cells.append(data)
+	return cells
 
 
 func copy_selection() -> void:
-	clipboard.copy(get_selected_images())
+	clipboard.copy(get_selected_cells())
 	Actions.refresh()
 
 
-## Adds [param images] to free cells as one undoable step and selects them
-func add_images(action_name: String, images: Array[Image]) -> void:
-	if images.is_empty():
+## Adds frames with what they hold to free cells as one undoable step and selects them
+func add_cells(action_name: String, cells: Array[Dictionary]) -> void:
+	if cells.is_empty():
 		return
 	var mode: Spritesheet.AddMode = Settings.get_value(&"add_mode")
 	var coords: Array[Vector2i] = Global.document.perform(
-		action_name, Global.spritesheet.add_frames.bind(images, mode)
+		action_name, Global.spritesheet.add_cells.bind(cells, mode)
 	)
 	preview.set_selected_coords(coords)
 
@@ -712,9 +716,12 @@ func _check_sprite_size(new_size: Vector2i) -> bool:
 ## undoing either: scale them on worker threads while a progress bar shows
 func _prepare_scaled_images() -> void:
 	var sheet := Global.spritesheet
-	if sheet.is_preparing_scaled_images() or sheet.get_pending_scale_work() < SLOW_SCALE_WORK:
+	if (
+		sheet.scaled_frames.is_preparing()
+		or sheet.scaled_frames.get_pending_work() < SLOW_SCALE_WORK
+	):
 		return
-	await sheet.prepare_scaled_images(
+	await sheet.scaled_frames.prepare(
 		func(done: int, total: int) -> void: Notify.progress("Resizing sprites", done, total)
 	)
 	Notify.hide_progress()

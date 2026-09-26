@@ -52,7 +52,7 @@ func test_every_edit_can_be_made_again() -> void:
 		"colour key": func() -> void: FrameEdits.color_key(sheet, first, Color.BLUE),
 		"outline": func() -> void: FrameEdits.outline(sheet, first, Color.BLACK, 2, true),
 		"nudge": func() -> void: sheet.nudge_frames(first, Vector2i(3, -1)),
-		"align": func() -> void: sheet.align_frames(first, Spritesheet.Alignment.BOTTOM),
+		"align": func() -> void: FrameEdits.align(sheet, first, Spritesheet.Alignment.BOTTOM),
 		"set origin": func() -> void: sheet.set_frame_origin(FIRST, Vector2i(-2, -9)),
 	}
 	# Each on its own, then all of them one after the other

@@ -133,7 +133,7 @@ func _on_spritesheet_updated() -> void:
 		if not spritesheet.has_frame(coord):
 			_selected.erase(coord)
 	# Textures of scaled images the sheet keeps stay too, e.g. to undo a resize quickly
-	var alive := spritesheet.get_cached_scaled_images()
+	var alive := spritesheet.scaled_frames.get_cached_images()
 	for coord in spritesheet.frames:
 		alive[spritesheet.frames[coord]] = true
 	for img: Image in _textures.keys():
@@ -554,7 +554,7 @@ func _draw() -> void:
 func _draw_frame(coord: Vector2i, rect: Rect2, modulate_color := Color.WHITE) -> void:
 	# While frames are scaled in the background, stretch the originals instead
 	var img := spritesheet.frames[coord]
-	if spritesheet.is_frame_scaled(coord) or not spritesheet.is_preparing_scaled_images():
+	if spritesheet.scaled_frames.is_ready(coord) or not spritesheet.scaled_frames.is_preparing():
 		img = spritesheet.get_frame_image(coord)
 	if not _textures.has(img):
 		_textures[img] = ImageTexture.create_from_image(img)

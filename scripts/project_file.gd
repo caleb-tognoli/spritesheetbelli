@@ -48,6 +48,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			var source: Dictionary = sheet.frame_sources.get(coords[i], {})
 			if source:
 				frame.source = FrameSource.to_json(source, path.get_base_dir())
+			if sheet.has_pivot(coords[i]):
+				var pivot := sheet.get_pivot(coords[i])
+				frame.pivot = [pivot.x, pivot.y]
 			frames.append(frame)
 		error = _write(zip, FRAMES_FILE, atlas.save_png_to_buffer())
 		if error != OK:
@@ -112,6 +115,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	var frames: Dictionary[Vector2i, Image] = {}
 	var origins: Dictionary[Vector2i, Vector2i] = {}
 	var sources: Dictionary[Vector2i, Dictionary] = {}
+	var pivots: Dictionary[Vector2i, Vector2] = {}
 	for frame: Dictionary in data.get("frames", []):
 		var img := _read_frame(zip, atlas, frame)
 		if img == null:
@@ -130,6 +134,9 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		var source := FrameSource.from_json(frame.get("source"), folder)
 		if source:
 			sources[cell] = source
+		var pivot: Variant = frame.get("pivot")
+		if pivot is Array and pivot.size() >= 2:
+			pivots[cell] = Vector2(float(pivot[0]), float(pivot[1]))
 
 	var locked: Array[Vector2i] = []
 	for coord: Array in data.get("locked", []):
@@ -148,6 +155,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"frames": frames,
 		"origins": origins,
 		"sources": sources,
+		"pivots": pivots,
 		"locked": locked,
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),

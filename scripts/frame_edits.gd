@@ -19,7 +19,11 @@ static func flip(sheet: Spritesheet, coords: Array[Vector2i], horizontal: bool) 
 				return Vector2i(-origin.x - size.x, origin.y)
 			return Vector2i(origin.x, -origin.y - size.y),
 		false,
-		{"op": "flip", "horizontal": horizontal}
+		{"op": "flip", "horizontal": horizontal},
+		func(pivot: Vector2, size: Vector2i) -> Vector2:
+			if horizontal:
+				return Vector2(size.x - pivot.x, pivot.y)
+			return Vector2(pivot.x, size.y - pivot.y)
 	)
 
 
@@ -33,7 +37,11 @@ static func rotate(sheet: Spritesheet, coords: Array[Vector2i], clockwise: bool)
 				return Vector2i(-origin.y - size.y, origin.x)
 			return Vector2i(origin.y, -origin.x - size.x),
 		false,
-		{"op": "rotate", "clockwise": clockwise}
+		{"op": "rotate", "clockwise": clockwise},
+		func(pivot: Vector2, size: Vector2i) -> Vector2:
+			if clockwise:
+				return Vector2(size.y - pivot.y, pivot.x)
+			return Vector2(pivot.y, size.x - pivot.x)
 	)
 
 
@@ -96,6 +104,49 @@ static func outline_move(thickness: int) -> Callable:
 
 static func outline_op(color: Color, thickness: int, corners: bool) -> Dictionary:
 	return {"op": "outline", "color": color.to_html(), "thickness": thickness, "corners": corners}
+
+
+## Puts frames against an edge of their cells, or in the middle, without growing the
+## cells. The edges are the other frames' when the frame fits between them (so a frame
+## moved out lines up with the rest again), else the whole cell's.
+static func align(
+	sheet: Spritesheet, coords: Array[Vector2i], alignment: Spritesheet.Alignment
+) -> void:
+	var cell := Rect2i()
+	var rest := Rect2i()
+	for coord in sheet.frames:
+		var rect := Rect2i(sheet.get_frame_origin(coord), sheet.frames[coord].get_size())
+		cell = rect if cell.size == Vector2i.ZERO else cell.merge(rect)
+		if coord not in coords:
+			rest = rect if rest.size == Vector2i.ZERO else rest.merge(rect)
+	sheet.begin_batch()
+	for coord in coords:
+		if not sheet.has_frame(coord):
+			continue
+		var size := sheet.frames[coord].get_size()
+		var fits_x := (
+			size.x <= rest.size.x
+			or alignment in [Spritesheet.Alignment.TOP, Spritesheet.Alignment.BOTTOM]
+		)
+		var fits_y := (
+			size.y <= rest.size.y
+			or alignment in [Spritesheet.Alignment.LEFT, Spritesheet.Alignment.RIGHT]
+		)
+		var bounds := rest if fits_x and fits_y else cell
+		var origin := sheet.get_frame_origin(coord)
+		match alignment:
+			Spritesheet.Alignment.TOP:
+				origin.y = bounds.position.y
+			Spritesheet.Alignment.BOTTOM:
+				origin.y = bounds.end.y - size.y
+			Spritesheet.Alignment.LEFT:
+				origin.x = bounds.position.x
+			Spritesheet.Alignment.RIGHT:
+				origin.x = bounds.end.x - size.x
+			Spritesheet.Alignment.CENTER:
+				origin = bounds.position + (bounds.size - size) / 2
+		sheet.set_frame_origin(coord, origin)
+	sheet.end_batch()
 
 
 ## Makes the edit described by [param op] again. Edits this version doesn't know are

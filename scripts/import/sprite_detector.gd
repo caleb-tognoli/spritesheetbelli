@@ -87,7 +87,7 @@ static func to_spritesheet(
 		for column: int in rows[row].size():
 			var rect: Rect2i = rows[row][column]
 			sheet.set_frame(Vector2i(column, row), pixels.get_region(rect))
-	sheet.align_frames(sheet.get_sorted_coords(), alignment)
+	FrameEdits.align(sheet, sheet.get_sorted_coords(), alignment)
 	# Linked once aligned, so going back to the file keeps the alignment
 	if path:
 		for row in rows.size():
