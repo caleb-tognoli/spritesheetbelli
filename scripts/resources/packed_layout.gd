@@ -209,8 +209,9 @@ static func get_occupancy(sheet: Spritesheet) -> float:
 	return float(used) / total if total > 0 else 0.0
 
 
-## The pages as images, with every frame at its place
-static func render_pages(sheet: Spritesheet) -> Array[Image]:
+## The pages as images, with every frame at its place. Turned frames are turned
+## clockwise, or [param counter_clockwise] for engines that expect that.
+static func render_pages(sheet: Spritesheet, counter_clockwise := false) -> Array[Image]:
 	var settings := sheet.atlas_settings
 	var images: Array[Image] = []
 	for size in get_page_sizes(sheet):
@@ -223,7 +224,7 @@ static func render_pages(sheet: Spritesheet) -> Array[Image]:
 		drawn[_place_key(place)] = true
 		var pixels := sheet.get_frame_image(coord).get_region(place.src)
 		if place.rotated:
-			pixels.rotate_90(CLOCKWISE)
+			pixels.rotate_90(COUNTERCLOCKWISE if counter_clockwise else CLOCKWISE)
 		var page: Image = images[place.page]
 		var rect := Rect2i(place.position, pixels.get_size())
 		page.blit_rect(pixels, Rect2i(Vector2i.ZERO, rect.size), rect.position)

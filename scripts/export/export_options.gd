@@ -16,8 +16,6 @@ enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
 enum MetadataFormat { NONE, JSON, GODOT }
 
 const IMAGE_FORMATS: Array[String] = ["png", "jpg", "webp"]
-## Files that can be written next to a packed atlas, by extension
-const ATLAS_DATA_FORMATS := {"json": "TexturePacker JSON", "atlas": "libGDX / Spine .atlas"}
 
 var target := Target.IMAGE
 ## File format of the spritesheet image when exporting only the image
@@ -37,7 +35,7 @@ var spacing := 0
 var extrude := 0
 ## Makes a packed atlas as wide and tall as powers of two
 var power_of_two := false
-## The file written next to a packed atlas: "json" (TexturePacker) or "atlas" (libGDX)
+## The data file written next to a packed atlas, one of [constant AtlasFormats.FORMATS]
 var atlas_data := "json"
 
 ## File name for exported sprites. See [method SpritesheetExporter.format_sprite_name].
@@ -118,7 +116,7 @@ func apply(settings: Dictionary) -> void:
 			set(key, value)
 	if image_format not in IMAGE_FORMATS:
 		image_format = "png"
-	if atlas_data not in ATLAS_DATA_FORMATS:
+	if atlas_data not in AtlasFormats.FORMATS:
 		atlas_data = "json"
 
 

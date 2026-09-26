@@ -612,13 +612,24 @@ func _export_atlas(path: String) -> bool:
 	if result.error == ERR_OUT_OF_MEMORY:
 		Notify.error(tr("The frames don't fit in a %d px atlas.") % AtlasPacker.MAX_SIZE)
 		return false
+	if result.error == ERR_UNAVAILABLE:
+		Notify.error(tr(result.message))
+		return false
 	if result.error != OK:
 		Notify.error(tr("Could not export the atlas (%s).") % error_string(result.error))
 		return false
-	unlink_overwritten([result.path, result.json_path])
-	WebFiles.download(result.path)
-	WebFiles.download(result.json_path)
+	unlink_overwritten(result.paths)
+	for written: String in result.paths:
+		WebFiles.download(written)
 	var size: Vector2i = result.size
+	if result.pages > 1:
+		Notify.toast(
+			(
+				tr("Packed %d frames on %d pages, from %s, and %s.")
+				% [result.frames, result.pages, result.path.get_file(), result.json_path.get_file()]
+			)
+		)
+		return true
 	Notify.toast(
 		(
 			tr("Packed %d frames into %s (%d×%d px) and %s.")

@@ -46,8 +46,8 @@ const TARGETS := [
 		"about":
 		(
 			"Frames with their transparent borders trimmed, packed as tightly as "
-			+ "possible into a PNG, with a JSON (or libGDX .atlas) file that says where "
-			+ "each one is."
+			+ "possible into PNG pages, with a file that says where each one is for "
+			+ "TexturePacker, Phaser, libGDX, Spine, Starling or Godot."
 		),
 	},
 	{
@@ -65,6 +65,10 @@ const PATTERN_HELP := (
 	"Tokens: {index} {row} {column} {row_name} {frame} {name}\n"
 	+ "Add :3 to pad numbers, e.g. {index:3} gives 007"
 )
+## What a sheet in the packed layout can be exported as
+const PACKED_TARGETS: Array[ExportOptions.Target] = [
+	ExportOptions.Target.ATLAS, ExportOptions.Target.SPRITES, ExportOptions.Target.GIF
+]
 const LABEL_WIDTH := 170
 const COLLAPSED_ICON := preload("res://assets/icons/GuiTreeArrowRight.svg")
 const EXPANDED_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
@@ -153,8 +157,8 @@ func _init() -> void:
 	gif_scale.suffix = "×"
 	gif_scale.tooltip_text = "Makes the GIF bigger, keeping pixels sharp"
 	_add_row(_settings, "Scale", gif_scale, [T.GIF])
-	for extension: String in ExportOptions.ATLAS_DATA_FORMATS:
-		atlas_data.add_item(ExportOptions.ATLAS_DATA_FORMATS[extension])
+	for format: String in AtlasFormats.FORMATS:
+		atlas_data.add_item(AtlasFormats.FORMATS[format].name)
 	atlas_data.tooltip_text = "The file next to the atlas that says where each frame is"
 	_add_row(_settings, "Data file", atlas_data, [T.ATLAS])
 
@@ -239,6 +243,14 @@ func _ready() -> void:
 func refresh() -> void:
 	_updating = true
 	var options := ExportOptions.from_sheet(Global.spritesheet)
+	# A packed sheet is exported as it's packed, not as a grid
+	var packed := _is_packed()
+	for i in TARGETS.size():
+		var grid_only: bool = TARGETS[i].target not in PACKED_TARGETS
+		targets.set_item_disabled(i, packed and grid_only)
+		targets.set_item_tooltip(i, tr("Only in the grid layout") if packed and grid_only else "")
+	if packed and options.target not in PACKED_TARGETS:
+		options.target = T.ATLAS
 	targets.select(_target_index(options.target))
 	targets.ensure_current_is_visible()
 	image_format.select(ExportOptions.IMAGE_FORMATS.find(options.image_format))
@@ -261,7 +273,7 @@ func refresh() -> void:
 		if animation.name == options.gif_animation:
 			gif_animation.select(gif_animation.item_count - 1)
 	gif_scale.set_value_no_signal(options.gif_scale)
-	atlas_data.select(ExportOptions.ATLAS_DATA_FORMATS.keys().find(options.atlas_data))
+	atlas_data.select(AtlasFormats.FORMATS.keys().find(options.atlas_data))
 	advanced_toggle.button_pressed = (
 		options.padding or options.spacing or options.extrude or options.power_of_two
 	)
@@ -308,7 +320,7 @@ func _options() -> ExportOptions:
 		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
 	)
 	options.gif_scale = int(gif_scale.value)
-	options.atlas_data = ExportOptions.ATLAS_DATA_FORMATS.keys()[maxi(atlas_data.selected, 0)]
+	options.atlas_data = AtlasFormats.FORMATS.keys()[maxi(atlas_data.selected, 0)]
 	return options
 
 
@@ -349,7 +361,7 @@ func _update_labels(options: ExportOptions) -> void:
 				% [sheet.frames.size(), sheet.sprite_size.x, sheet.sprite_size.y]
 			)
 		T.ATLAS:
-			output_info.text = tr("The size is found when packing")
+			output_info.text = _atlas_info(options)
 		T.GIF:
 			var animation := options.get_gif_animation(sheet)
 			var count := (
@@ -367,9 +379,13 @@ func _update_labels(options: ExportOptions) -> void:
 
 func _update_visibility(options: ExportOptions) -> void:
 	var any_advanced := false
+	var packed := _is_packed()
 	for row in _rows:
 		var shown: bool = options.target in row.targets
 		if row.format and options.image_format != row.format:
+			shown = false
+		# A packed sheet's spacing and page size are part of how it's packed
+		if packed and row.controls[1] in [spacing, extrude, power_of_two]:
 			shown = false
 		if row.advanced:
 			any_advanced = any_advanced or shown
@@ -420,6 +436,27 @@ func _add_spin(spin: SpinBox, text: String, tip: String, for_targets: Array) -> 
 	spin.suffix = "px"
 	spin.tooltip_text = tip
 	_add_row(_advanced, text, spin, for_targets)
+
+
+## What a packed atlas export will write, or why it can't
+func _atlas_info(options: ExportOptions) -> String:
+	var sheet := Global.spritesheet
+	if not _is_packed():
+		return tr("The size is found when packing")
+	if not AtlasFormats.can_rotate(options.atlas_data):
+		for place: Dictionary in sheet.placements.values():
+			if place.rotated:
+				return tr("This format can't describe turned frames. Pack without turning them.")
+	var sizes := PackedLayout.get_page_sizes(sheet)
+	if sizes.is_empty():
+		return ""
+	if sizes.size() == 1:
+		return tr("Atlas size: %d×%d px") % [sizes[0].x, sizes[0].y]
+	return tr("%d pages, the first %d×%d px") % [sizes.size(), sizes[0].x, sizes[0].y]
+
+
+static func _is_packed() -> bool:
+	return Global.spritesheet.layout == Spritesheet.Layout.PACKED
 
 
 static func _target_index(target: ExportOptions.Target) -> int:

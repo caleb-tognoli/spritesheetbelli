@@ -29,7 +29,9 @@ Options:
   --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file
   --fps <n>                      Animation speed in the metadata and GIFs (default 12)
   --atlas                        Write --out as a packed atlas with a JSON file
-  --atlas-data <json|atlas>      The atlas's data file: JSON or libGDX / Spine .atlas
+  --atlas-data <format>          The atlas's data file: json (TexturePacker hash),
+                                 json-array, phaser, atlas (libGDX / Spine),
+                                 sparrow (Starling XML) or godot (SpriteFrames)
   --animation <name>             The animation a GIF plays (default: the first one, or
                                  every frame when there are none)
   --scale <n>                    Make a GIF n times bigger
@@ -111,8 +113,10 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 	elif export.gif_animation.is_empty() and not sheet.animations.is_empty():
 		export.gif_animation = sheet.animations[0].name
 	if options.has("--atlas-data"):
-		if not ExportOptions.ATLAS_DATA_FORMATS.has(options["--atlas-data"]):
-			say.call("Error: --atlas-data must be json or atlas.")
+		if not AtlasFormats.FORMATS.has(options["--atlas-data"]):
+			say.call(
+				"Error: --atlas-data must be one of %s." % ", ".join(AtlasFormats.FORMATS.keys())
+			)
 			return 2
 		export.atlas_data = options["--atlas-data"]
 	if options.has("--scale"):
@@ -298,10 +302,21 @@ static func _write_atlas(
 	if result.error == ERR_OUT_OF_MEMORY:
 		say.call("Error: the frames don't fit in a %d px atlas." % AtlasPacker.MAX_SIZE)
 		return 1
+	if result.error == ERR_UNAVAILABLE:
+		say.call("Error: " + result.message)
+		return 1
 	if result.error != OK:
 		say.call("Error: could not write %s (%s)" % [result.path, error_string(result.error)])
 		return 1
 	var size: Vector2i = result.size
+	if result.pages > 1:
+		say.call(
+			(
+				"Wrote %d pages from %s and %s: %d frames"
+				% [result.pages, result.path, result.json_path.get_file(), result.frames]
+			)
+		)
+		return 0
 	say.call(
 		(
 			"Wrote %s and %s: %d frames, %d×%d px"

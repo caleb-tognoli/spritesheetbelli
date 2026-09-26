@@ -152,7 +152,9 @@ func test_packed_atlas_round_trip() -> void:
 	var options := ExportOptions.new()
 	options.sprite_name_pattern = "frame{index}"
 	var json := Metadata.texture_packer_json(
-		Metadata.atlas_frames(sheet, packed.regions, options), "atlas.png", packed.image.get_size()
+		AtlasFormats.get_frames(sheet, packed.regions, options),
+		"atlas.png",
+		packed.image.get_size()
 	)
 	var images := SheetData.parse_json(json).cut(packed.image)
 	assert_eq(images.size(), 2)

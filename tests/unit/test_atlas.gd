@@ -45,7 +45,7 @@ func test_texture_packer_json() -> void:
 	img.fill_rect(Rect2i(2, 2, 4, 4), Color.RED)
 	sheet.add_frames([img] as Array[Image])
 	var packed := AtlasPacker.pack(sheet)
-	var frames := Metadata.atlas_frames(sheet, packed.regions, ExportOptions.new())
+	var frames := AtlasFormats.get_frames(sheet, packed.regions, ExportOptions.new())
 	var json: Dictionary = JSON.parse_string(
 		Metadata.texture_packer_json(frames, "a.png", Vector2i(4, 4))
 	)

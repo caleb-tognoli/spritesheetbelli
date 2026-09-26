@@ -421,6 +421,26 @@ func test_export_dialog() -> void:
 	assert_true(FileAccess.file_exists(dir.path_join("dialog_export.tres")), "SpriteFrames too")
 
 
+func test_export_dialog_for_a_packed_sheet() -> void:
+	Global.spritesheet.add_frames([make_image(Color.RED), make_image(Color.BLUE)] as Array[Image])
+	Global.spritesheet.set_layout(Spritesheet.Layout.PACKED)
+	await get_tree().process_frame
+	Actions.run(&"export")
+	var dialog: ExportDialog = main.export_dialog
+	var atlas := (
+		ExportDialog
+		. TARGETS
+		. map(func(t: Dictionary) -> int: return t.target)
+		. find(ExportOptions.Target.ATLAS)
+	)
+	assert_eq(dialog.targets.get_selected_items(), PackedInt32Array([atlas]), "atlas first")
+	assert_true(dialog.targets.is_item_disabled(0), "no grid image")
+	assert_false(dialog.spacing.visible, "spacing is part of how it's packed")
+	assert_true(dialog.atlas_data.visible)
+	assert_true("Atlas size" in dialog.output_info.text, dialog.output_info.text)
+	dialog.hide()
+
+
 func test_history_panel() -> void:
 	Actions.run(&"toggle_history")
 	var panel: HistoryPanel = main.history_panel

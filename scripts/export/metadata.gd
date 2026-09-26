@@ -187,25 +187,40 @@ static func frame_tags(sheet: Spritesheet) -> Array[Dictionary]:
 
 
 ## A Godot SpriteFrames resource using the image next to it, one animation per row
+## The images can be the pages of a packed atlas: [param image_files] replaces
+## [param image_file] then, and frames say which "page" they're on. A frame's "margin" puts
+## back the transparent borders it was packed without.
 static func sprite_frames_tres(
-	frames: Array[Dictionary], animation_list: Array[Dictionary], image_file: String, fps: float
+	frames: Array[Dictionary],
+	animation_list: Array[Dictionary],
+	image_file: String,
+	fps: float,
+	image_files := PackedStringArray(),
 ) -> String:
+	if image_files.is_empty():
+		image_files = [image_file]
 	var lines: PackedStringArray = [
-		'[gd_resource type="SpriteFrames" load_steps=%d format=3]' % (frames.size() + 2),
-		"",
-		'[ext_resource type="Texture2D" path="%s" id="1_sheet"]' % image_file,
+		(
+			'[gd_resource type="SpriteFrames" load_steps=%d format=3]'
+			% (frames.size() + image_files.size() + 1)
+		),
 		"",
 	]
+	for page in image_files.size():
+		lines.append(
+			(
+				'[ext_resource type="Texture2D" path="%s" id="%d_sheet"]'
+				% [image_files[page], page + 1]
+			)
+		)
+	lines.append("")
 	for i in frames.size():
 		var rect: Rect2i = frames[i].rect
 		lines.append('[sub_resource type="AtlasTexture" id="AtlasTexture_%d"]' % i)
-		lines.append('atlas = ExtResource("1_sheet")')
-		lines.append(
-			(
-				"region = Rect2(%d, %d, %d, %d)"
-				% [rect.position.x, rect.position.y, rect.size.x, rect.size.y]
-			)
-		)
+		lines.append('atlas = ExtResource("%d_sheet")' % (int(frames[i].get("page", 0)) + 1))
+		lines.append("region = " + _rect2(rect))
+		if frames[i].has("margin"):
+			lines.append("margin = " + _rect2(frames[i].margin))
 		lines.append("")
 	var animation_texts: PackedStringArray = []
 	for animation in animation_list:
@@ -243,11 +258,13 @@ static func sprite_frames_tres(
 	return "\n".join(lines) + "\n"
 
 
-## JSON in the TexturePacker "hash" format, readable by most engines and tools.
-## [param tags] are added as Aseprite-style "frameTags", and with [param fps] each frame
-## gets an Aseprite-style duration in milliseconds, or the one in [param durations] (by
-## frame index, see [method frame_durations]). [param animation_names] lists the frames
-## of each animation in "animations" (see [method animation_frame_names]).
+## JSON in the TexturePacker "hash" format, readable by most engines and tools, or in the
+## "array" format with [param as_array]. [param tags] are added as Aseprite-style
+## "frameTags", and with [param fps] each frame gets an Aseprite-style duration in
+## milliseconds, or the one in [param durations] (by frame index, see
+## [method frame_durations]) or its own "duration". [param animation_names] lists the
+## frames of each animation in "animations" (see [method animation_frame_names]).
+## Frames of a packed atlas can be "rotated" (stored turned clockwise) and have a "pivot".
 static func texture_packer_json(
 	frames: Array[Dictionary],
 	image_file: String,
@@ -256,26 +273,26 @@ static func texture_packer_json(
 	fps := 0.0,
 	durations := {},
 	animation_names := {},
+	as_array := false,
 ) -> String:
 	var entries := {}
+	var listed := []
 	for index in frames.size():
 		var frame := frames[index]
-		var rect: Rect2i = frame.rect
-		var source: Rect2i = frame.get("source_rect", Rect2i(Vector2i.ZERO, rect.size))
-		var source_size: Vector2i = frame.get("source_size", rect.size)
-		entries[frame.name] = {
-			"frame": _rect(rect),
-			"rotated": false,
-			"trimmed": source.size != source_size,
-			"spriteSourceSize": _rect(source),
-			"sourceSize": {"w": source_size.x, "h": source_size.y},
-		}
-		if durations.has(index):
-			entries[frame.name]["duration"] = durations[index]
+		var entry := texture_packer_entry(frame)
+		if frame.has("duration"):
+			entry.duration = frame.duration
+		elif durations.has(index):
+			entry.duration = durations[index]
 		elif fps > 0:
-			entries[frame.name]["duration"] = roundi(1000.0 / fps)
+			entry.duration = roundi(1000.0 / fps)
+		if as_array:
+			entry.filename = frame.name
+			listed.append(entry)
+		else:
+			entries[frame.name] = entry
 	var data := {
-		"frames": entries,
+		"frames": listed if as_array else entries,
 		"meta":
 		{
 			"app": "spritesheetbelli",
@@ -292,55 +309,29 @@ static func texture_packer_json(
 	return JSON.stringify(data, "\t", false)
 
 
-## Frames of a packed atlas, named with the sheet's sprite name pattern
-static func atlas_frames(
-	sheet: Spritesheet, regions: Array, options: ExportOptions, index_start := 0
-) -> Array[Dictionary]:
-	var frames: Array[Dictionary] = []
-	for region: AtlasPacker.Region in regions:
-		var name := SpritesheetExporter.format_sprite_name(
-			options.sprite_name_pattern, sheet, region.coord, index_start
-		)
-		(
-			frames
-			. append(
-				{
-					"name": name + ".png",
-					"rect": region.rect,
-					"source_rect": region.source_rect,
-					"source_size": region.source_size,
-				}
-			)
-		)
-	return frames
+## Where a frame is, as TexturePacker describes it. A rotated frame's size is the size
+## before turning.
+static func texture_packer_entry(frame: Dictionary) -> Dictionary:
+	var rect: Rect2i = frame.rect
+	var rotated: bool = frame.get("rotated", false)
+	if rotated:
+		rect.size = Vector2i(rect.size.y, rect.size.x)
+	var source: Rect2i = frame.get("source_rect", Rect2i(Vector2i.ZERO, rect.size))
+	var source_size: Vector2i = frame.get("source_size", rect.size)
+	var entry := {
+		"frame": _rect(rect),
+		"rotated": rotated,
+		"trimmed": source.size != source_size,
+		"spriteSourceSize": _rect(source),
+		"sourceSize": {"w": source_size.x, "h": source_size.y},
+	}
+	if frame.has("pivot"):
+		entry.pivot = {"x": frame.pivot.x, "y": frame.pivot.y}
+	return entry
 
 
-## A libGDX texture atlas (also read by Spine runtimes) for [param frames] of a packed
-## atlas (see [method atlas_frames]). Trimmed frames keep their original size and offset;
-## libGDX measures the offset from the bottom.
-static func libgdx_atlas(
-	frames: Array[Dictionary], image_file: String, image_size: Vector2i
-) -> String:
-	var lines: PackedStringArray = [
-		"",
-		image_file,
-		"size: %d, %d" % [image_size.x, image_size.y],
-		"format: RGBA8888",
-		"filter: Nearest, Nearest",
-		"repeat: none",
-	]
-	for frame in frames:
-		var rect: Rect2i = frame.rect
-		var source: Rect2i = frame.get("source_rect", Rect2i(Vector2i.ZERO, rect.size))
-		var source_size: Vector2i = frame.get("source_size", rect.size)
-		lines.append(str(frame.name).get_basename())
-		lines.append("  rotate: false")
-		lines.append("  xy: %d, %d" % [rect.position.x, rect.position.y])
-		lines.append("  size: %d, %d" % [rect.size.x, rect.size.y])
-		lines.append("  orig: %d, %d" % [source_size.x, source_size.y])
-		lines.append("  offset: %d, %d" % [source.position.x, source_size.y - source.end.y])
-		lines.append("  index: -1")
-	return "\n".join(lines) + "\n"
+static func _rect2(rect: Rect2i) -> String:
+	return "Rect2(%d, %d, %d, %d)" % [rect.position.x, rect.position.y, rect.size.x, rect.size.y]
 
 
 static func _rect(rect: Rect2i) -> Dictionary:
