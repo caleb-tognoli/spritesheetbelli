@@ -3,8 +3,10 @@ extends Button
 ## A button that drops down a floating panel of rarely needed fields, and shows what's set
 ## in them as its text, e.g. "Spacing 2 · Extrude 1", or [member placeholder] when nothing
 ## is. Fields are added with [method add_field]; call [method update_text] after changes.
+## A field can have a button that resets it, shown while it isn't at its default.
 
 const ARROW := preload("res://assets/icons/GuiTreeArrowDown.svg")
+const RESET_ICON := preload("res://assets/icons/Reload.svg")
 
 ## Shown when nothing is set
 var placeholder := ""
@@ -12,6 +14,8 @@ var placeholder := ""
 var summarize := Callable()
 var popup := PopupPanel.new()
 var fields := GridContainer.new()
+## Reset buttons, with whether their field is at its default
+var _resets: Dictionary[Button, Callable] = {}
 
 
 func _init(empty_text := "") -> void:
@@ -23,7 +27,7 @@ func _init(empty_text := "") -> void:
 	# Never wider than its place: the text is cut short instead
 	clip_text = true
 	text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	fields.columns = 2
+	fields.columns = 3
 	fields.add_theme_constant_override("h_separation", 12)
 	fields.add_theme_constant_override("v_separation", 8)
 	popup.add_child(fields)
@@ -32,7 +36,14 @@ func _init(empty_text := "") -> void:
 
 
 ## Adds a labelled [param control] to the panel. Clicking the label focuses the control.
-func add_field(label_text: String, control: Control, tooltip := "") -> void:
+## With [param reset], a button after it calls that while [param is_default] is false.
+func add_field(
+	label_text: String,
+	control: Control,
+	tooltip := "",
+	reset := Callable(),
+	is_default := Callable(),
+) -> void:
 	var label := Label.new()
 	label.text = label_text
 	label.tooltip_text = tooltip
@@ -43,6 +54,20 @@ func add_field(label_text: String, control: Control, tooltip := "") -> void:
 	fields.add_child(label)
 	fields.add_child(control)
 	LabelLink.link(label, control)
+	# The slot keeps its width without a button, so fields don't move when it hides
+	var slot := CenterContainer.new()
+	slot.custom_minimum_size = Vector2(24, 0)
+	fields.add_child(slot)
+	if reset.is_valid():
+		var button := Button.new()
+		button.icon = RESET_ICON
+		button.flat = true
+		button.tooltip_text = tr("Reset %s") % label_text
+		button.focus_mode = Control.FOCUS_NONE
+		button.pressed.connect(reset)
+		button.pressed.connect(update_text)
+		slot.add_child(button)
+		_resets[button] = is_default
 
 
 ## Opens the panel below the button, at least as wide as it
@@ -56,3 +81,5 @@ func open() -> void:
 func update_text() -> void:
 	var summary: String = summarize.call() if summarize.is_valid() else ""
 	text = summary if summary else tr(placeholder)
+	for button in _resets:
+		button.visible = not _resets[button].call()

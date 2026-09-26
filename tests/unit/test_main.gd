@@ -400,17 +400,12 @@ func test_export_dialog() -> void:
 	dialog.select_target(ExportOptions.Target.SPRITES)
 	assert_false(dialog.image_format.visible)
 	assert_true(dialog.pattern.visible, "file names for sprites")
-	assert_false(dialog.advanced_toggle.visible, "nothing advanced for sprites")
+	assert_false("padding" in dialog, "spacing is in the sidebar")
 	dialog.select_target(ExportOptions.Target.GODOT)
 	assert_true(dialog.animation_fps.visible)
-	assert_false(dialog.padding.visible, "advanced options are hidden until asked for")
-	dialog.advanced_toggle.button_pressed = true
-	assert_true(dialog.padding.visible)
-	dialog.padding.value = 3
 	dialog.get_ok_button().pressed.emit()
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	assert_eq(options.target, ExportOptions.Target.GODOT, "saved with the sheet")
-	assert_eq(options.padding, 3)
 	assert_true(main.files.export_file_dialog in main.files.open_file_dialogs, "asks where")
 	assert_eq(main.files.export_file_dialog.current_file, "spritesheet.png")
 	main.files.export_file_dialog.hide()
@@ -434,14 +429,56 @@ func test_export_dialog_for_a_packed_sheet() -> void:
 		. find(ExportOptions.Target.ATLAS)
 	)
 	assert_eq(dialog.targets.get_selected_items(), PackedInt32Array([atlas]), "atlas first")
-	assert_true(dialog.targets.is_item_disabled(0), "no grid image")
-	assert_false(dialog.spacing.visible, "spacing is part of how it's packed")
+	assert_false(dialog.targets.is_item_disabled(0), "pages as images")
+	assert_true(dialog.targets.is_item_disabled(2), "no SpriteFrames of a grid")
 	assert_true(dialog.atlas_data.visible)
 	assert_true("Atlas size" in dialog.output_info.text, dialog.output_info.text)
+	dialog.select_target(ExportOptions.Target.IMAGE)
+	assert_true("Image size" in dialog.output_info.text, dialog.output_info.text)
+	dialog.get_ok_button().pressed.emit()
+	main.files.export_file_dialog.hide()
+	main.files.open_file_dialogs.clear()
+	Actions.run(&"export")
+	assert_eq(dialog.targets.get_selected_items(), PackedInt32Array([0]), "remembered")
 	dialog.hide()
 
 
+func test_packed_pages_export_as_images() -> void:
+	var sheet := Global.spritesheet
+	var images: Array[Image] = []
+	for color: Color in [Color.RED, Color.BLUE, Color.GREEN]:
+		images.append(make_image(color, Vector2i(40, 40)))
+	sheet.add_frames(images)
+	var settings := sheet.atlas_settings
+	settings.max_size = 64
+	sheet.set_atlas_settings(settings)
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	var pages := PackedLayout.get_page_sizes(sheet)
+	assert_eq(pages.size(), 3, "a page each")
+	var options := ExportOptions.from_sheet(sheet)
+	options.target = ExportOptions.Target.IMAGE
+	sheet.set_export_settings(options.to_dictionary())
+	var path := dir.path_join("pages.png")
+	assert_true(await main.files.export_to(path))
+	for i in 3:
+		var page := Image.load_from_file(dir.path_join("pages_%d.png" % i))
+		assert_eq(page.get_size(), pages[i])
+	assert_false(FileAccess.file_exists(dir.path_join("pages.json")), "no data file")
+
+
+func test_output_is_at_the_top_of_the_sidebar() -> void:
+	var sections: Node = main.sheet_size.get_parent()
+	assert_eq(main.export_btn.get_index(), 0, "the export button first")
+	assert_eq(main.sheet_size.get_index(), 1, "its description under it")
+	for child in sections.get_children():
+		assert_false(child is Label and child.text == "Output", "no heading")
+
+
 func test_history_panel() -> void:
+	assert_true(main.preview_area._action_buttons.has(&"toggle_history"), "in the toolbar")
+	var buttons: Dictionary = main.preview_area._action_buttons
+	assert_eq(buttons[&"toggle_history"].get_index(), buttons[&"toggle_sprites"].get_index() + 1)
+	assert_ne(Actions.get_action(&"toggle_history").icon, null)
 	Actions.run(&"toggle_history")
 	var panel: HistoryPanel = main.history_panel
 	assert_true(panel.visible)

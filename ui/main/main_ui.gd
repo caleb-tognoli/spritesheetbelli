@@ -51,6 +51,7 @@ const ICONS := {
 	&"toggle_grid": preload("res://assets/icons/GridToggle.svg"),
 	&"toggle_indices": preload("res://assets/icons/FrameNumbers.svg"),
 	&"toggle_animation": preload("res://assets/icons/AnimatedTexture.svg"),
+	&"toggle_history": preload("res://assets/icons/History.svg"),
 	&"insert_row": preload("res://assets/icons/ExpandTree.svg"),
 	&"remove_row": preload("res://assets/icons/CollapseTree.svg"),
 	&"move_row_up": preload("res://assets/icons/MoveUp.svg"),
@@ -75,7 +76,7 @@ const TOOLBAR_GROUPS := [
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
-	&"toggle_grid", &"toggle_indices", &"toggle_animation", &"toggle_sprites"
+	&"toggle_grid", &"toggle_indices", &"toggle_animation", &"toggle_sprites", &"toggle_history"
 ]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
@@ -528,7 +529,7 @@ func _register_actions() -> void:
 		"History",
 		func() -> void: Settings.set_value(&"show_history", not history_panel.visible),
 		Callable(),
-		null,
+		ICONS[&"toggle_history"],
 		func() -> bool: return history_panel.visible
 	)
 	add.call(&"edit_animations", "Animations…", func() -> void: animation_window.open(), has_frames)

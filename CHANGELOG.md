@@ -98,7 +98,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
   pivot and link, not just its pixels.
 - The grid section of the sidebar has spacing, padding and extruded edges for exports too,
-  in the same drop-down panel as the atlas and Add Spritesheet's offset and spacing.
+  in the same drop-down panel as the atlas and Add Spritesheet's offset and spacing, with
+  a button to reset each. The preview shows them as the export will: cells apart, the
+  padding around, and frames' edges extruded.
+- Packed sheets can be exported as images too, one per page.
+- Export is at the top of the sidebar, with the size of what it writes under it.
+- The history has a toolbar button, after the sprites list.
+- The animation preview's button to open the Animations window has the Animations icon,
+  and its list says "All frames" when fewer than two frames are selected.
 - Settings have short names; hovering one says what it does.
 - Grid actions (cells and rows) are left out of the menus and the toolbar in the packed
   layout.
@@ -132,7 +139,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
   Packed Atlas and Export Settings. It asks what to export (spritesheet image, sprites,
   Godot SpriteFrames, Aseprite/TexturePacker JSON or a packed atlas) and shows only the
-  settings that matter, with padding, spacing and extrusion under Advanced. Exports
+  settings that matter. Exports
   always ask where to save, so only projects are overwritten without asking.
 
 ### Fixed

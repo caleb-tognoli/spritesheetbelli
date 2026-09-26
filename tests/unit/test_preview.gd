@@ -216,3 +216,23 @@ func test_arrow_keys_move_frames_in_the_move_mode() -> void:
 	Actions.run(&"tool_select")
 	key(KEY_RIGHT)
 	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "the select mode selects")
+
+
+func test_cells_show_the_spacing_of_the_export() -> void:
+	var sheet := Global.spritesheet
+	var options := ExportOptions.from_sheet(sheet)
+	options.padding = 4
+	options.spacing = 2
+	options.extrude = 1
+	Global.document.perform("Spacing", sheet.set_export_settings.bind(options.to_dictionary()))
+	for coord: Vector2i in [Vector2i(0, 0), Vector2i(3, 1)]:
+		var exported := SpritesheetExporter.get_cell_rect(sheet, coord, options)
+		assert_eq(preview.cell_rect(coord), Rect2(exported), "where the export puts it")
+	# 16 px cells, 4 px step between them, 5 px before the first
+	var second := preview.cell_rect(Vector2i(1, 0))
+	assert_eq(second.position, Vector2(5 + 20, 5))
+	assert_eq(preview.world_to_cell(second.get_center()), Vector2i(1, 0))
+	assert_eq(preview.world_to_cell(second.position - Vector2(1, -1)), Vector2i(1, 0), "gap")
+	assert_eq(preview.world_to_cell(second.position - Vector2(3, -1)), Vector2i(0, 0))
+	Global.document.undo()
+	assert_eq(preview.cell_rect(Vector2i(1, 0)).position, Vector2(16, 0), "follows undo")

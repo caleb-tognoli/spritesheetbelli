@@ -76,11 +76,22 @@ func _ready() -> void:
 	more_options_btn.tooltip_text = "For sheets with a margin around or gaps between the frames"
 	more_options_btn.summarize = _options_summary
 	offset_box.add_sibling(more_options_btn)
-	for box: Control in [offset_box, spacing_box]:
+	for entry: Array in [[offset_box, offset_x, offset_y], [spacing_box, spacing_x, spacing_y]]:
+		var box: Control = entry[0]
+		var x: SpinBox = entry[1]
+		var y: SpinBox = entry[2]
 		var label := box.get_child(0) as Label
 		var pair := box.get_child(1) as Control
 		box.remove_child(pair)
-		more_options_btn.add_field(label.text, pair, label.tooltip_text)
+		more_options_btn.add_field(
+			label.text,
+			pair,
+			label.tooltip_text,
+			func() -> void:
+				x.value = 0
+				y.value = 0,
+			func() -> bool: return x.value == 0 and y.value == 0
+		)
 		box.queue_free()
 	_update_options_label()
 

@@ -251,6 +251,18 @@ func test_spacing_is_in_a_floating_panel() -> void:
 	panel.gaps.popup.hide()
 
 
+func test_spacing_can_be_reset() -> void:
+	var gaps: SpacingDropdown = main.layout_controller.grid_gaps
+	var reset := gaps.fields.get_child(2).get_child(0) as Button
+	assert_false(reset.visible, "at the default")
+	gaps.spacing.value = 3
+	assert_true(reset.visible)
+	reset.pressed.emit()
+	assert_eq(gaps.spacing.value, 0.0)
+	assert_eq(ExportOptions.from_sheet(sheet).spacing, 0)
+	assert_false(reset.visible)
+
+
 func test_the_grid_has_spacing_too() -> void:
 	var gaps: SpacingDropdown = main.layout_controller.grid_gaps
 	assert_true(gaps.is_visible_in_tree())
@@ -269,6 +281,7 @@ func test_frame_size_in_data_is_an_export_setting() -> void:
 	Actions.run(&"layout_packed")
 	Actions.run(&"export")
 	var dialog: ExportDialog = main.export_dialog
+	dialog.select_target(ExportOptions.Target.ATLAS)
 	assert_true(dialog.frame_size.visible)
 	dialog.frame_size.select(dialog.frame_size.get_item_index(ExportOptions.FrameSize.FRAME))
 	dialog.frame_size.item_selected.emit(dialog.frame_size.selected)

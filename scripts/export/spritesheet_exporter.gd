@@ -50,6 +50,31 @@ static func build_image(sheet: Spritesheet, options: ExportOptions) -> Image:
 	return img
 
 
+## The pages of a packed sheet as images, on the export's background
+static func build_pages(sheet: Spritesheet, options: ExportOptions) -> Array[Image]:
+	var pages := PackedLayout.render_pages(sheet)
+	if options.background.a > 0:
+		for i in pages.size():
+			var page := Image.create_empty(
+				pages[i].get_width(), pages[i].get_height(), false, Image.FORMAT_RGBA8
+			)
+			page.fill(options.background)
+			page.blend_rect(pages[i], Rect2i(Vector2i.ZERO, page.get_size()), Vector2i.ZERO)
+			pages[i] = page
+	return pages
+
+
+## Where each of [param count] pages goes: [param path], or numbered from 0 when there
+## are more
+static func get_page_paths(path: String, count: int) -> PackedStringArray:
+	if count <= 1:
+		return PackedStringArray([path])
+	var paths := PackedStringArray()
+	for page in count:
+		paths.append("%s_%d.%s" % [path.get_basename(), page, path.get_extension()])
+	return paths
+
+
 ## Repeats the edge pixels of [param rect] outward by [param amount] pixels
 static func extrude_edges(img: Image, rect: Rect2i, amount: int) -> void:
 	var left := Rect2i(rect.position.x, rect.position.y, 1, rect.size.y)

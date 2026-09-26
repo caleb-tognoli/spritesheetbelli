@@ -35,7 +35,13 @@ func _init() -> void:
 		spin.select_all_on_focus = true
 		spin.custom_minimum_size.x = 110
 		spin.value_changed.connect(_changed.unbind(1))
-		add_field(entry[1], spin, entry[2])
+		add_field(
+			entry[1],
+			spin,
+			entry[2],
+			func() -> void: spin.value = 0,
+			func() -> bool: return spin.value == 0
+		)
 	summarize = _summary
 
 

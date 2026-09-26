@@ -93,7 +93,10 @@ func test_previous_and_next_frame_stop_playing() -> void:
 
 
 func test_plays_only_selected_frames() -> void:
+	assert_eq(animation.selector.get_item_text(0), "All frames", "nothing selected")
+	assert_eq(animation.details_button.icon, main.ICONS[&"edit_animations"], "like the menu")
 	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
+	assert_eq(animation.selector.get_item_text(0), "Selected frames")
 	advance()
 	assert_eq(current(), Vector2i(2, 0))
 	advance()

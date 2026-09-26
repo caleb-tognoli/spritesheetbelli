@@ -11,7 +11,8 @@ const TARGETS := [
 		"target": T.IMAGE,
 		"name": "Spritesheet image",
 		"icon": preload("res://assets/icons/Image.svg"),
-		"about": "The whole sheet as one PNG, JPG or WebP image.",
+		"about":
+		"The whole sheet as one PNG, JPG or WebP image. Packed sheets give an image " + "per page.",
 	},
 	{
 		"target": T.SPRITES,
@@ -67,11 +68,12 @@ const PATTERN_HELP := (
 )
 ## What a sheet in the packed layout can be exported as
 const PACKED_TARGETS: Array[ExportOptions.Target] = [
-	ExportOptions.Target.ATLAS, ExportOptions.Target.SPRITES, ExportOptions.Target.GIF
+	ExportOptions.Target.IMAGE,
+	ExportOptions.Target.ATLAS,
+	ExportOptions.Target.SPRITES,
+	ExportOptions.Target.GIF,
 ]
 const LABEL_WIDTH := 170
-const COLLAPSED_ICON := preload("res://assets/icons/GuiTreeArrowRight.svg")
-const EXPANDED_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
 
 var targets := ItemList.new()
 var about := Label.new()
@@ -85,10 +87,6 @@ var pattern_example := Label.new()
 var only_selected := CheckBox.new()
 var existing := OptionButton.new()
 var animation_fps := SpinBox.new()
-var advanced_toggle := Button.new()
-var padding := SpinBox.new()
-var spacing := SpinBox.new()
-var extrude := SpinBox.new()
 var frame_size := OptionButton.new()
 var atlas_data := OptionButton.new()
 var gif_animation := OptionButton.new()
@@ -96,7 +94,6 @@ var gif_scale := SpinBox.new()
 var output_info := Label.new()
 
 var _settings := _grid()
-var _advanced := _grid()
 ## Controls of each row, with the targets they're shown for
 var _rows: Array[Dictionary] = []
 var _pattern_label: Label
@@ -191,31 +188,6 @@ func _init() -> void:
 		existing.add_item(label)
 	_add_row(_settings, "When a file exists", existing, [T.SPRITES])
 
-	advanced_toggle.text = "Advanced"
-	advanced_toggle.toggle_mode = true
-	advanced_toggle.flat = true
-	advanced_toggle.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	advanced_toggle.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	# No padding, so its arrow lines up with the labels
-	for style: StringName in [&"normal", &"hover", &"pressed", &"hover_pressed", &"focus"]:
-		advanced_toggle.add_theme_stylebox_override(style, StyleBoxEmpty.new())
-	advanced_toggle.tooltip_text = "Padding, spacing and edge extrusion for game engines"
-	right.add_child(advanced_toggle)
-	right.add_child(_advanced)
-	_add_spin(padding, "Padding", "Empty pixels around the whole sheet", [T.IMAGE, T.GODOT, T.JSON])
-	_add_spin(
-		spacing, "Spacing", "Empty pixels between frames", [T.IMAGE, T.GODOT, T.JSON, T.ATLAS]
-	)
-	_add_spin(
-		extrude,
-		"Extrude edges",
-		(
-			"Repeats each frame's edge pixels outward, so scaled or filtered sprites "
-			+ "don't pick up their neighbours' colours"
-		),
-		[T.IMAGE, T.GODOT, T.JSON, T.ATLAS]
-	)
-
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(spacer)
@@ -224,7 +196,6 @@ func _init() -> void:
 
 	targets.item_selected.connect(_changed.unbind(1))
 	image_format.item_selected.connect(_changed.unbind(1))
-	advanced_toggle.toggled.connect(func(_on: bool) -> void: _update_visibility(_options()))
 	background_check.toggled.connect(_changed.unbind(1))
 	background_picker.color_changed.connect(_changed.unbind(1))
 	pattern.text_changed.connect(_changed.unbind(1))
@@ -233,7 +204,7 @@ func _init() -> void:
 	frame_size.item_selected.connect(_changed.unbind(1))
 	gif_animation.item_selected.connect(_changed.unbind(1))
 	atlas_data.item_selected.connect(_changed.unbind(1))
-	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude, gif_scale]:
+	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
 	jpg_background.color_changed.connect(_changed.unbind(1))
 	confirmed.connect(_on_confirmed)
@@ -241,7 +212,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	about_to_popup.connect(refresh)
-	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude, gif_scale]:
+	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		SpinScroll.enable(spin)
 
@@ -256,7 +227,9 @@ func refresh() -> void:
 		var grid_only: bool = TARGETS[i].target not in PACKED_TARGETS
 		targets.set_item_disabled(i, packed and grid_only)
 		targets.set_item_tooltip(i, tr("Only in the grid layout") if packed and grid_only else "")
-	if packed and options.target not in PACKED_TARGETS:
+	# Packed sheets are usually exported as atlases, until another export is picked
+	var chosen: bool = Global.spritesheet.export_settings.has("target")
+	if packed and (options.target not in PACKED_TARGETS or not chosen):
 		options.target = T.ATLAS
 	targets.select(_target_index(options.target))
 	targets.ensure_current_is_visible()
@@ -269,9 +242,6 @@ func refresh() -> void:
 	only_selected.button_pressed = options.only_selected
 	existing.select(options.existing_files)
 	animation_fps.set_value_no_signal(options.animation_fps)
-	padding.set_value_no_signal(options.padding)
-	spacing.set_value_no_signal(options.spacing)
-	extrude.set_value_no_signal(options.extrude)
 	frame_size.select(frame_size.get_item_index(options.atlas_frame_size))
 	gif_animation.clear()
 	gif_animation.add_item("All frames")
@@ -281,7 +251,6 @@ func refresh() -> void:
 			gif_animation.select(gif_animation.item_count - 1)
 	gif_scale.set_value_no_signal(options.gif_scale)
 	atlas_data.select(AtlasFormats.FORMATS.keys().find(options.atlas_data))
-	advanced_toggle.button_pressed = (options.padding or options.spacing or options.extrude)
 	_updating = false
 	_update_labels(options)
 
@@ -317,9 +286,6 @@ func _options() -> ExportOptions:
 	options.only_selected = only_selected.button_pressed
 	options.existing_files = existing.selected as ExportOptions.Existing
 	options.animation_fps = animation_fps.value
-	options.padding = int(padding.value)
-	options.spacing = int(spacing.value)
-	options.extrude = int(extrude.value)
 	options.atlas_frame_size = frame_size.get_selected_id() as ExportOptions.FrameSize
 	options.gif_animation = (
 		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
@@ -335,10 +301,11 @@ func _on_confirmed() -> void:
 	Settings.set_value(&"jpg_quality", options.jpg_quality)
 	Settings.set_value(&"jpg_background", options.opaque_background)
 	var sheet := Global.spritesheet
-	if options.to_dictionary() != sheet.export_settings:
-		Global.document.perform(
-			"Export settings", sheet.set_export_settings.bind(options.to_dictionary())
-		)
+	var settings := options.to_dictionary()
+	# Kept even when it's the default, so the choice is remembered
+	settings.target = options.target
+	if settings != sheet.export_settings:
+		Global.document.perform("Export settings", sheet.set_export_settings.bind(settings))
 	export_requested.emit()
 
 
@@ -374,6 +341,13 @@ func _update_labels(options: ExportOptions) -> void:
 			)
 			var gif_size := sheet.sprite_size * options.gif_scale
 			output_info.text = tr("%d frames of %d×%d px") % [count, gif_size.x, gif_size.y]
+		T.IMAGE when _is_packed():
+			var sizes := PackedLayout.get_page_sizes(sheet)
+			output_info.text = (
+				tr("Image size: %d×%d px") % [sizes[0].x, sizes[0].y]
+				if sizes.size() == 1
+				else tr("%d images, the first %d×%d px") % [sizes.size(), sizes[0].x, sizes[0].y]
+			)
 		_:
 			var image_size := SpritesheetExporter.get_image_size(sheet, options)
 			output_info.text = tr("Image size: %d×%d px") % [image_size.x, image_size.y]
@@ -383,18 +357,10 @@ func _update_labels(options: ExportOptions) -> void:
 
 
 func _update_visibility(options: ExportOptions) -> void:
-	var any_advanced := false
-	var packed := _is_packed()
 	for row in _rows:
 		var shown: bool = options.target in row.targets
 		if row.format and options.image_format != row.format:
 			shown = false
-		# A packed sheet's spacing and page size are part of how it's packed
-		if packed and row.controls[1] in [spacing, extrude]:
-			shown = false
-		if row.advanced:
-			any_advanced = any_advanced or shown
-			shown = shown and advanced_toggle.button_pressed
 		for control: Control in row.controls:
 			control.visible = shown
 	_pattern_label.text = "File names" if options.target == T.SPRITES else "Frame names"
@@ -404,8 +370,6 @@ func _update_visibility(options: ExportOptions) -> void:
 	if not Global.spritesheet.animations.is_empty() and options.target != T.GIF or own_speed:
 		_fps_label.visible = false
 		animation_fps.visible = false
-	advanced_toggle.visible = any_advanced
-	advanced_toggle.icon = EXPANDED_ICON if advanced_toggle.button_pressed else COLLAPSED_ICON
 
 
 ## Adds a labelled control shown only for [param for_targets] and, when given, only for
@@ -416,7 +380,6 @@ func _add_row(
 	var label := Label.new()
 	label.text = text
 	label.tooltip_text = control.tooltip_text
-	# The same label width in both grids lines their controls up
 	label.custom_minimum_size.x = LABEL_WIDTH
 	LabelLink.link(label, control)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -429,18 +392,10 @@ func _add_row(
 				"controls": [label, control],
 				"targets": for_targets,
 				"format": format,
-				"advanced": grid == _advanced,
 			}
 		)
 	)
 	return label
-
-
-func _add_spin(spin: SpinBox, text: String, tip: String, for_targets: Array) -> void:
-	spin.max_value = 256
-	spin.suffix = "px"
-	spin.tooltip_text = tip
-	_add_row(_advanced, text, spin, for_targets)
 
 
 ## What a packed atlas export will write, or why it can't

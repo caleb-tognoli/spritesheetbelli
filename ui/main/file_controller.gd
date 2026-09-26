@@ -554,6 +554,8 @@ func _export_image_to(path: String) -> bool:
 
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	path = SpritesheetExporter.with_image_extension(path)
+	if Global.spritesheet.layout == Spritesheet.Layout.PACKED:
+		return _export_pages(path, options)
 	var problem := ImageUtils.size_problem(
 		SpritesheetExporter.get_image_size(Global.spritesheet, options), path.get_extension()
 	)
@@ -596,6 +598,29 @@ func _export_image_to(path: String) -> bool:
 		)
 	Global.document.export_path = path
 	Notify.toast(message, 7.0 if "\n" in message else 3.0)
+	return true
+
+
+## Writes each page of the packed sheet as an image, numbered when there are more
+func _export_pages(path: String, options: ExportOptions) -> bool:
+	var pages := SpritesheetExporter.build_pages(Global.spritesheet, options)
+	var paths := SpritesheetExporter.get_page_paths(path, pages.size())
+	for i in pages.size():
+		var problem := ImageUtils.size_problem(pages[i].get_size(), path.get_extension())
+		if problem:
+			Notify.error(problem)
+			return false
+		var error := SpritesheetExporter.save_image(pages[i], paths[i], options)
+		if error != OK:
+			Notify.error(tr("Could not export to %s (%s).") % [paths[i], error_string(error)])
+			return false
+		WebFiles.download(paths[i])
+	unlink_overwritten(paths)
+	Global.document.export_path = path
+	if paths.size() == 1:
+		Notify.toast(tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()])
+	else:
+		Notify.toast(tr("Exported %d pages, from %s.") % [paths.size(), paths[0].get_file()])
 	return true
 
 

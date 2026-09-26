@@ -47,9 +47,11 @@ A small desktop tool made with Godot.</p>
   and export them.
 - **Name rows** as animations (idle, walk, jump); names are used in exports.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
-  `walk_{frame:2}`; a tightly packed atlas; or an animation as an animated GIF. One Export dialog shows only the settings
-  that matter for what you export; padding, spacing and edge extrusion are there when an
-  engine needs them.
+  `walk_{frame:2}`; a tightly packed atlas, or its pages as images; or an animation as an
+  animated GIF. The Export button sits at the top of the sidebar with the size of what it
+  writes, and the Export dialog shows only the settings that matter for what you export.
+  Padding, spacing and edge extrusion are set in the sidebar, where the preview shows
+  them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
   Godot `SpriteFrames` resource with one animation per named row. Packed atlases can come
   with TexturePacker JSON (hash or array), a Phaser 3 multi-atlas, a libGDX / Spine

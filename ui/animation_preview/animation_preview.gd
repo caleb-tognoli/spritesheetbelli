@@ -6,7 +6,7 @@ extends PanelContainer
 ## The details button was pressed: open the animation editor at this animation (-1: none)
 signal details_requested(animation_index: int)
 
-const DETAILS_ICON := preload("res://assets/icons/DistractionFree.svg")
+const DETAILS_ICON := preload("res://assets/icons/Animation.svg")
 ## Speed of the selection, which isn't an animation of its own
 const SELECTION_FPS := 12.0
 
@@ -76,7 +76,10 @@ func refresh() -> void:
 		_animation_index = -1
 
 	selector.clear()
-	selector.add_item(tr("Selected frames"), 0)
+	# Fewer than two selected frames play every frame
+	var selected := preview.get_selected_coords()
+	var all_frames := selected.size() < 2
+	selector.add_item(tr("All frames") if all_frames else tr("Selected frames"), 0)
 	for i in animations.size():
 		selector.add_item(animations[i].name, i + 1)
 	selector.select(selector.get_item_index(_animation_index + 1))
@@ -87,7 +90,6 @@ func refresh() -> void:
 		player.mode = animation.mode
 		player.set_cells(animation.cells, animation.durations)
 	else:
-		var selected := preview.get_selected_coords()
 		player.fps = SELECTION_FPS
 		player.mode = SheetAnimation.Mode.LOOP
-		player.set_cells(selected if selected.size() >= 2 else sheet.get_sorted_coords())
+		player.set_cells(sheet.get_sorted_coords() if all_frames else selected)

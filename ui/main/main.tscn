@@ -125,6 +125,25 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="Export" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=134434247]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+tooltip_text = "Export the spritesheet as an image, sprites or for a game engine (Ctrl+E)"
+text = "Export…"
+
+[node name="SheetSize" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1550338558]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Size of the exported image"
+theme_type_variation = &"StatusLabel"
+text = "0 × 0 px"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="OutputSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1227047310]
+layout_mode = 2
+
 [node name="AddHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1968014061]
 layout_mode = 2
 theme_type_variation = &"HeaderSmall"
@@ -288,27 +307,6 @@ popup/item_3/text = "Trilinear"
 popup/item_3/id = 3
 popup/item_4/text = "Lanczos"
 popup/item_4/id = 4
-
-[node name="SpriteSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1227047310]
-layout_mode = 2
-
-[node name="OutputHeading" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1449985200]
-layout_mode = 2
-theme_type_variation = &"HeaderSmall"
-text = "Output"
-
-[node name="SheetSize" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1550338558]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Size of the exported image"
-text = "0 × 0 px"
-
-[node name="Export" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=134434247]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-tooltip_text = "Export the spritesheet as an image, sprites or for a game engine (Ctrl+E)"
-text = "Export…"
 
 [node name="PreviewSplit" type="HSplitContainer" parent="Layout/Split" unique_id=832355176]
 unique_name_in_owner = true
