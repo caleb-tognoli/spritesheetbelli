@@ -59,7 +59,7 @@ func _init() -> void:
 	tree.add_theme_font_size_override("font_size", 13)
 	tree.columns = 2
 	tree.set_column_expand(1, false)
-	tree.set_column_custom_minimum_width(1, 64)
+	tree.set_column_custom_minimum_width(1, 100)
 	tree.tooltip_text = "Double-click a name to rename the frame"
 	box.add_child(tree)
 

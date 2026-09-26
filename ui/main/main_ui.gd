@@ -773,7 +773,7 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	)
 	sheet_size.text = "%d × %d px" % [image_size.x, image_size.y]
 	if spritesheet.layout == Spritesheet.Layout.PACKED:
-		sheet_size.text = AtlasPanel.describe(spritesheet)
+		sheet_size.text = PackedLayout.describe(spritesheet)
 	layout_controller.update()
 	update_sheet_info()
 	resize_filter.select(get_resize_filter())
@@ -785,7 +785,7 @@ func update_sheet_info() -> void:
 	if sheet.is_empty():
 		sheet_info.text = tr("No frames. Add sprites or drop images here.")
 	elif sheet.layout == Spritesheet.Layout.PACKED:
-		sheet_info.text = tr("%d frames · %s") % [sheet.frames.size(), AtlasPanel.describe(sheet)]
+		sheet_info.text = tr("%d frames · %s") % [sheet.frames.size(), PackedLayout.describe(sheet)]
 		var selected := preview.get_selected_coords().size()
 		if selected:
 			sheet_info.text += " · " + tr("%d selected") % selected

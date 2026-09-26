@@ -15,9 +15,16 @@ A small desktop tool made with Godot.</p>
 - **Cut sheets into frames.** The grid size is guessed from the file name
   (`hero_32x32.png`, `walk_8x2.png`) or from the gaps between sprites; offset and spacing
   handle sheets that aren't packed edge to edge.
-- **Unpack packed sheets.** A TexturePacker or Aseprite JSON next to the image says where
-  every frame is; trimmed and rotated frames are restored and tags become animations.
-  Without one, the sprites are found by the transparent space around them.
+- **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
+  `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
+  frames are restored and tags become animations. Without one, the sprites are found by
+  the transparent space around them.
+- **Packed layout.** Instead of a grid, frames can be laid out packed tightly on pages,
+  like a texture atlas, and edited right there: drag frames anywhere (or onto a new page),
+  pin them, set pivots, pack again. An opened atlas keeps every frame where it is, so
+  exporting it again after adding or editing frames keeps the places engines know. Page
+  size, spacing, padding, extrusion, turning frames to fit, trimming, sharing identical
+  frames and power-of-two or square pages are in the sidebar.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
   colour, add an outline, replace, cut/copy/paste (also images copied in other apps),
   duplicate, insert or remove cells, insert, remove or reorder rows. Everything can be
@@ -41,12 +48,20 @@ A small desktop tool made with Godot.</p>
   `walk_{frame:2}`; a tightly packed atlas; or an animation as an animated GIF. One Export dialog shows only the settings
   that matter for what you export; padding, spacing and edge extrusion are there when an
   engine needs them.
-- **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags), a
-  Godot `SpriteFrames` resource with one animation per named row, or a libGDX / Spine
-  `.atlas` for packed atlases.
+- **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
+  Godot `SpriteFrames` resource with one animation per named row. Packed atlases can come
+  with TexturePacker JSON (hash or array), a Phaser 3 multi-atlas, a libGDX / Spine
+  `.atlas`, Sparrow / Starling XML or a Godot `SpriteFrames` using every page, with
+  pivots and turned frames where the format has them.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original size.
 - Light and dark themes, an accent colour, interface scaling and a keyboard shortcut for
   every action.
+
+<details>
+<summary>Packed layout</summary>
+
+![Sprites of different sizes packed on a page, one of them turned to fit, with the atlas settings in the sidebar and the list of sprites](docs/screenshot-packed.png)
+</details>
 
 <details>
 <summary>Light theme</summary>
@@ -91,12 +106,13 @@ Press **F1** in the app for the full list. The most useful:
 | Move row up / down | Ctrl+Shift+Up / Ctrl+Shift+Down |
 | Zoom / Actual size / Fit | Ctrl+= and Ctrl+- / Ctrl+0 / F |
 | Grid lines / Frame numbers | G / N |
-| Select / move tool | Q / W |
+| Select / move / pivot tool | Q / W / E |
 | Animation preview | P |
 
 In the preview: click selects, Ctrl+click toggles, Shift+click selects a range, drag on
 empty space draws a selection box, drag frames to move them, click an empty cell to lock it
-so added sprites skip it. Pan with the middle mouse button or Space+drag, zoom with the
+so added sprites skip it. In the packed layout, the move tool drags frames to any place on
+a page, and the pivot tool drags the pivot of the selected frames. Pan with the middle mouse button or Space+drag, zoom with the
 wheel. Arrow keys move the selection, or in the move mode the selected frames. Right-click
 for the Transform, Align in Cell and Rows submenus.
 
@@ -117,6 +133,10 @@ spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
 # Pack a project tightly with a JSON file, and make a GIF of its walk animation
 spritesheetbelli --headless -- --export hero.sbelli --out hero_atlas.png --atlas
 spritesheetbelli --headless -- --export hero.sbelli --out walk.gif --animation walk --scale 4
+
+# Keep an atlas's layout in a project, then write it for libGDX on pages of up to 1024 px
+spritesheetbelli --headless -- --cut ui.atlas --layout packed --out ui.sbelli
+spritesheetbelli --headless -- --export ui.sbelli --out ui.png --atlas-data atlas --max-size 1024
 ```
 
 Run with `--help` for every option. The exit code is 0 on success, 1 on errors and 2 on
@@ -147,9 +167,10 @@ editor settings).
 | Path | What's there |
 | --- | --- |
 | `scripts/resources/spritesheet.gd` | The spritesheet data and every edit |
+| `scripts/resources/packed_layout.gd` | Where frames are in the packed layout |
 | `scripts/frame_edits.gd`, `scripts/frame_source.gd` | Pixel edits that can be made again, and the files frames are linked to |
 | `scripts/document.gd` | The open document: file, unsaved state, undo history |
-| `scripts/export/` | Exporting images, sprites, atlases and metadata |
+| `scripts/export/` | Exporting images, sprites, atlases and metadata; the packer |
 | `scripts/import/` | Reading where frames are in packed sheets |
 | `scripts/autoloaded/` | Global state, actions and shortcuts, settings, dialogs |
 | `ui/main/` | The main window, menus and file handling |

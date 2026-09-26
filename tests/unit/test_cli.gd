@@ -139,3 +139,66 @@ func test_unused_nodes_are_freed() -> void:
 	assert_false(is_instance_valid(unused), "never added to the tree: freed")
 	assert_true(is_instance_valid(holder.used), "in the tree: kept")
 	holder.used.queue_free()
+
+
+func test_packed_layout_from_the_command_line() -> void:
+	var atlas := dir.path_join("packed_atlas.png")
+	var result := await run(
+		[
+			"--pack",
+			dir.path_join("frames"),
+			"--layout",
+			"packed",
+			"--max-size",
+			"16",
+			"--out",
+			atlas,
+			"--atlas-data",
+			"atlas",
+			"--sprite-size",
+			"16x16",
+		]
+	)
+	assert_eq(result[0], "0", str(result))
+	assert_true(result[1].begins_with("Wrote 5 pages"), result[1])
+	var text := FileAccess.get_file_as_string(dir.path_join("packed_atlas.atlas"))
+	assert_true("packed_atlas_4.png" in text, "every page in one .atlas")
+
+	# Cut it back, keeping the layout, into a project
+	var project := dir.path_join("reopened.sbelli")
+	result = await run(
+		["--cut", dir.path_join("packed_atlas.atlas"), "--layout", "packed", "--out", project]
+	)
+	assert_eq(result[0], "0", str(result))
+	var sheet := Spritesheet.new()
+	sheet.set_state(ProjectFile.load(project).state)
+	assert_eq(sheet.layout, Spritesheet.Layout.PACKED)
+	assert_eq(sheet.frames.size(), 5)
+	assert_eq(PackedLayout.get_page_count(sheet), 5, "one frame per page, as it was")
+
+	# A packed project is written as an atlas, here packed again on bigger pages
+	result = await run(
+		[
+			"--export",
+			project,
+			"--max-size",
+			"64",
+			"--repack",
+			"--out",
+			dir.path_join("again.png"),
+			"--atlas-data",
+			"json"
+		]
+	)
+	assert_eq(result[0], "0", str(result))
+	assert_true(result[1].contains("again.json: 5 frames"), result[1])
+	var data := SheetData.load_file(dir.path_join("again.json"))
+	assert_eq(data.frames.size(), 5)
+	assert_eq(data.pages.size(), 0, "one page")
+
+
+func test_packed_layout_usage_errors() -> void:
+	var out := dir.path_join("x.png")
+	var frames := dir.path_join("frames")
+	assert_eq((await run(["--pack", frames, "--layout", "tight", "--out", out]))[0], "2")
+	assert_eq((await run(["--pack", frames, "--max-size", "4", "--out", out]))[0], "2")

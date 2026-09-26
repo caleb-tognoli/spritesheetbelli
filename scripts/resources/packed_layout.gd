@@ -243,6 +243,26 @@ static func get_occupancy(sheet: Spritesheet) -> float:
 	return float(used) / total if total > 0 else 0.0
 
 
+## "2 pages of up to 1024×512 px, 81% filled"
+static func describe(sheet: Spritesheet) -> String:
+	var sizes := PackedLayout.get_page_sizes(sheet)
+	if sizes.is_empty():
+		return ""
+	var biggest := Vector2i.ZERO
+	for size in sizes:
+		biggest = biggest.max(size)
+	var filled := roundi(PackedLayout.get_occupancy(sheet) * 100)
+	if sizes.size() == 1:
+		return (
+			TranslationServer.translate("1 page of %d×%d px, %d%% filled")
+			% [biggest.x, biggest.y, filled]
+		)
+	return (
+		TranslationServer.translate("%d pages of up to %d×%d px, %d%% filled")
+		% [sizes.size(), biggest.x, biggest.y, filled]
+	)
+
+
 ## The pages as images, with every frame at its place. Turned frames are turned
 ## clockwise, or [param counter_clockwise] for engines that expect that.
 static func render_pages(sheet: Spritesheet, counter_clockwise := false) -> Array[Image]:

@@ -6,6 +6,35 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 ## Unreleased
 
 ### Added
+- The packed layout: instead of a grid, frames can be packed tightly on pages like a
+  texture atlas, and edited there with every tool. Switch with Grid / Packed in the
+  sidebar or View. The move tool drags frames anywhere on a page or onto a new one;
+  frames that would land on others stay put. Moved frames are pinned, and Frame > Pinned
+  pins or unpins them. The sidebar has the atlas settings: page size, keeping places or
+  always packing tightly, how frames are placed (five MaxRects rules), spacing, padding,
+  extrusion, turning frames to fit, trimming, sharing identical frames, power-of-two and
+  square pages, and the size data files report (the cell or the frame). Pack Again
+  repacks everything but pinned frames. Frames that grow or are added go in the free
+  space; frames too big for a page get one of their own.
+- Opening a packed sheet keeps its layout: every frame stays where it is in the image,
+  with its name and pivot, so exporting it again keeps the places engines know. The Add
+  Spritesheet window has "Keep the packed layout" for this, also for sprites found
+  without a data file.
+- libGDX / Spine `.atlas` files open like JSON ones, every page of a Phaser multi-atlas
+  is read, and TexturePacker multipacks open whole.
+- Packed atlases can be exported with TexturePacker JSON as a hash or an array, a Phaser 3
+  multi-atlas, a libGDX / Spine `.atlas` with every page, Sparrow / Starling XML or a
+  Godot SpriteFrames using every page (with margins for trimmed frames). Pages are
+  numbered when there are more than one, turned frames are stored the way each engine
+  expects, and frame names are made unique.
+- Pivots: a pivot mode (E) drags the pivot of the selected frames, and Frame > Pivot has
+  presets. Pivots follow flips and turns, stay on their pixel when trimming, and are
+  exported where the format has them. Frames without one use the atlas's default.
+- View > Sprites lists every frame with a thumbnail, its name and size. Selection follows
+  the preview both ways, double-click or F2 renames a frame, and frames can be searched
+  and pinned.
+- Command line: `--layout grid|packed`, `--max-size`, `--rotate` and `--repack`, and
+  `--atlas-data` takes every format above. Packed sheets are written as atlases.
 - Packed spritesheets with a data file: opening or adding an image that has a
   TexturePacker or Aseprite `.json` next to it (or opening the `.json` itself) cuts the
   frames where the data says. Trimmed and rotated frames come back as they were drawn,
@@ -61,6 +90,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   animated GIF (`--animation`, `--scale`); `--pack` takes GIFs too.
 
 ### Changed
+- Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
+  pivot and link, not just its pixels.
+- Grid actions (cells and rows) are left out of the menus and the toolbar in the packed
+  layout.
 - A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
   rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
   animation preview (P), and zoom buttons around the zoom level, which fits the view.

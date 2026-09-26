@@ -5,6 +5,7 @@ class_name Cli
 ## spritesheetbelli --headless -- --pack ./frames --out sheet.png --columns 8
 ## spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./hero_frames
 ## spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
+## spritesheetbelli --headless -- --cut atlas.json --layout packed --out atlas.sbelli
 ## [/codeblock]
 
 const USAGE := """Usage: spritesheetbelli --headless -- <command> [options]
@@ -13,8 +14,9 @@ Commands:
   --pack <folder or images...>   Pack images (sorted by name) into a spritesheet
   --export <project.sbelli>      Export a saved project
   --cut <image>                  Cut a spritesheet or animated GIF into frames: with the
-                                 data file next to it (TexturePacker or Aseprite JSON),
-                                 else a grid guessed from the name or the gaps
+                                 data file next to it (TexturePacker, Aseprite or Phaser
+                                 JSON, libGDX / Spine .atlas), else a grid guessed from
+                                 the name or the gaps
   --help                         Show this help
 
 Options:
@@ -23,12 +25,13 @@ Options:
   --sprites <folder>             Also export every frame as its own PNG
   --columns <n>                  Frames per row when packing (default: all in one row)
   --sprite-size <width>x<height> Resize the sprites
-  --padding <px>                 Empty pixels around the sheet
-  --spacing <px>                 Empty pixels between cells
+  --padding <px>                 Empty pixels around the sheet (or each atlas page)
+  --spacing <px>                 Empty pixels between cells (or packed frames)
   --extrude <px>                 Repeat frame edges outward
   --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file
   --fps <n>                      Animation speed in the metadata and GIFs (default 12)
-  --atlas                        Write --out as a packed atlas with a JSON file
+  --atlas                        Write --out as a packed atlas with a data file. Packed
+                                 sheets are always written as atlases.
   --atlas-data <format>          The atlas's data file: json (TexturePacker hash),
                                  json-array, phaser, atlas (libGDX / Spine),
                                  sparrow (Starling XML) or godot (SpriteFrames)
@@ -36,16 +39,24 @@ Options:
                                  every frame when there are none)
   --scale <n>                    Make a GIF n times bigger
 
+Packed layout:
+  --layout <grid|packed>         Lay the frames out in a grid or packed on pages. A packed
+                                 sheet cut with a data file or --detect keeps every
+                                 frame where it is in the image.
+  --max-size <px>                Pages are at most this wide and tall (default 4096)
+  --rotate                       Frames may be turned 90° to fit
+  --repack                       Pack a packed project again; pinned frames stay
+
 Cutting:
   --grid <columns>x<rows>        Cut a grid of this size
-  --data <file.json>             Cut where this data file says
+  --data <file>                  Cut where this data file (.json or .atlas) says
   --detect                       Find the sprites by the transparency around them
   --join <px>                    With --detect, keep parts this close together
   --align <center|bottom>        With --detect, how to line the frames up"""
 
 const COMMANDS: Array[String] = ["--pack", "--export", "--cut", "--help"]
 ## Options without a value
-const FLAGS: Array[String] = ["--help", "--atlas", "--detect"]
+const FLAGS: Array[String] = ["--help", "--atlas", "--detect", "--rotate", "--repack"]
 
 
 ## Whether [param args] ask for command-line mode
@@ -70,6 +81,10 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		say.call(USAGE)
 		return 0
 
+	var layout: String = options.get("--layout", "")
+	if layout not in ["", "grid", "packed"]:
+		say.call("Error: --layout must be grid or packed.")
+		return 2
 	var sheet: Spritesheet
 	if options.has("--pack"):
 		sheet = _pack(options["--pack"], int(options.get("--columns", "0")), say)
@@ -89,6 +104,10 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 	if sheet == null or sheet.is_empty():
 		say.call("Error: there are no frames to export.")
 		return 1
+	var problem := _set_up_layout(sheet, layout, options)
+	if problem:
+		say.call("Error: " + problem)
+		return 2
 
 	var export := ExportOptions.new()
 	export.apply(sheet.export_settings)
@@ -133,7 +152,9 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 	if options.has("--out"):
 		var out: String = options["--out"]
 		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
-		if options.has("--atlas"):
+		var packed := sheet.layout == Spritesheet.Layout.PACKED
+		var image := not ProjectFile.is_project_path(out) and not GifDecoder.is_gif_path(out)
+		if options.has("--atlas") or (packed and image):
 			code = _write_atlas(sheet, out, export, say)
 		elif GifDecoder.is_gif_path(out):
 			code = await _write_gif(sheet, out, export, say)
@@ -243,14 +264,23 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		if not alignments.has(align):
 			return {"error": "--align must be center or bottom.", "code": 2}
 		var rows := SpriteDetector.detect(img, int(options.get("--join", "0")))
-		return {"sheet": SpriteDetector.to_spritesheet(img, rows, alignments[align])}
+		var detected := SpriteDetector.to_spritesheet(
+			img, rows, alignments[align], "", options.get("--layout") == "packed"
+		)
+		return {"sheet": detected}
 	# Without a grid, a data file next to the image says where the frames are
 	if data == null and not options.has("--grid"):
 		data_path = SheetData.find_for_image(path)
 		if data_path:
 			data = SheetData.load_file(data_path)
 	if data:
-		return {"sheet": data.to_spritesheet(img)}
+		# Frames on other pages come from the pages' images
+		var others: Array[Image] = []
+		var pages := data.get_page_paths(data_path)
+		for page in range(1, pages.size()):
+			others.append(Image.load_from_file(pages[page]))
+		var keep: bool = options.get("--layout") == "packed"
+		return {"sheet": data.to_spritesheet(img, "", "", keep, others)}
 
 	var grid := GridGuesser.guess(img, path)
 	if options.has("--grid"):
@@ -265,6 +295,34 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		sheet.set_frame(coord, sliced.frames[coord])
 	sheet.end_batch()
 	return {"sheet": sheet}
+
+
+## Lays [param sheet] out as [param layout] ("grid", "packed" or "" to leave it) with the
+## atlas settings in [param options]. Returns what's wrong with them, or an empty string.
+static func _set_up_layout(sheet: Spritesheet, layout: String, options: Dictionary) -> String:
+	var settings := sheet.atlas_settings
+	if options.has("--max-size"):
+		var max_size := int(options["--max-size"])
+		if max_size < 16 or max_size > AtlasPacker.MAX_SIZE:
+			return "--max-size must be from 16 to %d." % AtlasPacker.MAX_SIZE
+		settings.max_size = max_size
+	if options.has("--rotate"):
+		settings.allow_rotation = true
+	# A packed sheet's spacing belongs to how it's packed
+	if layout == "packed" or sheet.layout == Spritesheet.Layout.PACKED:
+		for key: String in ["padding", "spacing", "extrude"]:
+			if options.has("--" + key):
+				settings.set(key, int(options["--" + key]))
+	sheet.begin_batch()
+	sheet.set_atlas_settings(settings)
+	if layout == "packed":
+		sheet.set_layout(Spritesheet.Layout.PACKED)
+	elif layout == "grid":
+		sheet.set_layout(Spritesheet.Layout.GRID)
+	sheet.end_batch()
+	if options.has("--repack") and sheet.layout == Spritesheet.Layout.PACKED:
+		sheet.set_placements(PackedLayout.arrange(sheet, true).placements)
+	return ""
 
 
 static func _write(sheet: Spritesheet, path: String, export: ExportOptions, say: Callable) -> int:
@@ -285,6 +343,9 @@ static func _write(sheet: Spritesheet, path: String, export: ExportOptions, say:
 	if error != OK:
 		say.call("Error: could not write %s (%s)" % [path, error_string(error)])
 		return 1
+	if sheet.layout == Spritesheet.Layout.PACKED:
+		say.call("Wrote %s: %s" % [path, PackedLayout.describe(sheet)])
+		return 0
 	var size := SpritesheetExporter.get_image_size(sheet, export)
 	say.call(
 		(

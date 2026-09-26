@@ -130,28 +130,8 @@ func refresh(sheet: Spritesheet) -> void:
 	power_of_two.set_pressed_no_signal(settings.power_of_two)
 	square.set_pressed_no_signal(settings.square)
 	repack.disabled = sheet.is_empty()
-	info.text = describe(sheet)
+	info.text = PackedLayout.describe(sheet)
 	_updating = false
-
-
-## "2 pages of up to 1024×512 px, 81% filled"
-static func describe(sheet: Spritesheet) -> String:
-	var sizes := PackedLayout.get_page_sizes(sheet)
-	if sizes.is_empty():
-		return ""
-	var biggest := Vector2i.ZERO
-	for size in sizes:
-		biggest = biggest.max(size)
-	var filled := roundi(PackedLayout.get_occupancy(sheet) * 100)
-	if sizes.size() == 1:
-		return (
-			TranslationServer.translate("1 page of %d×%d px, %d%% filled")
-			% [biggest.x, biggest.y, filled]
-		)
-	return (
-		TranslationServer.translate("%d pages of up to %d×%d px, %d%% filled")
-		% [sizes.size(), biggest.x, biggest.y, filled]
-	)
 
 
 ## The settings as shown
