@@ -222,7 +222,13 @@ func edit_frames() -> void:
 	for i in animation.cells.size():
 		durations.append(animation.get_duration(i))
 	frames_editor.open(
-		Global.spritesheet, animation.cells, durations, animation.fps, animation.mode, _labels()
+		Global.spritesheet,
+		animation.cells,
+		durations,
+		animation.fps,
+		animation.mode,
+		_labels(),
+		animation.name
 	)
 
 

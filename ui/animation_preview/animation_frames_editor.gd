@@ -1,80 +1,115 @@
 class_name AnimationFramesEditor
 extends ConfirmationDialog
 ## Puts an animation's frames together by hand: sprites are dragged (or double-clicked)
-## from the sheet into a timeline, where they're dragged to reorder and each gets how long
-## it's shown. Applying gives the frames as text, like the Frames field of the Animations
-## window, with [signal frames_chosen].
+## from the sheet into a timeline, where they're dragged or moved with their arrows, and
+## each gets how long it's shown. Applying gives the frames as text, like the Frames field
+## of the Animations window, with [signal frames_chosen]. Closing with changes asks first.
 
 ## The frames as typed in the Frames field, e.g. "idle, 3-5, 6*2"
 signal frames_chosen(text: String)
 
 const THUMBNAIL_SIZE := 56
 const REMOVE_ICON := preload("res://assets/icons/Close.svg")
+const LEFT_ICON := preload("res://assets/icons/PagePrevious.svg")
+const RIGHT_ICON := preload("res://assets/icons/PageNext.svg")
+const APPLY_ICON := preload("res://assets/icons/Save.svg")
+const MARKER_WIDTH := 3.0
 
 var sheet: Spritesheet
 ## Sprites of the sheet, to drag into the timeline
 var palette := HFlowContainer.new()
-## The frames in playing order
-var timeline := HFlowContainer.new()
+## The frames in playing order, left to right
+var timeline := HBoxContainer.new()
 var player := FramePlayer.new()
 var info := Label.new()
-var clear_button := Button.new()
+## Asks before closing with changes
+var discard_dialog := ConfirmationDialog.new()
 
 ## The frames in playing order, each [code]{"cell": Vector2i, "duration": float}[/code]
 var _frames: Array[Dictionary] = []
+## The frames when opened, to tell whether they changed
+var _opened_with: Array[Dictionary] = []
 ## Names that stand for frame numbers, by number, see [method SheetAnimation.format_numbers]
 var _labels := {}
 var _textures: Dictionary[Image, ImageTexture] = {}
+## Where a dragged frame would go
+var _marker := ColorRect.new()
+var _empty_hint := Label.new()
 
 
 func _init() -> void:
-	title = "Edit Frames"
 	ok_button_text = "Apply"
+	get_ok_button().icon = APPLY_ICON
 	min_size = Vector2i(820, 580)
 	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 10)
+	layout.add_theme_constant_override("separation", 12)
 	add_child(layout)
 
+	# The sheet's sprites and the preview above, the timeline below
 	var top := HBoxContainer.new()
 	top.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	top.add_theme_constant_override("separation", 12)
 	layout.add_child(top)
-	var sprites := VBoxContainer.new()
+	var sprites := PanelContainer.new()
+	sprites.theme_type_variation = &"EditorSection"
 	sprites.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sprites.tooltip_text = "Drag sprites into the timeline below, or double-click them"
+	sprites.add_child(_scroll(palette, false))
+	palette.add_theme_constant_override("h_separation", 6)
+	palette.add_theme_constant_override("v_separation", 6)
 	top.add_child(sprites)
-	sprites.add_child(_heading("Sprites", "Drag them into the frames below, or double-click"))
-	sprites.add_child(_scroll(palette))
+	var side := VBoxContainer.new()
 	player.custom_minimum_size = Vector2(240, 240)
-	top.add_child(player)
-
-	var frames_header := HBoxContainer.new()
-	var frames_heading := _heading(
-		"Frames", "Drag to reorder. The number is how long each is shown."
-	)
-	frames_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frames_header.add_child(frames_heading)
+	player.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side.add_child(player)
 	info.theme_type_variation = &"StatusLabel"
-	frames_header.add_child(info)
-	clear_button.text = "Clear"
-	clear_button.tooltip_text = "Remove every frame"
-	clear_button.pressed.connect(
-		func() -> void:
-			_frames.clear()
-			_rebuild_timeline()
-	)
-	frames_header.add_child(clear_button)
-	layout.add_child(frames_header)
-	var timeline_scroll := _scroll(timeline)
-	timeline_scroll.custom_minimum_size = Vector2(0, 190)
-	timeline_scroll.size_flags_vertical = Control.SIZE_FILL
-	layout.add_child(timeline_scroll)
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	side.add_child(info)
+	top.add_child(side)
+
+	var strip := PanelContainer.new()
+	strip.theme_type_variation = &"TimelinePanel"
+	strip.custom_minimum_size = Vector2(0, 190)
+	strip.add_child(_scroll(timeline, true))
+	timeline.add_theme_constant_override("separation", 8)
+	_empty_hint.text = "Drag sprites here, or double-click them"
+	_empty_hint.theme_type_variation = &"StatusLabel"
+	_empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_empty_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_child(_empty_hint)
+	layout.add_child(strip)
 	# Frames can be dropped anywhere in the timeline, also after the last one
 	timeline.set_drag_forwarding(Callable(), _can_drop_at.bind(null), _drop_at.bind(null))
+	strip.set_drag_forwarding(Callable(), _can_drop_at.bind(strip), _drop_at.bind(strip))
+
+	_marker.top_level = true
+	_marker.visible = false
+	_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(_marker)
+
+	discard_dialog.title = "Discard changes"
+	discard_dialog.dialog_text = "The frames changed. Discard the changes?"
+	discard_dialog.ok_button_text = "Discard"
+	discard_dialog.cancel_button_text = "Keep Editing"
+	discard_dialog.confirmed.connect(hide)
+	add_child(discard_dialog)
 	confirmed.connect(func() -> void: frames_chosen.emit(get_frames_text()))
+	canceled.connect(_on_canceled)
+
+
+func _ready() -> void:
+	_marker.color = Settings.get_value(&"accent_color")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		_marker.visible = false
 
 
 ## Shows [param cells] of [param frames_sheet] shown [param durations] long, playing at
-## [param fps] as [param play_mode]. Numbers in [param labels] are shown as their names.
+## [param fps] as [param play_mode], for the animation [param animation_name]. Numbers in
+## [param labels] are shown as their names.
 func open(
 	frames_sheet: Spritesheet,
 	cells: Array[Vector2i],
@@ -82,20 +117,28 @@ func open(
 	fps: float,
 	play_mode: SheetAnimation.Mode,
 	labels := {},
+	animation_name := "",
 ) -> void:
 	sheet = frames_sheet
+	title = tr("Edit Animation - %s") % animation_name if animation_name else tr("Edit Animation")
 	_labels = labels
 	_frames.clear()
 	for i in cells.size():
 		_frames.append(
 			{"cell": cells[i], "duration": durations[i] if i < durations.size() else 1.0}
 		)
+	_opened_with = _frames.duplicate(true)
 	player.sheet = sheet
 	player.fps = fps
 	player.mode = play_mode
 	_build_palette()
 	_rebuild_timeline()
 	popup_centered()
+
+
+## Whether the frames changed since opening
+func has_changes() -> bool:
+	return _frames != _opened_with
 
 
 ## The frames as typed in the Frames field
@@ -141,6 +184,15 @@ func set_duration(index: int, duration: float) -> void:
 	_update_player()
 
 
+## Closing with changes asks first; keeping them opens the window again as it was
+func _on_canceled() -> void:
+	if not has_changes():
+		return
+	# The dialog hides itself after this, so it's shown again after that
+	popup.call_deferred()
+	discard_dialog.popup_centered.call_deferred()
+
+
 func _build_palette() -> void:
 	for child in palette.get_children():
 		child.queue_free()
@@ -177,19 +229,43 @@ func _rebuild_timeline() -> void:
 		child.queue_free()
 	for i in _frames.size():
 		timeline.add_child(_card(i))
+	_empty_hint.visible = _frames.is_empty()
 	_update_player()
 
 
-## A frame in the timeline: its picture, number or name, how long it's shown and a button
-## to take it out
+## A frame in the timeline: buttons to move it and take it out, its picture, number or
+## name, and how long it's shown
 func _card(index: int) -> Control:
 	var cell: Vector2i = _frames[index].cell
 	var card := PanelContainer.new()
-	card.theme_type_variation = &"PreviewOverlay"
-	card.tooltip_text = tr("Frame %d of the animation") % (index + 1)
+	card.theme_type_variation = &"TimelineFrame"
+	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	card.tooltip_text = tr("Frame %d of the animation. Drag it to move it.") % (index + 1)
+	card.mouse_entered.connect(func() -> void: card.theme_type_variation = &"TimelineFrameHover")
+	card.mouse_exited.connect(func() -> void: card.theme_type_variation = &"TimelineFrame")
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
 	card.add_child(box)
+
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 0)
+	var left := _small_button(LEFT_ICON, "Move left")
+	left.disabled = index == 0
+	left.pressed.connect(move_frame.bind(index, index - 1))
+	buttons.add_child(left)
+	var right := _small_button(RIGHT_ICON, "Move right")
+	right.disabled = index == _frames.size() - 1
+	right.pressed.connect(move_frame.bind(index, index + 2))
+	buttons.add_child(right)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buttons.add_child(gap)
+	var remove := _small_button(REMOVE_ICON, "Take the frame out")
+	remove.pressed.connect(remove_frame.bind(index))
+	buttons.add_child(remove)
+	box.add_child(buttons)
+
 	var thumbnail := TextureRect.new()
 	thumbnail.texture = _thumbnail(cell)
 	thumbnail.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -197,20 +273,12 @@ func _card(index: int) -> Control:
 	thumbnail.custom_minimum_size = Vector2.ONE * THUMBNAIL_SIZE
 	thumbnail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(thumbnail)
-	var row := HBoxContainer.new()
 	var label := Label.new()
 	label.text = _label(cell)
 	label.clip_text = true
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-	var remove := Button.new()
-	remove.icon = REMOVE_ICON
-	remove.flat = true
-	remove.tooltip_text = "Take the frame out"
-	remove.focus_mode = Control.FOCUS_NONE
-	remove.pressed.connect(remove_frame.bind(index))
-	row.add_child(remove)
-	box.add_child(row)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.custom_minimum_size.x = 76
+	box.add_child(label)
 	var duration := SpinBox.new()
 	duration.min_value = 0.25
 	duration.max_value = 100
@@ -232,30 +300,55 @@ func _card(index: int) -> Control:
 	return card
 
 
-func _can_drop_at(_at: Vector2, data: Variant, _over: Control) -> bool:
-	return data is Dictionary and (data.has("cell") or data.has("index"))
+## Accepts sprites and frames, and shows where they'd go
+func _can_drop_at(at: Vector2, data: Variant, over: Control) -> bool:
+	if not (data is Dictionary and (data.has("cell") or data.has("index"))):
+		return false
+	_show_marker(_insert_index(_to_timeline(at, over)))
+	return true
 
 
 ## Puts dropped sprites, or moved frames, where they were dropped
 func _drop_at(at: Vector2, data: Variant, over: Control) -> void:
-	if over:
-		at += over.position
-	var index := _insert_index(at)
+	_marker.visible = false
+	var index := _insert_index(_to_timeline(at, over))
 	if data.has("cell"):
 		insert_frame(data.cell, index)
 	else:
 		move_frame(data.index, index)
 
 
-## Where a frame dropped at [param at] in the timeline goes: before the first frame it's
-## left of or above
+## [param at] in [param over] (the timeline when null) in the timeline's coordinates
+func _to_timeline(at: Vector2, over: Control) -> Vector2:
+	if over == null:
+		return at
+	return at + over.global_position - timeline.global_position
+
+
+## Where a frame dropped at [param at] in the timeline goes: before the first frame whose
+## middle is right of it
 func _insert_index(at: Vector2) -> int:
 	var cards := timeline.get_children()
 	for i in cards.size():
-		var rect := (cards[i] as Control).get_rect()
-		if at.y < rect.position.y or (at.y <= rect.end.y and at.x < rect.get_center().x):
+		if at.x < (cards[i] as Control).get_rect().get_center().x:
 			return i
 	return cards.size()
+
+
+## A line between the frames where one dropped now would go
+func _show_marker(index: int) -> void:
+	var cards := timeline.get_children()
+	var gap := float(timeline.get_theme_constant(&"separation"))
+	var rect := timeline.get_global_rect()
+	var x := rect.position.x
+	if index < cards.size():
+		x = (cards[index] as Control).global_position.x - gap / 2
+	elif not cards.is_empty():
+		x = (cards[-1] as Control).get_global_rect().end.x + gap / 2
+	var height := rect.size.y if cards.is_empty() else (cards[0] as Control).size.y
+	_marker.global_position = Vector2(x - MARKER_WIDTH / 2, rect.position.y)
+	_marker.size = Vector2(MARKER_WIDTH, height)
+	_marker.visible = true
 
 
 func _update_player() -> void:
@@ -269,7 +362,6 @@ func _update_player() -> void:
 	for duration in durations:
 		total += duration
 	info.text = tr("%d frames, %.2f s") % [_frames.size(), total / maxf(player.fps, 0.01)]
-	clear_button.disabled = _frames.is_empty()
 
 
 ## The frame's name when it stands for it, else its number
@@ -287,32 +379,42 @@ func _thumbnail(cell: Vector2i) -> Texture2D:
 	return _textures[img]
 
 
+## What follows the mouse while dragging: the sprite on a frame's card
 func _drag_preview(cell: Vector2i) -> Control:
-	var preview := TextureRect.new()
-	preview.texture = _thumbnail(cell)
-	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	preview.size = Vector2.ONE * THUMBNAIL_SIZE
-	preview.modulate.a = 0.8
-	return preview
+	var card := PanelContainer.new()
+	card.theme_type_variation = &"TimelineFrameHover"
+	card.modulate.a = 0.85
+	var picture := TextureRect.new()
+	picture.texture = _thumbnail(cell)
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.custom_minimum_size = Vector2.ONE * THUMBNAIL_SIZE
+	card.add_child(picture)
+	# Held by the middle, a little off so the drop marker stays visible
+	var holder := Control.new()
+	holder.add_child(card)
+	card.position = -Vector2.ONE * THUMBNAIL_SIZE / 2 + Vector2(8, 8)
+	return holder
 
 
-static func _heading(text: String, tooltip: String) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.tooltip_text = tooltip
-	label.mouse_filter = Control.MOUSE_FILTER_PASS
-	label.theme_type_variation = &"HeaderSmall"
-	return label
+static func _small_button(icon: Texture2D, tooltip: String) -> Button:
+	var button := Button.new()
+	button.icon = icon
+	button.flat = true
+	button.tooltip_text = tooltip
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_constant_override("icon_max_width", 12)
+	return button
 
 
-static func _scroll(content: Control) -> ScrollContainer:
+static func _scroll(content: Control, horizontal: bool) -> ScrollContainer:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	if horizontal:
+		scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	else:
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_theme_constant_override("h_separation", 6)
-	content.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(content)
 	return scroll

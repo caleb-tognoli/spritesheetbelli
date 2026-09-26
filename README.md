@@ -43,7 +43,7 @@ A small desktop tool made with Godot.</p>
   Nearest for sharp pixel art.
 - **Animations:** make named animations from a range of cells or the selected frames,
   each with its own speed and loop, ping-pong or play-once, and frames that are held
-  longer (`0-3, 4*2`), typed by number or name or put together in Edit Frames, where
+  longer (`0-3, 4*2`), typed by number or name or put together in Edit Animation, where
   sprites are dragged into place and each gets how long it's shown; mirror walk_right
   into walk_left; preview them with onion skin and export them.
 - **Name rows** as animations (idle, walk, jump); names are used in exports.

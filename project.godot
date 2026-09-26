@@ -38,6 +38,7 @@ gdscript/warnings/integer_division=0
 
 window/size/viewport_width=1000
 window/subwindows/embed_subwindows=false
+window/per_pixel_transparency/allowed=true
 
 [file_customization]
 

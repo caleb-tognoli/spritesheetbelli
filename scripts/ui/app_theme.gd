@@ -162,6 +162,16 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		"panel", &"PreviewOverlay", _box(Color(p.surface, 0.9), 6, Vector4(4, 3, 4, 3), p.border, 1)
 	)
 	theme.set_type_variation(&"PreviewOverlay", "PanelContainer")
+	# The frame editor: the sheet's sprites, and the timeline of frames with cards that
+	# light up when hovered
+	for entry: Array in [
+		[&"EditorSection", _box(p.background, 6, Vector4(8, 8, 8, 8))],
+		[&"TimelinePanel", _box(p.background, 6, Vector4(8, 8, 8, 8), Color(p.accent, 0.45), 1)],
+		[&"TimelineFrame", _box(p.raised, 6, Vector4(4, 2, 4, 6), p.border, 1)],
+		[&"TimelineFrameHover", _box(p.raised, 6, Vector4(4, 2, 4, 6), p.accent, 1)],
+	]:
+		theme.set_stylebox("panel", entry[0], entry[1])
+		theme.set_type_variation(entry[0], "PanelContainer")
 	# Floating panels of fields look like menus, with room around the fields
 	theme.set_stylebox(
 		"panel", "PopupPanel", _box(p.surface, 6, Vector4(12, 10, 12, 10), p.border, 1)

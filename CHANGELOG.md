@@ -125,8 +125,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The animation player has back to start, previous frame, play/pause and next frame.
 - Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7, or by
   name: idle, walk_0-walk_3, "jump up"*2. Frames with a name of their own are shown by
-  it. Edit… next to them opens Edit Frames: sprites are dragged (or double-clicked) into
-  a timeline, dragged to reorder, and each gets how long it's shown, with a preview.
+  it. Edit… next to them opens Edit Animation: sprites are dragged (or double-clicked)
+  into a timeline, where frames are dragged or moved with their arrows, removed, and each
+  gets how long it's shown, with a preview. A line shows where a dragged frame will go,
+  and closing with changes asks before discarding them.
 - Tooltips of linked frames show the file's path.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.
@@ -150,6 +152,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   always ask where to save, so only projects are overwritten without asking.
 
 ### Fixed
+- Godot's warning about rounded popup corners: windows may use per-pixel transparency.
 - The status bar's note about locked cells shows its tooltip again.
 - The sidebar's resize bar ending up under the preview when the preview was narrower than
   its toolbar.
