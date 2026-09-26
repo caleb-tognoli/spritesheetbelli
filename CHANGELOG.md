@@ -128,7 +128,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   it. Edit… next to them opens Edit Animation: sprites are dragged (or double-clicked)
   into a timeline, where frames are dragged or moved with their arrows, removed, and each
   gets how long it's shown, with a preview. A line shows where a dragged frame will go,
-  and closing with changes asks before discarding them.
+  and closing with changes (Cancel, the close button or Escape) asks before discarding
+  them, keeping the window open while it asks.
 - Tooltips of linked frames show the file's path.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.

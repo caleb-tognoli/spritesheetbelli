@@ -1,9 +1,10 @@
 class_name AnimationFramesEditor
-extends ConfirmationDialog
+extends Window
 ## Puts an animation's frames together by hand: sprites are dragged (or double-clicked)
 ## from the sheet into a timeline, where they're dragged or moved with their arrows, and
 ## each gets how long it's shown. Applying gives the frames as text, like the Frames field
-## of the Animations window, with [signal frames_chosen]. Closing with changes asks first.
+## of the Animations window, with [signal frames_chosen]. Closing with changes asks first:
+## a plain window rather than a dialog, since dialogs close before they can ask.
 
 ## The frames as typed in the Frames field, e.g. "idle, 3-5, 6*2"
 signal frames_chosen(text: String)
@@ -22,6 +23,8 @@ var palette := HFlowContainer.new()
 var timeline := HBoxContainer.new()
 var player := FramePlayer.new()
 var info := Label.new()
+var ok_button := Button.new()
+var cancel_button := Button.new()
 ## Asks before closing with changes
 var discard_dialog := ConfirmationDialog.new()
 
@@ -38,12 +41,35 @@ var _empty_hint := Label.new()
 
 
 func _init() -> void:
-	ok_button_text = "Apply"
-	get_ok_button().icon = APPLY_ICON
+	visible = false
+	transient = true
+	exclusive = true
+	wrap_controls = true
 	min_size = Vector2i(820, 580)
+	# Looks like a dialog: its panel, and its buttons spread along the bottom
+	var background := PanelContainer.new()
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(background)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	background.add_child(content)
 	var layout := VBoxContainer.new()
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 12)
-	add_child(layout)
+	content.add_child(layout)
+	var buttons := HBoxContainer.new()
+	for button: Button in [null, ok_button, null, cancel_button, null]:
+		if button == null:
+			var spacer := Control.new()
+			spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			buttons.add_child(spacer)
+			continue
+		button.custom_minimum_size.x = 80
+		buttons.add_child(button)
+	ok_button.text = "Apply"
+	ok_button.icon = APPLY_ICON
+	cancel_button.text = "Cancel"
+	content.add_child(buttons)
 
 	# The sheet's sprites and the preview above, the timeline below
 	var top := HBoxContainer.new()
@@ -94,12 +120,36 @@ func _init() -> void:
 	discard_dialog.cancel_button_text = "Keep Editing"
 	discard_dialog.confirmed.connect(hide)
 	add_child(discard_dialog)
-	confirmed.connect(func() -> void: frames_chosen.emit(get_frames_text()))
-	canceled.connect(_on_canceled)
+	ok_button.pressed.connect(
+		func() -> void:
+			hide()
+			frames_chosen.emit(get_frames_text())
+	)
+	cancel_button.pressed.connect(request_close)
+	close_requested.connect(request_close)
+	window_input.connect(
+		func(event: InputEvent) -> void:
+			if event.is_action_pressed(&"ui_cancel") and not event.is_echo():
+				request_close()
+	)
+	background.ready.connect(
+		func() -> void:
+			background.add_theme_stylebox_override(
+				"panel", background.get_theme_stylebox("panel", "AcceptDialog")
+			)
+	)
 
 
 func _ready() -> void:
 	_marker.color = Settings.get_value(&"accent_color")
+
+
+func get_ok_button() -> Button:
+	return ok_button
+
+
+func get_cancel_button() -> Button:
+	return cancel_button
 
 
 func _notification(what: int) -> void:
@@ -184,13 +234,14 @@ func set_duration(index: int, duration: float) -> void:
 	_update_player()
 
 
-## Closing with changes asks first; keeping them opens the window again as it was
-func _on_canceled() -> void:
-	if not has_changes():
+## Closes, or with changes first asks whether to discard them
+func request_close() -> void:
+	if discard_dialog.visible:
 		return
-	# The dialog hides itself after this, so it's shown again after that
-	popup.call_deferred()
-	discard_dialog.popup_centered.call_deferred()
+	if has_changes():
+		discard_dialog.popup_centered()
+	else:
+		hide()
 
 
 func _build_palette() -> void:

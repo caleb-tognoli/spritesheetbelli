@@ -260,14 +260,26 @@ func test_frames_editor_cards() -> void:
 	remove.pressed.emit()
 	assert_eq(editor.get_frames_text(), "0")
 
-	# Cancelling with changes asks, and keeping them keeps the window open
+	# Cancelling or closing with changes asks first, without closing in between
 	var chosen := [false]
+	var hidden := [0]
 	editor.frames_chosen.connect(func(_text: String) -> void: chosen[0] = true)
+	editor.visibility_changed.connect(
+		func() -> void:
+			if not editor.visible:
+				hidden[0] += 1
+	)
 	editor.get_cancel_button().pressed.emit()
 	await get_tree().process_frame
-	assert_true(editor.visible, "still open")
 	assert_true(editor.discard_dialog.visible, "asks first")
 	editor.discard_dialog.get_cancel_button().pressed.emit()
+	await get_tree().process_frame
+	editor.close_requested.emit()
+	await get_tree().process_frame
+	assert_true(editor.discard_dialog.visible, "the close button asks too")
+	editor.discard_dialog.get_cancel_button().pressed.emit()
+	await get_tree().process_frame
+	assert_eq(hidden[0], 0, "never closed while asking")
 	assert_true(editor.visible)
 	assert_eq(editor.get_frames_text(), "0", "the changes are kept")
 	editor.get_cancel_button().pressed.emit()
@@ -276,4 +288,16 @@ func test_frames_editor_cards() -> void:
 	assert_false(editor.visible, "discarded")
 	assert_false(chosen[0], "nothing applied")
 	assert_eq(Global.spritesheet.animations[0].cells.size(), 2)
+	window.hide()
+
+
+func test_frames_editor_closes_without_asking_when_unchanged() -> void:
+	var window: AnimationWindow = main.animation_window
+	window.open()
+	window.new_button.pressed.emit()
+	window.edit_frames_button.pressed.emit()
+	var editor := window.frames_editor
+	editor.close_requested.emit()
+	assert_false(editor.visible)
+	assert_false(editor.discard_dialog.visible)
 	window.hide()
