@@ -80,7 +80,6 @@ var about := Label.new()
 var image_format := OptionButton.new()
 var jpg_quality := SpinBox.new()
 var jpg_background := ColorPickerButton.new()
-var background_check := CheckBox.new()
 var background_picker := ColorPickerButton.new()
 var pattern := LineEdit.new()
 var pattern_example := Label.new()
@@ -140,13 +139,12 @@ func _init() -> void:
 	jpg_background.tooltip_text = "JPG has no transparency, so transparent areas get this colour"
 	_add_row(_settings, "Fill transparency with", jpg_background, [T.IMAGE], "jpg")
 
-	var background_box := HBoxContainer.new()
-	background_check.text = "Fill"
-	background_check.tooltip_text = "Put a colour behind the sprites instead of transparency"
+	background_picker.tooltip_text = (
+		"A colour behind the sprites. Fully transparent (the default) leaves the "
+		+ "background transparent."
+	)
 	background_picker.custom_minimum_size = Vector2(60, 0)
-	background_box.add_child(background_check)
-	background_box.add_child(background_picker)
-	_add_row(_settings, "Background", background_box, [T.IMAGE, T.GODOT, T.JSON, T.GIF])
+	_add_row(_settings, "Background", background_picker, [T.IMAGE, T.GODOT, T.JSON, T.GIF])
 	gif_animation.tooltip_text = "Which animation the GIF plays"
 	_add_row(_settings, "Animation", gif_animation, [T.GIF])
 	gif_scale.min_value = 1
@@ -196,7 +194,6 @@ func _init() -> void:
 
 	targets.item_selected.connect(_changed.unbind(1))
 	image_format.item_selected.connect(_changed.unbind(1))
-	background_check.toggled.connect(_changed.unbind(1))
 	background_picker.color_changed.connect(_changed.unbind(1))
 	pattern.text_changed.connect(_changed.unbind(1))
 	only_selected.toggled.connect(_changed.unbind(1))
@@ -236,8 +233,7 @@ func refresh() -> void:
 	image_format.select(ExportOptions.IMAGE_FORMATS.find(options.image_format))
 	jpg_quality.set_value_no_signal(roundi(options.jpg_quality * 100))
 	jpg_background.color = options.opaque_background
-	background_check.button_pressed = options.background.a > 0
-	background_picker.color = options.background if options.background.a > 0 else Color.BLACK
+	background_picker.color = options.background
 	pattern.text = options.sprite_name_pattern
 	only_selected.button_pressed = options.only_selected
 	existing.select(options.existing_files)
@@ -279,9 +275,7 @@ func _options() -> ExportOptions:
 	options.image_format = ExportOptions.IMAGE_FORMATS[maxi(image_format.selected, 0)]
 	options.jpg_quality = jpg_quality.value / 100.0
 	options.opaque_background = jpg_background.color
-	options.background = (
-		background_picker.color if background_check.button_pressed else Color(0, 0, 0, 0)
-	)
+	options.background = background_picker.color
 	options.sprite_name_pattern = pattern.text if pattern.text.strip_edges() else "{index}"
 	options.only_selected = only_selected.button_pressed
 	options.existing_files = existing.selected as ExportOptions.Existing
@@ -311,7 +305,6 @@ func _on_confirmed() -> void:
 
 func _update_labels(options: ExportOptions) -> void:
 	about.text = TARGETS[_target_index(options.target)].about
-	background_picker.disabled = not background_check.button_pressed
 	_update_visibility(options)
 
 	var sheet := Global.spritesheet

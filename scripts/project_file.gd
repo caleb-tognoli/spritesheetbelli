@@ -251,7 +251,11 @@ static func _placement_from_json(value: Variant) -> Dictionary:
 	}
 
 
+## Settings written with [method JSON.from_native], or empty when there are none, like the
+## atlas settings of a sheet that was never packed
 static func _read_export_settings(value: Variant) -> Dictionary:
+	if not value is Dictionary or not value.has("type"):
+		return {}
 	var settings: Variant = JSON.to_native(value)
 	return settings if settings is Dictionary else {}
 

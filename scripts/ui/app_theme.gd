@@ -157,6 +157,11 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("font_disabled_color", "PopupMenu", Color(p.text_muted, 0.6))
 	theme.set_color("font_accelerator_color", "PopupMenu", p.text_muted)
 	theme.set_color("font_separator_color", "PopupMenu", p.text_muted)
+	# Controls floating over the preview
+	theme.set_stylebox(
+		"panel", &"PreviewOverlay", _box(Color(p.surface, 0.9), 6, Vector4(4, 3, 4, 3), p.border, 1)
+	)
+	theme.set_type_variation(&"PreviewOverlay", "PanelContainer")
 	# Floating panels of fields look like menus, with room around the fields
 	theme.set_stylebox(
 		"panel", "PopupPanel", _box(p.surface, 6, Vector4(12, 10, 12, 10), p.border, 1)

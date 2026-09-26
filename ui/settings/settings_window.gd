@@ -41,13 +41,6 @@ const CATEGORIES := [
 		]
 	],
 	[
-		"Export",
-		[
-			[&"jpg_quality", "JPG quality", "spin", [0.1, 1.0, 0.05, ""]],
-			[&"jpg_background", "JPG background", "color"],
-		]
-	],
-	[
 		"Atlas",
 		[
 			[&"atlas_dedupe", "Share identical frames", "check"],
@@ -85,7 +78,6 @@ const DETAILS := {
 	&"restore_session": "Open the last project again when the app starts",
 	&"show_checkerboard": "A checkerboard behind sprites shows their transparent pixels",
 	&"checker_size": "The size of the checkerboard's squares",
-	&"jpg_background": "JPG has no transparency: transparent pixels get this colour",
 	&"atlas_dedupe": "Frames that look the same are packed once and share their place",
 	&"atlas_power_of_two": "Pages are 256, 512, 1024… px wide and tall, for older engines",
 	&"atlas_square": "Pages are as wide as they're tall",

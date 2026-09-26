@@ -118,7 +118,8 @@ empty space draws a selection box, drag frames to move them, click an empty cell
 so added sprites skip it. In the packed layout, the move tool drags frames to any place on
 a page, and the pivot tool drags the pivot of the selected frames. Align in Cell, Pivot,
 Trim and Pinned work on every frame when none are selected. Pan with the middle mouse
-button or Space+drag, zoom with the wheel. Arrow keys move the selection, or in the move mode the selected frames. Right-click
+button or Space+drag, zoom with the wheel or the buttons over the top-right corner, where
+the zoom level goes back to 100% when clicked. Arrow keys move the selection, or in the move mode the selected frames. Right-click
 for the Transform, Align in Cell and Rows submenus.
 
 ## Command line

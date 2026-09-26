@@ -198,8 +198,7 @@ func _show_cut(sheet: Spritesheet) -> void:
 	spritesheet = sheet
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
-	slice_info.remove_theme_color_override("font_color")
-	slice_info.tooltip_text = ""
+	preview_area.show_notice("")
 	slice_info.text = tr("%d frames") % spritesheet.frames.size()
 	if not spritesheet.animations.is_empty():
 		slice_info.text += tr(" · %d animations") % spritesheet.animations.size()
@@ -337,17 +336,16 @@ func add_selected_frames_to_global() -> void:
 
 func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
 	slice_info.text = tr("Cell size: %d×%d px") % [cell_size.x, cell_size.y]
-	slice_info.tooltip_text = ""
-	slice_info.remove_theme_color_override("font_color")
-	if unused != Vector2i.ZERO:
-		var parts: PackedStringArray = []
-		if unused.x > 0:
-			parts.append("%d px on the right" % unused.x)
-		if unused.y > 0:
-			parts.append("%d px at the bottom" % unused.y)
-		slice_info.text += tr(" · %s not used") % " and ".join(parts)
-		slice_info.tooltip_text = "The image doesn't divide evenly into this grid"
-		slice_info.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+	# Over the preview, so the bar above doesn't change width
+	var parts: PackedStringArray = []
+	if unused.x > 0:
+		parts.append(tr("%d px on the right") % unused.x)
+	if unused.y > 0:
+		parts.append(tr("%d px at the bottom") % unused.y)
+	preview_area.show_notice(
+		tr("%s not used") % " and ".join(parts) if parts else "",
+		"The image doesn't divide evenly into this grid"
+	)
 
 
 ## Shows the offset and spacing on the button when they're set

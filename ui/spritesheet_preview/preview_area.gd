@@ -1,7 +1,9 @@
 class_name PreviewArea
 extends Control
-## The spritesheet preview with its toolbar: the select, move and pivot tools, the actions
-## given to [method set_toolbar_actions] and zoom, like the toolbar above Godot's 2D editor.
+## The spritesheet preview with its toolbar: the select, move and pivot tools and the
+## actions given to [method set_toolbar_actions], like the toolbar above Godot's 2D editor.
+## Zoom and centring the view float over the top-right corner, with notices under them,
+## see [method show_notice].
 
 const SELECT_ICON := preload("res://assets/icons/ToolSelect.svg")
 const MOVE_ICON := preload("res://assets/icons/ToolMove.svg")
@@ -10,6 +12,8 @@ const SELECT_ALL_ICON := preload("res://assets/icons/ListSelect.svg")
 const SELECT_NONE_ICON := preload("res://assets/icons/Clear.svg")
 const ZOOM_OUT_ICON := preload("res://assets/icons/ZoomLess.svg")
 const ZOOM_IN_ICON := preload("res://assets/icons/ZoomMore.svg")
+const CENTER_VIEW_ICON := preload("res://assets/icons/CenterView.svg")
+const WARNING_ICON := preload("res://assets/icons/StatusWarning.svg")
 
 @onready var options_menu: ActionPopupMenu = $OptionsMenu
 @onready var spritesheet_preview: SpritesheetPreview = %SpritesheetPreview
@@ -20,9 +24,13 @@ const ZOOM_IN_ICON := preload("res://assets/icons/ZoomMore.svg")
 var select_tool_btn := _tool_button(SELECT_ICON)
 var move_tool_btn := _tool_button(MOVE_ICON)
 var pivot_tool_btn := _tool_button(PIVOT_ICON)
+var center_view_btn := _tool_button(CENTER_VIEW_ICON, "Fit to view (F)")
 var zoom_out_btn := _tool_button(ZOOM_OUT_ICON, "Zoom out (Ctrl+Minus)")
-var zoom_label_btn := _tool_button(null, "Fit to view (F)")
+var zoom_label_btn := _tool_button(null, "Actual size (Ctrl+0)")
 var zoom_in_btn := _tool_button(ZOOM_IN_ICON, "Zoom in (Ctrl+Equal)")
+## Something to know about what's shown, with a warning icon, under the zoom
+var notice := PanelContainer.new()
+var notice_label := Label.new()
 var animation_preview := AnimationPreview.new()
 ## Shown in the middle while the spritesheet is empty. Hidden when empty.
 var empty_hint := Label.new()
@@ -57,6 +65,7 @@ func _ready() -> void:
 	animation_preview.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	animation_preview.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	animation_preview.position -= Vector2(10, 10)
+	_build_overlay()
 	update_ui()
 	spritesheet_preview.preview_updated.connect(update_ui)
 	spritesheet_preview.zoom_changed.connect(update_zoom_label)
@@ -101,13 +110,56 @@ func _build_toolbar() -> void:
 	bar.add_child(spacer)
 	bar.add_child(_view_bar)
 
-	# Zoom, like Godot: the percentage fits the view
+
+## Zoom and centring over the top-right corner of the preview, like Godot's 2D editor,
+## and the notice under them
+func _build_overlay() -> void:
+	var overlay := VBoxContainer.new()
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_theme_constant_override("separation", 6)
+	var zoom := PanelContainer.new()
+	zoom.theme_type_variation = &"PreviewOverlay"
+	zoom.size_flags_horizontal = Control.SIZE_SHRINK_END
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	zoom.add_child(row)
 	zoom_label_btn.custom_minimum_size.x = 56
-	for button: Button in [zoom_out_btn, zoom_label_btn, zoom_in_btn]:
-		bar.add_child(button)
+	for button: Button in [center_view_btn, zoom_out_btn, zoom_label_btn, zoom_in_btn]:
+		row.add_child(button)
+	overlay.add_child(zoom)
+	center_view_btn.pressed.connect(func() -> void: spritesheet_preview.fit_to_view())
 	zoom_out_btn.pressed.connect(func() -> void: spritesheet_preview.zoom_by(0.8))
 	zoom_in_btn.pressed.connect(func() -> void: spritesheet_preview.zoom_by(1.25))
-	zoom_label_btn.pressed.connect(func() -> void: spritesheet_preview.fit_to_view())
+	# The percentage goes back to 100%
+	zoom_label_btn.pressed.connect(
+		func() -> void:
+			spritesheet_preview.set_zoom(1, spritesheet_preview.get_viewport_rect().size / 2)
+	)
+
+	notice.theme_type_variation = &"PreviewOverlay"
+	notice.size_flags_horizontal = Control.SIZE_SHRINK_END
+	notice.visible = false
+	var notice_row := HBoxContainer.new()
+	var icon := TextureRect.new()
+	icon.texture = WARNING_ICON
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+	notice_row.add_child(icon)
+	notice_row.add_child(notice_label)
+	notice.add_child(notice_row)
+	overlay.add_child(notice)
+
+	stage.add_child(overlay)
+	overlay.set_anchors_and_offsets_preset(
+		Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 10
+	)
+	overlay.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+
+
+## Shows [param text] with a warning icon over the preview, or hides it when empty
+func show_notice(text: String, tooltip := "") -> void:
+	notice_label.text = text
+	notice.tooltip_text = tooltip
+	notice.visible = not text.is_empty()
 
 
 ## As wide as the toolbar's widest group, so the splits around the preview never squeeze
@@ -175,7 +227,6 @@ func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submen
 			_edit_bar.add_child(_action_button(id, submenus))
 	for id in view_ids:
 		_view_bar.add_child(_action_button(id, submenus))
-	_view_bar.add_child(VSeparator.new())
 	if not Actions.state_changed.is_connected(_refresh_action_buttons):
 		Actions.state_changed.connect(_refresh_action_buttons)
 	_refresh_action_buttons()

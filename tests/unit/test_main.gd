@@ -310,7 +310,12 @@ func test_add_spritesheet_offset_spacing_and_warning() -> void:
 	window.spacing_x.value = 4
 	assert_eq(window.spritesheet.sprite_size, Vector2i(16, 16))
 	assert_color(window.spritesheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.BLUE)
-	assert_true(window.slice_info.text.contains("1 px on the right"), window.slice_info.text)
+	var notice := window.preview_area.notice_label.text
+	assert_true(window.preview_area.notice.visible, "over the preview")
+	assert_true(notice.contains("1 px on the right"), notice)
+	assert_false(window.slice_info.text.contains("not used"), "not in the bar")
+	window.spacing_x.value = 3
+	assert_false(window.preview_area.notice.visible, "the grid fits now")
 
 
 func test_empty_hint_and_toasts() -> void:
@@ -332,8 +337,13 @@ func test_zoom_buttons() -> void:
 	area.zoom_out_btn.pressed.emit()
 	assert_eq(area.zoom_label_btn.text, "100%")
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	area.center_view_btn.pressed.emit()
+	assert_true(main.preview.camera.zoom.x > 4.0, "fits the view")
 	area.zoom_label_btn.pressed.emit()
-	assert_true(main.preview.camera.zoom.x > 4.0, "the percentage fits the view")
+	assert_eq(main.preview.camera.zoom.x, 1.0, "the percentage is 100%")
+	assert_false(area.zoom_in_btn.get_parent() is HFlowContainer, "not in the toolbar")
+	var corner := area.zoom_in_btn.get_global_rect().end.x
+	assert_true(corner > area.stage.get_global_rect().end.x - 20, "top right of the preview")
 
 
 func test_formatted_text_is_translatable() -> void:
@@ -401,11 +411,16 @@ func test_export_dialog() -> void:
 	assert_false(dialog.image_format.visible)
 	assert_true(dialog.pattern.visible, "file names for sprites")
 	assert_false("padding" in dialog, "spacing is in the sidebar")
+	assert_false("background_check" in dialog, "just a colour")
+	assert_eq(dialog.background_picker.color.a, 0.0, "transparent by default")
+	dialog.background_picker.color = Color.RED
+	dialog.background_picker.color_changed.emit(Color.RED)
 	dialog.select_target(ExportOptions.Target.GODOT)
 	assert_true(dialog.animation_fps.visible)
 	dialog.get_ok_button().pressed.emit()
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	assert_eq(options.target, ExportOptions.Target.GODOT, "saved with the sheet")
+	assert_eq(options.background, Color.RED)
 	assert_true(main.files.export_file_dialog in main.files.open_file_dialogs, "asks where")
 	assert_eq(main.files.export_file_dialog.current_file, "spritesheet.png")
 	main.files.export_file_dialog.hide()

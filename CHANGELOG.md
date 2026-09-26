@@ -103,6 +103,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   padding around, and frames' edges extruded.
 - Packed sheets can be exported as images too, one per page.
 - Export is at the top of the sidebar, with the size of what it writes under it.
+- The export background is a single colour picker, transparent unless a colour is picked.
+  JPG quality and fill colour are set in the Export dialog only, not in Settings.
+- Add Spritesheet warns about a grid that doesn't divide the image over the preview, with
+  a warning icon, so the bar above keeps its layout.
 - The history has a toolbar button, after the sprites list.
 - The animation preview's button to open the Animations window has the Animations icon,
   and its list says "All frames" when fewer than two frames are selected.
@@ -114,7 +118,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frame when none are selected; Select All and Select None are in the Edit menu only.
 - A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
   rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
-  animation preview (P), and zoom buttons around the zoom level, which fits the view.
+  animation preview (P). Zoom floats over the top-right corner of the preview, like in
+  Godot: a button fits the view, and clicking the zoom level goes back to 100%.
 - The right-click menu groups flipping and rotating under Transform, and has Align in
   Cell and Rows submenus.
 - The animation player has back to start, previous frame, play/pause and next frame.
