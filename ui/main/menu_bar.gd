@@ -73,6 +73,7 @@ const MENUS := {
 		&"color_key",
 		&"add_outline",
 		&"replace_image",
+		&"reload_source",
 		&"",
 		&"insert_cell",
 		&"remove_cell",

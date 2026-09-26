@@ -61,8 +61,11 @@ func _ready() -> void:
 				Notify.error(tr("Could not load %s.") % path.get_file())
 				return
 			img.resource_name = path.get_file()
+			_linking(path)
+			var sheet := Global.spritesheet
 			Global.document.perform(
-				"Replace image", Global.spritesheet.replace_frame.bind(_replace_coord, img)
+				"Replace image",
+				sheet.replace_frame.bind(_replace_coord, img, FrameSource.for_file(path))
 			)
 	)
 	get_window().files_dropped.connect(open_dropped_files)
@@ -164,13 +167,22 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 	)
 	Notify.hide_progress()
 	var imgs: Array[Image] = []
+	var sources: Array[Dictionary] = []
 	var failed_files: PackedStringArray = []
 	for i in loaded.size():
+		var path := sorted_paths[i]
 		if loaded[i].is_empty():
-			failed_files.append(sorted_paths[i].get_file())
-		imgs.append_array(loaded[i])
+			failed_files.append(path.get_file())
+		_linking(path)
+		var is_gif := GifDecoder.is_gif_path(path)
+		for frame: int in loaded[i].size():
+			imgs.append(loaded[i][frame])
+			sources.append(
+				FrameSource.for_gif(path, frame) if is_gif else FrameSource.for_file(path)
+			)
 	Global.document.perform(
-		"Add sprites", Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"))
+		"Add sprites",
+		Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"), sources)
 	)
 
 	if not failed_files.is_empty():
@@ -248,15 +260,16 @@ func add_gif(path: String) -> void:
 		Settings.add_recent_file(path)
 		Global.document.reset()
 	var row_name := path.get_file().get_basename()
+	_linking(path)
 	if opening:
 		var opened := Spritesheet.new()
 		opened.set_frame_scale(Vector2.ONE, Settings.get_value(&"resize_filter"))
-		GifDecoder.add_to_sheet(opened, gif, row_name)
+		GifDecoder.add_to_sheet(opened, gif, row_name, path)
 		Global.document.load_state(opened.get_state())
 		Global.document.history_start = "Opened %s" % path.get_file()
 	else:
 		Global.document.perform(
-			"Add GIF", GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, row_name)
+			"Add GIF", GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, row_name, path)
 		)
 
 
@@ -292,7 +305,9 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 		Global.document.reset()
 		Global.document.export_path = spritesheet_path
 		loading_opened_file = true
-	add_spritesheet_window.setup(img, spritesheet_path, data, data_path.get_file())
+	_linking(spritesheet_path)
+	_linking(data_path)
+	add_spritesheet_window.setup(img, spritesheet_path, data, data_path)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
@@ -317,6 +332,7 @@ func _save_sprites(folder: String) -> bool:
 	var written := SpritesheetExporter.export_sprites(
 		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
 	)
+	unlink_overwritten(written)
 	if not errors.is_empty():
 		Notify.error(tr("Could not save: %s.") % ", ".join(errors))
 		return false
@@ -377,7 +393,9 @@ func save_project(path: String) -> bool:
 func _save_project(path: String) -> bool:
 	path = ProjectFile.with_extension(path)
 	var extra := {
-		"export_path": Global.document.export_path, "last_export": Global.document.last_export
+		"export_path": Global.document.export_path,
+		"last_export": Global.document.last_export,
+		"source_hashes": _hashes_to_json(Global.document.source_hashes, path.get_base_dir()),
 	}
 	var error := ProjectFile.save(Global.spritesheet, path, extra)
 	if error != OK:
@@ -412,6 +430,9 @@ func _open_project(path: String) -> bool:
 		return false
 	Global.document.load_state(result.state, path, result.extra.get("export_path", ""))
 	Global.document.last_export = str(result.extra.get("last_export", ""))
+	Global.document.source_hashes = _hashes_from_json(
+		result.extra.get("source_hashes"), path.get_base_dir()
+	)
 	Settings.set_value(&"last_session", path)
 	Settings.add_recent_file(path)
 	return true
@@ -516,6 +537,7 @@ func export_gif(path: String) -> bool:
 	if result.error != OK:
 		Notify.error(tr("Could not export to %s (%s).") % [result.path, error_string(result.error)])
 		return false
+	unlink_overwritten([result.path])
 	WebFiles.download(result.path)
 	Notify.toast(tr("Exported %s (%d frames).") % [result.path.get_file(), result.frames])
 	return true
@@ -544,6 +566,7 @@ func _export_image_to(path: String) -> bool:
 	if error != OK:
 		Notify.error(tr("Could not export to %s (%s).") % [path, error_string(error)])
 		return false
+	unlink_overwritten([path])
 
 	var message := tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
 	var metadata_error := Metadata.write_for_image(
@@ -554,6 +577,7 @@ func _export_image_to(path: String) -> bool:
 		return false
 	WebFiles.download(path)
 	if options.metadata != ExportOptions.MetadataFormat.NONE:
+		unlink_overwritten([Metadata.get_path_for_image(path, options)])
 		message += tr("\nAlso wrote %s.") % Metadata.get_path_for_image(path, options).get_file()
 		WebFiles.download(Metadata.get_path_for_image(path, options))
 	if (
@@ -591,6 +615,7 @@ func _export_atlas(path: String) -> bool:
 	if result.error != OK:
 		Notify.error(tr("Could not export the atlas (%s).") % error_string(result.error))
 		return false
+	unlink_overwritten([result.path, result.json_path])
 	WebFiles.download(result.path)
 	WebFiles.download(result.json_path)
 	var size: Vector2i = result.size
@@ -601,6 +626,61 @@ func _export_atlas(path: String) -> bool:
 		)
 	)
 	return true
+
+
+## Frames linked to files that were just written over would be cut from what
+## spritesheetbelli made, with their edits made twice, so they're unlinked instead
+func unlink_overwritten(paths: PackedStringArray) -> void:
+	var document := Global.document
+	var unlinked: PackedStringArray = []
+	for path in paths:
+		if path not in document.unwatched_paths:
+			document.unwatched_paths.append(path)
+		document.source_hashes.erase(path)
+		if FrameSource.unlink(Global.spritesheet, path) > 0:
+			unlinked.append(path.get_file())
+	if not unlinked.is_empty():
+		Notify.toast(
+			(
+				tr("Frames from %s are no longer linked to it, since the export wrote over it.")
+				% ", ".join(unlinked)
+			),
+			6.0
+		)
+
+
+## Frames are about to be linked to [param path], so it's watched again even if it was
+## exported over before
+func _linking(path: String) -> void:
+	var index := Global.document.unwatched_paths.find(path)
+	if index >= 0:
+		Global.document.unwatched_paths.remove_at(index)
+
+
+static func _hashes_to_json(hashes: Dictionary[String, String], folder: String) -> Array:
+	var result := []
+	for path in hashes:
+		(
+			result
+			. append(
+				{
+					"path": path,
+					"relative": FrameSource.relative_path(path, folder),
+					"md5": hashes[path],
+				}
+			)
+		)
+	return result
+
+
+static func _hashes_from_json(value: Variant, folder: String) -> Dictionary[String, String]:
+	var hashes: Dictionary[String, String] = {}
+	if not value is Array:
+		return hashes
+	for entry: Variant in value:
+		if entry is Dictionary and entry.get("path") is String and entry.get("md5") is String:
+			hashes[FrameSource.resolve_path(entry.path, entry.get("relative"), folder)] = entry.md5
+	return hashes
 
 
 func new_spritesheet() -> void:

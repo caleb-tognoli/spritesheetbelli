@@ -45,6 +45,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			if sheet.has_frame_origin(coords[i]):
 				var origin := sheet.get_frame_origin(coords[i])
 				frame.origin = [origin.x, origin.y]
+			var source: Dictionary = sheet.frame_sources.get(coords[i], {})
+			if source:
+				frame.source = FrameSource.to_json(source, path.get_base_dir())
 			frames.append(frame)
 		error = _write(zip, FRAMES_FILE, atlas.save_png_to_buffer())
 		if error != OK:
@@ -87,12 +90,12 @@ static func load(path: String) -> Dictionary:
 	var zip := ZIPReader.new()
 	if zip.open(path) != OK:
 		return {"error": TranslationServer.translate("Could not open %s.") % path.get_file()}
-	var result := _read(zip)
+	var result := _read(zip, path.get_base_dir())
 	zip.close()
 	return result
 
 
-static func _read(zip: ZIPReader) -> Dictionary:
+static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	if not zip.file_exists(JSON_FILE):
 		return {"error": "Not a spritesheetbelli project."}
 	var data: Variant = JSON.parse_string(zip.read_file(JSON_FILE).get_string_from_utf8())
@@ -108,6 +111,7 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		atlas.convert(Image.FORMAT_RGBA8)
 	var frames: Dictionary[Vector2i, Image] = {}
 	var origins: Dictionary[Vector2i, Vector2i] = {}
+	var sources: Dictionary[Vector2i, Dictionary] = {}
 	for frame: Dictionary in data.get("frames", []):
 		var img := _read_frame(zip, atlas, frame)
 		if img == null:
@@ -123,6 +127,9 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		frames[cell] = img
 		if frame.get("origin") is Array:
 			origins[cell] = _to_vector2i(frame.origin)
+		var source := FrameSource.from_json(frame.get("source"), folder)
+		if source:
+			sources[cell] = source
 
 	var locked: Array[Vector2i] = []
 	for coord: Array in data.get("locked", []):
@@ -140,6 +147,7 @@ static func _read(zip: ZIPReader) -> Dictionary:
 		"grid_size": _to_vector2i(data.get("grid_size", [0, 0])),
 		"frames": frames,
 		"origins": origins,
+		"sources": sources,
 		"locked": locked,
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),

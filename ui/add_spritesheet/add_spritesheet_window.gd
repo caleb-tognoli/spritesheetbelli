@@ -30,6 +30,9 @@ enum Cut {
 var spritesheet: Spritesheet
 ## Where the frames are, from a data file exported with the image, or null
 var sheet_data: SheetData
+## The files the frames are linked to (see [FrameSource]), or empty to not link them
+var image_path := ""
+var data_path := ""
 var cut_option := OptionButton.new()
 ## Settings for finding sprites
 var detect_box := HBoxContainer.new()
@@ -101,22 +104,25 @@ func _ready() -> void:
 
 
 ## Shows [param img] cut where [param data] says the frames are, or else sliced into a
-## guessed grid. [param file_name] can hold a size hint, [param data_name] names the data.
-func setup(img: Image, file_name := "", data: SheetData = null, data_name := "") -> void:
+## guessed grid. The name of the image at [param path] can hold a size hint. The frames
+## are linked to [param path] and [param data_file] when they're given.
+func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> void:
 	spritesheet_image = img
 	sheet_data = data
+	image_path = path
+	data_path = data_file
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
 	_update_options_label()
 
-	var guessed_size := GridGuesser.guess(img, file_name)
+	var guessed_size := GridGuesser.guess(img, path.get_file())
 	grid_columns.set_value_no_signal(guessed_size.x)
 	grid_rows.set_value_no_signal(guessed_size.y)
 	cut_option.clear()
 	cut_option.add_item("Grid", Cut.GRID)
 	cut_option.add_item("Find sprites", Cut.DETECT)
 	if data:
-		cut_option.add_item(tr("Data: %s") % data_name, Cut.DATA)
+		cut_option.add_item(tr("Data: %s") % data_file.get_file(), Cut.DATA)
 	set_cut(Cut.DATA if data else Cut.GRID)
 
 	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
@@ -144,11 +150,11 @@ func _slice() -> void:
 		Cut.GRID:
 			update_grid_size(int(grid_columns.value), int(grid_rows.value))
 		Cut.DATA:
-			_show_cut(sheet_data.to_spritesheet(spritesheet_image))
+			_show_cut(sheet_data.to_spritesheet(spritesheet_image, image_path, data_path))
 		Cut.DETECT:
 			var rows := SpriteDetector.detect(spritesheet_image, int(merge_distance.value))
 			var alignment := align_option.get_selected_id() as Spritesheet.Alignment
-			_show_cut(SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment))
+			_show_cut(SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment, image_path))
 
 
 ## Shows frames that were cut without a grid
@@ -219,7 +225,8 @@ func update_grid_size(columns: int, rows: int) -> void:
 	spritesheet.begin_batch()
 	spritesheet.set_grid_size(grid_size)
 	for coord: Vector2i in result.frames:
-		spritesheet.set_frame(coord, result.frames[coord])
+		var source := FrameSource.for_region(image_path, result.rects[coord]) if image_path else {}
+		spritesheet.set_frame(coord, result.frames[coord], source)
 	spritesheet.end_batch()
 	_show_slice_info(result.cell_size, result.unused)
 	preview_area.spritesheet_preview.spritesheet = spritesheet
@@ -242,9 +249,12 @@ func add_spritesheet_to_global() -> void:
 			var offset := Vector2i(0, target.get_first_free_row())
 			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 			for coord: Vector2i in spritesheet.frames:
-				target.set_frame(coord + offset, spritesheet.frames[coord])
-				if spritesheet.has_frame_origin(coord):
-					target.set_frame_origin(coord + offset, spritesheet.get_frame_origin(coord))
+				target.set_frame(
+					coord + offset,
+					spritesheet.frames[coord],
+					spritesheet.frame_sources.get(coord, {}),
+					FrameSource.get_origin(spritesheet, coord)
+				)
 			for row: int in spritesheet.row_names:
 				target.set_row_name(row + offset.y, spritesheet.row_names[row])
 			for animation in spritesheet.animations:
@@ -272,8 +282,12 @@ func add_selected_frames_to_global() -> void:
 		func() -> void:
 			var added := target.add_frames(imgs, Settings.get_value(&"add_mode"))
 			for i in added.size():
-				if spritesheet.has_frame_origin(selected[i]):
-					target.set_frame_origin(added[i], spritesheet.get_frame_origin(selected[i]))
+				target.set_frame(
+					added[i],
+					imgs[i],
+					spritesheet.frame_sources.get(selected[i], {}),
+					FrameSource.get_origin(spritesheet, selected[i])
+				)
 	)
 	frames_added.emit()
 	close_requested.emit()

@@ -65,9 +65,9 @@ func test_rotating_back_restores_sprite_size() -> void:
 		[make_image(Color.RED, Vector2i(16, 32)), make_image(Color.BLUE)] as Array[Image]
 	)
 	var coords: Array[Vector2i] = [Vector2i(0, 0)]
-	sheet.rotate_frames(coords, true)
+	FrameEdits.rotate(sheet, coords, true)
 	assert_eq(sheet.sprite_size, Vector2i(32, 16))
-	sheet.rotate_frames(coords, false)
+	FrameEdits.rotate(sheet, coords, false)
 	assert_eq(sheet.sprite_size, Vector2i(16, 32))
 
 
@@ -86,7 +86,7 @@ func test_edits_never_modify_images_in_place() -> void:
 	img.set_pixel(0, 0, Color.BLUE)
 	sheet.add_frames([img] as Array[Image])
 	var state := sheet.get_state()
-	sheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
+	FrameEdits.flip(sheet, [Vector2i.ZERO] as Array[Vector2i], true)
 	assert_color(img, Vector2i.ZERO, Color.BLUE, "original untouched")
 	sheet.set_state(state)
 	assert_color(sheet.frames[Vector2i.ZERO], Vector2i.ZERO, Color.BLUE, "state restored")
@@ -126,9 +126,9 @@ func test_trim_and_color_key() -> void:
 	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
 	img.fill_rect(Rect2i(4, 4, 4, 6), Color.RED)
 	sheet.add_frames([img, make_image(Color.MAGENTA)] as Array[Image])
-	sheet.trim_frames([Vector2i(0, 0)] as Array[Vector2i])
+	FrameEdits.trim(sheet, [Vector2i(0, 0)] as Array[Vector2i])
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(4, 6))
-	sheet.color_key_frames([Vector2i(1, 0)] as Array[Vector2i], Color.MAGENTA)
+	FrameEdits.color_key(sheet, [Vector2i(1, 0)] as Array[Vector2i], Color.MAGENTA)
 	assert_true(sheet.frames[Vector2i(1, 0)].is_invisible())
 
 
@@ -162,8 +162,8 @@ func test_frame_names_survive_edits_and_projects() -> void:
 	img.resource_name = "walk_01.png"
 	sheet.add_frames([img] as Array[Image])
 	var coords: Array[Vector2i] = [Vector2i.ZERO]
-	sheet.flip_frames(coords, true)
-	sheet.trim_frames(coords)
+	FrameEdits.flip(sheet, coords, true)
+	FrameEdits.trim(sheet, coords)
 	assert_eq(sheet.frames[Vector2i.ZERO].resource_name, "walk_01.png")
 	var path := OS.get_user_data_dir().path_join("tests/names.sbelli")
 	assert_eq(ProjectFile.save(sheet, path), OK)
@@ -179,7 +179,7 @@ func test_undoing_a_resize_reuses_scaled_images() -> void:
 	sheet.set_frame_scale(Vector2.ONE)
 	sheet.set_state(state)
 	assert_true(sheet.get_frame_image(Vector2i.ZERO) == scaled)
-	sheet.flip_frames([Vector2i.ZERO] as Array[Vector2i], true)
+	FrameEdits.flip(sheet, [Vector2i.ZERO] as Array[Vector2i], true)
 	assert_false(sheet.is_frame_scaled(Vector2i.ZERO), "an edited frame is scaled again")
 
 

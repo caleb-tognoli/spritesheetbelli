@@ -3,6 +3,7 @@ extends Control
 const SAVE_ICON := preload("res://assets/icons/Save.svg")
 const LINK_ICON := preload("res://assets/icons/Link.svg")
 const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
+const RELOAD_ICON := preload("res://assets/icons/Reload.svg")
 const ICONS := {
 	&"new": preload("res://assets/icons/New.svg"),
 	&"open": preload("res://assets/icons/Load.svg"),
@@ -30,6 +31,7 @@ const ICONS := {
 	&"color_key": preload("res://assets/icons/ColorPick.svg"),
 	&"name_row": preload("res://assets/icons/Rename.svg"),
 	&"replace_image": preload("res://assets/icons/Image.svg"),
+	&"reload_source": RELOAD_ICON,
 	&"insert_cell": preload("res://assets/icons/InsertBefore.svg"),
 	&"remove_cell": preload("res://assets/icons/RemoveInternal.svg"),
 	&"delete_frames": preload("res://assets/icons/Remove.svg"),
@@ -38,7 +40,7 @@ const ICONS := {
 	&"zoom_reset": preload("res://assets/icons/ZoomReset.svg"),
 	&"zoom_fit": preload("res://assets/icons/CenterView.svg"),
 	&"edit_animations": preload("res://assets/icons/Animation.svg"),
-	&"export_again": preload("res://assets/icons/Reload.svg"),
+	&"export_again": RELOAD_ICON,
 	&"align_top": preload("res://assets/icons/ControlAlignCenterTop.svg"),
 	&"align_bottom": preload("res://assets/icons/ControlAlignCenterBottom.svg"),
 	&"align_left": preload("res://assets/icons/ControlAlignCenterLeft.svg"),
@@ -115,6 +117,7 @@ var row_name_dialog := RowNameDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
 var animation_window := AnimationWindow.new()
+var source_watcher := SourceWatcher.new()
 var _was_empty := true
 
 
@@ -200,6 +203,7 @@ func _ready() -> void:
 	add_child(export_dialog)
 	export_dialog.export_requested.connect(files.choose_export_path)
 	add_child(about_dialog)
+	add_child(source_watcher)
 	animation_window.preview = preview
 	add_child(animation_window)
 	var animation_preview := preview_area.animation_preview
@@ -305,25 +309,25 @@ func _register_actions() -> void:
 	add.call(
 		&"flip_h",
 		"Flip Horizontally",
-		edit_selection.bind("Flip", sheet.flip_frames.bind(true)),
+		edit_selection.bind("Flip", _edit_with(FrameEdits.flip, [true])),
 		has_selection
 	)
 	add.call(
 		&"flip_v",
 		"Flip Vertically",
-		edit_selection.bind("Flip", sheet.flip_frames.bind(false)),
+		edit_selection.bind("Flip", _edit_with(FrameEdits.flip, [false])),
 		has_selection
 	)
 	add.call(
 		&"rotate_cw",
 		"Rotate 90° CW",
-		edit_selection.bind("Rotate", sheet.rotate_frames.bind(true)),
+		edit_selection.bind("Rotate", _edit_with(FrameEdits.rotate, [true])),
 		has_selection
 	)
 	add.call(
 		&"rotate_ccw",
 		"Rotate 90° CCW",
-		edit_selection.bind("Rotate", sheet.rotate_frames.bind(false)),
+		edit_selection.bind("Rotate", _edit_with(FrameEdits.rotate, [false])),
 		has_selection
 	)
 	add.call(
@@ -357,7 +361,7 @@ func _register_actions() -> void:
 	add.call(
 		&"trim",
 		"Trim Transparent Borders",
-		edit_selection.bind("Trim", sheet.trim_frames),
+		edit_selection.bind("Trim", _edit_with(FrameEdits.trim)),
 		has_selection
 	)
 	for align: Array in [
@@ -396,6 +400,13 @@ func _register_actions() -> void:
 		"Replace Image…",
 		func() -> void: files.replace_frame_image(preview.get_selected_coords()[0]),
 		func() -> bool: return preview.get_selected_coords().size() == 1
+	)
+	add.call(
+		&"reload_source",
+		"Reload from File",
+		func() -> void:
+			source_watcher.reload_frames(get_selected_linked_coords(), true, "Reload from file"),
+		func() -> bool: return not get_selected_linked_coords().is_empty()
 	)
 	add.call(
 		&"insert_cell",
@@ -538,6 +549,15 @@ func open_row_name_dialog(row: int) -> void:
 	row_name_dialog.open(row, Global.spritesheet.row_names.get(row, ""))
 
 
+## Selected frames that came from a file, see [FrameSource]
+func get_selected_linked_coords() -> Array[Vector2i]:
+	var coords: Array[Vector2i] = []
+	for coord in preview.get_selected_coords():
+		if Global.spritesheet.frame_sources.has(coord):
+			coords.append(coord)
+	return coords
+
+
 func get_selected_images() -> Array[Image]:
 	var images: Array[Image] = []
 	for coord in preview.get_selected_coords():
@@ -561,15 +581,14 @@ func add_images(action_name: String, images: Array[Image]) -> void:
 	preview.set_selected_coords(coords)
 
 
-## Outlines the selected frames. The frames grow on every side, so they move back by the
-## thickness to keep their pixels in place.
+## Outlines the selected frames, see [method FrameEdits.outline]
 func add_outline(color: Color, thickness: int, corners: bool) -> void:
 	await edit_selection_in_background(
 		"Outline",
 		"Adding outlines",
 		func(img: Image) -> Image: return ImageUtils.outline(img, color, thickness, corners),
-		func(origin: Vector2i, _size: Vector2i, _img: Image) -> Vector2i:
-			return origin - Vector2i.ONE * thickness
+		FrameEdits.outline_move(thickness),
+		FrameEdits.outline_op(color, thickness, corners)
 	)
 
 
@@ -580,15 +599,17 @@ func remove_background(color: Color, tolerance: float) -> void:
 		"Removing background",
 		func(img: Image) -> Image:
 			ImageUtils.color_key(img, color, tolerance)
-			return img
+			return img,
+		Callable(),
+		FrameEdits.color_key_op(color, tolerance)
 	)
 
 
 ## Replaces each selected frame with [code]edit.call(copy_of_it)[/code], worked out on
 ## worker threads with a progress bar when it takes a while, then applied as one undoable
-## step. [param move] gives frames new origins, as in [method Spritesheet.edit_frames].
+## step. [param move] and [param op] are as in [method Spritesheet.edit_frames].
 func edit_selection_in_background(
-	action_name: String, progress_text: String, edit: Callable, move := Callable()
+	action_name: String, progress_text: String, edit: Callable, move := Callable(), op := {}
 ) -> void:
 	var sheet := Global.spritesheet
 	var coords := preview.get_selected_coords()
@@ -611,9 +632,17 @@ func edit_selection_in_background(
 					sheet.edit_frames(
 						[coords[i]] as Array[Vector2i],
 						func(_copy: Image) -> Image: return result,
-						move
+						move,
+						false,
+						op
 					)
 	)
+
+
+## [param edit] from [FrameEdits] for [method edit_selection], with [param args] after the
+## coordinates
+static func _edit_with(edit: Callable, args := []) -> Callable:
+	return func(coords: Array[Vector2i]) -> void: edit.callv([Global.spritesheet, coords] + args)
 
 
 ## Runs [param edit] with the coordinates of the selected frames, as one undoable step
@@ -784,4 +813,5 @@ func _notification(what: int) -> void:
 		files.confirm_unsaved_changes("closing", get_tree().quit)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		clipboard.on_focus_in()
+		source_watcher.on_focus_in()
 		Actions.refresh()

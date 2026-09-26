@@ -32,7 +32,7 @@ func test_undo_flip_restores_pixels() -> void:
 	var img := make_image(Color.RED)
 	img.set_pixel(0, 0, Color.BLUE)
 	doc.perform("Add", sheet.add_frames.bind([img] as Array[Image]))
-	doc.perform("Flip", sheet.flip_frames.bind([Vector2i.ZERO] as Array[Vector2i], true))
+	doc.perform("Flip", FrameEdits.flip.bind(sheet, [Vector2i.ZERO] as Array[Vector2i], true))
 	assert_color(sheet.frames[Vector2i.ZERO], Vector2i(15, 0), Color.BLUE)
 	doc.undo()
 	assert_color(sheet.frames[Vector2i.ZERO], Vector2i(0, 0), Color.BLUE)

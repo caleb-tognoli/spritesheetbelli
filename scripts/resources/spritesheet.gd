@@ -9,6 +9,7 @@ extends Resource
 ## Frame images are never modified in place: every edit replaces
 ## the image, so state snapshots ([method get_state]) can share them cheaply.
 ## All changes go through the methods below, which emit [signal updated] once each.
+## Frames can be linked to the files they came from, see [FrameSource].
 
 signal updated
 
@@ -44,6 +45,11 @@ var frame_scale: Vector2:
 var scale_filter: Image.Interpolation:
 	get:
 		return _scale_filter
+## Where linked frames came from, by grid coordinate, see [FrameSource]. Read only:
+## frames are linked with [method set_frame].
+var frame_sources: Dictionary[Vector2i, Dictionary]:
+	get:
+		return _sources
 ## Optional animation names per row
 var row_names: Dictionary[int, String]:
 	get:
@@ -71,6 +77,8 @@ var _export_settings := {}
 var _animations: Array[Dictionary] = []
 ## Unscaled origins of frames that aren't centred, see [method get_frame_origin]
 var _origins: Dictionary[Vector2i, Vector2i] = {}
+## Where linked frames came from, see [FrameSource]. Never changed in place, only replaced.
+var _sources: Dictionary[Vector2i, Dictionary] = {}
 var _sprite_size := Vector2i.ZERO
 ## The top-left of every cell, relative to the point frames are placed around
 var _cell_origin := Vector2i.ZERO
@@ -284,6 +292,7 @@ func get_state() -> Dictionary:
 		"animations": _animations.duplicate(true),
 		"export": _export_settings.duplicate(),
 		"origins": _origins.duplicate(),
+		"sources": _sources.duplicate(),
 		"sprite_size": _sprite_size,
 		"cell_origin": _cell_origin,
 	}
@@ -299,6 +308,7 @@ func set_state(state: Dictionary) -> void:
 	_animations.assign(state.get("animations", []).duplicate(true))
 	_export_settings = state.get("export", {}).duplicate()
 	_origins.assign(state.get("origins", {}))
+	_sources.assign(state.get("sources", {}))
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_cell_origin = state.get("cell_origin", Vector2i.ZERO)
 	_changed()
@@ -331,7 +341,7 @@ func set_grid_size(size: Vector2i) -> void:
 	for coord: Vector2i in _frames.keys():
 		if not is_inside(coord):
 			_frames.erase(coord)
-			_origins.erase(coord)
+			_erase_cell_data(coord)
 	_locked.assign(_locked.filter(is_inside))
 	for row: int in _row_names.keys():
 		if row >= size.y:
@@ -442,12 +452,16 @@ func get_first_free_row() -> int:
 	return last_row + 1
 
 
-## Adds [param imgs] to free cells in order and returns where each one went
-func add_frames(imgs: Array[Image], mode := AddMode.FIRST_FREE) -> Array[Vector2i]:
+## Adds [param imgs] to free cells in order and returns where each one went. Each image
+## can come with the [FrameSource] it was loaded from, at the same index in [param sources].
+func add_frames(
+	imgs: Array[Image], mode := AddMode.FIRST_FREE, sources: Array[Dictionary] = []
+) -> Array[Vector2i]:
 	var coords: Array[Vector2i] = []
 	begin_batch()
 	var next_new_row := Vector2i(-1, -1)
-	for img in imgs:
+	for i in imgs.size():
+		var img := imgs[i]
 		if img == null or img.is_empty():
 			continue
 		var coord: Vector2i
@@ -458,14 +472,15 @@ func add_frames(imgs: Array[Image], mode := AddMode.FIRST_FREE) -> Array[Vector2
 			next_new_row.x += 1
 		else:
 			coord = get_free_space(mode)
-		set_frame(coord, img)
+		set_frame(coord, img, sources[i] if i < sources.size() else {})
 		coords.append(coord)
 	end_batch()
 	return coords
 
 
-## Puts [param img] at [param coord], replacing any frame there and growing the grid if needed
-func set_frame(coord: Vector2i, img: Image) -> void:
+## Puts [param img] at [param coord], replacing any frame there and growing the grid if
+## needed, at [param origin] (centred for null) and linked to [param source]
+func set_frame(coord: Vector2i, img: Image, source := {}, origin: Variant = null) -> void:
 	if img == null or img.is_empty() or coord.x < 0 or coord.y < 0:
 		return
 	if img.get_format() != Image.FORMAT_RGBA8:
@@ -476,7 +491,8 @@ func set_frame(coord: Vector2i, img: Image) -> void:
 	_locked.erase(coord)
 	_grid_size = _grid_size.max(coord + Vector2i.ONE)
 	_frames[coord] = img
-	_origins.erase(coord)
+	_set_or_erase(_origins, coord, origin)
+	_set_or_erase(_sources, coord, source if source else null)
 	_changed()
 
 
@@ -484,7 +500,7 @@ func remove_frames(coords: Array[Vector2i]) -> void:
 	var removed := false
 	for coord in coords:
 		removed = _frames.erase(coord) or removed
-		_origins.erase(coord)
+		_erase_cell_data(coord)
 	if removed:
 		_changed()
 
@@ -495,16 +511,16 @@ func move_frame(from: Vector2i, to: Vector2i, copy := false) -> void:
 		return
 	var img: Image = _frames[from]
 	var other: Image = _frames.get(to)
-	var origins := _origins.duplicate()
+	var saved := _save_cell_data()
 	begin_batch()
 	if not copy:
 		_frames.erase(from)
-		_origins.erase(from)
+		_erase_cell_data(from)
 		if other:
 			_frames[from] = other
-			_set_origin(from, origins.get(to))
+			_restore_cell_data(from, saved, to)
 	set_frame(to, img)
-	_set_origin(to, origins.get(from))
+	_restore_cell_data(to, saved, from)
 	end_batch()
 
 
@@ -519,7 +535,7 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 	if moving.is_empty() or offset == Vector2i.ZERO:
 		return targets
 	begin_batch()
-	var origins := _origins.duplicate()
+	var saved := _save_cell_data()
 	var displaced: Array[Image] = []
 	var displaced_cells: Array[Vector2i] = []
 	for target in targets:
@@ -529,10 +545,10 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 	if not copy:
 		for coord in moving:
 			_frames.erase(coord)
-			_origins.erase(coord)
+			_erase_cell_data(coord)
 	for coord in moving:
 		set_frame(coord + offset, moving[coord])
-		_set_origin(coord + offset, origins.get(coord))
+		_restore_cell_data(coord + offset, saved, coord)
 	# Frames that were in the way go to the cells that were freed
 	if not copy:
 		var freed: Array[Vector2i] = []
@@ -541,7 +557,7 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 				freed.append(coord)
 		for i in mini(displaced.size(), freed.size()):
 			_frames[freed[i]] = displaced[i]
-			_set_origin(freed[i], origins.get(displaced_cells[i]))
+			_restore_cell_data(freed[i], saved, displaced_cells[i])
 		# Animations follow their frames
 		var moved := {}
 		for coord in moving:
@@ -563,10 +579,10 @@ func insert_empty_cell(coord: Vector2i) -> void:
 		var index := index_of(c)
 		shifted[coord_of(index + 1) if index >= start else c] = _frames[c]
 	_frames = shifted
-	var shifted_origins: Dictionary[Vector2i, Vector2i] = {}
-	for c in _origins:
-		shifted_origins[coord_of(index_of(c) + 1) if index_of(c) >= start else c] = _origins[c]
-	_origins = shifted_origins
+	_remap_cell_data(
+		func(c: Vector2i) -> Vector2i:
+			return coord_of(index_of(c) + 1) if index_of(c) >= start else c
+	)
 	_remap_animation_cells(
 		func(cell: Vector2i) -> Vector2i:
 			return coord_of(index_of(cell) + 1) if index_of(cell) >= start else cell
@@ -586,19 +602,13 @@ func remove_cell(coord: Vector2i) -> void:
 			continue
 		shifted[coord_of(index - 1) if index > start else c] = _frames[c]
 	_frames = shifted
-	var shifted_origins: Dictionary[Vector2i, Vector2i] = {}
-	for c in _origins:
-		var index := index_of(c)
-		if index != start:
-			shifted_origins[coord_of(index - 1) if index > start else c] = _origins[c]
-	_origins = shifted_origins
-	_remap_animation_cells(
-		func(cell: Vector2i) -> Vector2i:
-			var index := index_of(cell)
-			if index == start:
-				return NO_CELL
-			return coord_of(index - 1) if index > start else cell
-	)
+	var cell_map := func(cell: Vector2i) -> Vector2i:
+		var index := index_of(cell)
+		if index == start:
+			return NO_CELL
+		return coord_of(index - 1) if index > start else cell
+	_remap_cell_data(cell_map)
+	_remap_animation_cells(cell_map)
 	_changed()
 
 
@@ -652,12 +662,7 @@ func _move_rows(map: Callable) -> void:
 		if moved != NO_CELL:
 			moved_frames[moved] = _frames[cell]
 	_frames = moved_frames
-	var origins: Dictionary[Vector2i, Vector2i] = {}
-	for cell in _origins:
-		var moved: Vector2i = cell_map.call(cell)
-		if moved != NO_CELL:
-			origins[moved] = _origins[cell]
-	_origins = origins
+	_remap_cell_data(cell_map)
 	var locked: Array[Vector2i] = []
 	for cell in _locked:
 		var moved: Vector2i = cell_map.call(cell)
@@ -740,9 +745,10 @@ func _remap_animation_cells(map: Callable) -> void:
 ## Replaces each frame in [param coords] with [code]edit.call(image_copy)[/code].
 ## [param move] gives frames that aren't centred a new origin: it's called with the old
 ## origin, the old size and the new image. With [param move_centred], centred frames are
-## moved too and get an origin of their own.
+## moved too and get an origin of their own. [param op] describes the edit, so it's made
+## again when a linked frame is reloaded, see [FrameEdits].
 func edit_frames(
-	coords: Array[Vector2i], edit: Callable, move := Callable(), move_centred := false
+	coords: Array[Vector2i], edit: Callable, move := Callable(), move_centred := false, op := {}
 ) -> void:
 	var edited := false
 	for coord in coords:
@@ -760,61 +766,16 @@ func edit_frames(
 				var origin: Vector2i = move.call(get_frame_origin(coord), old.get_size(), img)
 				_origins[coord] = origin
 			_frames[coord] = img
+			_record_op(coord, op)
 			edited = true
 	if edited:
 		_changed()
 
 
-## Mirrors frames, and where they are in their cells
-func flip_frames(coords: Array[Vector2i], horizontal: bool) -> void:
-	edit_frames(
-		coords,
-		func(img: Image) -> void:
-			if horizontal:
-				img.flip_x()
-			else:
-				img.flip_y(),
-		func(origin: Vector2i, size: Vector2i, _img: Image) -> Vector2i:
-			if horizontal:
-				return Vector2i(-origin.x - size.x, origin.y)
-			return Vector2i(origin.x, -origin.y - size.y)
-	)
-
-
-## Turns frames, and where they are in their cells
-func rotate_frames(coords: Array[Vector2i], clockwise: bool) -> void:
-	edit_frames(
-		coords,
-		func(img: Image) -> void: img.rotate_90(CLOCKWISE if clockwise else COUNTERCLOCKWISE),
-		func(origin: Vector2i, size: Vector2i, _img: Image) -> Vector2i:
-			if clockwise:
-				return Vector2i(-origin.y - size.y, origin.x)
-			return Vector2i(origin.y, -origin.x - size.x)
-	)
-
-
-## Crops transparent borders. The pixels that are left stay where they were in the cell,
-## so trimming every frame of an animation shrinks the cells without making it jump.
-func trim_frames(coords: Array[Vector2i]) -> void:
-	var cropped_at := {}
-	edit_frames(
-		coords,
-		func(img: Image) -> Image:
-			var used := img.get_used_rect()
-			if used.size == Vector2i.ZERO or used.size == img.get_size():
-				return img
-			var trimmed := img.get_region(used)
-			cropped_at[trimmed] = used.position
-			return trimmed,
-		func(origin: Vector2i, _size: Vector2i, img: Image) -> Vector2i:
-			return origin + cropped_at.get(img, Vector2i.ZERO),
-		true
-	)
-
-
 ## Places the frame at [param coord] at [param origin], see [method get_frame_origin]
 func set_frame_origin(coord: Vector2i, origin: Vector2i) -> void:
 	if has_frame(coord) and _origins.get(coord) != origin:
+		_record_move(coord, origin - get_frame_origin(coord))
 		_origins[coord] = origin
 		_changed()
 
@@ -827,6 +788,7 @@ func nudge_frames(coords: Array[Vector2i], offset: Vector2i) -> void:
 	for coord in coords:
 		if has_frame(coord):
 			_origins[coord] = get_frame_origin(coord) + offset
+			_record_move(coord, offset)
 			moved = true
 	if moved:
 		_changed()
@@ -862,6 +824,7 @@ func align_frames(coords: Array[Vector2i], alignment: Alignment) -> void:
 				origin.x = bounds.end.x - size.x
 			Alignment.CENTER:
 				origin = bounds.position + (bounds.size - size) / 2
+		_record_move(coord, origin - get_frame_origin(coord))
 		if origin == -_half_up(size):
 			# Where it would be without an origin of its own
 			aligned = _origins.erase(coord) or aligned
@@ -872,15 +835,10 @@ func align_frames(coords: Array[Vector2i], alignment: Alignment) -> void:
 		_changed()
 
 
-## Makes pixels close to [param color] transparent
-func color_key_frames(coords: Array[Vector2i], color: Color, tolerance := 0.1) -> void:
-	edit_frames(coords, func(img: Image) -> void: ImageUtils.color_key(img, color, tolerance))
-
-
-## Replaces the image of an existing frame
-func replace_frame(coord: Vector2i, img: Image) -> void:
+## Replaces the image of an existing frame, linking it to [param source]
+func replace_frame(coord: Vector2i, img: Image, source := {}) -> void:
 	if has_frame(coord):
-		set_frame(coord, img)
+		set_frame(coord, img, source)
 
 
 func set_frame_scale(new_scale: Vector2, filter := _scale_filter) -> void:
@@ -898,6 +856,19 @@ func resize_sprites(size: Vector2i, filter := _scale_filter) -> void:
 	if base.x <= 0 or base.y <= 0 or size.x <= 0 or size.y <= 0:
 		return
 	set_frame_scale(Vector2(size) / Vector2(base), filter)
+
+
+## Adds an edit to the frame's source, so it's made again when the frame is reloaded
+func _record_op(coord: Vector2i, op: Dictionary) -> void:
+	if not op.is_empty() and _sources.has(coord):
+		_sources[coord] = FrameSource.with_op(_sources[coord], op)
+
+
+## Moves inside the cell are kept as offsets, so they still apply to a redrawn frame of
+## another size, and edits made after them (like a flip) move them along
+func _record_move(coord: Vector2i, offset: Vector2i) -> void:
+	if offset != Vector2i.ZERO:
+		_record_op(coord, {"op": "move", "by": [offset.x, offset.y]})
 
 
 #endregion
@@ -970,12 +941,42 @@ func _bounds_of(coords: Array, at_scale: Vector2) -> Rect2i:
 	return bounds
 
 
-## Sets or clears ([code]null[/code]) the origin of the frame at [param coord]
-func _set_origin(coord: Vector2i, origin: Variant) -> void:
-	if origin is Vector2i:
-		_origins[coord] = origin
+## Sets [param key] to [param value], or erases it for [code]null[/code]
+static func _set_or_erase(dictionary: Dictionary, key: Variant, value: Variant) -> void:
+	if value == null:
+		dictionary.erase(key)
 	else:
-		_origins.erase(coord)
+		dictionary[key] = value
+
+
+## Clears what a cell holds besides its frame: its origin and its source
+func _erase_cell_data(coord: Vector2i) -> void:
+	_origins.erase(coord)
+	_sources.erase(coord)
+
+
+## A copy of every cell's origin and source, for [method _restore_cell_data]
+func _save_cell_data() -> Array[Dictionary]:
+	return [_origins.duplicate(), _sources.duplicate()]
+
+
+## Gives [param coord] the origin and source that [param from] had in [param saved]
+func _restore_cell_data(coord: Vector2i, saved: Array[Dictionary], from: Vector2i) -> void:
+	_set_or_erase(_origins, coord, saved[0].get(from))
+	_set_or_erase(_sources, coord, saved[1].get(from))
+
+
+## Moves each cell's origin and source to the cell [param map] returns, or drops them
+## for NO_CELL
+func _remap_cell_data(map: Callable) -> void:
+	var saved := _save_cell_data()
+	var targets: Array[Dictionary] = [_origins, _sources]
+	for i in targets.size():
+		targets[i].clear()
+		for cell: Vector2i in saved[i]:
+			var moved: Vector2i = map.call(cell)
+			if moved != NO_CELL:
+				targets[i][moved] = saved[i][cell]
 
 
 ## The cells are the smallest rectangle that holds every frame around the same point

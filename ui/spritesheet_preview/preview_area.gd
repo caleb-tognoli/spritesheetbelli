@@ -240,6 +240,11 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 		var text := "%s\n%d×%d px" % [cell_text, frame_size.x, frame_size.y]
 		if source.resource_name:
 			text += "\n" + source.resource_name
+		var link: Dictionary = sheet.frame_sources.get(coord, {})
+		if link:
+			text += "\n" + TranslationServer.translate("Linked to %s") % link.path
+			if FrameSource.has_edits(link):
+				text += " " + TranslationServer.translate("(edited here)")
 		return text
 	if sheet.is_locked(coord):
 		return (

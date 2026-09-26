@@ -12,6 +12,7 @@ const DEFAULTS := {
 	# Adding sprites
 	&"add_mode": Spritesheet.AddMode.FIRST_FREE,
 	&"resize_filter": Image.INTERPOLATE_NEAREST,
+	&"watch_sources": true,
 	# Preview
 	&"index_start": 0,
 	&"show_grid": true,

@@ -29,6 +29,12 @@ var is_dirty: bool:
 
 ## What the history starts from, e.g. "Opened walk.png"
 var history_start := "New spritesheet"
+## The MD5 of each file linked frames came from, when they were last cut from it, to tell
+## when it changes. Not part of the undo history.
+var source_hashes: Dictionary[String, String] = {}
+## Files that were exported over, so frames that undoing links to them again aren't
+## reloaded from what spritesheetbelli wrote
+var unwatched_paths: PackedStringArray = []
 var undo_redo := UndoRedo.new()
 var _saved_version := undo_redo.get_version()
 
@@ -111,6 +117,8 @@ func mark_saved() -> void:
 func load_state(state: Dictionary, file_path := "", image_path := "") -> void:
 	spritesheet.set_state(state)
 	undo_redo.clear_history()
+	source_hashes.clear()
+	unwatched_paths.clear()
 	path = file_path
 	export_path = image_path
 	last_export = ""

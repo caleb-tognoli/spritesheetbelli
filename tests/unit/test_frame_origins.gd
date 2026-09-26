@@ -29,7 +29,7 @@ func test_frames_are_centred() -> void:
 func test_trim_keeps_pixels_in_place() -> void:
 	sheet.add_frames([block_at(Vector2i(2, 8)), block_at(Vector2i(10, 4))] as Array[Image])
 	var before := sheet.get_image()
-	sheet.trim_frames([Vector2i(0, 0)] as Array[Vector2i])
+	FrameEdits.trim(sheet, [Vector2i(0, 0)] as Array[Vector2i])
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(4, 6))
 	assert_eq(sheet.sprite_size, Vector2i(16, 16), "the other frame still fills the cell")
 	assert_eq(sheet.get_image().get_data(), before.get_data(), "nothing moved")
@@ -37,7 +37,7 @@ func test_trim_keeps_pixels_in_place() -> void:
 
 func test_trimming_every_frame_shrinks_cells_together() -> void:
 	sheet.add_frames([block_at(Vector2i(2, 8)), block_at(Vector2i(6, 4))] as Array[Image])
-	sheet.trim_frames(sheet.get_sorted_coords())
+	FrameEdits.trim(sheet, sheet.get_sorted_coords())
 	# Blocks span x 2..10 and y 4..14 in both cells
 	assert_eq(sheet.sprite_size, Vector2i(8, 10))
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)).position, Vector2i(0, 4))
@@ -72,14 +72,14 @@ func test_align_to_bottom() -> void:
 func test_flip_and_rotate_move_origins() -> void:
 	sheet.add_frames([block_at(Vector2i(0, 0)), make_image(Color.BLUE)] as Array[Image])
 	var first := [Vector2i(0, 0)] as Array[Vector2i]
-	sheet.trim_frames(first)
+	FrameEdits.trim(sheet, first)
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)).position, Vector2i(0, 0))
-	sheet.flip_frames(first, true)
+	FrameEdits.flip(sheet, first, true)
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)).position, Vector2i(12, 0))
-	sheet.rotate_frames(first, true)
+	FrameEdits.rotate(sheet, first, true)
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(10, 12, 6, 4))
-	sheet.rotate_frames(first, false)
-	sheet.flip_frames(first, true)
+	FrameEdits.rotate(sheet, first, false)
+	FrameEdits.flip(sheet, first, true)
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)).position, Vector2i(0, 0))
 
 

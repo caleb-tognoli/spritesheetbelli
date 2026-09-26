@@ -22,6 +22,11 @@ A small desktop tool made with Godot.</p>
   colour, add an outline, replace, cut/copy/paste (also images copied in other apps),
   duplicate, insert or remove cells, insert, remove or reorder rows. Everything can be
   undone.
+- **Stay linked to your art files.** Sprites and sheets remember the file they came from.
+  When you save it again in your drawing program, spritesheetbelli asks whether to reload
+  it, keeping the flips, trims, outlines and moves made here or going back to the file as
+  it is; with several changed files, answer once for all of them. Sheets are cut again in
+  the same places (data-file frames by name), GIF frames by number.
 - **Line frames up.** Move frames inside their cells with the arrow keys in the move mode,
   or align them to an edge of their cells; trimming keeps every pixel where it was, so
   animations don't jump.
@@ -142,6 +147,7 @@ editor settings).
 | Path | What's there |
 | --- | --- |
 | `scripts/resources/spritesheet.gd` | The spritesheet data and every edit |
+| `scripts/frame_edits.gd`, `scripts/frame_source.gd` | Pixel edits that can be made again, and the files frames are linked to |
 | `scripts/document.gd` | The open document: file, unsaved state, undo history |
 | `scripts/export/` | Exporting images, sprites, atlases and metadata |
 | `scripts/import/` | Reading where frames are in packed sheets |

@@ -106,31 +106,45 @@ func get_image_path(data_path: String) -> String:
 ## Every frame of [param img], untrimmed and unrotated, named after its entry
 func cut(img: Image) -> Array[Image]:
 	var images: Array[Image] = []
-	var bounds := Rect2i(Vector2i.ZERO, img.get_size())
 	for frame in frames:
-		var stored := frame.rect
-		if frame.rotated:
-			stored.size = Vector2i(stored.size.y, stored.size.x)
-		var pixels := img.get_region(stored.intersection(bounds))
-		if frame.rotated:
-			pixels.rotate_90(COUNTERCLOCKWISE)
-		if pixels.get_format() != Image.FORMAT_RGBA8:
-			pixels.convert(Image.FORMAT_RGBA8)
-		var full := pixels
-		if frame.source_size != pixels.get_size() or frame.source_rect.position != Vector2i.ZERO:
-			var size := frame.source_size.max(frame.source_rect.position + pixels.get_size())
-			full = Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
-			var source := Rect2i(Vector2i.ZERO, pixels.get_size())
-			full.blit_rect(pixels, source, frame.source_rect.position)
-		full.resource_name = frame.name
-		images.append(full)
+		images.append(cut_frame(img, frame))
 	return images
+
+
+## The frame named [param frame_name] from [param img], or null when there's none
+func cut_named(img: Image, frame_name: String) -> Image:
+	for frame in frames:
+		if frame.name == frame_name:
+			return cut_frame(img, frame)
+	return null
+
+
+## [param frame] from [param img], untrimmed and unrotated, named after its entry
+static func cut_frame(img: Image, frame: Frame) -> Image:
+	var bounds := Rect2i(Vector2i.ZERO, img.get_size())
+	var stored := frame.rect
+	if frame.rotated:
+		stored.size = Vector2i(stored.size.y, stored.size.x)
+	var pixels := img.get_region(stored.intersection(bounds))
+	if frame.rotated:
+		pixels.rotate_90(COUNTERCLOCKWISE)
+	if pixels.get_format() != Image.FORMAT_RGBA8:
+		pixels.convert(Image.FORMAT_RGBA8)
+	var full := pixels
+	if frame.source_size != pixels.get_size() or frame.source_rect.position != Vector2i.ZERO:
+		var size := frame.source_size.max(frame.source_rect.position + pixels.get_size())
+		full = Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+		var source := Rect2i(Vector2i.ZERO, pixels.get_size())
+		full.blit_rect(pixels, source, frame.source_rect.position)
+	full.resource_name = frame.name
+	return full
 
 
 ## A spritesheet of the frames. Tags that don't overlap become named rows, with the
 ## frames between them in rows of their own; otherwise the frames fill a square grid.
-## Every tag becomes an animation.
-func to_spritesheet(img: Image) -> Spritesheet:
+## Every tag becomes an animation. With the paths of the image and of this data file,
+## the frames are linked to them, see [FrameSource].
+func to_spritesheet(img: Image, image_path := "", data_path := "") -> Spritesheet:
 	var images := cut(img)
 	var cells: Array[Vector2i] = []
 	var row_names: Dictionary[int, String] = {}
@@ -150,7 +164,10 @@ func to_spritesheet(img: Image) -> Spritesheet:
 	var sheet := Spritesheet.new()
 	sheet.begin_batch()
 	for i in images.size():
-		sheet.set_frame(cells[i], images[i])
+		var source := {}
+		if image_path and data_path:
+			source = FrameSource.for_data(image_path, data_path, frames[i].name)
+		sheet.set_frame(cells[i], images[i], source)
 	for row in row_names:
 		sheet.set_row_name(row, row_names[row])
 	for tag in tags:

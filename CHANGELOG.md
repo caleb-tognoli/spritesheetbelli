@@ -48,6 +48,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frames by a pixel (8 with Shift), and Frame > Align in Cell puts them against the top,
   bottom, left or right of their cells or in the middle (Alt+T, B, L, R, C). Cells grow to hold moved
   frames, and projects keep where every frame is.
+- Linked files: sprites, spritesheets and GIFs remember the file (and the place in it) they
+  came from. When a linked file changes on disk, a dialog asks whether to reload it,
+  keeping the edits made here (flip, rotate, trim, background colour, outline, moves in the
+  cell) or resetting to the file, or to ignore it; with several changed files, the answer
+  can go for all of them as one undo step. Frame > Reload from File reloads the selected
+  frames by hand. Projects keep the links, so files changed while a project was closed are
+  noticed when it's opened. Exporting over a linked file unlinks its frames. Can be turned
+  off in Settings.
 - Command line: `--cut <image>` cuts a spritesheet (grid, data file or `--detect`) or
   an animated GIF; `--atlas` writes a packed atlas; an `--out` ending in `.gif` writes an
   animated GIF (`--animation`, `--scale`); `--pack` takes GIFs too.

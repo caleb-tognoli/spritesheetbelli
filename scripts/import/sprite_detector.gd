@@ -75,9 +75,10 @@ static func group_in_rows(rects: Array[Rect2i]) -> Array[Array]:
 
 
 ## A spritesheet with one frame per sprite, keeping the rows of [param rows]. With
-## [param alignment], the frames are lined up, e.g. at the bottom for characters.
+## [param alignment], the frames are lined up, e.g. at the bottom for characters. With
+## the [param path] of the image, the frames are linked to it, see [FrameSource].
 static func to_spritesheet(
-	img: Image, rows: Array[Array], alignment := Spritesheet.Alignment.CENTER
+	img: Image, rows: Array[Array], alignment := Spritesheet.Alignment.CENTER, path := ""
 ) -> Spritesheet:
 	var pixels := without_background(img)
 	var sheet := Spritesheet.new()
@@ -87,6 +88,15 @@ static func to_spritesheet(
 			var rect: Rect2i = rows[row][column]
 			sheet.set_frame(Vector2i(column, row), pixels.get_region(rect))
 	sheet.align_frames(sheet.get_sorted_coords(), alignment)
+	# Linked once aligned, so going back to the file keeps the alignment
+	if path:
+		for row in rows.size():
+			for column: int in rows[row].size():
+				var coord := Vector2i(column, row)
+				var origin: Variant = FrameSource.get_origin(sheet, coord)
+				var source := FrameSource.for_region(path, rows[row][column], pixels != img)
+				source = FrameSource.with_origin(source, origin)
+				sheet.set_frame(coord, sheet.frames[coord], source, origin)
 	sheet.end_batch()
 	return sheet
 
