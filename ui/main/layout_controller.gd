@@ -1,8 +1,9 @@
 class_name LayoutController
 extends Node
 ## The packed layout in the main window: the layout switch and the atlas settings in the
-## sidebar, which replace the grid settings when packed, and the actions for packing,
-## pinning and pivots. Grid actions are left out of menus in the packed layout.
+## sidebar, which replace the grid settings when packed, the list of sprites next to the
+## history, and the actions for packing, pinning and pivots. Grid actions are left out of
+## menus in the packed layout.
 
 ## Pivots the pivot presets put frames at, from 0 to 1 across each frame, with the icon
 ## of the action to borrow
@@ -28,6 +29,9 @@ const GRID_ONLY_ACTIONS: Array[StringName] = [
 
 var main: Control
 var atlas_panel := AtlasPanel.new()
+var sprites_panel := SpritesPanel.new()
+## The sprites above the history, next to the preview
+var side_split := VSplitContainer.new()
 ## Switches between the grid and the packed layout, above the grid or atlas settings
 var layout_grid_btn := Button.new()
 var layout_packed_btn := Button.new()
@@ -39,6 +43,35 @@ var _grid_parts: Array[Control] = []
 func setup(main_ui: Control) -> void:
 	main = main_ui
 	_build_sidebar()
+	_build_side_panels()
+
+
+## Puts the sprites panel above the history panel
+func _build_side_panels() -> void:
+	var history: Control = main.history_panel
+	var preview_split: Node = history.get_parent()
+	preview_split.add_child(side_split)
+	preview_split.move_child(side_split, history.get_index())
+	history.reparent(side_split)
+	sprites_panel.preview = main.preview
+	sprites_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	history.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	side_split.add_child(sprites_panel)
+	side_split.move_child(sprites_panel, 0)
+	sprites_panel.visible = Settings.get_value(&"show_sprites")
+	history.visibility_changed.connect(_update_side_split)
+	sprites_panel.visibility_changed.connect(_update_side_split)
+	Settings.changed.connect(
+		func(key: StringName) -> void:
+			if key == &"show_sprites":
+				sprites_panel.visible = Settings.get_value(key)
+				Actions.refresh()
+	)
+	_update_side_split()
+
+
+func _update_side_split() -> void:
+	side_split.visible = sprites_panel.visible or main.history_panel.visible
 
 
 ## The layout switch and the atlas settings in the sidebar, which replace the grid
@@ -121,8 +154,18 @@ func register_actions() -> void:
 	var pack := func() -> void:
 		Global.document.perform("Pack frames", sheet.set_layout.bind(Spritesheet.Layout.PACKED))
 		main.preview.fit_to_view()
+		# Without cells, the list is the way to find frames
+		Settings.set_value(&"show_sprites", true)
 	Actions.add(
 		&"layout_packed", "Packed Layout", pack, Callable(), main.ICONS[&"layout_packed"], packed
+	)
+	Actions.add(
+		&"toggle_sprites",
+		"Sprites",
+		func() -> void: Settings.set_value(&"show_sprites", not sprites_panel.visible),
+		Callable(),
+		null,
+		func() -> bool: return sprites_panel.visible
 	)
 	Actions.add(
 		&"tool_pivot",

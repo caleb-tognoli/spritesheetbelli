@@ -114,6 +114,7 @@ const MENUS := {
 		&"toggle_indices",
 		&"toggle_animation",
 		&"edit_animations",
+		&"toggle_sprites",
 		&"toggle_history",
 		&"toggle_status_bar"
 	],

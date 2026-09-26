@@ -38,6 +38,7 @@ const DEFAULTS := {
 	&"sidebar_width": 0,
 	&"show_history": false,
 	&"history_width": 0,
+	&"show_sprites": false,
 	&"onion_skin": false,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
@@ -47,6 +48,7 @@ const REMEMBERED: Array[StringName] = [
 	&"sidebar_width",
 	&"show_history",
 	&"history_width",
+	&"show_sprites",
 	&"onion_skin",
 ]
 const MAX_RECENT_FILES := 10
