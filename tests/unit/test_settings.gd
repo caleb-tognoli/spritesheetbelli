@@ -50,6 +50,10 @@ func test_window_edits_settings() -> void:
 	Notify.confirm_dialog.hide()
 	assert_true(show_grid.button_pressed, "controls follow the settings")
 
+	var label := window.get_control(&"atlas_dedupe").get_parent().get_child(0) as Label
+	assert_eq(label.autowrap_mode, TextServer.AUTOWRAP_OFF, "one line")
+	assert_true("share their place" in label.tooltip_text, "details on hover")
+
 	window.search.text = "colour"
 	window.search.text_changed.emit("colour")
 	assert_true(window.get_control(&"grid_color").is_visible_in_tree())

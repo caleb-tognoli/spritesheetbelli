@@ -297,11 +297,14 @@ static func render_pages(sheet: Spritesheet, counter_clockwise := false) -> Arra
 	return images
 
 
-## The part of the scaled frame that is packed: without its transparent borders
-static func get_source_rect(sheet: Spritesheet, coord: Vector2i) -> Rect2i:
+## The part of the scaled frame that is packed: without its transparent borders when
+## trimming
+static func get_source_rect(sheet: Spritesheet, coord: Vector2i, trim := true) -> Rect2i:
 	var img: Image = sheet.frames[coord]
 	var scale := sheet.frame_scale
 	var scaled := sheet.scaled_frames.scaled_size(img.get_size())
+	if not trim:
+		return Rect2i(Vector2i.ZERO, scaled)
 	var used := sheet.pack_cache.get_used_rect(img)
 	if scale == Vector2.ONE:
 		return used
@@ -328,7 +331,7 @@ static func _group_frames(
 	var groups: Array[Dictionary] = []
 	var by_key := {}
 	for coord in sheet.get_sorted_coords():
-		var src := get_source_rect(sheet, coord)
+		var src := get_source_rect(sheet, coord, settings.trim)
 		var place: Dictionary = old.get(coord, {})
 		# A place that holds more than the frame's pixels (like one read from a data file)
 		# is kept as it is

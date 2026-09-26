@@ -157,6 +157,10 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("font_disabled_color", "PopupMenu", Color(p.text_muted, 0.6))
 	theme.set_color("font_accelerator_color", "PopupMenu", p.text_muted)
 	theme.set_color("font_separator_color", "PopupMenu", p.text_muted)
+	# Floating panels of fields look like menus, with room around the fields
+	theme.set_stylebox(
+		"panel", "PopupPanel", _box(p.surface, 6, Vector4(12, 10, 12, 10), p.border, 1)
+	)
 	theme.set_stylebox("panel", "TooltipPanel", _box(p.raised, 4, Vector4(8, 6, 8, 6), p.border, 1))
 	theme.set_color("font_color", "TooltipLabel", p.text)
 	theme.set_stylebox("panel", "AcceptDialog", _box(p.surface, 0, Vector4(12, 12, 12, 12)))

@@ -243,3 +243,7 @@ func _on_tree_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F2:
 		_edit_selected()
 		tree.accept_event()
+	# Sizes can't be picked, and double-clicking one doesn't rename another frame
+	var mouse := event as InputEventMouseButton
+	if mouse and mouse.double_click and tree.get_column_at_position(mouse.position) == 1:
+		tree.accept_event()

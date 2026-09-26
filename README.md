@@ -22,10 +22,9 @@ A small desktop tool made with Godot.</p>
 - **Packed layout.** Instead of a grid, frames can be laid out packed tightly on pages,
   like a texture atlas, and edited right there: drag frames anywhere (or onto a new page),
   pin them, pack again. An opened atlas keeps every frame where it is, so exporting it
-  again after adding or editing frames keeps the places engines know. Frames are packed
-  without their transparent borders. Page size, spacing, padding, extrusion and turning
-  frames to fit are in the sidebar; sharing identical frames and power-of-two or square
-  pages are in Settings.
+  again after adding or editing frames keeps the places engines know. Page size, packing,
+  spacing, padding, extrusion, turning frames to fit and trimming are in the sidebar;
+  sharing identical frames and power-of-two or square pages are in Settings.
 - **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
   the pivot tool or presets and exported where the format has them.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background

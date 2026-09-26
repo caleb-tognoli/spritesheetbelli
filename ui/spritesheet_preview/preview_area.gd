@@ -28,7 +28,6 @@ var animation_preview := AnimationPreview.new()
 var empty_hint := Label.new()
 
 var _tool_group := HBoxContainer.new()
-var _tool_separator := VSeparator.new()
 ## Action buttons after the tools, and view toggles before the zoom
 var _edit_bar := HBoxContainer.new()
 var _view_bar := HBoxContainer.new()
@@ -92,7 +91,6 @@ func _build_toolbar() -> void:
 	move_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.MOVE))
 	pivot_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.PIVOT))
 	bar.add_child(_tool_group)
-	bar.add_child(_tool_separator)
 
 	for group: HBoxContainer in [_edit_bar, _view_bar]:
 		group.add_theme_constant_override("separation", 2)
@@ -156,7 +154,7 @@ func update_ui() -> void:
 
 	var can_move := spritesheet_preview.able_to_move_frames
 	_tool_group.visible = can_move
-	_tool_separator.visible = can_move
+	_update_separators()
 	var moving := spritesheet_preview.tool == SpritesheetPreview.Tool.MOVE
 	select_tool_btn.set_pressed_no_signal(
 		spritesheet_preview.tool == SpritesheetPreview.Tool.SELECT
@@ -227,14 +225,22 @@ func _refresh_action_buttons() -> void:
 		button.disabled = not ids.any(
 			func(id: StringName) -> bool: return not id.is_empty() and Actions.is_enabled(id)
 		)
-	# A group's separator only shows when a button in the group does
+	_update_separators()
+
+
+## A group's separator only shows between buttons: after the tools or an earlier group,
+## and before a button of its own group
+func _update_separators() -> void:
+	var before := _tool_group.visible
 	var separator: VSeparator = null
 	for child: Control in _edit_bar.get_children():
 		if child is VSeparator:
 			separator = child
 			separator.visible = false
-		elif child.visible and separator:
-			separator.visible = true
+		elif child.visible:
+			if separator and before:
+				separator.visible = true
+			before = true
 
 
 ## Actions offered when right-clicking the preview, with [param submenus] as in

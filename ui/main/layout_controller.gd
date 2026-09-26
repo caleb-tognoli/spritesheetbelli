@@ -35,8 +35,8 @@ var side_split := VSplitContainer.new()
 ## Switches between the grid and the packed layout, above the grid or atlas settings
 var layout_grid_btn := Button.new()
 var layout_packed_btn := Button.new()
-## Packs every frame that isn't pinned again, next to the layout switch when packed
-var repack_btn := Button.new()
+## Spacing, padding and extruded edges of the exported grid, in the grid section
+var grid_gaps := SpacingDropdown.new()
 ## Sidebar parts only shown in the grid layout
 var _grid_parts: Array[Control] = []
 
@@ -88,6 +88,10 @@ func _build_sidebar() -> void:
 	for index: int in [grid_heading, grid_heading + 1, grid_heading + 2]:
 		_grid_parts.append(sections.get_child(index))
 	_grid_parts.append(main.sprite_width.get_parent())
+	var grid_row: Control = main.grid_rows.get_parent()
+	grid_row.add_sibling(grid_gaps)
+	_grid_parts.append(grid_gaps)
+	grid_gaps.values_changed.connect(_on_grid_gaps_changed)
 
 	var heading := Label.new()
 	heading.theme_type_variation = &"HeaderSmall"
@@ -108,11 +112,6 @@ func _build_sidebar() -> void:
 		button.custom_minimum_size = Vector2(0, 30)
 		button.pressed.connect(Actions.run.bind(entry[2]))
 		row.add_child(button)
-	repack_btn.icon = main.ICONS[&"repack"]
-	repack_btn.tooltip_text = "Pack Again: every frame that isn't pinned, as tightly as possible"
-	repack_btn.flat = true
-	repack_btn.pressed.connect(Actions.run.bind(&"repack"))
-	row.add_child(repack_btn)
 	var parts: Array[Control] = [heading, row, HSeparator.new(), atlas_panel]
 	for i in parts.size():
 		sections.add_child(parts[i])
@@ -127,6 +126,7 @@ func _build_sidebar() -> void:
 				"Atlas settings", Global.spritesheet.set_atlas_settings.bind(settings)
 			)
 	)
+	atlas_panel.repack_requested.connect(Actions.run.bind(&"repack"))
 	Global.spritesheet.layout_warning.connect(Notify.toast)
 	Settings.changed.connect(
 		func(key: StringName) -> void:
@@ -147,10 +147,24 @@ func update() -> void:
 	atlas_panel.get_meta(&"separator").visible = packed
 	layout_grid_btn.set_pressed_no_signal(not packed)
 	layout_packed_btn.set_pressed_no_signal(packed)
-	repack_btn.visible = packed
-	repack_btn.disabled = sheet.is_empty()
 	if packed:
 		atlas_panel.refresh(sheet)
+	else:
+		var options := ExportOptions.from_sheet(sheet)
+		grid_gaps.set_values(options.padding, options.spacing, options.extrude)
+		grid_gaps.disabled = sheet.is_empty()
+
+
+## Stores the grid's spacing with the sheet's export settings, where exports take it from
+func _on_grid_gaps_changed() -> void:
+	var sheet := Global.spritesheet
+	var options := ExportOptions.from_sheet(sheet)
+	options.padding = int(grid_gaps.padding.value)
+	options.spacing = int(grid_gaps.spacing.value)
+	options.extrude = int(grid_gaps.extrude.value)
+	Global.document.perform(
+		"Spacing & padding", sheet.set_export_settings.bind(options.to_dictionary())
+	)
 
 
 ## Actions of the packed layout, pivots and the layout switch

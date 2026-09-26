@@ -37,8 +37,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	# Only clicks: the wheel scrolls
 	list.item_clicked.connect(
-		func(index: int, _at: Vector2, _button: int) -> void: Global.document.go_to_history(index)
+		func(index: int, _at: Vector2, button: int) -> void:
+			if button == MOUSE_BUTTON_LEFT:
+				Global.document.go_to_history(index)
 	)
 	close_button.pressed.connect(func() -> void: Settings.set_value(&"show_history", false))
 	Global.document.changed.connect(refresh)

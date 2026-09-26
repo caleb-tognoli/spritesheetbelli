@@ -105,6 +105,24 @@ func test_pins_in_the_packed_layout() -> void:
 	assert_false(sheet.placements[Vector2i(0, 0)].pinned)
 
 
+func test_double_clicking_a_size_does_nothing() -> void:
+	await get_tree().process_frame
+	panel.tree.set_selected(item_of(Vector2i(2, 0)), 0)
+	var item := item_of(Vector2i(0, 0))
+	var at := panel.tree.get_item_area_rect(item, 1).get_center()
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.double_click = true
+	click.position = at
+	var activated := [false]
+	panel.tree.item_activated.connect(func() -> void: activated[0] = true)
+	panel.tree.gui_input.emit(click)
+	assert_true(panel.tree.get_viewport().is_input_handled(), "swallowed")
+	assert_false(activated[0])
+	assert_false(item_of(Vector2i(2, 0)).is_editable(0), "no other frame is renamed")
+
+
 func test_only_names_are_edited() -> void:
 	var item := item_of(Vector2i(0, 0))
 	panel.tree.set_selected(item, 1)

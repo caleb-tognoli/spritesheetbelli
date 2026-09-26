@@ -452,6 +452,8 @@ func test_history_panel() -> void:
 	assert_eq(panel.list.item_count, 3, "the start and two steps")
 	assert_eq(panel.list.get_item_text(2), "Add sprites")
 	assert_true(panel.list.is_selected(2), "the current step")
+	panel.list.item_clicked.emit(0, Vector2.ZERO, MOUSE_BUTTON_WHEEL_DOWN)
+	assert_false(Global.spritesheet.is_empty(), "scrolling doesn't go back")
 	panel.list.item_clicked.emit(0, Vector2.ZERO, MOUSE_BUTTON_LEFT)
 	assert_true(Global.spritesheet.is_empty(), "clicking the start undoes everything")
 	assert_true(panel.list.is_selected(0))

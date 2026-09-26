@@ -1,8 +1,6 @@
 class_name AddSpritesheetWindow
 extends Window
 
-const DROPDOWN_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
-
 signal canceled
 ## Emitted after frames were added to the open spritesheet
 signal frames_added
@@ -39,8 +37,7 @@ var detect_box := HBoxContainer.new()
 var merge_distance := SpinBox.new()
 var align_option := OptionButton.new()
 ## Opens the rarely needed offset and spacing fields in a floating panel
-var more_options_btn := Button.new()
-var more_options_popup := PopupPanel.new()
+var more_options_btn := OptionsDropdown.new("Offset & Spacing")
 ## Keeps the sprites where they are in the image, in the packed layout
 var keep_layout := CheckBox.new()
 ## The other pages of a packed sheet with a data file, by page
@@ -74,24 +71,17 @@ func _ready() -> void:
 	# Offset and spacing are rarely needed, so they're in a panel that drops down
 	var offset_box := offset_x.get_parent().get_parent() as Control
 	var spacing_box := spacing_x.get_parent().get_parent() as Control
-	more_options_btn.icon = DROPDOWN_ICON
-	more_options_btn.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	more_options_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	more_options_btn.custom_minimum_size.x = 160
 	more_options_btn.tooltip_text = "For sheets with a margin around or gaps between the frames"
+	more_options_btn.summarize = _options_summary
 	offset_box.add_sibling(more_options_btn)
-	var fields := VBoxContainer.new()
-	fields.add_theme_constant_override("separation", 8)
-	more_options_popup.add_child(fields)
-	add_child(more_options_popup)
 	for box: Control in [offset_box, spacing_box]:
-		box.reparent(fields, false)
-		LabelLink.link(box.get_child(0) as Label, box.get_child(1) as Control)
-	more_options_btn.pressed.connect(
-		func() -> void:
-			var below := more_options_btn.get_global_rect()
-			below.position.y += below.size.y + 4
-			more_options_popup.popup_on_parent(Rect2i(Rect2(below.position, Vector2.ZERO)))
-	)
+		var label := box.get_child(0) as Label
+		var pair := box.get_child(1) as Control
+		box.remove_child(pair)
+		more_options_btn.add_field(label.text, pair, label.tooltip_text)
+		box.queue_free()
 	_update_options_label()
 
 	_build_cut_controls()
@@ -351,6 +341,11 @@ func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
 
 ## Shows the offset and spacing on the button when they're set
 func _update_options_label() -> void:
+	more_options_btn.update_text()
+
+
+## The offset and spacing when they're set, for the button that shows them
+func _options_summary() -> String:
 	var offset := Vector2i(int(offset_x.value), int(offset_y.value))
 	var spacing := Vector2i(int(spacing_x.value), int(spacing_y.value))
 	var parts: PackedStringArray = []
@@ -358,4 +353,4 @@ func _update_options_label() -> void:
 		parts.append(tr("Offset %d×%d") % [offset.x, offset.y])
 	if spacing != Vector2i.ZERO:
 		parts.append(tr("Spacing %d×%d") % [spacing.x, spacing.y])
-	more_options_btn.text = " · ".join(parts) if parts else tr("Offset & Spacing")
+	return " · ".join(parts)

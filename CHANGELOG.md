@@ -12,11 +12,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frames that would land on others stay put. Moved frames are pinned, and Frame > Pinned
   pins or unpins them. The sidebar has the atlas settings: page size, keeping places or
   always packing tightly, how frames are placed (five MaxRects rules), spacing, padding,
-  extrusion and turning frames to fit. Frames are always packed without their
-  transparent borders. Sharing identical frames and
+  extrusion (in a panel that drops down), and toggles for turning frames to fit and
+  trimming transparent borders next to Repack, which packs everything but pinned frames
+  again. Sharing identical frames and
   power-of-two or square pages are in Settings > Atlas, for every sheet, and the size
-  the data file gives each frame (its cell or its own) is in the Export dialog. The
-  button next to Packed packs everything but pinned frames again. Frames that grow or
+  the data file gives each frame (its cell or its own) is in the Export dialog. Frames
+  that grow or
   are added go in the free space; frames too big for a page get one of their own.
   Unpinning a frame also unpins the frames that share its place, and when always packing
   tightly it goes back among the others.
@@ -96,6 +97,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
   pivot and link, not just its pixels.
+- The grid section of the sidebar has spacing, padding and extruded edges for exports too,
+  in the same drop-down panel as the atlas and Add Spritesheet's offset and spacing.
+- Settings have short names; hovering one says what it does.
 - Grid actions (cells and rows) are left out of the menus and the toolbar in the packed
   layout.
 - The toolbar wraps onto more rows when the preview is narrow, and has a button for the

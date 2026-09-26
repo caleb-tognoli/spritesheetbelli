@@ -21,10 +21,10 @@ const CATEGORIES := [
 				"option",
 				["Nearest (pixel art)", "Bilinear", "Cubic", "Trilinear", "Lanczos"]
 			],
-			[&"watch_sources", "Ask to reload sprites when their image files change", "check"],
-			[&"use_pivots", "Set pivots: the point engines anchor each frame at", "check"],
-			[&"confirm_grid_shrink", "Ask before shrinking the grid deletes sprites", "check"],
-			[&"restore_session", "Reopen the last project on start", "check"],
+			[&"watch_sources", "Reload changed files", "check"],
+			[&"use_pivots", "Pivots", "check"],
+			[&"confirm_grid_shrink", "Confirm grid shrinking", "check"],
+			[&"restore_session", "Reopen last project", "check"],
 		]
 	],
 	[
@@ -33,10 +33,10 @@ const CATEGORIES := [
 			[&"index_start", "Number frames from", "option", ["0", "1"]],
 			[&"show_grid", "Show grid", "check"],
 			[&"show_indices", "Show frame numbers", "check"],
-			[&"show_checkerboard", "Show checkerboard behind sprites", "check"],
+			[&"show_checkerboard", "Show checkerboard", "check"],
 			[&"grid_color", "Grid colour", "color"],
 			[&"background_color", "Background colour", "color"],
-			[&"checker_size", "Checkerboard square size", "spin", [2, 64, 1, "px"]],
+			[&"checker_size", "Checker size", "spin", [2, 64, 1, "px"]],
 			[&"zoom_speed", "Zoom speed", "spin", [0.05, 1.0, 0.05, ""]],
 		]
 	],
@@ -44,14 +44,14 @@ const CATEGORIES := [
 		"Export",
 		[
 			[&"jpg_quality", "JPG quality", "spin", [0.1, 1.0, 0.05, ""]],
-			[&"jpg_background", "JPG background (replaces transparency)", "color"],
+			[&"jpg_background", "JPG background", "color"],
 		]
 	],
 	[
 		"Atlas",
 		[
-			[&"atlas_dedupe", "Pack frames that look the same once, sharing their place", "check"],
-			[&"atlas_power_of_two", "Power-of-two pages (256, 512, 1024… px)", "check"],
+			[&"atlas_dedupe", "Share identical frames", "check"],
+			[&"atlas_power_of_two", "Power-of-two pages", "check"],
 			[&"atlas_square", "Square pages", "check"],
 		]
 	],
@@ -67,10 +67,30 @@ const CATEGORIES := [
 				["Automatic", "75%", "100%", "125%", "150%", "200%"],
 				[0.0, 0.75, 1.0, 1.25, 1.5, 2.0]
 			],
-			[&"show_status_bar", "Show the status bar", "check"],
+			[&"show_status_bar", "Show status bar", "check"],
 		]
 	],
 ]
+## What settings do, shown when hovering them, for the ones whose name doesn't say it all
+const DETAILS := {
+	&"add_mode": "Where added sprites are placed in the grid",
+	&"resize_filter": "How new sheets smooth resized sprites. Nearest keeps pixel art sharp.",
+	&"watch_sources": "Ask to reload sprites when the image files they came from change",
+	&"use_pivots":
+	(
+		"Show the pivot tool (E) and the Pivot menu, to set the point engines anchor each "
+		+ "frame at, like a character's feet"
+	),
+	&"confirm_grid_shrink": "Ask before making the grid smaller deletes sprites",
+	&"restore_session": "Open the last project again when the app starts",
+	&"show_checkerboard": "A checkerboard behind sprites shows their transparent pixels",
+	&"checker_size": "The size of the checkerboard's squares",
+	&"jpg_background": "JPG has no transparency: transparent pixels get this colour",
+	&"atlas_dedupe": "Frames that look the same are packed once and share their place",
+	&"atlas_power_of_two": "Pages are 256, 512, 1024… px wide and tall, for older engines",
+	&"atlas_square": "Pages are as wide as they're tall",
+	&"ui_scale": "Automatic follows the screen's scale",
+}
 const REVERT_ICON := preload("res://assets/icons/Reload.svg")
 const SEARCH_ICON := preload("res://assets/icons/Search.svg")
 
@@ -184,14 +204,17 @@ func _add_row(category: String, row: Array) -> void:
 	var label := Label.new()
 	label.text = row[1]
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	# A wrapped label needs a width, or it's measured one word per line
+	# One line: hovering it tells more
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.custom_minimum_size = Vector2(220, 0)
+	label.tooltip_text = DETAILS.get(key, row[1])
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(label)
 	var control := _create_control(key, row[2], row.slice(3))
 	LabelLink.link(label, control)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	control.tooltip_text = row[1]
+	control.tooltip_text = label.tooltip_text
 	box.add_child(control)
 	var revert := Button.new()
 	revert.icon = REVERT_ICON
@@ -209,6 +232,7 @@ func _add_row(category: String, row: Array) -> void:
 			"key": key,
 			"category": category,
 			"text": row[1],
+			"details": DETAILS.get(key, ""),
 			"row": box,
 			"control": control,
 			"revert": revert
@@ -265,9 +289,8 @@ func _filter() -> void:
 	var category := _category
 	var shown_categories := {}
 	for row in _rows:
-		var shown: bool = (
-			query in (row.text as String).to_lower() if query else row.category == category
-		)
+		var described := "%s %s" % [row.text, row.details]
+		var shown: bool = query in described.to_lower() if query else row.category == category
 		(row.row as Control).visible = shown
 		if shown:
 			shown_categories[row.category] = true

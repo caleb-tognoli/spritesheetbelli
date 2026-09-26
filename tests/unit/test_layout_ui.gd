@@ -74,7 +74,6 @@ func test_the_sidebar_shows_the_atlas_settings_when_packed() -> void:
 	# The Output section describes the pages, once
 	assert_false("info" in controller.atlas_panel)
 	assert_true("filled" in main.sheet_size.text, main.sheet_size.text)
-	assert_false("trim" in controller.atlas_panel, "frames are always packed trimmed")
 	# Settings go through the undo history
 	controller.atlas_panel.spacing.value = 3
 	assert_eq(sheet.atlas_settings.spacing, 3)
@@ -118,6 +117,17 @@ func test_toolbar_edits_every_frame_without_a_selection() -> void:
 func test_toolbar_order() -> void:
 	var buttons: Dictionary = main.preview_area._action_buttons
 	assert_true(buttons[&"pin_toggle"].get_index() < buttons[&"flip_h"].get_index())
+	await get_tree().process_frame
+	# Every shown separator has a shown button on each side
+	var bar: HBoxContainer = main.preview_area._edit_bar
+	var shown: Array[Control] = []
+	for child: Control in bar.get_children():
+		if child.visible:
+			shown.append(child)
+	assert_true(shown[0] is VSeparator, "after the tools")
+	for i in range(1, shown.size()):
+		assert_false(shown[i] is VSeparator and shown[i - 1] is VSeparator, "no empty group")
+	assert_false(shown[-1] is VSeparator)
 
 
 func test_pivots_are_opt_in() -> void:
@@ -178,10 +188,22 @@ func test_the_preview_is_never_narrower_than_its_toolbar() -> void:
 
 
 func test_packing_again_from_the_sidebar() -> void:
-	var controller: LayoutController = main.layout_controller
-	assert_false(controller.repack_btn.visible, "only when packed")
+	var panel: AtlasPanel = main.layout_controller.atlas_panel
 	Actions.run(&"layout_packed")
-	assert_true(controller.repack_btn.visible)
+	await get_tree().process_frame
+	assert_true(panel.repack.is_visible_in_tree())
+	assert_eq(panel.repack.text, "Repack", "the text fits in the sidebar")
+	panel.pack_mode.select(panel.pack_mode.get_item_index(AtlasSettings.PackMode.KEEP))
+	panel.pack_mode.item_selected.emit(panel.pack_mode.selected)
+	var coord := Vector2i(1, 0)
+	sheet.set_placements(PackedLayout.moved(sheet, [coord] as Array[Vector2i], 0, Vector2i(80, 0)))
+	sheet.set_pinned([coord] as Array[Vector2i], false)
+	var moved_to := PackedLayout.get_rect(sheet, coord)
+	panel.repack.pressed.emit()
+	assert_ne(PackedLayout.get_rect(sheet, coord), moved_to, "packed again")
+	panel.repack.size.x = 40
+	panel._fit_repack_text()
+	assert_eq(panel.repack.text, "", "only the icon when narrow")
 	assert_false(main.preview_area._action_buttons.has(&"repack"), "not in the toolbar")
 	assert_true(main.preview_area._action_buttons.has(&"pin_toggle"), "with trim")
 	var trim_index: int = main.preview_area._action_buttons[&"trim"].get_index()
@@ -198,6 +220,49 @@ func test_page_shapes_and_sharing_are_settings() -> void:
 	Settings.set_value(&"atlas_power_of_two", false)
 	var window: SettingsWindow = main.settings_window
 	assert_ne(window.get_control(&"atlas_square"), null, "in the settings window")
+
+
+func test_turning_and_trimming_are_toggles() -> void:
+	var panel: AtlasPanel = main.layout_controller.atlas_panel
+	Actions.run(&"layout_packed")
+	assert_true(panel.trim.button_pressed, "trimmed by default")
+	assert_eq(panel.trim.text, "", "icon only")
+	panel.trim.button_pressed = false
+	assert_false(sheet.atlas_settings.trim)
+	var place: Dictionary = sheet.placements[Vector2i(0, 0)]
+	assert_eq(place.src.size, sheet.frames[Vector2i(0, 0)].get_size(), "packed whole")
+	Global.document.undo()
+	assert_true(panel.trim.button_pressed)
+	panel.allow_rotation.button_pressed = true
+	assert_true(sheet.atlas_settings.allow_rotation)
+
+
+func test_spacing_is_in_a_floating_panel() -> void:
+	var panel: AtlasPanel = main.layout_controller.atlas_panel
+	Actions.run(&"layout_packed")
+	assert_eq(panel.gaps.text, "Spacing & Padding")
+	assert_false(panel.spacing.is_visible_in_tree(), "in the panel, closed")
+	panel.gaps.pressed.emit()
+	assert_true(panel.gaps.popup.visible)
+	panel.spacing.value = 2
+	panel.extrude.value = 1
+	assert_eq(sheet.atlas_settings.spacing, 2)
+	assert_eq(panel.gaps.text, "Spacing 2 · Extrude 1", "says what's set")
+	panel.gaps.popup.hide()
+
+
+func test_the_grid_has_spacing_too() -> void:
+	var gaps: SpacingDropdown = main.layout_controller.grid_gaps
+	assert_true(gaps.is_visible_in_tree())
+	var before: String = main.sheet_size.text
+	gaps.spacing.value = 4
+	assert_eq(ExportOptions.from_sheet(sheet).spacing, 4, "exports use it")
+	assert_ne(main.sheet_size.text, before, "the output is bigger")
+	Global.document.undo()
+	assert_eq(ExportOptions.from_sheet(sheet).spacing, 0)
+	assert_eq(gaps.spacing.value, 0.0, "follows undo")
+	Actions.run(&"layout_packed")
+	assert_false(gaps.is_visible_in_tree(), "the atlas has its own")
 
 
 func test_frame_size_in_data_is_an_export_setting() -> void:
