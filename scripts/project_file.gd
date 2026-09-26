@@ -5,7 +5,9 @@ class_name ProjectFile
 
 const EXTENSION := "sbelli"
 const FORMAT := "spritesheetbelli"
-const VERSION := 1
+## The newest version this app reads. Projects are written as version 1 unless they use
+## the packed layout, so older versions can still open grid projects.
+const VERSION := 2
 const JSON_FILE := "project.json"
 const FRAMES_FILE := "frames.png"
 
@@ -51,6 +53,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			if sheet.has_pivot(coords[i]):
 				var pivot := sheet.get_pivot(coords[i])
 				frame.pivot = [pivot.x, pivot.y]
+			var placement: Dictionary = sheet.placements.get(coords[i], {})
+			if placement:
+				frame.placement = _placement_to_json(placement)
 			frames.append(frame)
 		error = _write(zip, FRAMES_FILE, atlas.save_png_to_buffer())
 		if error != OK:
@@ -69,9 +74,10 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		saved.cells = animation.cells.map(func(cell: Vector2i) -> Array: return [cell.x, cell.y])
 		animations.append(saved)
 
+	var packed := sheet.layout == Spritesheet.Layout.PACKED or not sheet.placements.is_empty()
 	var data := {
 		"format": FORMAT,
-		"version": VERSION,
+		"version": 2 if packed else 1,
 		"grid_size": [sheet.grid_size.x, sheet.grid_size.y],
 		"frame_scale": [sheet.frame_scale.x, sheet.frame_scale.y],
 		"scale_filter": sheet.scale_filter,
@@ -82,6 +88,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"frames": frames,
 		"extra": extra,
 	}
+	if packed:
+		data.layout = "packed" if sheet.layout == Spritesheet.Layout.PACKED else "grid"
+		data.atlas = JSON.from_native(sheet.atlas_settings.to_dictionary())
 	error = _write(zip, JSON_FILE, JSON.stringify(data, "\t").to_utf8_buffer())
 	zip.close()
 	return error
@@ -116,6 +125,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	var origins: Dictionary[Vector2i, Vector2i] = {}
 	var sources: Dictionary[Vector2i, Dictionary] = {}
 	var pivots: Dictionary[Vector2i, Vector2] = {}
+	var placements: Dictionary[Vector2i, Dictionary] = {}
 	for frame: Dictionary in data.get("frames", []):
 		var img := _read_frame(zip, atlas, frame)
 		if img == null:
@@ -137,6 +147,9 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		var pivot: Variant = frame.get("pivot")
 		if pivot is Array and pivot.size() >= 2:
 			pivots[cell] = Vector2(float(pivot[0]), float(pivot[1]))
+		var placement := _placement_from_json(frame.get("placement"))
+		if placement:
+			placements[cell] = placement
 
 	var locked: Array[Vector2i] = []
 	for coord: Array in data.get("locked", []):
@@ -150,12 +163,18 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		if animation is Dictionary:
 			animations.append(SheetAnimation.from_dictionary(animation).to_dictionary())
 
+	var layout := Spritesheet.Layout.GRID
+	if data.get("layout") == "packed":
+		layout = Spritesheet.Layout.PACKED
 	var state := {
 		"grid_size": _to_vector2i(data.get("grid_size", [0, 0])),
 		"frames": frames,
 		"origins": origins,
 		"sources": sources,
 		"pivots": pivots,
+		"placements": placements,
+		"layout": layout,
+		"atlas": _read_export_settings(data.get("atlas", {})),
 		"locked": locked,
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
@@ -204,6 +223,32 @@ static func _shelf_layout(sizes: Array[Vector2i]) -> Dictionary:
 		cursor.x += size.x
 		row_height = maxi(row_height, size.y)
 	return {"size": used, "positions": positions}
+
+
+static func _placement_to_json(placement: Dictionary) -> Dictionary:
+	var src: Rect2i = placement.src
+	return {
+		"page": placement.page,
+		"x": placement.position.x,
+		"y": placement.position.y,
+		"src": [src.position.x, src.position.y, src.size.x, src.size.y],
+		"rotated": placement.rotated,
+		"pinned": placement.get("pinned", false),
+	}
+
+
+## A place in the packed layout (see [PackedLayout]) from a project, or empty
+static func _placement_from_json(value: Variant) -> Dictionary:
+	if not value is Dictionary or not value.get("src") is Array or value.src.size() != 4:
+		return {}
+	var src: Array = value.src
+	return {
+		"page": maxi(0, int(value.get("page", 0))),
+		"position": Vector2i(int(value.get("x", 0)), int(value.get("y", 0))),
+		"src": Rect2i(int(src[0]), int(src[1]), int(src[2]), int(src[3])),
+		"rotated": bool(value.get("rotated", false)),
+		"pinned": bool(value.get("pinned", false)),
+	}
 
 
 static func _read_export_settings(value: Variant) -> Dictionary:

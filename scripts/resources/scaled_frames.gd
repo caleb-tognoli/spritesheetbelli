@@ -10,7 +10,7 @@ var _preparing := 0
 var _sheet: WeakRef
 
 
-func _init(sheet: Spritesheet) -> void:
+func _init(sheet: FrameStore) -> void:
 	_sheet = weakref(sheet)
 
 

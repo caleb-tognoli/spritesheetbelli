@@ -1,5 +1,5 @@
 class_name Spritesheet
-extends Resource
+extends FrameStore
 ## A grid of frames.
 ##
 ## Frames are stored at their original size and are only padded to [member sprite_size]
@@ -10,12 +10,11 @@ extends Resource
 ## the image, so state snapshots ([method get_state]) can share them cheaply.
 ## All changes go through the methods below, which emit [signal updated] once each.
 ## Frames can be linked to the files they came from, see [FrameSource].
+## Besides the grid, frames can be laid out packed tightly, see [PackedLayout].
+## Frames and what their cells hold are stored by [FrameStore].
 
-signal updated
-
-const NO_CELL := Vector2i(-1, -1)
-## What a cell can hold besides its frame, see [method get_cell_data]
-const CELL_DATA_KEYS: Array[String] = ["origin", "source", "pivot", "placement"]
+## Packing had to do something the user should know about, like moving a pinned frame
+signal layout_warning(message: String)
 
 enum AddMode {
 	FIRST_FREE,  ## Fill the first free, unlocked cell
@@ -24,14 +23,12 @@ enum AddMode {
 }
 ## How [method FrameEdits.align] lines frames up
 enum Alignment { CENTER, BOTTOM, TOP, LEFT, RIGHT }
+## How frames are laid out: in the cells of the grid, or packed tightly on pages
+enum Layout { GRID, PACKED }
 
 var grid_size: Vector2i:
 	get:
 		return _grid_size
-## Frame images at their original size, by grid coordinate. Read only.
-var frames: Dictionary[Vector2i, Image]:
-	get:
-		return _frames
 ## Cells that are kept empty when adding frames. Read only.
 var locked_coordinates: Array[Vector2i]:
 	get:
@@ -47,11 +44,6 @@ var frame_scale: Vector2:
 var scale_filter: Image.Interpolation:
 	get:
 		return _scale_filter
-## Where linked frames came from, by grid coordinate, see [FrameSource]. Read only:
-## frames are linked with [method set_frame].
-var frame_sources: Dictionary[Vector2i, Dictionary]:
-	get:
-		return _sources
 ## Optional animation names per row
 var row_names: Dictionary[int, String]:
 	get:
@@ -64,46 +56,31 @@ var animations: Array[SheetAnimation]:
 		for data in _animations:
 			result.append(SheetAnimation.from_dictionary(data))
 		return result
-## The frames with [member frame_scale] applied, kept for reuse
-var scaled_frames: ScaledFrames
 ## How this sheet is exported, see [ExportOptions]. Read only.
 var export_settings: Dictionary:
 	get:
 		return _export_settings
+var layout: Layout:
+	get:
+		return _layout
+## How frames are packed, a copy. Changes go through [method set_atlas_settings].
+var atlas_settings: AtlasSettings:
+	get:
+		return AtlasSettings.from_dictionary(_atlas)
 
 var _grid_size := Vector2i.ZERO
-var _frames: Dictionary[Vector2i, Image] = {}
 var _locked: Array[Vector2i] = []
 var _scale := Vector2.ONE
 var _scale_filter := Image.INTERPOLATE_NEAREST
 var _row_names: Dictionary[int, String] = {}
 var _export_settings := {}
 var _animations: Array[Dictionary] = []
-## Unscaled origins of frames that aren't centred, see [method get_frame_origin]
-var _origins: Dictionary[Vector2i, Vector2i] = {}
-## Where linked frames came from, see [FrameSource]. Never changed in place, only replaced.
-var _sources: Dictionary[Vector2i, Dictionary] = {}
-## Pivots of frames that have one, in unscaled pixels from the frame's top-left corner
-var _pivots: Dictionary[Vector2i, Vector2] = {}
-## Where frames are in the packed layout. Never changed in place, only replaced.
-var _placements: Dictionary[Vector2i, Dictionary] = {}
 var _sprite_size := Vector2i.ZERO
 ## The top-left of every cell, relative to the point frames are placed around
 var _cell_origin := Vector2i.ZERO
-var _batch_depth := 0
-var _batch_changed := false
-
-
-func _init() -> void:
-	scaled_frames = ScaledFrames.new(self)
-
-
-func is_empty() -> bool:
-	return _frames.is_empty()
-
-
-func has_frame(coord: Vector2i) -> bool:
-	return _frames.has(coord)
+var _layout := Layout.GRID
+## The values of [AtlasSettings] that aren't the defaults
+var _atlas := {}
 
 
 func is_locked(coord: Vector2i) -> bool:
@@ -133,11 +110,6 @@ func get_sorted_coords() -> Array[Vector2i]:
 		func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x)
 	)
 	return coords
-
-
-## The frame image with [member frame_scale] applied, at its own size
-func get_frame_image(coord: Vector2i) -> Image:
-	return scaled_frames.get_image(coord)
 
 
 ## The scaled frame in a transparent cell of [member sprite_size]
@@ -173,32 +145,6 @@ func has_frame_origin(coord: Vector2i) -> bool:
 	return _origins.has(coord)
 
 
-## Whether the frame has a pivot of its own
-func has_pivot(coord: Vector2i) -> bool:
-	return _pivots.has(coord)
-
-
-## The frame's pivot in unscaled pixels from its top-left corner: its own, or its centre
-func get_pivot(coord: Vector2i) -> Vector2:
-	if _pivots.has(coord):
-		return _pivots[coord]
-	var source: Image = _frames.get(coord)
-	return Vector2(source.get_size()) / 2.0 if source else Vector2.ZERO
-
-
-## Everything a cell holds: [code]{"image": Image}[/code], plus "origin", "source",
-## "pivot" and "placement" when it has them. Empty for a cell without a frame.
-func get_cell_data(coord: Vector2i) -> Dictionary:
-	if not _frames.has(coord):
-		return {}
-	var data := {"image": _frames[coord]}
-	var values := _cell_dicts()
-	for i in CELL_DATA_KEYS.size():
-		if values[i].has(coord):
-			data[CELL_DATA_KEYS[i]] = values[i][coord]
-	return data
-
-
 ## Puts a frame with everything it holds (see [method get_cell_data]) at [param coord]
 func set_cell(coord: Vector2i, data: Dictionary) -> void:
 	var img: Image = data.get("image")
@@ -229,64 +175,19 @@ func add_cells(cells: Array[Dictionary], mode := AddMode.FIRST_FREE) -> Array[Ve
 	return coords
 
 
-## Gives frames a pivot in unscaled pixels from their top-left corners, or takes it away
-## for [code]null[/code]
-func set_pivots(coords: Array[Vector2i], pivot: Variant) -> void:
-	var changed := false
-	for coord in coords:
-		if has_frame(coord) and _pivots.get(coord) != pivot:
-			_set_or_erase(_pivots, coord, pivot)
-			changed = true
-	if changed:
-		_changed()
-
-
-## Renames a frame. Frames can share an image, so the frame gets a copy with the new name.
-func rename_frame(coord: Vector2i, new_name: String) -> void:
-	new_name = new_name.strip_edges()
-	if not has_frame(coord) or _frames[coord].resource_name == new_name:
-		return
-	var old: Image = _frames[coord]
-	var img: Image = old.duplicate()
-	img.resource_name = new_name
-	scaled_frames.alias(old, img)
-	_frames[coord] = img
-	_changed()
-
-
 #region Batching
 
 
-## Groups several changes into a single [signal updated]
-func begin_batch() -> void:
-	_batch_depth += 1
-
-
-func end_batch() -> void:
-	_batch_depth = maxi(0, _batch_depth - 1)
-	if _batch_depth == 0 and _batch_changed:
-		_batch_changed = false
-		_notify()
-
-
-## Runs [param callable] as a single change
-func batch(callable: Callable) -> Variant:
-	begin_batch()
-	var result: Variant = callable.call()
-	end_batch()
-	return result
-
-
-func _changed() -> void:
-	if _batch_depth > 0:
-		_batch_changed = true
-	else:
-		_notify()
-
-
+## Tells about the changes, packing frames again first in the packed layout
 func _notify() -> void:
 	_update_sprite_size()
-	updated.emit()
+	if _layout == Layout.PACKED and _layout_dirty:
+		var arranged := PackedLayout.arrange(self)
+		if arranged:
+			_placements.assign(arranged.placements)
+			for message: String in arranged.warnings:
+				layout_warning.emit(message)
+	super()
 
 
 #endregion
@@ -309,6 +210,8 @@ func get_state() -> Dictionary:
 		"sources": _sources.duplicate(),
 		"pivots": _pivots.duplicate(),
 		"placements": _placements.duplicate(),
+		"layout": _layout,
+		"atlas": _atlas.duplicate(),
 		"sprite_size": _sprite_size,
 		"cell_origin": _cell_origin,
 	}
@@ -327,9 +230,14 @@ func set_state(state: Dictionary) -> void:
 	_sources.assign(state.get("sources", {}))
 	_pivots.assign(state.get("pivots", {}))
 	_placements.assign(state.get("placements", {}))
+	_layout = state.get("layout", Layout.GRID)
+	_atlas = state.get("atlas", {}).duplicate()
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_cell_origin = state.get("cell_origin", Vector2i.ZERO)
-	_changed()
+	# The places come with the state, so frames aren't packed again
+	_layout_dirty = false
+	pack_cache.signature = 0
+	_changed(false)
 
 
 static func states_equal(a: Dictionary, b: Dictionary) -> bool:
@@ -836,6 +744,10 @@ func set_frame_scale(new_scale: Vector2, filter := _scale_filter) -> void:
 		return
 	_scale = new_scale
 	_scale_filter = filter
+	# Places are measured in scaled pixels: pack everything but pinned frames again
+	for coord: Vector2i in _placements.keys():
+		if not _placements[coord].get("pinned", false):
+			_placements.erase(coord)
 	_changed()
 
 
@@ -858,6 +770,24 @@ func _record_op(coord: Vector2i, op: Dictionary) -> void:
 func _record_move(coord: Vector2i, offset: Vector2i) -> void:
 	if offset != Vector2i.ZERO:
 		_record_op(coord, {"op": "move", "by": [offset.x, offset.y]})
+
+
+#endregion
+
+#region Packed layout
+
+
+func set_layout(value: Layout) -> void:
+	if value != _layout:
+		_layout = value
+		_changed()
+
+
+func set_atlas_settings(settings: AtlasSettings) -> void:
+	var values := settings.to_dictionary()
+	if values != _atlas:
+		_atlas = values
+		_changed()
 
 
 #endregion
@@ -908,52 +838,6 @@ func _bounds_of(coords: Array, at_scale: Vector2) -> Rect2i:
 	return bounds
 
 
-## Sets [param key] to [param value], or erases it for [code]null[/code]
-static func _set_or_erase(dictionary: Dictionary, key: Variant, value: Variant) -> void:
-	if value == null:
-		dictionary.erase(key)
-	else:
-		dictionary[key] = value
-
-
-## What cells hold besides their frames, in the order of [constant CELL_DATA_KEYS]
-func _cell_dicts() -> Array[Dictionary]:
-	return [_origins, _sources, _pivots, _placements]
-
-
-## Clears what a cell holds besides its frame
-func _erase_cell_data(coord: Vector2i) -> void:
-	for values in _cell_dicts():
-		values.erase(coord)
-
-
-## A copy of what every cell holds besides its frame, for [method _restore_cell_data]
-func _save_cell_data() -> Array[Dictionary]:
-	var saved: Array[Dictionary] = []
-	for values in _cell_dicts():
-		saved.append(values.duplicate())
-	return saved
-
-
-## Gives [param coord] what [param from] held in [param saved]
-func _restore_cell_data(coord: Vector2i, saved: Array[Dictionary], from: Vector2i) -> void:
-	var targets := _cell_dicts()
-	for i in targets.size():
-		_set_or_erase(targets[i], coord, saved[i].get(from))
-
-
-## Moves what each cell holds to the cell [param map] returns, or drops it for NO_CELL
-func _remap_cell_data(map: Callable) -> void:
-	var saved := _save_cell_data()
-	var targets := _cell_dicts()
-	for i in targets.size():
-		targets[i].clear()
-		for cell: Vector2i in saved[i]:
-			var moved: Vector2i = map.call(cell)
-			if moved != NO_CELL:
-				targets[i][moved] = saved[i][cell]
-
-
 ## The cells are the smallest rectangle that holds every frame around the same point
 func _update_sprite_size() -> void:
 	if _frames.is_empty():
@@ -965,3 +849,7 @@ func _update_sprite_size() -> void:
 	_sprite_size = bounds.size
 	_cell_origin = bounds.position
 	scaled_frames.prune()
+	var alive := {}
+	for img: Image in _frames.values():
+		alive[img] = true
+	pack_cache.prune(alive)
