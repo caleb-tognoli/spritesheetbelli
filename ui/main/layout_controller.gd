@@ -35,6 +35,8 @@ var side_split := VSplitContainer.new()
 ## Switches between the grid and the packed layout, above the grid or atlas settings
 var layout_grid_btn := Button.new()
 var layout_packed_btn := Button.new()
+## Packs every frame that isn't pinned again, next to the layout switch when packed
+var repack_btn := Button.new()
 ## Sidebar parts only shown in the grid layout
 var _grid_parts: Array[Control] = []
 
@@ -102,6 +104,11 @@ func _build_sidebar() -> void:
 		button.custom_minimum_size = Vector2(0, 30)
 		button.pressed.connect(Actions.run.bind(entry[2]))
 		row.add_child(button)
+	repack_btn.icon = main.ICONS[&"repack"]
+	repack_btn.tooltip_text = "Pack Again: every frame that isn't pinned, as tightly as possible"
+	repack_btn.flat = true
+	repack_btn.pressed.connect(Actions.run.bind(&"repack"))
+	row.add_child(repack_btn)
 	var parts: Array[Control] = [heading, row, HSeparator.new(), atlas_panel]
 	for i in parts.size():
 		sections.add_child(parts[i])
@@ -116,8 +123,14 @@ func _build_sidebar() -> void:
 				"Atlas settings", Global.spritesheet.set_atlas_settings.bind(settings)
 			)
 	)
-	atlas_panel.repack_requested.connect(Actions.run.bind(&"repack"))
 	Global.spritesheet.layout_warning.connect(Notify.toast)
+	Settings.changed.connect(
+		func(key: StringName) -> void:
+			if key in [&"atlas_dedupe", &"atlas_power_of_two", &"atlas_square"]:
+				var sheet := Global.spritesheet
+				if sheet.layout == Spritesheet.Layout.PACKED:
+					Global.document.perform("Atlas settings", sheet.refresh_layout)
+	)
 
 
 ## Shows the grid or the atlas settings, whichever the layout uses
@@ -130,6 +143,8 @@ func update() -> void:
 	atlas_panel.get_meta(&"separator").visible = packed
 	layout_grid_btn.set_pressed_no_signal(not packed)
 	layout_packed_btn.set_pressed_no_signal(packed)
+	repack_btn.visible = packed
+	repack_btn.disabled = sheet.is_empty()
 	if packed:
 		atlas_panel.refresh(sheet)
 

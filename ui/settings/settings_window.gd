@@ -47,6 +47,14 @@ const CATEGORIES := [
 		]
 	],
 	[
+		"Atlas",
+		[
+			[&"atlas_dedupe", "Pack frames that look the same once, sharing their place", "check"],
+			[&"atlas_power_of_two", "Power-of-two pages (256, 512, 1024… px)", "check"],
+			[&"atlas_square", "Square pages", "check"],
+		]
+	],
+	[
 		"Interface",
 		[
 			[&"theme", "Theme", "option", ["Dark", "Light"], ["dark", "light"]],

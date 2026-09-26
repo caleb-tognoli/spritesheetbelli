@@ -134,3 +134,20 @@ func test_mirror_animation() -> void:
 	)
 	assert_eq(SheetAnimation.mirrored_name("run"), "run_flipped")
 	assert_eq(SheetAnimation.mirrored_name("Left punch"), "Right punch")
+
+
+func test_frames_by_name() -> void:
+	var names := {"idle": 0, "walk_0": 1, "walk_1": 2, "walk_2": 3, "jump up": 4, "hit-2": 5}
+	var parsed := SheetAnimation.parse_numbers('idle, walk_0-walk_2, "jump up"*2, hit-2, 6', names)
+	assert_eq(parsed.numbers, [0, 1, 2, 3, 4, 5, 6] as Array[int])
+	assert_eq(parsed.durations, [1.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0] as Array[float])
+	assert_eq(SheetAnimation.parse_numbers("walk_2-walk_0", names).numbers, [3, 2, 1])
+	assert_eq(SheetAnimation.parse_numbers("0-walk_1", names).numbers, [0, 1, 2], "mixed")
+	assert_eq(SheetAnimation.parse_numbers("run", names).error, "run", "unknown name")
+	var labels := {0: "idle", 4: "jump up", 5: "hit-2"}
+	assert_eq(
+		SheetAnimation.format_numbers([0, 1, 2, 3, 4, 5] as Array[int], [], labels),
+		'idle, 1-3, "jump up", "hit-2"'
+	)
+	var written := SheetAnimation.format_numbers([4, 0] as Array[int], [2.0, 1.0], labels)
+	assert_eq(SheetAnimation.parse_numbers(written, names).numbers, [4, 0], "reads back")

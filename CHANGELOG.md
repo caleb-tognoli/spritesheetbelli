@@ -12,10 +12,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frames that would land on others stay put. Moved frames are pinned, and Frame > Pinned
   pins or unpins them. The sidebar has the atlas settings: page size, keeping places or
   always packing tightly, how frames are placed (five MaxRects rules), spacing, padding,
-  extrusion, turning frames to fit, trimming, sharing identical frames, power-of-two and
-  square pages, and the size data files report (the cell or the frame). Pack Again
-  repacks everything but pinned frames. Frames that grow or are added go in the free
-  space; frames too big for a page get one of their own.
+  extrusion, turning frames to fit and trimming. Sharing identical frames and
+  power-of-two or square pages are in Settings > Atlas, for every sheet, and the size
+  the data file gives each frame (its cell or its own) is in the Export dialog. The
+  button next to Packed packs everything but pinned frames again. Frames that grow or
+  are added go in the free space; frames too big for a page get one of their own.
 - Opening a packed sheet keeps its layout: every frame stays where it is in the image,
   with its name and pivot, so exporting it again keeps the places engines know. The Add
   Spritesheet window has "Keep the packed layout" for this, also for sprites found
@@ -102,15 +103,17 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The right-click menu groups flipping and rotating under Transform, and has Align in
   Cell and Rows submenus.
 - The animation player has back to start, previous frame, play/pause and next frame.
-- Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7.
+- Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7, or by
+  name: idle, walk_0-walk_3, "jump up"*2. The Names button shows them by name.
+- Tooltips of linked frames show the file's path.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.
 - JSON exports list the frames of every animation in playing order (`meta.animations`),
   which frame tags can't do for scattered frames, and packed atlas JSON now has frame
   tags and durations too. Opening such a JSON brings the exact animations back.
 - Packed atlases store frames that look the same only once; their JSON entries share
-  the place. Advanced has a power-of-two size option for engines that need one, and the
-  data file can be a libGDX / Spine `.atlas` instead of JSON (`--atlas-data atlas` on
+  the place. Pages can be powers of two (Settings > Atlas) for engines that need it, and
+  the data file can be a libGDX / Spine `.atlas` instead of JSON (`--atlas-data atlas` on
   the command line).
 - Trimming keeps the pixels where they were in the cell, so trimming all frames of an
   animation shrinks the cells without making it jump. Flipping and rotating move a

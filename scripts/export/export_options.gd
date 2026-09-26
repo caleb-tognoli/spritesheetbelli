@@ -13,6 +13,11 @@ enum Target {
 	GIF,  ## One animation as an animated GIF
 }
 enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
+## The size a packed atlas's data file gives each frame, which engines line frames up by
+enum FrameSize {
+	CELL,  ## Its cell, so the frames of an animation line up like in the grid
+	FRAME,  ## Its own, for sprites that have nothing to do with each other
+}
 enum MetadataFormat { NONE, JSON, GODOT }
 
 const IMAGE_FORMATS: Array[String] = ["png", "jpg", "webp"]
@@ -33,10 +38,9 @@ var padding := 0
 var spacing := 0
 ## Pixels by which each frame's edges are repeated outward, against texture bleeding
 var extrude := 0
-## Makes a packed atlas as wide and tall as powers of two
-var power_of_two := false
 ## The data file written next to a packed atlas, one of [constant AtlasFormats.FORMATS]
 var atlas_data := "json"
+var atlas_frame_size := FrameSize.CELL
 
 ## File name for exported sprites. See [method SpritesheetExporter.format_sprite_name].
 var sprite_name_pattern := "{index}"
@@ -75,8 +79,8 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"padding",
 	&"spacing",
 	&"extrude",
-	&"power_of_two",
 	&"atlas_data",
+	&"atlas_frame_size",
 	&"sprite_name_pattern",
 	&"only_selected",
 	&"existing_files",

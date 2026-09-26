@@ -77,7 +77,6 @@ static func packed_sheet() -> Spritesheet:
 	var settings := AtlasSettings.new()
 	settings.max_size = 64
 	settings.allow_rotation = true
-	settings.source_size = AtlasSettings.SourceSize.SPRITE
 	sheet.set_atlas_settings(settings)
 	sheet.set_layout(Spritesheet.Layout.PACKED)
 	return sheet
@@ -97,6 +96,7 @@ static func rects_by_name(sheet: Spritesheet) -> Dictionary:
 ## Exports [param sheet] in [param format], opens it again and returns the reopened sheet
 func reopen(sheet: Spritesheet, format: String) -> Spritesheet:
 	var options := ExportOptions.new()
+	options.atlas_frame_size = ExportOptions.FrameSize.FRAME
 	options.atlas_data = format
 	options.sprite_name_pattern = "{name}"
 	var result := AtlasPacker.write(sheet, options, dir.path_join(format + ".png"))

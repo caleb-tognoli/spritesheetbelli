@@ -69,8 +69,7 @@ const SLOW_SCALE_WORK := 1_000_000
 ## Action buttons in the toolbar, in groups, and the view toggles next to the zoom
 const TOOLBAR_GROUPS := [
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
-	[&"align_menu", &"pivot_menu", &"trim"],
-	[&"pin_toggle", &"repack"],
+	[&"align_menu", &"pivot_menu", &"trim", &"pin_toggle"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
 	&"toggle_grid", &"toggle_indices", &"toggle_animation", &"toggle_sprites"

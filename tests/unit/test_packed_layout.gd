@@ -192,11 +192,13 @@ func test_places_wait_in_the_grid_layout() -> void:
 
 func test_copies_get_a_place_of_their_own() -> void:
 	add_sprites(3)
-	set_mode(AtlasSettings.PackMode.KEEP, {"dedupe": false})
+	Settings.set_value(&"atlas_dedupe", false)
+	set_mode(AtlasSettings.PackMode.KEEP)
 	pack()
 	sheet.move_frames([Vector2i(0, 0)] as Array[Vector2i], Vector2i(0, 1), true)
 	assert_ne(rects()[Vector2i(0, 1)], rects()[Vector2i(0, 0)])
 	assert_no_overlaps()
+	Settings.set_value(&"atlas_dedupe", true)
 
 
 func test_moving_frames_by_hand() -> void:

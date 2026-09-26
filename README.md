@@ -23,8 +23,8 @@ A small desktop tool made with Godot.</p>
   like a texture atlas, and edited right there: drag frames anywhere (or onto a new page),
   pin them, set pivots, pack again. An opened atlas keeps every frame where it is, so
   exporting it again after adding or editing frames keeps the places engines know. Page
-  size, spacing, padding, extrusion, turning frames to fit, trimming, sharing identical
-  frames and power-of-two or square pages are in the sidebar.
+  size, spacing, padding, extrusion, turning frames to fit and trimming are in the
+  sidebar; sharing identical frames and power-of-two or square pages are in Settings.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
   colour, add an outline, replace, cut/copy/paste (also images copied in other apps),
   duplicate, insert or remove cells, insert, remove or reorder rows. Everything can be

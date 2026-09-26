@@ -51,9 +51,9 @@ func test_added_sprites_are_linked() -> void:
 	await add_sprites([path])
 	assert_eq(Global.spritesheet.frame_sources[FIRST], FrameSource.for_file(path))
 	assert_true(Global.document.source_hashes.has(path), "first look remembers the file")
-	assert_true(
-		"Linked to %s" % path in PreviewArea.describe_cell(Global.spritesheet, FIRST), "tooltip"
-	)
+	var tooltip := PreviewArea.describe_cell(Global.spritesheet, FIRST)
+	assert_true(path in tooltip, "tooltip")
+	assert_false("Linked to" in tooltip, "just the path")
 
 
 func test_a_change_is_noticed_once_written() -> void:

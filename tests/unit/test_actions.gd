@@ -123,6 +123,21 @@ func test_duplicate() -> void:
 	assert_eq(Global.spritesheet.frames.size(), 3, "one undo step")
 
 
+func test_duplicates_and_pasted_frames_stay_linked() -> void:
+	var sheet := Global.spritesheet
+	var source := FrameSource.for_file("C:/art/star.png")
+	sheet.set_frame(Vector2i(0, 0), sheet.frames[Vector2i(0, 0)], source)
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	Actions.run(&"duplicate")
+	assert_eq(sheet.frame_sources.get(Vector2i(3, 0)), source, "duplicated")
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	Actions.run(&"copy")
+	Actions.run(&"paste")
+	assert_eq(sheet.frame_sources.get(Vector2i(4, 0)), source, "pasted")
+	sheet.move_frames([Vector2i(0, 0)] as Array[Vector2i], Vector2i(0, 1), true)
+	assert_eq(sheet.frame_sources.get(Vector2i(0, 1)), source, "copied by dragging")
+
+
 func test_insert_and_remove_cell() -> void:
 	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
 	Actions.run(&"insert_cell")

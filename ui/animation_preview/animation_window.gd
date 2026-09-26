@@ -26,6 +26,8 @@ var mirror_button := Button.new()
 var player := FramePlayer.new()
 var name_edit := LineEdit.new()
 var frames_edit := LineEdit.new()
+## Shows the frames by name instead of by number
+var names_button := Button.new()
 var frames_info := Label.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
@@ -106,11 +108,19 @@ func _init() -> void:
 
 	frames_edit.placeholder_text = "0-7"
 	frames_edit.tooltip_text = (
-		"Sprite numbers as shown in the sheet, in playing order. Ranges like 0-7 count "
-		+ "up, 7-0 counts down. Separate them with commas: 0-3, 5, 8\n"
+		"Sprite numbers as shown in the sheet, or sprite names, in playing order. Ranges "
+		+ "like 0-7 count up, 7-0 counts down. Separate them with commas: 0-3, 5, 8, idle\n"
+		+ 'Names with spaces go in quotes: "jump up", walk_0-walk_3\n'
 		+ "Add *2 to show a frame twice as long: 0-3, 4*2, 5*0.5"
 	)
-	_add_property("Frames", frames_edit)
+	names_button.text = "Names"
+	names_button.toggle_mode = true
+	names_button.tooltip_text = "Shows the frames by their names instead of their numbers"
+	var frames_row := HBoxContainer.new()
+	frames_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frames_row.add_child(frames_edit)
+	frames_row.add_child(names_button)
+	_add_property("Frames", frames_row)
 	frames_info.theme_type_variation = &"StatusLabel"
 	_add_property("", frames_info)
 
@@ -122,11 +132,17 @@ func _init() -> void:
 	name_edit.focus_exited.connect(_apply)
 	frames_edit.text_submitted.connect(func(_text: String) -> void: _apply_frames())
 	frames_edit.focus_exited.connect(_apply_frames)
+	names_button.toggled.connect(
+		func(on: bool) -> void:
+			Settings.set_value(&"animation_frames_by_name", on)
+			_show_selected()
+	)
 	fps_spin.value_changed.connect(func(_value: float) -> void: _apply())
 	mode_option.item_selected.connect(func(_index: int) -> void: _apply())
 
 
 func _ready() -> void:
+	names_button.set_pressed_no_signal(Settings.get_value(&"animation_frames_by_name"))
 	player.sheet = Global.spritesheet
 	Global.spritesheet.updated.connect(
 		func() -> void:
@@ -243,10 +259,10 @@ func _apply() -> void:
 func _apply_frames() -> void:
 	if _updating or get_selected() < 0:
 		return
-	var parsed := SheetAnimation.parse_numbers(frames_edit.text)
+	var parsed := SheetAnimation.parse_numbers(frames_edit.text, _frame_names())
 	if parsed.has("error"):
 		frames_info.text = (
-			tr('Can\'t read "%s". Use numbers and ranges like 0-3, 5*2') % parsed.error
+			tr('Can\'t read "%s". Use numbers, names and ranges like 0-3, 5*2') % parsed.error
 		)
 		frames_info.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
 		return
@@ -287,7 +303,32 @@ func _format_cells(cells: Array[Vector2i], durations: Array[float] = []) -> Stri
 	var numbers: Array[int] = []
 	for cell in cells:
 		numbers.append(Global.spritesheet.index_of(cell) + start)
-	return SheetAnimation.format_numbers(numbers, durations)
+	var labels := {}
+	if names_button.button_pressed:
+		# Only names that are unique, so they read back as the same frame
+		var names := _frame_names()
+		for frame_name: String in names:
+			labels[names[frame_name]] = frame_name
+	return SheetAnimation.format_numbers(numbers, durations, labels)
+
+
+## The number of every frame with a name of its own, by that name. Frames that share a
+## name are left out, since the name can't tell them apart.
+func _frame_names() -> Dictionary:
+	var sheet := Global.spritesheet
+	var start: int = Settings.get_value(&"index_start")
+	var names := {}
+	var shared := {}
+	for coord in sheet.get_sorted_coords():
+		var frame_name := sheet.frames[coord].resource_name.get_basename()
+		if frame_name.is_empty():
+			continue
+		if names.has(frame_name):
+			shared[frame_name] = true
+		names[frame_name] = sheet.index_of(coord) + start
+	for frame_name: String in shared:
+		names.erase(frame_name)
+	return names
 
 
 ## Changes the selected animation with [param change] as one undoable step

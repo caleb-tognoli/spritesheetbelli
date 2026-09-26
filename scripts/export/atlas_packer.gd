@@ -32,7 +32,6 @@ static func get_packed(sheet: Spritesheet, options: ExportOptions) -> Spriteshee
 	settings.pack_mode = AtlasSettings.PackMode.AUTO
 	settings.spacing = options.spacing
 	settings.extrude = options.extrude
-	settings.power_of_two = options.power_of_two
 	# Grid sheets used to be packed on one page as big as possible
 	if not sheet.atlas_settings.to_dictionary().has("max_size"):
 		settings.max_size = MAX_SIZE
@@ -49,8 +48,11 @@ static func get_packed(sheet: Spritesheet, options: ExportOptions) -> Spriteshee
 	return packed
 
 
-## Where every frame of a packed sheet is, in reading order
-static func get_regions(packed: Spritesheet) -> Array[Region]:
+## Where every frame of a packed sheet is, in reading order, with the size of its cell or
+## its own as [param frame_size] says
+static func get_regions(
+	packed: Spritesheet, frame_size := ExportOptions.FrameSize.CELL
+) -> Array[Region]:
 	var settings := packed.atlas_settings
 	var regions: Array[Region] = []
 	for coord in packed.get_sorted_coords():
@@ -65,7 +67,7 @@ static func get_regions(packed: Spritesheet) -> Array[Region]:
 		var src: Rect2i = place.src
 		var frame_scale := packed.frame_scale
 		var pivot := packed.get_pivot(coord) * frame_scale
-		if settings.source_size == AtlasSettings.SourceSize.CELL:
+		if frame_size == ExportOptions.FrameSize.CELL:
 			var in_cell := packed.get_frame_rect_in_cell(coord).position
 			region.source_rect = Rect2i(in_cell + src.position, src.size)
 			region.source_size = packed.sprite_size
@@ -80,17 +82,13 @@ static func get_regions(packed: Spritesheet) -> Array[Region]:
 	return regions
 
 
-## Packs every frame of [param sheet] on one page. With [param power_of_two], the page is
-## as wide and tall as powers of two, which some older engines and GPUs need. Returns
+## Packs every frame of [param sheet] on one page. Returns
 ## [code]{"image": Image, "regions": Array[Region]}[/code] with a region for every frame,
 ## or an empty image and no regions when the frames don't fit on one page.
-static func pack(
-	sheet: Spritesheet, spacing := 0, extrude := 0, power_of_two := false
-) -> Dictionary:
+static func pack(sheet: Spritesheet, spacing := 0, extrude := 0) -> Dictionary:
 	var options := ExportOptions.new()
 	options.spacing = spacing
 	options.extrude = extrude
-	options.power_of_two = power_of_two
 	var packed := get_packed(sheet, options)
 	var pages := PackedLayout.render_pages(packed)
 	if pages.size() != 1:
@@ -110,7 +108,7 @@ static func write(
 ) -> Dictionary:
 	var format := options.atlas_data
 	var packed := get_packed(sheet, options)
-	var regions := get_regions(packed)
+	var regions := get_regions(packed, options.atlas_frame_size)
 	var sizes := PackedLayout.get_page_sizes(packed)
 	var base := path.get_basename()
 	var result := {

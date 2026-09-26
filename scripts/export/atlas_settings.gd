@@ -16,11 +16,6 @@ enum PackMode {
 	AUTO,  ## Everything is packed again, as tightly as possible
 	KEEP,  ## Frames stay where they are; new and grown ones go in the free space
 }
-## The size data files give for each frame, which engines use to line frames up
-enum SourceSize {
-	CELL,  ## The cell, so the frames of an animation line up like in the grid
-	SPRITE,  ## The frame itself, for sprites that have nothing to do with each other
-}
 
 ## Neither side of a page is longer. Frames that don't fit alone get a page of their own.
 var max_size := 4096
@@ -29,7 +24,8 @@ var heuristic := Heuristic.BEST_SHORT_SIDE
 var allow_rotation := false
 ## Frames are packed without their transparent borders
 var trim := true
-## Frames that look the same are packed once and share their place
+## Frames that look the same are packed once and share their place. From the user's
+## settings for sheets, see [member Spritesheet.atlas_settings].
 var dedupe := true
 ## Empty pixels around each page
 var padding := 0
@@ -37,10 +33,10 @@ var padding := 0
 var spacing := 0
 ## Pixels by which each frame's edges are repeated outward, against texture bleeding
 var extrude := 0
+## Page shapes, also from the user's settings for sheets
 var power_of_two := false
 var square := false
 var pack_mode := PackMode.AUTO
-var source_size := SourceSize.CELL
 ## The pivot of frames without one, from 0 to 1 across the frame
 var default_pivot := Vector2(0.5, 0.5)
 
@@ -56,7 +52,6 @@ const _KEYS: Array[StringName] = [
 	&"power_of_two",
 	&"square",
 	&"pack_mode",
-	&"source_size",
 	&"default_pivot",
 ]
 

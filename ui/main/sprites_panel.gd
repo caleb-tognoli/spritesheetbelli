@@ -190,11 +190,14 @@ func _on_tree_selected() -> void:
 	_syncing = false
 
 
+## Starts renaming the selected frame. Only the name can be edited, even when its size was
+## double-clicked.
 func _edit_selected() -> void:
 	var item := tree.get_selected()
 	if item and item.get_metadata(0) is Vector2i:
 		item.set_editable(0, true)
 		item.set_text(0, Global.spritesheet.frames[item.get_metadata(0)].resource_name)
+		tree.set_selected(item, 0)
 		tree.edit_selected(true)
 
 

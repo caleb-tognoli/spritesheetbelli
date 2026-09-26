@@ -131,3 +131,40 @@ func test_the_preview_is_never_narrower_than_its_toolbar() -> void:
 	assert_eq(area.get_combined_minimum_size().x, toolbar_width, "the splits keep room for it")
 	var layout: Control = area.get_node("Layout")
 	assert_eq(layout.grow_horizontal, Control.GROW_DIRECTION_END, "never over the sidebar")
+
+
+func test_packing_again_from_the_sidebar() -> void:
+	var controller: LayoutController = main.layout_controller
+	assert_false(controller.repack_btn.visible, "only when packed")
+	Actions.run(&"layout_packed")
+	assert_true(controller.repack_btn.visible)
+	assert_false(main.preview_area._action_buttons.has(&"repack"), "not in the toolbar")
+	assert_true(main.preview_area._action_buttons.has(&"pin_toggle"), "with trim")
+	var trim_index: int = main.preview_area._action_buttons[&"trim"].get_index()
+	assert_eq(main.preview_area._action_buttons[&"pin_toggle"].get_index(), trim_index + 1)
+
+
+func test_page_shapes_and_sharing_are_settings() -> void:
+	Actions.run(&"layout_packed")
+	var controller: LayoutController = main.layout_controller
+	assert_false("dedupe" in controller.atlas_panel, "not in the sidebar")
+	Settings.set_value(&"atlas_power_of_two", true)
+	for size in PackedLayout.get_page_sizes(sheet):
+		assert_eq(size, Vector2i(nearest_po2(size.x), nearest_po2(size.y)))
+	Settings.set_value(&"atlas_power_of_two", false)
+	var window: SettingsWindow = main.settings_window
+	assert_ne(window.get_control(&"atlas_square"), null, "in the settings window")
+
+
+func test_frame_size_in_data_is_an_export_setting() -> void:
+	Actions.run(&"layout_packed")
+	Actions.run(&"export")
+	var dialog: ExportDialog = main.export_dialog
+	assert_true(dialog.frame_size.visible)
+	dialog.frame_size.select(dialog.frame_size.get_item_index(ExportOptions.FrameSize.FRAME))
+	dialog.frame_size.item_selected.emit(dialog.frame_size.selected)
+	dialog.get_ok_button().pressed.emit()
+	var options := ExportOptions.from_sheet(sheet)
+	assert_eq(options.atlas_frame_size, ExportOptions.FrameSize.FRAME)
+	main.files.export_file_dialog.hide()
+	main.files.open_file_dialogs.clear()

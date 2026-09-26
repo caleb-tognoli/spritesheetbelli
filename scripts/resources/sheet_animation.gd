@@ -175,41 +175,94 @@ static func mirrored_name(animation_name: String) -> String:
 ## down when the first number is bigger, each optionally followed by how many frames it's
 ## shown for. Returns [code]{"numbers": Array[int], "durations": Array[float]}[/code], or
 ## [code]{"error": String}[/code] naming the part that couldn't be read.
-static func parse_numbers(text: String) -> Dictionary:
+## Frames can also be given by name, with the number each name stands for in
+## [param names]: [code]idle, walk_0-walk_3, "jump up"*2[/code]. Names with spaces or
+## commas go in quotes.
+static func parse_numbers(text: String, names := {}) -> Dictionary:
 	var numbers: Array[int] = []
 	var held: Array[float] = []
-	for part in text.replace(",", " ").replace(" *", "*").replace("* ", "*").split(" ", false):
+	for part in _split_frames(text):
 		var duration := 1.0
 		var range_text := part
-		if part.count("*") == 1:
-			var length := part.get_slice("*", 1)
+		var star := part.rfind("*")
+		if star >= 0 and not part.ends_with('"'):
+			var length := part.substr(star + 1)
 			if not length.is_valid_float() or float(length) <= 0:
 				return {"error": part}
 			duration = float(length)
-			range_text = part.get_slice("*", 0)
-		var ends := range_text.split("-", false)
-		var valid := ends.size() in [1, 2] and ends[0].is_valid_int()
-		valid = valid and (ends.size() == 1 or ends[1].is_valid_int())
-		valid = valid and range_text.count("-") == ends.size() - 1
-		if not valid:
+			range_text = part.substr(0, star)
+		var ends := _range_ends(range_text, names)
+		if ends.is_empty():
 			return {"error": part}
-		var first := int(ends[0])
-		var last := int(ends[-1])
-		var step := 1 if last >= first else -1
-		for number in range(first, last + step, step):
+		var step := 1 if ends[1] >= ends[0] else -1
+		for number in range(ends[0], ends[1] + step, step):
 			numbers.append(number)
 			held.append(duration)
 	return {"numbers": numbers, "durations": held}
 
 
+## The parts of the frames text, split at commas and spaces outside quotes
+static func _split_frames(text: String) -> PackedStringArray:
+	var parts: PackedStringArray = []
+	var current := ""
+	var quoted := false
+	# "3 * 2" is one part
+	text = text.replace(" *", "*").replace("* ", "*")
+	for character in text:
+		if character == '"':
+			quoted = not quoted
+			current += character
+		elif not quoted and character in [",", " ", "\t"]:
+			if current:
+				parts.append(current)
+			current = ""
+		else:
+			current += character
+	if current:
+		parts.append(current)
+	return parts
+
+
+## The first and last number of a part: a number, a name, or a range of them joined with
+## "-". Empty when it isn't one.
+static func _range_ends(text: String, names: Dictionary) -> Array[int]:
+	var single: Variant = _frame_number(text, names)
+	if single != null:
+		return [single, single] as Array[int]
+	# Names can have dashes too, so every dash is tried
+	var dash := text.find("-", 1)
+	while dash > 0:
+		var first: Variant = _frame_number(text.substr(0, dash), names)
+		var last: Variant = _frame_number(text.substr(dash + 1), names)
+		if first != null and last != null:
+			return [first, last] as Array[int]
+		dash = text.find("-", dash + 1)
+	return [] as Array[int]
+
+
+## The number [param text] stands for: a number, or a name in [param names], quoted or
+## not. Null when it's neither.
+static func _frame_number(text: String, names: Dictionary) -> Variant:
+	if text.length() >= 2 and text.begins_with('"') and text.ends_with('"'):
+		return names.get(text.substr(1, text.length() - 2))
+	if text.is_valid_int():
+		return int(text)
+	return names.get(text)
+
+
 ## Writes [param numbers] the way [method parse_numbers] reads them, with runs as ranges.
-## [param held] durations are added to the numbers they're not 1 for.
-static func format_numbers(numbers: Array[int], held: Array[float] = []) -> String:
+## [param held] durations are added to the numbers they're not 1 for. Numbers with a
+## name in [param labels] are written as that name.
+static func format_numbers(numbers: Array[int], held: Array[float] = [], labels := {}) -> String:
 	var duration_of := func(index: int) -> float: return held[index] if index < held.size() else 1.0
 	var parts: PackedStringArray = []
 	var i := 0
 	while i < numbers.size():
 		var duration: float = duration_of.call(i)
+		if labels.has(numbers[i]):
+			parts.append(_quoted(labels[numbers[i]]) + _format_duration(duration))
+			i += 1
+			continue
 		# A run of three or more numbers counting up or down by one, shown equally long
 		var end := i
 		if i + 1 < numbers.size() and absi(numbers[i + 1] - numbers[i]) == 1:
@@ -218,6 +271,7 @@ static func format_numbers(numbers: Array[int], held: Array[float] = []) -> Stri
 				end + 1 < numbers.size()
 				and numbers[end + 1] - numbers[end] == step
 				and duration_of.call(end + 1) == duration
+				and not labels.has(numbers[end + 1])
 			):
 				end += 1
 		if end - i >= 2:
@@ -227,6 +281,14 @@ static func format_numbers(numbers: Array[int], held: Array[float] = []) -> Stri
 			parts.append(str(numbers[i]) + _format_duration(duration))
 			i += 1
 	return ", ".join(parts)
+
+
+## A frame name as typed in the frames field: in quotes when it could be read otherwise
+static func _quoted(label: String) -> String:
+	for character: String in [" ", ",", "-", "*", '"', "\t"]:
+		if character in label:
+			return '"%s"' % label.replace('"', "")
+	return '"%s"' % label if label.is_valid_float() else label
 
 
 static func _format_duration(duration: float) -> String:

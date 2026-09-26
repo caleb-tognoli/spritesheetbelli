@@ -279,9 +279,7 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 			text += "\n" + source.resource_name
 		var link: Dictionary = sheet.frame_sources.get(coord, {})
 		if link:
-			text += "\n" + TranslationServer.translate("Linked to %s") % link.path
-			if FrameSource.has_edits(link):
-				text += " " + TranslationServer.translate("(edited here)")
+			text += "\n" + describe_link(link)
 		return text
 	if sheet.is_locked(coord):
 		return (
@@ -340,5 +338,13 @@ static func describe_packed_frame(sheet: Spritesheet, coord: Vector2i) -> String
 		lines.append(", ".join(notes))
 	var link: Dictionary = sheet.frame_sources.get(coord, {})
 	if link:
-		lines.append(TranslationServer.translate("Linked to %s") % link.path)
+		lines.append(describe_link(link))
 	return "\n".join(lines)
+
+
+## The file a linked frame comes from, and whether it was edited here since
+static func describe_link(link: Dictionary) -> String:
+	var text: String = link.path
+	if FrameSource.has_edits(link):
+		text += " " + TranslationServer.translate("(edited here)")
+	return text

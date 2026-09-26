@@ -38,8 +38,10 @@ func pack_with(values: Dictionary) -> void:
 	sheet.set_layout(Spritesheet.Layout.PACKED)
 
 
+## Exports the packed sheet, each frame with its own size in the data file
 func export_with(format: String, pattern := "{name}") -> Dictionary:
 	var options := ExportOptions.new()
+	options.atlas_frame_size = ExportOptions.FrameSize.FRAME
 	options.atlas_data = format
 	options.sprite_name_pattern = pattern
 	return AtlasPacker.write(sheet, options, dir.path_join("%s.png" % format))
@@ -47,9 +49,7 @@ func export_with(format: String, pattern := "{name}") -> Dictionary:
 
 func test_turned_frames_come_back_from_texture_packer_json() -> void:
 	add_long_frames()
-	pack_with(
-		{"allow_rotation": true, "max_size": 64, "source_size": AtlasSettings.SourceSize.SPRITE}
-	)
+	pack_with({"allow_rotation": true, "max_size": 64})
 	var result := export_with("json")
 	assert_eq(result.error, OK)
 	assert_eq(result.pages, 1, "one page thanks to turning")
@@ -71,7 +71,7 @@ func test_turned_frames_come_back_from_texture_packer_json() -> void:
 func test_pivots_are_written() -> void:
 	sheet.add_frames([sprite(Vector2i(20, 10), Rect2i(0, 0, 20, 10), Color.RED)] as Array[Image])
 	sheet.set_pivots([Vector2i(0, 0)] as Array[Vector2i], Vector2(10, 10))
-	pack_with({"source_size": AtlasSettings.SourceSize.SPRITE})
+	pack_with({})
 	var json: Dictionary = read_json(export_with("json").json_path)
 	var frame: Dictionary = json.frames.values()[0]
 	assert_eq(frame.pivot, {"x": 0.5, "y": 1.0}, "the middle of the bottom")
@@ -104,9 +104,7 @@ func test_pages_get_files_of_their_own() -> void:
 
 func test_libgdx_atlas_has_every_page() -> void:
 	add_long_frames()
-	pack_with(
-		{"max_size": 64, "allow_rotation": true, "source_size": AtlasSettings.SourceSize.SPRITE}
-	)
+	pack_with({"max_size": 64, "allow_rotation": true})
 	var result := export_with("atlas")
 	var text := FileAccess.get_file_as_string(result.json_path)
 	assert_true(text.begins_with("\natlas.png\nsize: "), text)
@@ -160,7 +158,7 @@ func test_phaser_multi_atlas() -> void:
 
 func test_godot_sprite_frames_from_an_atlas() -> void:
 	add_long_frames()
-	pack_with({"max_size": 64, "source_size": AtlasSettings.SourceSize.SPRITE})
+	pack_with({"max_size": 64})
 	var result := export_with("godot")
 	assert_eq(result.error, OK)
 	var text := FileAccess.get_file_as_string(result.json_path)

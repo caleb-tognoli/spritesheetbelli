@@ -107,7 +107,6 @@ static func arrange(sheet: Spritesheet, repack := false, include_pinned := false
 static func adopt(sheet: Spritesheet, places: Dictionary, page_size: Vector2i) -> void:
 	var settings := sheet.atlas_settings
 	settings.pack_mode = AtlasSettings.PackMode.KEEP
-	settings.source_size = AtlasSettings.SourceSize.SPRITE
 	settings.spacing = 0
 	settings.padding = 0
 	settings.extrude = 0
@@ -117,7 +116,12 @@ static func adopt(sheet: Spritesheet, places: Dictionary, page_size: Vector2i) -
 	settings.allow_rotation = places.values().any(
 		func(place: Dictionary) -> bool: return place.rotated
 	)
+	# Data files read give each frame its own size, so exporting again does too
+	var export := ExportOptions.new()
+	export.apply(sheet.export_settings)
+	export.atlas_frame_size = ExportOptions.FrameSize.FRAME
 	sheet.begin_batch()
+	sheet.set_export_settings(export.to_dictionary())
 	sheet.set_atlas_settings(settings)
 	sheet.set_placements(places)
 	sheet.set_layout(Spritesheet.Layout.PACKED)

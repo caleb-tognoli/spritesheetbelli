@@ -82,7 +82,10 @@ func test_power_of_two_atlas() -> void:
 			as Array[Image]
 		)
 	)
-	var size: Vector2i = AtlasPacker.pack(sheet, 0, 0, true).image.get_size()
+	# A setting for every sheet
+	Settings.set_value(&"atlas_power_of_two", true)
+	var size: Vector2i = AtlasPacker.pack(sheet).image.get_size()
+	Settings.set_value(&"atlas_power_of_two", false)
 	assert_eq(size.x, nearest_po2(size.x))
 	assert_eq(size.y, nearest_po2(size.y))
 	assert_true(size.x >= 20 and size.y >= 12)

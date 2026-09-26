@@ -102,3 +102,11 @@ func test_pins_in_the_packed_layout() -> void:
 	assert_true(sheet.placements[Vector2i(0, 0)].pinned)
 	Global.document.undo()
 	assert_false(sheet.placements[Vector2i(0, 0)].pinned)
+
+
+func test_only_names_are_edited() -> void:
+	var item := item_of(Vector2i(0, 0))
+	panel.tree.set_selected(item, 1)
+	panel._edit_selected()
+	assert_eq(panel.tree.get_selected_column(), 0, "the name, not the size")
+	assert_false(item.is_editable(1))

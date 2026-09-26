@@ -89,7 +89,7 @@ var advanced_toggle := Button.new()
 var padding := SpinBox.new()
 var spacing := SpinBox.new()
 var extrude := SpinBox.new()
-var power_of_two := CheckBox.new()
+var frame_size := OptionButton.new()
 var atlas_data := OptionButton.new()
 var gif_animation := OptionButton.new()
 var gif_scale := SpinBox.new()
@@ -161,6 +161,16 @@ func _init() -> void:
 		atlas_data.add_item(AtlasFormats.FORMATS[format].name)
 	atlas_data.tooltip_text = "The file next to the atlas that says where each frame is"
 	_add_row(_settings, "Data file", atlas_data, [T.ATLAS])
+	frame_size.add_item("Their cell", ExportOptions.FrameSize.CELL)
+	frame_size.add_item("Their own", ExportOptions.FrameSize.FRAME)
+	frame_size.tooltip_text = (
+		"The size the data file gives each frame, which engines line frames up by.\n"
+		+ "Their cell: the frames of an animation line up like in the grid, even when "
+		+ "trimmed or of different sizes.\n"
+		+ "Their own: each frame is as big as it is, for sprites that have nothing to do "
+		+ "with each other."
+	)
+	_add_row(_settings, "Frame size in data", frame_size, [T.ATLAS])
 
 	animation_fps.min_value = 1
 	animation_fps.max_value = 120
@@ -205,9 +215,6 @@ func _init() -> void:
 		),
 		[T.IMAGE, T.GODOT, T.JSON, T.ATLAS]
 	)
-	power_of_two.text = "Power-of-two size"
-	power_of_two.tooltip_text = "Makes the atlas 256, 512, 1024… px wide and tall"
-	_add_row(_advanced, "", power_of_two, [T.ATLAS])
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -223,7 +230,7 @@ func _init() -> void:
 	pattern.text_changed.connect(_changed.unbind(1))
 	only_selected.toggled.connect(_changed.unbind(1))
 	existing.item_selected.connect(_changed.unbind(1))
-	power_of_two.toggled.connect(_changed.unbind(1))
+	frame_size.item_selected.connect(_changed.unbind(1))
 	gif_animation.item_selected.connect(_changed.unbind(1))
 	atlas_data.item_selected.connect(_changed.unbind(1))
 	for spin: SpinBox in [jpg_quality, animation_fps, padding, spacing, extrude, gif_scale]:
@@ -265,7 +272,7 @@ func refresh() -> void:
 	padding.set_value_no_signal(options.padding)
 	spacing.set_value_no_signal(options.spacing)
 	extrude.set_value_no_signal(options.extrude)
-	power_of_two.set_pressed_no_signal(options.power_of_two)
+	frame_size.select(frame_size.get_item_index(options.atlas_frame_size))
 	gif_animation.clear()
 	gif_animation.add_item("All frames")
 	for animation in Global.spritesheet.animations:
@@ -274,9 +281,7 @@ func refresh() -> void:
 			gif_animation.select(gif_animation.item_count - 1)
 	gif_scale.set_value_no_signal(options.gif_scale)
 	atlas_data.select(AtlasFormats.FORMATS.keys().find(options.atlas_data))
-	advanced_toggle.button_pressed = (
-		options.padding or options.spacing or options.extrude or options.power_of_two
-	)
+	advanced_toggle.button_pressed = (options.padding or options.spacing or options.extrude)
 	_updating = false
 	_update_labels(options)
 
@@ -315,7 +320,7 @@ func _options() -> ExportOptions:
 	options.padding = int(padding.value)
 	options.spacing = int(spacing.value)
 	options.extrude = int(extrude.value)
-	options.power_of_two = power_of_two.button_pressed
+	options.atlas_frame_size = frame_size.get_selected_id() as ExportOptions.FrameSize
 	options.gif_animation = (
 		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
 	)
@@ -385,7 +390,7 @@ func _update_visibility(options: ExportOptions) -> void:
 		if row.format and options.image_format != row.format:
 			shown = false
 		# A packed sheet's spacing and page size are part of how it's packed
-		if packed and row.controls[1] in [spacing, extrude, power_of_two]:
+		if packed and row.controls[1] in [spacing, extrude]:
 			shown = false
 		if row.advanced:
 			any_advanced = any_advanced or shown

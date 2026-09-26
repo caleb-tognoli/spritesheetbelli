@@ -63,10 +63,15 @@ var export_settings: Dictionary:
 var layout: Layout:
 	get:
 		return _layout
-## How frames are packed, a copy. Changes go through [method set_atlas_settings].
+## How frames are packed, a copy. Changes go through [method set_atlas_settings]. Sharing
+## identical frames and the shape of pages are the user's settings, the same for every sheet.
 var atlas_settings: AtlasSettings:
 	get:
-		return AtlasSettings.from_dictionary(_atlas)
+		var settings := AtlasSettings.from_dictionary(_atlas)
+		settings.dedupe = Settings.get_value(&"atlas_dedupe")
+		settings.power_of_two = Settings.get_value(&"atlas_power_of_two")
+		settings.square = Settings.get_value(&"atlas_square")
+		return settings
 
 var _grid_size := Vector2i.ZERO
 var _locked: Array[Vector2i] = []
@@ -784,6 +789,11 @@ func set_layout(value: Layout) -> void:
 	if value != _layout:
 		_layout = value
 		_changed()
+
+
+## Packs frames again as the settings say now, after the user's settings changed
+func refresh_layout() -> void:
+	_changed()
 
 
 func set_atlas_settings(settings: AtlasSettings) -> void:

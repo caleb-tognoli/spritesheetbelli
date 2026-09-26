@@ -10,7 +10,6 @@ const OUTLINE_COLOR := Color(1, 1, 1, 0.3)
 const PIN_ICON := preload("res://assets/icons/Pin.svg")
 ## On-screen size of the pin on pinned frames
 const PIN_SIZE := 16.0
-const PIN_BACKGROUND := Color(0, 0, 0, 0.55)
 const TURNED_COLOR := Color(0.5, 0.8, 1.0)
 
 var sheet: Spritesheet
@@ -191,8 +190,10 @@ func _draw_marks(canvas: SpritesheetPreview, coord: Vector2i, rect: Rect2, pixel
 		# The same size on screen at any zoom, but never bigger than half the frame
 		var pin := minf(PIN_SIZE * pixel, minf(rect.size.x, rect.size.y) / 2)
 		var corner := Rect2(rect.end.x - pin - pixel * 2, rect.position.y + pixel * 2, pin, pin)
-		canvas.draw_circle(corner.get_center(), pin * 0.62, PIN_BACKGROUND)
-		canvas.draw_texture_rect(PIN_ICON, corner.grow(-pin * 0.12), false)
+		# A shadow keeps the light icon visible on light frames
+		var shadow := Rect2(corner.position + Vector2.ONE * pixel, corner.size)
+		canvas.draw_texture_rect(PIN_ICON, shadow, false, Color(0, 0, 0, 0.7))
+		canvas.draw_texture_rect(PIN_ICON, corner, false)
 	if place.rotated:
 		var corner := rect.position
 		canvas.draw_colored_polygon(
