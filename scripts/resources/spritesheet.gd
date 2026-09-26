@@ -492,7 +492,10 @@ func set_frame(coord: Vector2i, img: Image, source := {}, origin: Variant = null
 	_grid_size = _grid_size.max(coord + Vector2i.ONE)
 	_frames[coord] = img
 	_set_or_erase(_origins, coord, origin)
-	_set_or_erase(_sources, coord, source if source else null)
+	if source:
+		_sources[coord] = source
+	else:
+		_sources.erase(coord)
 	_changed()
 
 

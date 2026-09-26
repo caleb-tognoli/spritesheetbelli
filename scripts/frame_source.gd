@@ -87,7 +87,9 @@ static func get_paths(source: Dictionary) -> PackedStringArray:
 ## Where the frame at [param coord] is placed in its cell, or null when it's centred.
 ## See [method Spritesheet.get_frame_origin].
 static func get_origin(sheet: Spritesheet, coord: Vector2i) -> Variant:
-	return sheet.get_frame_origin(coord) if sheet.has_frame_origin(coord) else null
+	if sheet.has_frame_origin(coord):
+		return sheet.get_frame_origin(coord)
+	return null
 
 
 ## Every file linked frames of [param sheet] came from
@@ -147,7 +149,9 @@ static func load_key(key: String) -> Variant:
 		"data":
 			var data := SheetData.load_file(path.get_slice("|", 0))
 			var img := Image.load_from_file(path.get_slice("|", 1))
-			return null if data.error or img == null else {"data": data, "image": img}
+			if data.error or img == null:
+				return null
+			return {"data": data, "image": img}
 		"keyed":
 			var img := Image.load_from_file(path)
 			return SpriteDetector.without_background(img) if img else null
@@ -196,11 +200,7 @@ static func rebuild(source: Dictionary, pixels: Image, keep_edits: bool) -> Dict
 		for op: Variant in source.get("ops", []):
 			if op is Dictionary:
 				FrameEdits.apply(sheet, cell, op)
-	return {
-		"image": sheet.frames[Vector2i.ZERO],
-		"origin":
-		sheet.get_frame_origin(Vector2i.ZERO) if sheet.has_frame_origin(Vector2i.ZERO) else null,
-	}
+	return {"image": sheet.frames[Vector2i.ZERO], "origin": get_origin(sheet, Vector2i.ZERO)}
 
 
 #endregion
