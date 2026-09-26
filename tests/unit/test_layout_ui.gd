@@ -115,3 +115,19 @@ func test_packed_frames_are_described() -> void:
 	assert_true(text.begins_with("Frame 0"), text)
 	assert_true("Page 1 at" in text, text)
 	assert_true("3 frames" in main.sheet_info.text, main.sheet_info.text)
+
+
+func test_the_toolbar_toggles_the_sprites_not_the_layout() -> void:
+	var area: PreviewArea = main.preview_area
+	assert_true(area._action_buttons.has(&"toggle_sprites"))
+	assert_false(area._action_buttons.has(&"layout_grid"), "the sidebar switches layouts")
+	assert_false(area._action_buttons.has(&"layout_packed"))
+
+
+func test_the_preview_is_never_narrower_than_its_toolbar() -> void:
+	var area: PreviewArea = main.preview_area
+	var toolbar_width := area.toolbar.get_combined_minimum_size().x
+	assert_true(toolbar_width > 0)
+	assert_eq(area.get_combined_minimum_size().x, toolbar_width, "the splits keep room for it")
+	var layout: Control = area.get_node("Layout")
+	assert_eq(layout.grow_horizontal, Control.GROW_DIRECTION_END, "never over the sidebar")

@@ -164,7 +164,7 @@ func register_actions() -> void:
 		"Sprites",
 		func() -> void: Settings.set_value(&"show_sprites", not sprites_panel.visible),
 		Callable(),
-		null,
+		preload("res://assets/icons/FileList.svg"),
 		func() -> bool: return sprites_panel.visible
 	)
 	Actions.add(

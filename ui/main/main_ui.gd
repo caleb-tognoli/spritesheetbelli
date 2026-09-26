@@ -73,7 +73,7 @@ const TOOLBAR_GROUPS := [
 	[&"pin_toggle", &"repack"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
-	&"layout_grid", &"layout_packed", &"toggle_grid", &"toggle_indices", &"toggle_animation"
+	&"toggle_grid", &"toggle_indices", &"toggle_animation", &"toggle_sprites"
 ]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [

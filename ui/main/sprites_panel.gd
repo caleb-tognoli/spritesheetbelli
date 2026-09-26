@@ -23,7 +23,7 @@ var _syncing := false
 
 func _init() -> void:
 	theme_type_variation = &"SidebarPanel"
-	custom_minimum_size = Vector2(220, 0)
+	custom_minimum_size = Vector2(250, 0)
 	var box := VBoxContainer.new()
 	add_child(box)
 

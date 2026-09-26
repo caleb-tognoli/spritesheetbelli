@@ -94,6 +94,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   pivot and link, not just its pixels.
 - Grid actions (cells and rows) are left out of the menus and the toolbar in the packed
   layout.
+- The toolbar wraps onto more rows when the preview is narrow, and has a button for the
+  list of sprites.
 - A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
   rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
   animation preview (P), and zoom buttons around the zoom level, which fits the view.
@@ -123,6 +125,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   always ask where to save, so only projects are overwritten without asking.
 
 ### Fixed
+- The sidebar's resize bar ending up under the preview when the preview was narrower than
+  its toolbar.
 - Picking a resize filter at the original size switching back to the one from the
   settings. The filter chosen in the settings is now the one new sheets start with.
 

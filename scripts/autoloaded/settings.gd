@@ -37,7 +37,8 @@ const DEFAULTS := {
 	&"recent_files": [],
 	&"sidebar_width": 0,
 	&"show_history": false,
-	&"history_width": 0,
+	# From the preview's side: negative is wider than the panels' smallest width
+	&"history_width": -60,
 	&"show_sprites": false,
 	&"onion_skin": false,
 }

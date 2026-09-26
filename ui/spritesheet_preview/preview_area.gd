@@ -42,6 +42,10 @@ var _menu_buttons: Dictionary[Button, Array] = {}
 
 
 func _ready() -> void:
+	# Never wider than its place: a toolbar that doesn't fit wraps instead
+	var layout := $Layout as Control
+	layout.grow_horizontal = Control.GROW_DIRECTION_END
+	layout.minimum_size_changed.connect(update_minimum_size)
 	_build_toolbar()
 	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -66,8 +70,10 @@ func _ready() -> void:
 
 
 func _build_toolbar() -> void:
-	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 2)
+	# Wraps onto a second row when the preview is too narrow for every button
+	var bar := HFlowContainer.new()
+	bar.add_theme_constant_override("h_separation", 2)
+	bar.add_theme_constant_override("v_separation", 2)
 	toolbar.add_child(bar)
 
 	# Tools
@@ -112,6 +118,13 @@ func _build_toolbar() -> void:
 	zoom_out_btn.pressed.connect(func() -> void: spritesheet_preview.zoom_by(0.8))
 	zoom_in_btn.pressed.connect(func() -> void: spritesheet_preview.zoom_by(1.25))
 	zoom_label_btn.pressed.connect(func() -> void: spritesheet_preview.fit_to_view())
+
+
+## As wide as the toolbar's widest group, so the splits around the preview never squeeze
+## it narrower than its toolbar
+func _get_minimum_size() -> Vector2:
+	var layout := get_node_or_null(^"Layout") as Control
+	return Vector2(layout.get_combined_minimum_size().x, 0) if layout else Vector2.ZERO
 
 
 static func _tool_button(icon: Texture2D, tooltip := "") -> Button:

@@ -7,7 +7,10 @@ const PAGE_LABEL_SIZE := 13
 const PAGE_BORDER_COLOR := Color(1, 1, 1, 0.35)
 const NEW_PAGE_COLOR := Color(1, 1, 1, 0.12)
 const OUTLINE_COLOR := Color(1, 1, 1, 0.3)
-const PINNED_COLOR := Color(1.0, 0.8, 0.3)
+const PIN_ICON := preload("res://assets/icons/Pin.svg")
+## On-screen size of the pin on pinned frames
+const PIN_SIZE := 16.0
+const PIN_BACKGROUND := Color(0, 0, 0, 0.55)
 const TURNED_COLOR := Color(0.5, 0.8, 1.0)
 
 var sheet: Spritesheet
@@ -185,9 +188,11 @@ func _draw_marks(canvas: SpritesheetPreview, coord: Vector2i, rect: Rect2, pixel
 	var place: Dictionary = sheet.placements[coord]
 	var mark := minf(6 * pixel, minf(rect.size.x, rect.size.y) / 3)
 	if place.get("pinned", false):
-		canvas.draw_circle(
-			rect.position + Vector2(rect.size.x - mark, mark), mark * 0.6, PINNED_COLOR
-		)
+		# The same size on screen at any zoom, but never bigger than half the frame
+		var pin := minf(PIN_SIZE * pixel, minf(rect.size.x, rect.size.y) / 2)
+		var corner := Rect2(rect.end.x - pin - pixel * 2, rect.position.y + pixel * 2, pin, pin)
+		canvas.draw_circle(corner.get_center(), pin * 0.62, PIN_BACKGROUND)
+		canvas.draw_texture_rect(PIN_ICON, corner.grow(-pin * 0.12), false)
 	if place.rotated:
 		var corner := rect.position
 		canvas.draw_colored_polygon(
