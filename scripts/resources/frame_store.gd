@@ -90,12 +90,12 @@ func get_cell_data(coord: Vector2i) -> Dictionary:
 ## Gives frames a pivot in unscaled pixels from their top-left corners, or takes it away
 ## for [code]null[/code]
 func set_pivots(coords: Array[Vector2i], pivot: Variant) -> void:
-	var changed := false
+	var edited := false
 	for coord in coords:
 		if has_frame(coord) and _pivots.get(coord) != pivot:
 			_set_or_erase(_pivots, coord, pivot)
-			changed = true
-	if changed:
+			edited = true
+	if edited:
 		_changed()
 
 
@@ -115,12 +115,12 @@ func rename_frame(coord: Vector2i, new_name: String) -> void:
 ## Changes where frames are in the packed layout without packing the rest again: each
 ## coordinate in [param changes] gets its place (see [PackedLayout]), or none for null
 func set_placements(changes: Dictionary) -> void:
-	var changed := false
+	var edited := false
 	for coord: Vector2i in changes:
 		if has_frame(coord) and _placements.get(coord) != changes[coord]:
 			_set_or_erase(_placements, coord, changes[coord])
-			changed = true
-	if changed:
+			edited = true
+	if edited:
 		_changed(false)
 
 

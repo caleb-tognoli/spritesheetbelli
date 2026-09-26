@@ -126,7 +126,7 @@ static func adopt(sheet: Spritesheet, places: Dictionary, page_size: Vector2i) -
 
 ## A place for a frame read from a packed sheet: [param src] of the frame is at
 ## [param position] of [param page]
-static func place(page: int, position: Vector2i, src: Rect2i, rotated := false) -> Dictionary:
+static func new_place(page: int, position: Vector2i, src: Rect2i, rotated := false) -> Dictionary:
 	return {"page": page, "position": position, "src": src, "rotated": rotated, "pinned": false}
 
 
@@ -174,7 +174,7 @@ static func moved(
 
 
 ## Pins or unpins frames, see [method Spritesheet.set_placements]
-static func pinned(sheet: Spritesheet, coords: Array[Vector2i], pin: bool) -> Dictionary:
+static func pin_changes(sheet: Spritesheet, coords: Array[Vector2i], pin: bool) -> Dictionary:
 	var changes: Dictionary[Vector2i, Dictionary] = {}
 	for coord in coords:
 		var place: Dictionary = sheet.placements.get(coord, {})
@@ -341,13 +341,13 @@ static func _group_frames(
 					key = [key, coord]
 		var pinned := bool(place.get("pinned", false))
 		if by_key.has(key):
-			var group: Dictionary = by_key[key]
-			group.members.append(coord)
-			group.sources[coord] = src
+			var joined: Dictionary = by_key[key]
+			joined.members.append(coord)
+			joined.sources[coord] = src
 			# A pinned member's place wins, else the first one with a place
-			if place and ((pinned and not group.pinned) or group.place.is_empty()):
-				group.place = place
-				group.pinned = group.pinned or pinned
+			if place and ((pinned and not joined.pinned) or joined.place.is_empty()):
+				joined.place = place
+				joined.pinned = joined.pinned or pinned
 			continue
 		var group := {
 			"leader": coord,

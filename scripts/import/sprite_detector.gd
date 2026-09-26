@@ -108,7 +108,7 @@ static func to_spritesheet(
 			for column: int in rows[row].size():
 				var rect: Rect2i = rows[row][column]
 				var src := Rect2i(Vector2i.ZERO, rect.size)
-				places[Vector2i(column, row)] = PackedLayout.place(0, rect.position, src)
+				places[Vector2i(column, row)] = PackedLayout.new_place(0, rect.position, src)
 		PackedLayout.adopt(sheet, places, img.get_size())
 	sheet.end_batch()
 	return sheet

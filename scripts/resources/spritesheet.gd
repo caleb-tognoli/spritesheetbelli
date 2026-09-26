@@ -714,7 +714,10 @@ func set_frame_origin(coord: Vector2i, origin: Vector2i) -> void:
 	if (centred and not _origins.has(coord)) or _origins.get(coord) == origin:
 		return
 	_record_move(coord, origin - get_frame_origin(coord))
-	_set_or_erase(_origins, coord, null if centred else origin)
+	if centred:
+		_origins.erase(coord)
+	else:
+		_origins[coord] = origin
 	_changed()
 
 

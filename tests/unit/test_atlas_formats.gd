@@ -116,10 +116,10 @@ func test_libgdx_atlas_has_every_page() -> void:
 		var place: Dictionary = sheet.placements[coord]
 		if not place.rotated:
 			continue
-		var name := sheet.frames[coord].resource_name
+		var frame_name := sheet.frames[coord].resource_name
 		var expected := (
 			"\n%s\n  rotate: true\n  xy: %d, %d\n  size: %d, %d\n"
-			% [name, place.position.x, place.position.y, place.src.size.x, place.src.size.y]
+			% [frame_name, place.position.x, place.position.y, place.src.size.x, place.src.size.y]
 		)
 		assert_true(expected in text, expected)
 		var page := Image.load_from_file(result.path)

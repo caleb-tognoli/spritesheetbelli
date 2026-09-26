@@ -74,9 +74,9 @@ static func find_for_image(image_path: String) -> String:
 static func load_file(path: String) -> SheetData:
 	var text := FileAccess.get_file_as_string(path)
 	if text.is_empty():
-		var data := SheetData.new()
-		data.error = TranslationServer.translate("Could not open %s.") % path.get_file()
-		return data
+		var unreadable := SheetData.new()
+		unreadable.error = TranslationServer.translate("Could not open %s.") % path.get_file()
+		return unreadable
 	if path.get_extension().to_lower() == "atlas":
 		return LibgdxAtlas.parse(text)
 	var data := parse_json(text)
@@ -248,7 +248,9 @@ func to_spritesheet(
 			var pivot := frame.pivot * Vector2(images[i].get_size())
 			sheet.set_pivots([cells[i]] as Array[Vector2i], pivot)
 		var src := Rect2i(frame.source_rect.position, frame.rect.size)
-		places[cells[i]] = PackedLayout.place(frame.page, frame.rect.position, src, frame.rotated)
+		places[cells[i]] = PackedLayout.new_place(
+			frame.page, frame.rect.position, src, frame.rotated
+		)
 		var stored := PackedLayout.get_rect_of(places[cells[i]])
 		page_size = page_size.max(stored.end)
 	for size in page_sizes:

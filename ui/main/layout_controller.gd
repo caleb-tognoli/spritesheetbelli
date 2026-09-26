@@ -198,7 +198,7 @@ func register_actions() -> void:
 		)
 	var toggle_pins := func() -> void:
 		var pin: bool = not all_pinned.call()
-		var changes := PackedLayout.pinned(sheet, main.preview.get_selected_coords(), pin)
+		var changes := PackedLayout.pin_changes(sheet, main.preview.get_selected_coords(), pin)
 		Global.document.perform(
 			"Pin frames" if pin else "Unpin frames", sheet.set_placements.bind(changes)
 		)

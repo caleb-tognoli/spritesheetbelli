@@ -293,8 +293,11 @@ static func texture_packer_json(
 			listed.append(entry)
 		else:
 			entries[frame.name] = entry
+	var listed_frames: Variant = entries
+	if as_array:
+		listed_frames = listed
 	var data := {
-		"frames": listed if as_array else entries,
+		"frames": listed_frames,
 		"meta":
 		{
 			"app": "spritesheetbelli",

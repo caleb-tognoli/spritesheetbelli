@@ -209,8 +209,8 @@ func test_same_pixels_in_two_places_stay_in_both() -> void:
 	var img := sprite(Vector2i(8, 8), Rect2i(0, 0, 8, 8), Color.RED)
 	sheet.add_frames([img, img] as Array[Image])
 	var places := {
-		Vector2i(0, 0): PackedLayout.place(0, Vector2i(0, 0), Rect2i(0, 0, 8, 8)),
-		Vector2i(1, 0): PackedLayout.place(0, Vector2i(20, 0), Rect2i(0, 0, 8, 8)),
+		Vector2i(0, 0): PackedLayout.new_place(0, Vector2i(0, 0), Rect2i(0, 0, 8, 8)),
+		Vector2i(1, 0): PackedLayout.new_place(0, Vector2i(20, 0), Rect2i(0, 0, 8, 8)),
 	}
 	PackedLayout.adopt(sheet, places, Vector2i(64, 64))
 	assert_eq(PackedLayout.get_rect(sheet, Vector2i(1, 0)).position, Vector2i(20, 0))

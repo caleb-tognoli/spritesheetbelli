@@ -192,7 +192,7 @@ func test_turned_frames_are_drawn_turned() -> void:
 	settings.max_size = 32
 	sheet.set_atlas_settings(settings)
 	var turned := sheet.placements.keys().filter(
-		func(coord: Vector2i) -> bool: return sheet.placements[coord].rotated
+		func(c: Vector2i) -> bool: return sheet.placements[c].rotated
 	)
 	if turned.is_empty():
 		return

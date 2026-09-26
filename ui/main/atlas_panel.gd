@@ -51,8 +51,8 @@ func _init() -> void:
 	heading.text = "Atlas"
 	add_child(heading)
 
-	for size in PAGE_SIZES:
-		page_size.add_item("%d px" % size)
+	for pixels in PAGE_SIZES:
+		page_size.add_item("%d px" % pixels)
 	_add_row("Pages up to", page_size, "Neither side of a page is longer")
 	_fill(pack_mode, PACK_MODES)
 	_add_row(

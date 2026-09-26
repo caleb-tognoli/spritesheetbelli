@@ -274,7 +274,7 @@ func test_projects_keep_the_packed_layout() -> void:
 	add_sprites()
 	set_mode(AtlasSettings.PackMode.KEEP, {"allow_rotation": true, "spacing": 2})
 	pack()
-	sheet.set_placements(PackedLayout.pinned(sheet, [Vector2i(1, 0)] as Array[Vector2i], true))
+	sheet.set_placements(PackedLayout.pin_changes(sheet, [Vector2i(1, 0)] as Array[Vector2i], true))
 	var project := dir.path_join("packed.sbelli")
 	assert_eq(ProjectFile.save(sheet, project), OK)
 	var loaded := ProjectFile.load(project)

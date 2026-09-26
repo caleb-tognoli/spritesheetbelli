@@ -110,8 +110,8 @@ func refresh() -> void:
 		item.set_text(0, label)
 		item.set_icon(0, _thumbnail(img))
 		item.set_icon_max_width(0, THUMBNAIL_SIZE)
-		var size := img.get_size()
-		item.set_text(1, "%d×%d" % [size.x, size.y])
+		var frame_size := img.get_size()
+		item.set_text(1, "%d×%d" % [frame_size.x, frame_size.y])
 		item.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
 		item.set_metadata(0, coord)
 		item.set_tooltip_text(0, PreviewArea.describe_cell(sheet, coord))
@@ -151,8 +151,8 @@ func _thumbnail(img: Image) -> Texture2D:
 		var longest := maxi(img.get_width(), img.get_height())
 		if longest > THUMBNAIL_SIZE:
 			small = img.duplicate()
-			var size := (Vector2(img.get_size()) * THUMBNAIL_SIZE / longest).round()
-			small.resize(maxi(1, int(size.x)), maxi(1, int(size.y)), Image.INTERPOLATE_BILINEAR)
+			var shrunk := (Vector2(img.get_size()) * THUMBNAIL_SIZE / longest).round()
+			small.resize(maxi(1, int(shrunk.x)), maxi(1, int(shrunk.y)), Image.INTERPOLATE_BILINEAR)
 		_thumbnails[img] = ImageTexture.create_from_image(small)
 	return _thumbnails[img]
 
@@ -222,7 +222,7 @@ func _on_button_clicked(item: TreeItem, _column: int, id: int, _button: int) -> 
 		return
 	var sheet := Global.spritesheet
 	var pin: bool = not sheet.placements[coord].get("pinned", false)
-	var changes := PackedLayout.pinned(sheet, [coord] as Array[Vector2i], pin)
+	var changes := PackedLayout.pin_changes(sheet, [coord] as Array[Vector2i], pin)
 	Global.document.perform(
 		"Pin frame" if pin else "Unpin frame", sheet.set_placements.bind(changes)
 	)
