@@ -4,7 +4,7 @@ extends Node
 
 const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
 const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp, *.gif ; Images"
-const DATA_FILTER := "*.json ; Spritesheet data (TexturePacker, Aseprite)"
+const DATA_FILTER := "*.json, *.atlas ; Spritesheet data (TexturePacker, Aseprite, Phaser, libGDX)"
 ## Work above these sizes shows a "please wait" overlay first
 const SLOW_PIXELS := 4_000_000
 const SLOW_FILE_BYTES := 4_000_000

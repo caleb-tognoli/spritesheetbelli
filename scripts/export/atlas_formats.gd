@@ -84,9 +84,16 @@ static func write(
 	var names := Metadata.animation_frame_names(sheet, frames)
 	var texts := {}  # Text by path
 	if has_file_per_page(format) and pages.size() > 1:
+		var files := PackedStringArray()
 		for page in pages.size():
-			var path := "%s_%d.%s" % [base_path, page, extension]
-			texts[path] = _page_text(sheet, format, _on_page(frames, page), pages[page], names)
+			files.append("%s_%d.%s" % [base_path.get_file(), page, extension])
+		for page in pages.size():
+			# Each page's file names the others, so opening one opens them all
+			var others := files.duplicate()
+			others.remove_at(page)
+			var path := base_path.get_base_dir().path_join(files[page])
+			var on_page := _on_page(frames, page)
+			texts[path] = _page_text(sheet, format, on_page, pages[page], names, others)
 	elif has_file_per_page(format):
 		texts[base_path + "." + extension] = _page_text(sheet, format, frames, pages[0], names)
 	else:
@@ -214,7 +221,13 @@ static func phaser_json(
 		},
 	}
 	if not animation_names.is_empty():
-		data.meta.animations = animation_names
+		# Frames are named without the extension here
+		var lists := {}
+		for animation_name: String in animation_names:
+			lists[animation_name] = animation_names[animation_name].map(
+				func(frame_name: String) -> String: return frame_name.get_basename()
+			)
+		data.meta.animations = lists
 	return JSON.stringify(data, "\t", false)
 
 
@@ -225,7 +238,8 @@ static func _page_text(
 	format: String,
 	frames: Array[Dictionary],
 	page: Dictionary,
-	animation_names: Dictionary
+	animation_names: Dictionary,
+	related := PackedStringArray()
 ) -> String:
 	if format == "sparrow":
 		return sparrow_xml(frames, page.file, page.size)
@@ -234,7 +248,15 @@ static func _page_text(
 	if frames.size() == sheet.frames.size():
 		tags = Metadata.frame_tags(sheet)
 	return Metadata.texture_packer_json(
-		frames, page.file, page.size, tags, 0.0, {}, animation_names, format == "json-array"
+		frames,
+		page.file,
+		page.size,
+		tags,
+		0.0,
+		{},
+		animation_names,
+		format == "json-array",
+		related
 	)
 
 

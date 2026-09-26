@@ -41,6 +41,10 @@ var align_option := OptionButton.new()
 ## Opens the rarely needed offset and spacing fields in a floating panel
 var more_options_btn := Button.new()
 var more_options_popup := PopupPanel.new()
+## Keeps the sprites where they are in the image, in the packed layout
+var keep_layout := CheckBox.new()
+## The other pages of a packed sheet with a data file, by page
+var _other_pages: Array[Image] = []
 
 
 func _ready() -> void:
@@ -111,6 +115,12 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	sheet_data = data
 	image_path = path
 	data_path = data_file
+	_other_pages = _load_other_pages()
+	# Packed sheets stay packed when opened, or added to a packed sheet
+	var target := Global.spritesheet
+	keep_layout.set_pressed_no_signal(
+		target.is_empty() or target.layout == Spritesheet.Layout.PACKED
+	)
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
 	_update_options_label()
@@ -146,15 +156,40 @@ func _slice() -> void:
 	for control: Control in [grid_columns.get_parent().get_parent(), more_options_btn]:
 		control.visible = cut == Cut.GRID
 	detect_box.visible = cut == Cut.DETECT
+	keep_layout.visible = cut != Cut.GRID
+	var keep := keep_layout.button_pressed
 	match cut:
 		Cut.GRID:
 			update_grid_size(int(grid_columns.value), int(grid_rows.value))
 		Cut.DATA:
-			_show_cut(sheet_data.to_spritesheet(spritesheet_image, image_path, data_path))
+			_show_cut(
+				sheet_data.to_spritesheet(
+					spritesheet_image, image_path, data_path, keep, _other_pages
+				)
+			)
 		Cut.DETECT:
 			var rows := SpriteDetector.detect(spritesheet_image, int(merge_distance.value))
 			var alignment := align_option.get_selected_id() as Spritesheet.Alignment
-			_show_cut(SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment, image_path))
+			_show_cut(
+				SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment, image_path, keep)
+			)
+
+
+## The pages after the first of a packed sheet with a data file, missing ones as empty
+## images, which leave their frames out
+func _load_other_pages() -> Array[Image]:
+	var images: Array[Image] = []
+	if sheet_data == null or data_path.is_empty():
+		return images
+	var paths := sheet_data.get_page_paths(data_path)
+	for page in range(1, paths.size()):
+		var img := Image.new()
+		if not FileAccess.file_exists(paths[page]) or img.load(paths[page]) != OK:
+			images.append(null)
+			continue
+		img.convert(Image.FORMAT_RGBA8)
+		images.append(img)
+	return images
 
 
 ## Shows frames that were cut without a grid
@@ -206,6 +241,14 @@ func _build_cut_controls() -> void:
 	detect_box.visible = false
 	cut_box.add_sibling(detect_box)
 
+	keep_layout.text = "Keep the packed layout"
+	keep_layout.tooltip_text = (
+		"Keeps every sprite where it is in the image, in the packed layout, so an atlas "
+		+ "exported again has its frames in the same places"
+	)
+	keep_layout.toggled.connect(func(_on: bool) -> void: _slice())
+	cut_box.add_child(keep_layout)
+
 
 func on_preview_update() -> void:
 	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
@@ -247,9 +290,22 @@ func add_spritesheet_to_global() -> void:
 		"Add spritesheet",
 		func() -> void:
 			var offset := Vector2i(0, target.get_first_free_row())
+			var packed := spritesheet.layout == Spritesheet.Layout.PACKED
+			# A packed sheet's pages go after the open sheet's
+			var first_page := 0
+			if packed and target.is_empty():
+				target.set_atlas_settings(spritesheet.atlas_settings)
+				target.set_export_settings(spritesheet.export_settings)
+				target.set_layout(Spritesheet.Layout.PACKED)
+			elif packed:
+				first_page = PackedLayout.get_page_count(target)
 			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
 			for coord: Vector2i in spritesheet.frames:
-				target.set_cell(coord + offset, spritesheet.get_cell_data(coord))
+				var data := spritesheet.get_cell_data(coord)
+				if data.has("placement"):
+					data.placement = data.placement.duplicate()
+					data.placement.page += first_page
+				target.set_cell(coord + offset, data)
 			for row: int in spritesheet.row_names:
 				target.set_row_name(row + offset.y, spritesheet.row_names[row])
 			for animation in spritesheet.animations:

@@ -42,6 +42,9 @@ const MIME_TYPES := {
 	"jpe": "image/jpeg",
 	"webp": "image/webp",
 	"json": "application/json",
+	"atlas": "text/plain",
+	"xml": "application/xml",
+	"tres": "text/plain",
 	"zip": "application/zip",
 }
 

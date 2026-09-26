@@ -101,6 +101,35 @@ static func arrange(sheet: Spritesheet, repack := false, include_pinned := false
 	return {"placements": result, "warnings": warnings}
 
 
+## Lays [param sheet] out packed with [param places] (by coordinate, as read from a packed
+## sheet), keeping them where they are: frames stay put, report their own size, and pages
+## can be as big as [param page_size].
+static func adopt(sheet: Spritesheet, places: Dictionary, page_size: Vector2i) -> void:
+	var settings := sheet.atlas_settings
+	settings.pack_mode = AtlasSettings.PackMode.KEEP
+	settings.source_size = AtlasSettings.SourceSize.SPRITE
+	settings.spacing = 0
+	settings.padding = 0
+	settings.extrude = 0
+	settings.max_size = clampi(
+		nearest_po2(maxi(page_size.x, page_size.y)), 256, AtlasPacker.MAX_SIZE
+	)
+	settings.allow_rotation = places.values().any(
+		func(place: Dictionary) -> bool: return place.rotated
+	)
+	sheet.begin_batch()
+	sheet.set_atlas_settings(settings)
+	sheet.set_placements(places)
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	sheet.end_batch()
+
+
+## A place for a frame read from a packed sheet: [param src] of the frame is at
+## [param position] of [param page]
+static func place(page: int, position: Vector2i, src: Rect2i, rotated := false) -> Dictionary:
+	return {"page": page, "position": position, "src": src, "rotated": rotated, "pinned": false}
+
+
 ## Where [param coords] would be after moving them by [param offset] onto [param page], or
 ## an empty dictionary when they wouldn't fit there. Frames sharing a place with a moved
 ## frame move with it. Moved frames are pinned.
@@ -161,6 +190,11 @@ static func get_rect(sheet: Spritesheet, coord: Vector2i) -> Rect2i:
 	var place: Dictionary = sheet.placements.get(coord, {})
 	if place.is_empty():
 		return Rect2i()
+	return placed_rect(place.position, place.src.size, place.rotated)
+
+
+## Where a place (see [PackedLayout]) puts its frame on the page
+static func get_rect_of(place: Dictionary) -> Rect2i:
 	return placed_rect(place.position, place.src.size, place.rotated)
 
 
@@ -281,6 +315,10 @@ static func _group_frames(
 		var key: Variant = coord
 		if settings.dedupe:
 			key = _pixels_key(sheet, coord, src)
+			# Frames that look the same but already have places of their own keep them
+			if by_key.has(key) and place and by_key[key].place:
+				if _place_key(place) != _place_key(by_key[key].place):
+					key = [key, coord]
 		var pinned := bool(place.get("pinned", false))
 		if by_key.has(key):
 			var group: Dictionary = by_key[key]

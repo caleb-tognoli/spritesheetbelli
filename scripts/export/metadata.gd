@@ -265,6 +265,7 @@ static func sprite_frames_tres(
 ## [method frame_durations]) or its own "duration". [param animation_names] lists the
 ## frames of each animation in "animations" (see [method animation_frame_names]).
 ## Frames of a packed atlas can be "rotated" (stored turned clockwise) and have a "pivot".
+## [param related] lists the data files of the other pages, as TexturePacker does.
 static func texture_packer_json(
 	frames: Array[Dictionary],
 	image_file: String,
@@ -274,6 +275,7 @@ static func texture_packer_json(
 	durations := {},
 	animation_names := {},
 	as_array := false,
+	related := PackedStringArray(),
 ) -> String:
 	var entries := {}
 	var listed := []
@@ -306,6 +308,8 @@ static func texture_packer_json(
 	}
 	if not animation_names.is_empty():
 		data.meta.animations = animation_names
+	if not related.is_empty():
+		data.meta.related_multi_packs = related
 	return JSON.stringify(data, "\t", false)
 
 

@@ -76,9 +76,14 @@ static func group_in_rows(rects: Array[Rect2i]) -> Array[Array]:
 
 ## A spritesheet with one frame per sprite, keeping the rows of [param rows]. With
 ## [param alignment], the frames are lined up, e.g. at the bottom for characters. With
-## the [param path] of the image, the frames are linked to it, see [FrameSource].
+## the [param path] of the image, the frames are linked to it, see [FrameSource]. With
+## [param keep_layout], the sheet is packed with every sprite where it was found.
 static func to_spritesheet(
-	img: Image, rows: Array[Array], alignment := Spritesheet.Alignment.CENTER, path := ""
+	img: Image,
+	rows: Array[Array],
+	alignment := Spritesheet.Alignment.CENTER,
+	path := "",
+	keep_layout := false
 ) -> Spritesheet:
 	var pixels := without_background(img)
 	var sheet := Spritesheet.new()
@@ -97,6 +102,14 @@ static func to_spritesheet(
 				var source := FrameSource.for_region(path, rows[row][column], pixels != img)
 				source = FrameSource.with_origin(source, origin)
 				sheet.set_frame(coord, sheet.frames[coord], source, origin)
+	if keep_layout:
+		var places := {}
+		for row in rows.size():
+			for column: int in rows[row].size():
+				var rect: Rect2i = rows[row][column]
+				var src := Rect2i(Vector2i.ZERO, rect.size)
+				places[Vector2i(column, row)] = PackedLayout.place(0, rect.position, src)
+		PackedLayout.adopt(sheet, places, img.get_size())
 	sheet.end_batch()
 	return sheet
 
