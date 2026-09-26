@@ -7,18 +7,19 @@ func test_rects_never_overlap() -> void:
 	rng.seed = 7
 	for i in 60:
 		sizes.append(Vector2i(rng.randi_range(4, 40), rng.randi_range(4, 40)))
-	var result := AtlasPacker.find_smallest_packing(sizes)
+	var result := RectPacker.pack(sizes, AtlasSettings.new())
+	assert_eq(result.pages, 1)
 	var rects: Array[Rect2i] = []
-	for i in sizes.size():
-		rects.append(Rect2i(result.positions[i], sizes[i]))
+	rects.assign(RectPacker.rects_by_page(sizes, result.placements, 1)[0])
+	var page := RectPacker.page_size(rects, AtlasSettings.new())
 	for i in rects.size():
-		assert_true(Rect2i(Vector2i.ZERO, result.size).encloses(rects[i]), "inside the atlas")
+		assert_true(Rect2i(Vector2i.ZERO, page).encloses(rects[i]), "inside the atlas")
 		for j in range(i + 1, rects.size()):
 			assert_false(rects[i].intersects(rects[j]), "rects %d and %d overlap" % [i, j])
 	var area := 0
 	for size in sizes:
 		area += size.x * size.y
-	assert_true(result.size.x * result.size.y < area * 1.5, "reasonably tight")
+	assert_true(page.x * page.y < area * 1.5, "reasonably tight")
 
 
 func test_pack_trims_frames() -> void:
