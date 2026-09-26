@@ -1,6 +1,8 @@
 class_name SpritesheetPreview
 extends Node2D
-## Draws a spritesheet and handles selecting, moving and locking its cells.
+## Draws a spritesheet and handles selecting, moving and locking its cells. A sheet in the
+## packed layout is shown as its pages instead, see [PackedView]: frames are dragged to
+## any place on a page, and there are no cells to lock.
 ##
 ## Everything is drawn by this node, so large sheets need no node per cell.
 ## Frame textures are cached per image and only created for new images.
@@ -25,6 +27,11 @@ signal tool_changed(tool: Tool)
 signal hover_changed(coord: Vector2i)
 ## The user double-clicked left of a row to name it
 signal row_name_requested(row: int)
+## The user dragged packed frames, or moved them with arrow keys, by [param offset] onto
+## [param page]
+signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vector2i)
+## The user dragged the pivot of frames to [param pivot], in unscaled pixels of the frame
+signal pivot_requested(coords: Array[Vector2i], pivot: Vector2)
 
 const LOCK_ICON := preload("res://assets/icons/Lock.svg")
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
@@ -40,12 +47,16 @@ const INDEX_FONT_SIZE := 14
 ## Mouse movement in pixels before a press becomes a drag
 const DRAG_THRESHOLD := 4.0
 const NO_CELL := Vector2i(-1, -1)
+const INVALID_MOVE_COLOR := Color(1, 0.3, 0.3, 0.6)
+## On-screen size of pivot marks
+const PIVOT_SIZE := 7.0
 
-enum Drag { NONE, PENDING, BOX, MOVE, PAN }
+enum Drag { NONE, PENDING, BOX, MOVE, PAN, PIVOT }
 ## What dragging does
 enum Tool {
 	SELECT,  ## Draws a selection box
 	MOVE,  ## Moves the selected frames, or the dragged frame when none are selected
+	PIVOT,  ## Moves the pivot of the selected frames
 }
 
 @export var able_to_lock_spaces := true
@@ -77,6 +88,8 @@ var selection_color := AppTheme.DEFAULT_ACCENT
 var spritesheet: Spritesheet = Spritesheet.new():
 	set = set_spritesheet
 var hovered_cell := NO_CELL
+## Where things are when the sheet is packed
+var packed_view := PackedView.new()
 
 var _selected: Dictionary[Vector2i, bool] = {}
 ## Selection range start for Shift+click
@@ -94,6 +107,13 @@ var _drag_additive := false
 var _box_end_world := Vector2.ZERO
 var _move_offset := Vector2i.ZERO
 var _pan_key_held := false
+var _drag_start_world := Vector2.ZERO
+## The page packed frames are dragged onto, and whether they fit there
+var _move_page := 0
+var _move_fits := true
+## The frame whose pivot is dragged, and where to
+var _pivot_coord := NO_CELL
+var _pivot := Vector2.ZERO
 
 @onready var camera: Camera2D = $Camera2D
 
@@ -139,8 +159,19 @@ func _on_spritesheet_updated() -> void:
 	for img: Image in _textures.keys():
 		if not alive.has(img):
 			_textures.erase(img)
+	packed_view.update(spritesheet)
 	queue_redraw()
 	preview_updated.emit()
+
+
+## Whether the sheet is shown packed instead of as a grid
+func is_packed() -> bool:
+	return spritesheet.layout == Spritesheet.Layout.PACKED
+
+
+## Whether frames are being dragged to another place
+func is_dragging_frames() -> bool:
+	return _drag == Drag.MOVE
 
 
 #region Coordinates
@@ -161,8 +192,33 @@ func cell_rect(coord: Vector2i) -> Rect2:
 	return Rect2(Vector2(coord * spritesheet.sprite_size), Vector2(spritesheet.sprite_size))
 
 
+## The cell under [param screen_position], or in the packed layout the frame there
 func get_cell_at_screen_position(screen_position: Vector2) -> Vector2i:
+	if is_packed():
+		return packed_view.get_frame_at(screen_to_world(screen_position))
 	return world_to_cell(screen_to_world(screen_position))
+
+
+## Where a frame is drawn: its cell, or its place in the packed layout
+func get_frame_world_rect(coord: Vector2i) -> Rect2:
+	return packed_view.get_frame_rect(coord) if is_packed() else cell_rect(coord)
+
+
+## Where a frame's pivot (in unscaled pixels of the frame) is in the preview
+func pivot_to_world(coord: Vector2i, pivot: Vector2) -> Vector2:
+	if is_packed():
+		return packed_view.pivot_to_world(coord, pivot)
+	var in_cell := spritesheet.get_frame_rect_in_cell(coord)
+	return cell_rect(coord).position + Vector2(in_cell.position) + pivot * spritesheet.frame_scale
+
+
+## The pivot (in unscaled pixels of the frame) at [param world]
+func world_to_pivot(coord: Vector2i, world: Vector2) -> Vector2:
+	if is_packed():
+		return packed_view.world_to_pivot(coord, world)
+	var in_cell := spritesheet.get_frame_rect_in_cell(coord)
+	var local := world - cell_rect(coord).position - Vector2(in_cell.position)
+	return local / spritesheet.frame_scale
 
 
 #endregion
@@ -252,6 +308,13 @@ func fit_to_view() -> void:
 	const MARGIN := 40.0
 	var content := Vector2(spritesheet.sprite_size * spritesheet.grid_size)
 	var view := get_viewport_rect().size
+	if is_packed():
+		var pages := packed_view.get_content_rect()
+		if pages.has_area() and view.x > MARGIN * 2 and view.y > MARGIN * 2:
+			var room := (view - Vector2.ONE * MARGIN * 2) / pages.size
+			set_zoom(minf(room.x, room.y))
+			camera.position = pages.get_center() - view / 2 / camera.zoom
+			return
 	if content.x <= 0 or content.y <= 0 or view.x <= MARGIN * 2 or view.y <= MARGIN * 2:
 		camera.position = -Vector2(50, 50) / camera.zoom
 		queue_redraw()
@@ -323,7 +386,7 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 
 
 func _on_left_press(event: InputEventMouseButton) -> void:
-	if event.double_click:
+	if event.double_click and not is_packed():
 		var world := screen_to_world(event.position)
 		var row := (
 			floori(world.y / spritesheet.sprite_size.y) if spritesheet.sprite_size.y > 0 else -1
@@ -335,6 +398,7 @@ func _on_left_press(event: InputEventMouseButton) -> void:
 		_start_drag(Drag.PAN, event.position)
 		return
 	_start_drag(Drag.PENDING, event.position)
+	_drag_start_world = screen_to_world(event.position)
 	_drag_start_cell = get_cell_at_screen_position(event.position)
 	_drag_start_unclamped = _cell_unclamped(screen_to_world(event.position))
 	_drag_additive = event.is_command_or_control_pressed() or event.shift_pressed
@@ -349,9 +413,17 @@ func _on_left_release(event: InputEventMouseButton) -> void:
 		Drag.BOX:
 			_finish_box_selection()
 		Drag.MOVE:
-			if _move_offset != Vector2i.ZERO:
+			if is_packed():
+				var moved := _move_offset != Vector2i.ZERO or _move_page != _dragged_page()
+				if _move_fits and moved:
+					placement_move_requested.emit(get_selected_coords(), _move_page, _move_offset)
+			elif _move_offset != Vector2i.ZERO:
 				move_requested.emit(get_selected_coords(), _move_offset, event.alt_pressed)
 			_move_offset = Vector2i.ZERO
+			queue_redraw()
+		Drag.PIVOT:
+			pivot_requested.emit(get_selected_coords(), _pivot.round())
+			_pivot_coord = NO_CELL
 			queue_redraw()
 
 
@@ -372,11 +444,18 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 	if not directions.has(event.keycode) or spritesheet.is_empty():
 		return false
 	var direction: Vector2i = directions[event.keycode]
+	var step := direction * (BIG_NUDGE if event.shift_pressed else 1)
+	if tool == Tool.MOVE and is_packed():
+		# Frames that wouldn't fit where they'd go stay put
+		if not _selected.is_empty():
+			var coords := get_selected_coords()
+			var page: int = spritesheet.placements[coords[0]].page
+			if not PackedLayout.moved(spritesheet, coords, page, step).is_empty():
+				placement_move_requested.emit(coords, page, step)
+		return true
 	if tool == Tool.MOVE:
 		if not _selected.is_empty():
-			nudge_requested.emit(
-				get_selected_coords(), direction * (BIG_NUDGE if event.shift_pressed else 1)
-			)
+			nudge_requested.emit(get_selected_coords(), step)
 		return true
 	var from := _anchor if spritesheet.has_frame(_anchor) else spritesheet.get_sorted_coords()[0]
 	if _selected.is_empty():
@@ -384,6 +463,8 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 		_anchor = from
 		return true
 	var cell := from + direction
+	if is_packed():
+		cell = packed_view.get_neighbour(from, direction)
 	while spritesheet.is_inside(cell) and not spritesheet.has_frame(cell):
 		cell += direction
 	if not spritesheet.has_frame(cell):
@@ -411,7 +492,7 @@ func _click(cell: Vector2i, event: InputEventMouseButton) -> void:
 	else:
 		if not _selected.is_empty():
 			select_all(false)
-		elif cell != NO_CELL and able_to_lock_spaces:
+		elif cell != NO_CELL and able_to_lock_spaces and not is_packed():
 			lock_requested.emit(cell, not spritesheet.is_locked(cell))
 
 
@@ -429,6 +510,11 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 		Drag.BOX:
 			_box_end_world = screen_to_world(event.position)
 			queue_redraw()
+		Drag.PIVOT:
+			_pivot = world_to_pivot(_pivot_coord, screen_to_world(event.position))
+			queue_redraw()
+		Drag.MOVE when is_packed():
+			_update_packed_move(screen_to_world(event.position))
 		Drag.MOVE:
 			var cell := _cell_unclamped(screen_to_world(event.position))
 			var offset := cell - _drag_start_unclamped
@@ -440,8 +526,15 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 				queue_redraw()
 
 
-## Turns a pending press into a box selection or a move
+## Turns a pending press into a box selection, a move or moving a pivot
 func _begin_real_drag() -> void:
+	if tool == Tool.PIVOT and spritesheet.has_frame(_drag_start_cell):
+		if not is_selected(_drag_start_cell):
+			set_selected_coords([_drag_start_cell] as Array[Vector2i])
+		_drag = Drag.PIVOT
+		_pivot_coord = _drag_start_cell
+		_pivot = world_to_pivot(_pivot_coord, _drag_start_world)
+		return
 	var can_move := tool == Tool.MOVE and able_to_move_frames and not _drag_additive
 	if can_move and (not _selected.is_empty() or spritesheet.has_frame(_drag_start_cell)):
 		# The selection moves from wherever it's dragged; without one, the dragged frame
@@ -449,6 +542,8 @@ func _begin_real_drag() -> void:
 			set_selected_coords([_drag_start_cell] as Array[Vector2i])
 		_drag = Drag.MOVE
 		_move_offset = Vector2i.ZERO
+		_move_page = _dragged_page()
+		_move_fits = true
 	else:
 		_drag = Drag.BOX
 		_box_end_world = screen_to_world(_drag_start_screen)
@@ -459,10 +554,44 @@ func _finish_box_selection() -> void:
 	var box := _box_rect()
 	if not _drag_additive:
 		_selected.clear()
-	for coord in spritesheet.frames:
-		if box.intersects(cell_rect(coord)):
-			_selected[coord] = true
+	var coords: Array[Vector2i] = []
+	if is_packed():
+		coords = packed_view.get_frames_in(box)
+	else:
+		for coord in spritesheet.frames:
+			if box.intersects(cell_rect(coord)):
+				coords.append(coord)
+	for coord in coords:
+		_selected[coord] = true
 	_selection_updated()
+
+
+## The page of the first selected frame, which dragging starts from
+func _dragged_page() -> int:
+	var coords := get_selected_coords()
+	if coords.is_empty() or not spritesheet.placements.has(coords[0]):
+		return 0
+	return spritesheet.placements[coords[0]].page
+
+
+## Where dragged packed frames would go: the page under the mouse, whole pixels away from
+## where they are, and whether they fit there
+func _update_packed_move(world: Vector2) -> void:
+	var start_page := _dragged_page()
+	var page := packed_view.get_page_at(world)
+	if page < 0:
+		page = _move_page
+	# Frames stay under the mouse when they go to another page
+	var origins := packed_view.page_origins
+	var moved_by := world - _drag_start_world + origins[start_page] - origins[page]
+	var offset := Vector2i(moved_by.round())
+	if offset == _move_offset and page == _move_page:
+		return
+	_move_offset = offset
+	_move_page = page
+	var coords := get_selected_coords()
+	_move_fits = not PackedLayout.moved(spritesheet, coords, page, offset).is_empty()
+	queue_redraw()
 
 
 func _box_rect() -> Rect2:
@@ -512,6 +641,9 @@ func _set_hovered_cell(cell: Vector2i) -> void:
 
 func _draw() -> void:
 	draw_rect(_visible_world_rect(), background_color)
+	if is_packed():
+		_draw_packed()
+		return
 	var cell_size := Vector2(spritesheet.sprite_size)
 	if cell_size.x <= 0 or cell_size.y <= 0 or spritesheet.grid_size == Vector2i.ZERO:
 		return
@@ -519,12 +651,7 @@ func _draw() -> void:
 	var pixel := 1.0 / camera.zoom.x
 
 	if show_checkerboard:
-		# Checker squares stay the same size on screen
-		var scale_factor := checker_size * pixel
-		draw_set_transform(Vector2.ZERO, 0, Vector2.ONE * scale_factor)
-		var rect := Rect2(sheet_rect.position / scale_factor, sheet_rect.size / scale_factor)
-		draw_texture_rect(_checker, rect, true)
-		draw_set_transform(Vector2.ZERO)
+		draw_checkerboard(sheet_rect, pixel)
 
 	var visible_rect := _visible_world_rect()
 	var visible_cells := _visible_cells(visible_rect)
@@ -545,22 +672,89 @@ func _draw() -> void:
 	if is_index_visible():
 		_draw_indices(visible_cells)
 	_draw_row_names(cell_size)
+	_draw_pivots(pixel)
+	_draw_box(pixel)
+
+
+## The pages, the selection and where dragged frames would go
+func _draw_packed() -> void:
+	var pixel := 1.0 / camera.zoom.x
+	var visible_rect := _visible_world_rect()
+	packed_view.draw(self, visible_rect, pixel)
+	var hovered := packed_view.get_frame_rect(hovered_cell)
+	if spritesheet.placements.has(hovered_cell) and _drag == Drag.NONE:
+		draw_rect(hovered, HOVER_COLOR)
+	for coord in _selected:
+		var rect := packed_view.get_frame_rect(coord)
+		draw_rect(rect, Color(selection_color, 0.25))
+		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
+	if _drag == Drag.MOVE and (_move_offset != Vector2i.ZERO or _move_page != _dragged_page()):
+		var origins := packed_view.page_origins
+		for coord in _selected:
+			var place: Dictionary = spritesheet.placements[coord]
+			var target := packed_view.get_frame_rect(coord)
+			target.position += Vector2(_move_offset) + origins[_move_page] - origins[place.page]
+			packed_view.draw_frame(self, coord, target, Color(1, 1, 1, 0.6))
+			var color := selection_color if _move_fits else INVALID_MOVE_COLOR
+			draw_rect(target.grow(-pixel), color, false, pixel * 2)
+	if show_indices:
+		for coord in packed_view.get_frames_in(visible_rect):
+			var rect := packed_view.get_frame_rect(coord)
+			if rect.size * camera.zoom >= MIN_SIZE_TO_SHOW_INDEX:
+				_draw_index(coord, rect)
+		draw_set_transform(Vector2.ZERO)
+	_draw_pivots(pixel)
+	_draw_box(pixel)
+
+
+func _draw_box(pixel: float) -> void:
 	if _drag == Drag.BOX:
 		var box := _box_rect()
 		draw_rect(box, Color(selection_color, 0.15))
 		draw_rect(box, selection_color, false, pixel)
 
 
-func _draw_frame(coord: Vector2i, rect: Rect2, modulate_color := Color.WHITE) -> void:
-	# While frames are scaled in the background, stretch the originals instead
+## Crosses at the pivots of the selected frames with the pivot tool
+func _draw_pivots(pixel: float) -> void:
+	if tool != Tool.PIVOT:
+		return
+	for coord in _selected:
+		var pivot := _pivot if _drag == Drag.PIVOT else spritesheet.get_pivot(coord)
+		var at := pivot_to_world(coord, pivot)
+		var arm := PIVOT_SIZE * pixel
+		for color: Color in [Color.BLACK, selection_color]:
+			var width := pixel * (4 if color == Color.BLACK else 2)
+			draw_line(at - Vector2(arm, 0), at + Vector2(arm, 0), color, width)
+			draw_line(at - Vector2(0, arm), at + Vector2(0, arm), color, width)
+		draw_circle(at, arm * 0.35, selection_color)
+
+
+## Checker squares behind transparent pixels, the same size on screen at any zoom
+func draw_checkerboard(rect: Rect2, pixel: float) -> void:
+	var scale_factor := checker_size * pixel
+	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE * scale_factor)
+	draw_texture_rect(_checker, Rect2(rect.position / scale_factor, rect.size / scale_factor), true)
+	draw_set_transform(Vector2.ZERO)
+
+
+## The texture to draw a frame with, and how many of its pixels make a scaled pixel.
+## While frames are scaled in the background, the original is stretched instead.
+func get_frame_texture(coord: Vector2i) -> Dictionary:
 	var img := spritesheet.frames[coord]
+	var shown_scale := spritesheet.frame_scale
 	if spritesheet.scaled_frames.is_ready(coord) or not spritesheet.scaled_frames.is_preparing():
 		img = spritesheet.get_frame_image(coord)
+		shown_scale = Vector2.ONE
 	if not _textures.has(img):
 		_textures[img] = ImageTexture.create_from_image(img)
+	return {"texture": _textures[img], "scale": shown_scale}
+
+
+func _draw_frame(coord: Vector2i, rect: Rect2, modulate_color := Color.WHITE) -> void:
+	var texture: Texture2D = get_frame_texture(coord).texture
 	var in_cell := spritesheet.get_frame_rect_in_cell(coord)
 	draw_texture_rect(
-		_textures[img],
+		texture,
 		Rect2(rect.position + Vector2(in_cell.position), in_cell.size),
 		false,
 		modulate_color
@@ -605,28 +799,24 @@ func _draw_selection(pixel: float) -> void:
 
 
 func _draw_indices(visible_cells: Rect2i) -> void:
-	var font := ThemeDB.fallback_font
-	var inverse_zoom := Vector2.ONE / camera.zoom
 	for coord in spritesheet.frames:
 		if not visible_cells.has_point(coord):
 			continue
-		var rect := cell_rect(coord)
-		# Text is drawn unscaled so it keeps the same size at any zoom
-		draw_set_transform(rect.position, 0, inverse_zoom)
-		var text := str(spritesheet.index_of(coord) + index_start)
-		var text_position := Vector2(6, 4 + INDEX_FONT_SIZE)
-		draw_string_outline(
-			font,
-			text_position,
-			text,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			INDEX_FONT_SIZE,
-			6,
-			Color.BLACK
-		)
-		draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
+		_draw_index(coord, cell_rect(coord))
 	draw_set_transform(Vector2.ZERO)
+
+
+## The frame's number in the top-left corner of [param rect]
+func _draw_index(coord: Vector2i, rect: Rect2) -> void:
+	var font := ThemeDB.fallback_font
+	# Text is drawn unscaled so it keeps the same size at any zoom
+	draw_set_transform(rect.position, 0, Vector2.ONE / camera.zoom)
+	var text := str(spritesheet.index_of(coord) + index_start)
+	var text_position := Vector2(6, 4 + INDEX_FONT_SIZE)
+	draw_string_outline(
+		font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE, 6, Color.BLACK
+	)
+	draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
 
 
 ## Row names, right-aligned just left of the grid

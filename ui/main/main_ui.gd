@@ -258,6 +258,17 @@ func _ready() -> void:
 				Global.spritesheet.set_locked.bind(coord, locked)
 			)
 	)
+	preview.placement_move_requested.connect(
+		func(coords: Array[Vector2i], page: int, offset: Vector2i) -> void:
+			var sheet := Global.spritesheet
+			var places := PackedLayout.moved(sheet, coords, page, offset)
+			if places:
+				Global.document.perform("Move frames", sheet.set_placements.bind(places))
+	)
+	preview.pivot_requested.connect(
+		func(coords: Array[Vector2i], pivot: Vector2) -> void:
+			Global.document.perform("Set pivot", Global.spritesheet.set_pivots.bind(coords, pivot))
+	)
 
 
 func _register_actions() -> void:
