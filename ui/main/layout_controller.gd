@@ -13,8 +13,8 @@ const PIVOT_PRESETS := [
 	[&"pivot_bottom", "Bottom", Vector2(0.5, 1), &"align_bottom"],
 	[&"pivot_left", "Left", Vector2(0, 0.5), &"align_left"],
 	[&"pivot_right", "Right", Vector2(1, 0.5), &"align_right"],
-	[&"pivot_top_left", "Top Left", Vector2(0, 0), &""],
-	[&"pivot_bottom_left", "Bottom Left", Vector2(0, 1), &""],
+	[&"pivot_top_left", "Top Left", Vector2(0, 0), &"pivot_top_left"],
+	[&"pivot_bottom_left", "Bottom Left", Vector2(0, 1), &"pivot_bottom_left"],
 ]
 ## Actions that only make sense with cells, left out in the packed layout
 const GRID_ONLY_ACTIONS: Array[StringName] = [
@@ -67,6 +67,10 @@ func _build_side_panels() -> void:
 		func(key: StringName) -> void:
 			if key == &"show_sprites":
 				sprites_panel.visible = Settings.get_value(key)
+				# Opened as narrow as it can be
+				if sprites_panel.visible:
+					preview_split.set(&"split_offset", 0)
+					Settings.set_value(&"history_width", 0)
 				Actions.refresh()
 	)
 	_update_side_split()
@@ -152,8 +156,15 @@ func update() -> void:
 ## Actions of the packed layout, pivots and the layout switch
 func register_actions() -> void:
 	var sheet := Global.spritesheet
-	var has_selection := func() -> bool: return not main.preview.get_selected_coords().is_empty()
+	var has_frames := func() -> bool: return not sheet.is_empty()
 	var packed := func() -> bool: return sheet.layout == Spritesheet.Layout.PACKED
+	var pivots := func() -> bool: return Settings.get_value(&"use_pivots")
+	Settings.changed.connect(
+		func(key: StringName) -> void:
+			var pivot_tool: bool = main.preview.tool == SpritesheetPreview.Tool.PIVOT
+			if key == &"use_pivots" and not pivots.call() and pivot_tool:
+				main.preview_area.set_tool(SpritesheetPreview.Tool.SELECT)
+	)
 	var grid := func() -> bool: return sheet.layout == Spritesheet.Layout.GRID
 	for id in GRID_ONLY_ACTIONS:
 		Actions.get_action(id).is_available = grid
@@ -188,7 +199,8 @@ func register_actions() -> void:
 		main.preview_area.set_tool.bind(SpritesheetPreview.Tool.PIVOT),
 		Callable(),
 		main.ICONS[&"tool_pivot"],
-		func() -> bool: return main.preview.tool == SpritesheetPreview.Tool.PIVOT
+		func() -> bool: return main.preview.tool == SpritesheetPreview.Tool.PIVOT,
+		pivots
 	)
 	Actions.add(
 		&"repack",
@@ -204,7 +216,7 @@ func register_actions() -> void:
 		packed
 	)
 	var all_pinned := func() -> bool:
-		var coords: Array[Vector2i] = main.preview.get_selected_coords()
+		var coords: Array[Vector2i] = main.get_target_coords()
 		return (
 			not coords.is_empty()
 			and coords.all(
@@ -213,15 +225,15 @@ func register_actions() -> void:
 		)
 	var toggle_pins := func() -> void:
 		var pin: bool = not all_pinned.call()
-		var changes := PackedLayout.pin_changes(sheet, main.preview.get_selected_coords(), pin)
 		Global.document.perform(
-			"Pin frames" if pin else "Unpin frames", sheet.set_placements.bind(changes)
+			"Pin frames" if pin else "Unpin frames",
+			sheet.set_pinned.bind(main.get_target_coords(), pin)
 		)
 	Actions.add(
 		&"pin_toggle",
 		"Pinned",
 		toggle_pins,
-		has_selection,
+		has_frames,
 		main.ICONS[&"pin_toggle"],
 		all_pinned,
 		packed
@@ -235,16 +247,20 @@ func register_actions() -> void:
 		Actions.add(
 			preset[0],
 			preset[1],
-			main.edit_selection.bind("Set pivot", set_pivots),
-			has_selection,
-			main.ICONS.get(preset[3])
+			main.edit_targets.bind("Set pivot", set_pivots),
+			has_frames,
+			main.ICONS.get(preset[3]),
+			Callable(),
+			pivots
 		)
 	Actions.add(
 		&"pivot_clear",
 		"Remove Pivot",
-		main.edit_selection.bind(
+		main.edit_targets.bind(
 			"Remove pivot", func(coords: Array[Vector2i]) -> void: sheet.set_pivots(coords, null)
 		),
-		has_selection,
-		main.ICONS[&"pivot_clear"]
+		has_frames,
+		main.ICONS[&"pivot_clear"],
+		Callable(),
+		pivots
 	)

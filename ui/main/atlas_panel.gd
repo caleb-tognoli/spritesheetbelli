@@ -1,7 +1,7 @@
 class_name AtlasPanel
 extends VBoxContainer
-## The sidebar section for the packed layout: how frames are packed, how big the pages
-## are, and how much of them the frames fill. Shown instead of the grid settings.
+## The sidebar section for the packed layout: how frames are packed and how big the pages
+## are. Shown instead of the grid settings.
 
 ## The user changed a setting
 signal settings_changed(settings: AtlasSettings)
@@ -26,8 +26,6 @@ var spacing := SpinBox.new()
 var padding := SpinBox.new()
 var extrude := SpinBox.new()
 var allow_rotation := CheckBox.new()
-var trim := CheckBox.new()
-var info := Label.new()
 
 var _updating := false
 var _sheet: Spritesheet
@@ -64,18 +62,10 @@ func _init() -> void:
 	_add_row("Spacing", spacing, "Empty pixels between frames")
 	_add_row("Padding", padding, "Empty pixels around each page")
 	_add_row("Extrude edges", extrude, "Repeats each frame's edge pixels outward")
-	for entry: Array in [
-		[allow_rotation, "Turn frames to fit", "Frames may be stored turned 90°"],
-		[trim, "Trim transparent borders", "Frames are packed without their empty borders"],
-	]:
-		var check: CheckBox = entry[0]
-		check.text = entry[1]
-		check.tooltip_text = entry[2]
-		check.toggled.connect(_changed.unbind(1))
-		add_child(check)
-	info.theme_type_variation = &"StatusLabel"
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(info)
+	allow_rotation.text = "Turn frames to fit"
+	allow_rotation.tooltip_text = "Frames may be stored turned 90°"
+	allow_rotation.toggled.connect(_changed.unbind(1))
+	add_child(allow_rotation)
 	for option: OptionButton in [page_size, pack_mode, heuristic]:
 		option.item_selected.connect(_changed.unbind(1))
 
@@ -96,8 +86,6 @@ func refresh(sheet: Spritesheet) -> void:
 	padding.set_value_no_signal(settings.padding)
 	extrude.set_value_no_signal(settings.extrude)
 	allow_rotation.set_pressed_no_signal(settings.allow_rotation)
-	trim.set_pressed_no_signal(settings.trim)
-	info.text = PackedLayout.describe(sheet)
 	_updating = false
 
 
@@ -111,7 +99,6 @@ func get_settings(sheet: Spritesheet) -> AtlasSettings:
 	settings.padding = int(padding.value)
 	settings.extrude = int(extrude.value)
 	settings.allow_rotation = allow_rotation.button_pressed
-	settings.trim = trim.button_pressed
 	return settings
 
 

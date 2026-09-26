@@ -229,15 +229,15 @@ func test_linked_size_keeps_a_stretch() -> void:
 	assert_eq(Global.spritesheet.sprite_size, Vector2i(32, 48))
 
 
-func test_select_none_shows_with_a_selection() -> void:
+func test_selecting_is_in_the_menu_not_the_toolbar() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	await get_tree().process_frame
-	var button: Button = main.preview_area.select_none_btn
-	assert_false(button.visible, "nothing selected")
+	assert_false("select_all_btn" in main.preview_area)
+	assert_false(main.preview_area._action_buttons.has(&"select_all"))
 	Actions.run(&"select_all")
-	assert_true(button.visible)
+	assert_eq(main.preview.get_selected_coords().size(), 1)
 	Actions.run(&"select_none")
-	assert_false(button.visible)
+	assert_true(main.preview.get_selected_coords().is_empty())
 
 
 func test_closing_with_unsaved_changes_asks_first() -> void:

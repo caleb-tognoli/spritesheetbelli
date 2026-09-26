@@ -209,11 +209,10 @@ func test_toolbar_buttons_follow_their_actions() -> void:
 	await get_tree().process_frame
 	assert_true(flip.disabled, "nothing selected")
 	var align_button: Button = area._menu_buttons.keys()[0]
-	assert_true(align_button.disabled)
+	assert_false(align_button.disabled, "aligns every frame when none are selected")
 	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
 	await get_tree().process_frame
 	assert_false(flip.disabled)
-	assert_false(align_button.disabled)
 	var before: Image = Global.spritesheet.frames[Vector2i(0, 0)]
 	flip.pressed.emit()
 	assert_ne(Global.spritesheet.frames[Vector2i(0, 0)], before, "runs the action")

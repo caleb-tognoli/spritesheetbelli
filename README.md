@@ -21,10 +21,13 @@ A small desktop tool made with Godot.</p>
   the transparent space around them.
 - **Packed layout.** Instead of a grid, frames can be laid out packed tightly on pages,
   like a texture atlas, and edited right there: drag frames anywhere (or onto a new page),
-  pin them, set pivots, pack again. An opened atlas keeps every frame where it is, so
-  exporting it again after adding or editing frames keeps the places engines know. Page
-  size, spacing, padding, extrusion, turning frames to fit and trimming are in the
-  sidebar; sharing identical frames and power-of-two or square pages are in Settings.
+  pin them, pack again. An opened atlas keeps every frame where it is, so exporting it
+  again after adding or editing frames keeps the places engines know. Frames are packed
+  without their transparent borders. Page size, spacing, padding, extrusion and turning
+  frames to fit are in the sidebar; sharing identical frames and power-of-two or square
+  pages are in Settings.
+- **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
+  the pivot tool or presets and exported where the format has them.
 - **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
   colour, add an outline, replace, cut/copy/paste (also images copied in other apps),
   duplicate, insert or remove cells, insert, remove or reorder rows. Everything can be
@@ -106,14 +109,15 @@ Press **F1** in the app for the full list. The most useful:
 | Move row up / down | Ctrl+Shift+Up / Ctrl+Shift+Down |
 | Zoom / Actual size / Fit | Ctrl+= and Ctrl+- / Ctrl+0 / F |
 | Grid lines / Frame numbers | G / N |
-| Select / move / pivot tool | Q / W / E |
+| Select / move / pivot tool | Q / W / E (pivots when on in Settings) |
 | Animation preview | P |
 
 In the preview: click selects, Ctrl+click toggles, Shift+click selects a range, drag on
 empty space draws a selection box, drag frames to move them, click an empty cell to lock it
 so added sprites skip it. In the packed layout, the move tool drags frames to any place on
-a page, and the pivot tool drags the pivot of the selected frames. Pan with the middle mouse button or Space+drag, zoom with the
-wheel. Arrow keys move the selection, or in the move mode the selected frames. Right-click
+a page, and the pivot tool drags the pivot of the selected frames. Align in Cell, Pivot,
+Trim and Pinned work on every frame when none are selected. Pan with the middle mouse
+button or Space+drag, zoom with the wheel. Arrow keys move the selection, or in the move mode the selected frames. Right-click
 for the Transform, Align in Cell and Rows submenus.
 
 ## Command line

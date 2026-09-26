@@ -12,11 +12,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frames that would land on others stay put. Moved frames are pinned, and Frame > Pinned
   pins or unpins them. The sidebar has the atlas settings: page size, keeping places or
   always packing tightly, how frames are placed (five MaxRects rules), spacing, padding,
-  extrusion, turning frames to fit and trimming. Sharing identical frames and
+  extrusion and turning frames to fit. Frames are always packed without their
+  transparent borders. Sharing identical frames and
   power-of-two or square pages are in Settings > Atlas, for every sheet, and the size
   the data file gives each frame (its cell or its own) is in the Export dialog. The
   button next to Packed packs everything but pinned frames again. Frames that grow or
   are added go in the free space; frames too big for a page get one of their own.
+  Unpinning a frame also unpins the frames that share its place, and when always packing
+  tightly it goes back among the others.
 - Opening a packed sheet keeps its layout: every frame stays where it is in the image,
   with its name and pivot, so exporting it again keeps the places engines know. The Add
   Spritesheet window has "Keep the packed layout" for this, also for sprites found
@@ -28,12 +31,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Godot SpriteFrames using every page (with margins for trimmed frames). Pages are
   numbered when there are more than one, turned frames are stored the way each engine
   expects, and frame names are made unique.
-- Pivots: a pivot mode (E) drags the pivot of the selected frames, and Frame > Pivot has
-  presets. Pivots follow flips and turns, stay on their pixel when trimming, and are
+- Pivots, turned on in Settings > General: a pivot mode (E) drags the pivot of the
+  selected frames, and Frame > Pivot has presets, top left and bottom left included. Pivots follow flips and turns, stay on their pixel when trimming, and are
   exported where the format has them. Frames without one use the atlas's default.
 - View > Sprites lists every frame with a thumbnail, its name and size. Selection follows
-  the preview both ways, double-click or F2 renames a frame, and frames can be searched
-  and pinned.
+  the preview both ways, double-click a name or F2 renames a frame, and frames can be
+  searched and pinned. It opens as narrow as it can be.
 - Command line: `--layout grid|packed`, `--max-size`, `--rotate` and `--repack`, and
   `--atlas-data` takes every format above. Packed sheets are written as atlases.
 - Packed spritesheets with a data file: opening or adding an image that has a
@@ -96,7 +99,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Grid actions (cells and rows) are left out of the menus and the toolbar in the packed
   layout.
 - The toolbar wraps onto more rows when the preview is narrow, and has a button for the
-  list of sprites.
+  list of sprites. Align in Cell, Pivot, Trim and Pinned come first and work on every
+  frame when none are selected; Select All and Select None are in the Edit menu only.
 - A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
   rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
   animation preview (P), and zoom buttons around the zoom level, which fits the view.

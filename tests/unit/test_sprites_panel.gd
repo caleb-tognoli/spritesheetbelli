@@ -52,6 +52,7 @@ func test_frames_are_listed() -> void:
 	assert_true(panel.is_visible_in_tree())
 	assert_eq(labels(), ["star", "bean", "Frame 2"] as Array[String])
 	assert_eq(item_of(Vector2i(0, 0)).get_text(1), "12×8")
+	assert_false(item_of(Vector2i(0, 0)).is_selectable(1), "sizes can't be clicked")
 	Actions.run(&"toggle_sprites")
 	assert_false(panel.visible, "hidden")
 	assert_false(main.layout_controller.side_split.visible, "with the history hidden too")

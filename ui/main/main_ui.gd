@@ -63,13 +63,16 @@ const ICONS := {
 	&"pin_toggle": preload("res://assets/icons/Pin.svg"),
 	&"repack": RELOAD_ICON,
 	&"pivot_clear": preload("res://assets/icons/Clear.svg"),
+	&"pivot_top_left": preload("res://assets/icons/ControlAlignTopLeft.svg"),
+	&"pivot_bottom_left": preload("res://assets/icons/ControlAlignBottomLeft.svg"),
 }
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
-## Action buttons in the toolbar, in groups, and the view toggles next to the zoom
+## Action buttons in the toolbar, in groups, and the view toggles next to the zoom. The
+## first group works on every frame when none are selected.
 const TOOLBAR_GROUPS := [
-	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
 	[&"align_menu", &"pivot_menu", &"trim", &"pin_toggle"],
+	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
 	&"toggle_grid", &"toggle_indices", &"toggle_animation", &"toggle_sprites"
@@ -386,8 +389,8 @@ func _register_actions() -> void:
 	add.call(
 		&"trim",
 		"Trim Transparent Borders",
-		edit_selection.bind("Trim", _edit_with(FrameEdits.trim)),
-		has_selection
+		edit_targets.bind("Trim", _edit_with(FrameEdits.trim)),
+		has_frames
 	)
 	for align: Array in [
 		[&"align_top", "Top", Spritesheet.Alignment.TOP],
@@ -399,8 +402,8 @@ func _register_actions() -> void:
 		add.call(
 			align[0],
 			align[1],
-			edit_selection.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
-			has_selection
+			edit_targets.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
+			has_frames
 		)
 	add.call(
 		&"color_key",
@@ -677,6 +680,19 @@ static func _edit_with(edit: Callable, args := []) -> Callable:
 ## Runs [param edit] with the coordinates of the selected frames, as one undoable step
 func edit_selection(action_name: String, edit: Callable) -> void:
 	var coords := preview.get_selected_coords()
+	if not coords.is_empty():
+		Global.document.perform(action_name, edit.bind(coords))
+
+
+## The selected frames, or every frame when none are
+func get_target_coords() -> Array[Vector2i]:
+	var coords := preview.get_selected_coords()
+	return coords if not coords.is_empty() else Global.spritesheet.get_sorted_coords()
+
+
+## Like [method edit_selection], but on every frame when none are selected
+func edit_targets(action_name: String, edit: Callable) -> void:
+	var coords := get_target_coords()
 	if not coords.is_empty():
 		Global.document.perform(action_name, edit.bind(coords))
 

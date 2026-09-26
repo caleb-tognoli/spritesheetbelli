@@ -796,6 +796,20 @@ func refresh_layout() -> void:
 	_changed()
 
 
+## Pins or unpins [param coords] and the frames that share their place. With
+## [enum AtlasSettings.PackMode] AUTO, unpinned frames are packed tightly again.
+func set_pinned(coords: Array[Vector2i], pinned: bool) -> void:
+	var changes := PackedLayout.pin_changes(self, coords, pinned)
+	if changes.is_empty():
+		return
+	begin_batch()
+	set_placements(changes)
+	# The last packing may be the same as now, with the frame somewhere else
+	pack_cache.signature = 0
+	_changed()
+	end_batch()
+
+
 func set_atlas_settings(settings: AtlasSettings) -> void:
 	var values := settings.to_dictionary()
 	if values != _atlas:

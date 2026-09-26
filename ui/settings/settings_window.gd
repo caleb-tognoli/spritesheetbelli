@@ -22,6 +22,7 @@ const CATEGORIES := [
 				["Nearest (pixel art)", "Bilinear", "Cubic", "Trilinear", "Lanczos"]
 			],
 			[&"watch_sources", "Ask to reload sprites when their image files change", "check"],
+			[&"use_pivots", "Set pivots: the point engines anchor each frame at", "check"],
 			[&"confirm_grid_shrink", "Ask before shrinking the grid deletes sprites", "check"],
 			[&"restore_session", "Reopen the last project on start", "check"],
 		]

@@ -233,6 +233,34 @@ func test_pinned_frames_stay_when_packing_again() -> void:
 	assert_false(sheet.placements[coord].pinned)
 
 
+func test_unpinning_frames_that_share_a_place() -> void:
+	var img := sprite(Vector2i(20, 20), Rect2i(4, 4, 8, 10))
+	sheet.add_frames([img, sprite(Vector2i(9, 9), Rect2i(0, 0, 9, 9)), img] as Array[Image])
+	pack()
+	var tight := rects()
+	var first: Array[Vector2i] = [Vector2i(0, 0)]
+	sheet.set_placements(PackedLayout.moved(sheet, first, 0, Vector2i(60, 0)))
+	assert_true(sheet.placements[Vector2i(2, 0)].pinned, "its twin moved and is pinned too")
+	sheet.set_pinned(first, false)
+	assert_false(sheet.placements[Vector2i(0, 0)].pinned)
+	assert_false(sheet.placements[Vector2i(2, 0)].pinned, "the twin too")
+	assert_eq(rects(), tight, "always tight: packed with the others again")
+	FrameEdits.flip(sheet, [Vector2i(1, 0)] as Array[Vector2i], true)
+	assert_false(sheet.placements[Vector2i(0, 0)].pinned, "still unpinned after other changes")
+
+
+func test_unpinned_frames_stay_when_keeping_places() -> void:
+	add_sprites(3)
+	set_mode(AtlasSettings.PackMode.KEEP)
+	pack()
+	var coords: Array[Vector2i] = [Vector2i(1, 0)]
+	sheet.set_placements(PackedLayout.moved(sheet, coords, 0, Vector2i(80, 0)))
+	var moved_to := PackedLayout.get_rect(sheet, coords[0])
+	sheet.set_pinned(coords, false)
+	assert_false(sheet.placements[coords[0]].pinned)
+	assert_eq(PackedLayout.get_rect(sheet, coords[0]), moved_to, "kept")
+
+
 func test_frames_go_on_pages() -> void:
 	add_sprites()
 	set_mode(AtlasSettings.PackMode.AUTO, {"max_size": 48, "spacing": 1})

@@ -1,8 +1,7 @@
 class_name PreviewArea
 extends Control
-## The spritesheet preview with its toolbar: the select and move tools, selection
-## buttons, the actions given to [method set_toolbar_actions] and zoom, like the toolbar
-## above Godot's 2D editor.
+## The spritesheet preview with its toolbar: the select, move and pivot tools, the actions
+## given to [method set_toolbar_actions] and zoom, like the toolbar above Godot's 2D editor.
 
 const SELECT_ICON := preload("res://assets/icons/ToolSelect.svg")
 const MOVE_ICON := preload("res://assets/icons/ToolMove.svg")
@@ -21,8 +20,6 @@ const ZOOM_IN_ICON := preload("res://assets/icons/ZoomMore.svg")
 var select_tool_btn := _tool_button(SELECT_ICON)
 var move_tool_btn := _tool_button(MOVE_ICON)
 var pivot_tool_btn := _tool_button(PIVOT_ICON)
-var select_all_btn := _tool_button(SELECT_ALL_ICON, "Select all frames (Ctrl+A)")
-var select_none_btn := _tool_button(SELECT_NONE_ICON, "Clear the selection (Esc)")
 var zoom_out_btn := _tool_button(ZOOM_OUT_ICON, "Zoom out (Ctrl+Minus)")
 var zoom_label_btn := _tool_button(null, "Fit to view (F)")
 var zoom_in_btn := _tool_button(ZOOM_IN_ICON, "Zoom in (Ctrl+Equal)")
@@ -32,7 +29,7 @@ var empty_hint := Label.new()
 
 var _tool_group := HBoxContainer.new()
 var _tool_separator := VSeparator.new()
-## Action buttons after the selection buttons, and view toggles before the zoom
+## Action buttons after the tools, and view toggles before the zoom
 var _edit_bar := HBoxContainer.new()
 var _view_bar := HBoxContainer.new()
 ## Buttons that run actions, by action id, kept enabled and checked like their actions
@@ -97,11 +94,6 @@ func _build_toolbar() -> void:
 	bar.add_child(_tool_group)
 	bar.add_child(_tool_separator)
 
-	# Selection
-	bar.add_child(select_all_btn)
-	bar.add_child(select_none_btn)
-	select_all_btn.pressed.connect(select_all.bind(true))
-	select_none_btn.pressed.connect(select_all.bind(false))
 	for group: HBoxContainer in [_edit_bar, _view_bar]:
 		group.add_theme_constant_override("separation", 2)
 	bar.add_child(_edit_bar)
@@ -161,7 +153,6 @@ func _gui_input(event: InputEvent) -> void:
 func update_ui() -> void:
 	var is_empty := spritesheet_preview.spritesheet.is_empty()
 	empty_hint.visible = is_empty and not empty_hint.text.is_empty()
-	select_all_btn.disabled = is_empty
 
 	var can_move := spritesheet_preview.able_to_move_frames
 	_tool_group.visible = can_move
@@ -174,12 +165,9 @@ func update_ui() -> void:
 	pivot_tool_btn.set_pressed_no_signal(spritesheet_preview.tool == SpritesheetPreview.Tool.PIVOT)
 	container.mouse_default_cursor_shape = (Control.CURSOR_MOVE if moving else Control.CURSOR_ARROW)
 
-	var selection_empty := is_empty or spritesheet_preview.get_selected_coords().is_empty()
-	select_none_btn.visible = not selection_empty
-
 
 ## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids
-## after the selection buttons, each group after a separator, and [param view_ids] are
+## after the tools, each group after a separator, and [param view_ids] are
 ## toggles before the zoom. An id in [param submenus] (as in
 ## [method ActionPopupMenu.set_actions]) is a button that opens that menu.
 func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submenus := {}) -> void:
@@ -223,6 +211,8 @@ func _action_button(id: StringName, submenus: Dictionary) -> Button:
 
 
 func _refresh_action_buttons() -> void:
+	# Pivots are opt-in, see the use_pivots setting
+	pivot_tool_btn.visible = Actions.is_available(&"tool_pivot")
 	for id in _action_buttons:
 		var button := _action_buttons[id]
 		button.visible = Actions.is_available(id)

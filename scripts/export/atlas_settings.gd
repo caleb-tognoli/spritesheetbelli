@@ -22,8 +22,6 @@ var max_size := 4096
 var heuristic := Heuristic.BEST_SHORT_SIDE
 ## Frames may be stored turned 90° clockwise when they fit better that way
 var allow_rotation := false
-## Frames are packed without their transparent borders
-var trim := true
 ## Frames that look the same are packed once and share their place. From the user's
 ## settings for sheets, see [member Spritesheet.atlas_settings].
 var dedupe := true
@@ -44,7 +42,6 @@ const _KEYS: Array[StringName] = [
 	&"max_size",
 	&"heuristic",
 	&"allow_rotation",
-	&"trim",
 	&"dedupe",
 	&"padding",
 	&"spacing",

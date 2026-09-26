@@ -13,6 +13,8 @@ const DEFAULTS := {
 	&"add_mode": Spritesheet.AddMode.FIRST_FREE,
 	&"resize_filter": Image.INTERPOLATE_NEAREST,
 	&"watch_sources": true,
+	# Pivot mode and the Pivot menu, for engines that anchor frames at a point
+	&"use_pivots": false,
 	# Preview
 	&"index_start": 0,
 	&"show_grid": true,
@@ -42,7 +44,7 @@ const DEFAULTS := {
 	&"sidebar_width": 0,
 	&"show_history": false,
 	# From the preview's side: negative is wider than the panels' smallest width
-	&"history_width": -60,
+	&"history_width": 0,
 	&"show_sprites": false,
 	&"onion_skin": false,
 	&"animation_frames_by_name": false,

@@ -19,6 +19,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	Settings.set_value(&"use_pivots", false)
 	main.queue_free()
 	Global.document.reset()
 
@@ -70,7 +71,10 @@ func test_the_sidebar_shows_the_atlas_settings_when_packed() -> void:
 	controller.layout_packed_btn.pressed.emit()
 	assert_true(controller.atlas_panel.visible)
 	assert_false(main.grid_rows.is_visible_in_tree(), "no grid settings")
-	assert_true("filled" in controller.atlas_panel.info.text, controller.atlas_panel.info.text)
+	# The Output section describes the pages, once
+	assert_false("info" in controller.atlas_panel)
+	assert_true("filled" in main.sheet_size.text, main.sheet_size.text)
+	assert_false("trim" in controller.atlas_panel, "frames are always packed trimmed")
 	# Settings go through the undo history
 	controller.atlas_panel.spacing.value = 3
 	assert_eq(sheet.atlas_settings.spacing, 3)
@@ -96,7 +100,47 @@ func test_pinning_and_packing_again() -> void:
 	assert_false(sheet.placements[coord].pinned, "unpinned")
 
 
+func test_toolbar_edits_every_frame_without_a_selection() -> void:
+	Actions.run(&"layout_packed")
+	main.preview.set_selected_coords([] as Array[Vector2i])
+	assert_true(Actions.is_enabled(&"pin_toggle"))
+	Actions.run(&"pin_toggle")
+	for coord in sheet.placements:
+		assert_true(sheet.placements[coord].pinned, "every frame pinned")
+	assert_true(Actions.is_checked(&"pin_toggle"))
+	Actions.run(&"pin_toggle")
+	assert_false(sheet.placements[Vector2i(0, 0)].pinned)
+	assert_true(Actions.is_enabled(&"align_top"))
+	assert_true(Actions.is_enabled(&"trim"))
+	assert_false(Actions.is_enabled(&"flip_h"), "transforms still need a selection")
+
+
+func test_toolbar_order() -> void:
+	var buttons: Dictionary = main.preview_area._action_buttons
+	assert_true(buttons[&"pin_toggle"].get_index() < buttons[&"flip_h"].get_index())
+
+
+func test_pivots_are_opt_in() -> void:
+	await get_tree().process_frame
+	assert_false(Actions.is_available(&"tool_pivot"))
+	assert_false(Actions.is_available(&"pivot_center"))
+	assert_false(&"pivot_menu" in menu_ids("Frame"), "no Pivot menu")
+	assert_false(main.preview_area.pivot_tool_btn.visible)
+	assert_false(Actions.run(&"tool_pivot"), "no shortcut either")
+	Settings.set_value(&"use_pivots", true)
+	await get_tree().process_frame
+	assert_true(main.preview_area.pivot_tool_btn.visible)
+	Actions.run(&"tool_pivot")
+	assert_eq(main.preview.tool, SpritesheetPreview.Tool.PIVOT)
+	Settings.set_value(&"use_pivots", false)
+	assert_eq(main.preview.tool, SpritesheetPreview.Tool.SELECT, "left with the setting")
+	assert_ne(main.settings_window.get_control(&"use_pivots"), null)
+
+
 func test_pivot_presets() -> void:
+	Settings.set_value(&"use_pivots", true)
+	assert_ne(Actions.get_action(&"pivot_top_left").icon, null)
+	assert_ne(Actions.get_action(&"pivot_bottom_left").icon, null)
 	main.preview.select_all()
 	Actions.run(&"pivot_bottom")
 	assert_eq(sheet.get_pivot(Vector2i(0, 0)), Vector2(4, 10))
