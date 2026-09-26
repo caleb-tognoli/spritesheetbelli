@@ -134,7 +134,9 @@ text = "Export…"
 
 [node name="SheetSize" type="Label" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1550338558]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
+mouse_filter = 1
 tooltip_text = "Size of the exported image"
 theme_type_variation = &"StatusLabel"
 text = "0 × 0 px"
@@ -355,4 +357,5 @@ text_overrun_behavior = 3
 [node name="Legend" type="Label" parent="Layout/StatusBar/StatusMargin/StatusRow" unique_id=1205700407]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 1
 theme_type_variation = &"StatusLabel"

@@ -173,3 +173,53 @@ func test_onion_skin_shows_the_previous_frame() -> void:
 	assert_true(player._onion.texture == null, "hidden again")
 	assert_false(Settings.get_value(&"onion_skin"), "remembered")
 	player.queue_free()
+
+
+func test_frames_are_shown_by_name_when_they_have_one() -> void:
+	var sheet := Global.spritesheet
+	sheet.rename_frame(Vector2i(1, 0), "idle")
+	var window: AnimationWindow = main.animation_window
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	window.open()
+	window.new_button.pressed.emit()
+	assert_eq(window.frames_edit.text, "0, idle", "no toggle: names always")
+	window.frames_edit.text = "idle, 2, 0"
+	window.frames_edit.text_submitted.emit(window.frames_edit.text)
+	assert_eq(
+		sheet.animations[0].cells,
+		[Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 0)] as Array[Vector2i],
+		"names and numbers both read"
+	)
+	assert_false("names_button" in window)
+	window.hide()
+
+
+func test_frames_editor() -> void:
+	var sheet := Global.spritesheet
+	var window: AnimationWindow = main.animation_window
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	window.open()
+	window.new_button.pressed.emit()
+	window.edit_frames_button.pressed.emit()
+	var editor := window.frames_editor
+	assert_true(editor.visible)
+	assert_eq(editor.palette.get_child_count(), 3, "every sprite to pick from")
+	assert_eq(editor.timeline.get_child_count(), 2, "the animation's frames")
+	await get_tree().process_frame
+	# A sprite dropped before the first frame, then the last frame moved to the front
+	var first := editor.timeline.get_child(0) as Control
+	editor._drop_at(Vector2(1, 1), {"cell": Vector2i(2, 0)}, first)
+	assert_eq(editor.get_frames_text(), "2, 0, 1")
+	editor.move_frame(2, 0)
+	assert_eq(editor.get_frames_text(), "1, 2, 0")
+	editor.set_duration(0, 2.0)
+	editor.remove_frame(2)
+	assert_eq(editor.get_frames_text(), "1*2, 2")
+	editor.get_ok_button().pressed.emit()
+	assert_eq(window.frames_edit.text, "1*2, 2", "written in the frames field")
+	assert_eq(sheet.animations[0].cells, [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
+	assert_eq(sheet.animations[0].durations, [2.0, 1.0] as Array[float])
+	Global.document.undo()
+	assert_eq(sheet.animations[0].cells.size(), 2, "one undoable step")
+	assert_eq(sheet.animations[0].cells[0], Vector2i(0, 0))
+	window.hide()

@@ -105,8 +105,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Export is at the top of the sidebar, with the size of what it writes under it.
 - The export background is a single colour picker, transparent unless a colour is picked.
   JPG quality and fill colour are set in the Export dialog only, not in Settings.
-- Add Spritesheet warns about a grid that doesn't divide the image over the preview, with
-  a warning icon, so the bar above keeps its layout.
+- Add Spritesheet warns about a grid that doesn't divide the image in the bottom-right
+  corner of the preview, with a warning icon, so the bar above keeps its layout.
 - The history has a toolbar button, after the sprites list.
 - The animation preview's button to open the Animations window has the Animations icon,
   and its list says "All frames" when fewer than two frames are selected.
@@ -124,7 +124,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Cell and Rows submenus.
 - The animation player has back to start, previous frame, play/pause and next frame.
 - Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7, or by
-  name: idle, walk_0-walk_3, "jump up"*2. The Names button shows them by name.
+  name: idle, walk_0-walk_3, "jump up"*2. Frames with a name of their own are shown by
+  it. Edit… next to them opens Edit Frames: sprites are dragged (or double-clicked) into
+  a timeline, dragged to reorder, and each gets how long it's shown, with a preview.
 - Tooltips of linked frames show the file's path.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.
@@ -148,6 +150,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   always ask where to save, so only projects are overwritten without asking.
 
 ### Fixed
+- The status bar's note about locked cells shows its tooltip again.
 - The sidebar's resize bar ending up under the preview when the preview was narrower than
   its toolbar.
 - Picking a resize filter at the original size switching back to the one from the

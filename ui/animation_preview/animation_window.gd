@@ -1,7 +1,8 @@
 class_name AnimationWindow
 extends AcceptDialog
-## A bigger preview where animations are made and edited: which frames (sprite numbers
-## and ranges such as "0-3, 5"), how fast and how they repeat. Every change can be undone.
+## A bigger preview where animations are made and edited: which frames (sprite numbers,
+## names and ranges such as "0-3, 5, idle", or put together in [AnimationFramesEditor]),
+## how fast and how they repeat. Every change can be undone.
 
 const ADD_ICON := preload("res://assets/icons/Add.svg")
 const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
@@ -26,8 +27,9 @@ var mirror_button := Button.new()
 var player := FramePlayer.new()
 var name_edit := LineEdit.new()
 var frames_edit := LineEdit.new()
-## Shows the frames by name instead of by number
-var names_button := Button.new()
+## Opens [member frames_editor] to put the frames together by dragging them
+var edit_frames_button := Button.new()
+var frames_editor := AnimationFramesEditor.new()
 var frames_info := Label.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
@@ -113,13 +115,12 @@ func _init() -> void:
 		+ 'Names with spaces go in quotes: "jump up", walk_0-walk_3\n'
 		+ "Add *2 to show a frame twice as long: 0-3, 4*2, 5*0.5"
 	)
-	names_button.text = "Names"
-	names_button.toggle_mode = true
-	names_button.tooltip_text = "Shows the frames by their names instead of their numbers"
+	edit_frames_button.text = "Edit…"
+	edit_frames_button.tooltip_text = "Drag sprites into place and set how long each is shown"
 	var frames_row := HBoxContainer.new()
 	frames_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	frames_row.add_child(frames_edit)
-	frames_row.add_child(names_button)
+	frames_row.add_child(edit_frames_button)
 	_add_property("Frames", frames_row)
 	frames_info.theme_type_variation = &"StatusLabel"
 	_add_property("", frames_info)
@@ -132,17 +133,18 @@ func _init() -> void:
 	name_edit.focus_exited.connect(_apply)
 	frames_edit.text_submitted.connect(func(_text: String) -> void: _apply_frames())
 	frames_edit.focus_exited.connect(_apply_frames)
-	names_button.toggled.connect(
-		func(on: bool) -> void:
-			Settings.set_value(&"animation_frames_by_name", on)
-			_show_selected()
+	edit_frames_button.pressed.connect(edit_frames)
+	frames_editor.frames_chosen.connect(
+		func(text: String) -> void:
+			frames_edit.text = text
+			_apply_frames()
 	)
+	add_child(frames_editor)
 	fps_spin.value_changed.connect(func(_value: float) -> void: _apply())
 	mode_option.item_selected.connect(func(_index: int) -> void: _apply())
 
 
 func _ready() -> void:
-	names_button.set_pressed_no_signal(Settings.get_value(&"animation_frames_by_name"))
 	player.sheet = Global.spritesheet
 	Global.spritesheet.updated.connect(
 		func() -> void:
@@ -208,6 +210,20 @@ func mirror_animation() -> void:
 	if added >= 0:
 		list.select(added)
 		_show_selected()
+
+
+## Opens the selected animation's frames in [member frames_editor]
+func edit_frames() -> void:
+	var index := get_selected()
+	if index < 0:
+		return
+	var animation := Global.spritesheet.animations[index]
+	var durations: Array[float] = []
+	for i in animation.cells.size():
+		durations.append(animation.get_duration(i))
+	frames_editor.open(
+		Global.spritesheet, animation.cells, durations, animation.fps, animation.mode, _labels()
+	)
 
 
 func remove_animation() -> void:
@@ -303,13 +319,17 @@ func _format_cells(cells: Array[Vector2i], durations: Array[float] = []) -> Stri
 	var numbers: Array[int] = []
 	for cell in cells:
 		numbers.append(Global.spritesheet.index_of(cell) + start)
+	return SheetAnimation.format_numbers(numbers, durations, _labels())
+
+
+## Names that frames are shown by, by number. Only names that are unique, so they read
+## back as the same frame.
+func _labels() -> Dictionary:
 	var labels := {}
-	if names_button.button_pressed:
-		# Only names that are unique, so they read back as the same frame
-		var names := _frame_names()
-		for frame_name: String in names:
-			labels[names[frame_name]] = frame_name
-	return SheetAnimation.format_numbers(numbers, durations, labels)
+	var names := _frame_names()
+	for frame_name: String in names:
+		labels[names[frame_name]] = frame_name
+	return labels
 
 
 ## The number of every frame with a name of its own, by that name. Frames that share a

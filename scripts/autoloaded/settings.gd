@@ -47,7 +47,6 @@ const DEFAULTS := {
 	&"history_width": 0,
 	&"show_sprites": false,
 	&"onion_skin": false,
-	&"animation_frames_by_name": false,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
 const REMEMBERED: Array[StringName] = [
@@ -58,7 +57,6 @@ const REMEMBERED: Array[StringName] = [
 	&"history_width",
 	&"show_sprites",
 	&"onion_skin",
-	&"animation_frames_by_name",
 ]
 const MAX_RECENT_FILES := 10
 

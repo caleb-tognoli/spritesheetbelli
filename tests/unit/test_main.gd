@@ -312,6 +312,8 @@ func test_add_spritesheet_offset_spacing_and_warning() -> void:
 	assert_color(window.spritesheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.BLUE)
 	var notice := window.preview_area.notice_label.text
 	assert_true(window.preview_area.notice.visible, "over the preview")
+	assert_eq(window.preview_area.notice.anchor_bottom, 1.0, "at the bottom right")
+	assert_eq(window.preview_area.notice.anchor_right, 1.0)
 	assert_true(notice.contains("1 px on the right"), notice)
 	assert_false(window.slice_info.text.contains("not used"), "not in the bar")
 	window.spacing_x.value = 3
