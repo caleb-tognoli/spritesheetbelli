@@ -54,3 +54,50 @@ func test_pressed_icons_are_the_accent_in_both_themes() -> void:
 		var grey := AppTheme.LIGHT_ICON_GREY if light else AppTheme.DARK_ICON_GREY
 		var pressed := theme.get_color("icon_pressed_color", "Button") * grey
 		assert_true(pressed.is_equal_approx(accent * AppTheme.DARK_ICON_GREY), str(light))
+
+
+func test_list_selection_is_the_accent_in_both_themes() -> void:
+	var accent := Color("4c9cff")
+	for light: bool in [false, true]:
+		var theme := AppTheme.build(light, accent)
+		for type: StringName in [&"Tree", &"ItemList"]:
+			var panel := (theme.get_stylebox("panel", type) as StyleBoxFlat).bg_color
+			var selected := (theme.get_stylebox("selected", type) as StyleBoxFlat).bg_color
+			var focused := (theme.get_stylebox("selected_focus", type) as StyleBoxFlat).bg_color
+			var hovered := (theme.get_stylebox("hovered", type) as StyleBoxFlat).bg_color
+			var message := "%s, light: %s" % [type, light]
+			assert_true(selected.b > selected.r + 0.1, "bluish like the accent, " + message)
+			assert_true(
+				_distance(focused, accent) < _distance(selected, accent),
+				"stronger with focus, " + message
+			)
+			assert_true(_distance(selected, accent) < _distance(panel, accent), message)
+			var text := AppTheme.LIGHT_TEXT if light else AppTheme.DARK_TEXT
+			assert_eq(Color(hovered, 1.0), text, "hovering shades with the text colour, " + message)
+
+
+func test_text_on_the_selection_is_readable_whatever_the_accent() -> void:
+	var worst := INF
+	for light: bool in [false, true]:
+		for h in 12:
+			for s: float in [0.0, 0.5, 1.0]:
+				for v: float in [0.1, 0.4, 0.7, 1.0]:
+					var theme := AppTheme.build(light, Color.from_hsv(h / 12.0, s, v))
+					var text := theme.get_color("font_selected_color", "Tree")
+					assert_eq(text, theme.get_color("font_hovered_selected_color", "ItemList"))
+					for style: StringName in [
+						&"selected",
+						&"selected_focus",
+						&"hovered_selected",
+						&"hovered_selected_focus",
+					]:
+						var box := theme.get_stylebox(style, "Tree") as StyleBoxFlat
+						worst = minf(worst, AppTheme.contrast_ratio(text, box.bg_color))
+	assert_true(worst >= AppTheme.MIN_CONTRAST, "contrast of %.2f" % worst)
+	# A white accent in the dark theme takes the light theme's dark text
+	var white := AppTheme.build(false, Color.WHITE)
+	assert_eq(white.get_color("font_selected_color", "Tree"), AppTheme.LIGHT_TEXT)
+
+
+static func _distance(a: Color, b: Color) -> float:
+	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()

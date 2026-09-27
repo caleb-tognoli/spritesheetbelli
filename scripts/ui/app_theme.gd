@@ -4,6 +4,12 @@ class_name AppTheme
 ## theme swaps their greys for darker ones, see [constant LIGHT_ICON_COLORS].
 
 const DEFAULT_ACCENT := Color("4c9cff")
+## The text colour of each theme
+const DARK_TEXT := Color("e6e7ea")
+const LIGHT_TEXT := Color("1f2329")
+## How readable text on selected list rows is at least, as a contrast ratio (WCAG's AA
+## level for text)
+const MIN_CONTRAST := 4.5
 ## Every SVG in here is imported as a DPITexture and recoloured with the theme
 const ICON_DIR := "res://assets/icons"
 ## Icon colours in the light theme, from the Godot editor's (editor_color_map.cpp)
@@ -42,8 +48,15 @@ class Palette:
 	var accent: Color
 	var accent_text: Color  ## Text in the accent colour, such as headings
 	var error: Color  ## Text saying what's wrong
-	## How strongly list rows are shaded with the text colour when hovered or selected
+	## How strongly list rows, scroll bars and guides are shaded with the text colour
 	var shade: float
+	## The shade over hovered list rows, selected or not
+	var hovered: Color
+	## Selected list rows, in the accent colour, and stronger while the list has focus
+	var selected: Color
+	var selected_focus: Color
+	## Text on selected list rows, see [method AppTheme.readable_text]
+	var selected_text: Color
 
 
 static func palette(light: bool, accent: Color) -> Palette:
@@ -55,23 +68,78 @@ static func palette(light: bool, accent: Color) -> Palette:
 		p.raised = Color("ffffff")
 		p.hover = Color("e2e5eb")
 		p.border = Color("c9cdd6")
-		p.text = Color("1f2329")
+		p.text = LIGHT_TEXT
 		p.text_muted = Color("5d6470")
 		p.accent_text = accent.darkened(0.35)
 		p.error = Color("c43d2b")
 		p.shade = 0.6
+		p.selected = p.background.blend(Color(accent, 0.3))
+		p.selected_focus = p.background.blend(Color(accent, 0.45))
 	else:
 		p.background = Color("1b1c1f")
 		p.surface = Color("25262a")
 		p.raised = Color("31333a")
 		p.hover = Color("3b3e46")
 		p.border = Color("454852")
-		p.text = Color("e6e7ea")
+		p.text = DARK_TEXT
 		p.text_muted = Color("9da2ad")
 		p.accent_text = accent.lightened(0.45)
 		p.error = Color(1.0, 0.55, 0.45)
 		p.shade = 1.0
+		p.selected = p.background.blend(Color(accent, 0.4))
+		p.selected_focus = p.background.blend(Color(accent, 0.6))
+	p.hovered = Color(p.text, 0.07 * p.shade)
+	# Hovered, the selection is shaded like the other rows
+	p.selected_text = readable_text(
+		[
+			p.selected,
+			p.selected_focus,
+			p.selected.blend(p.hovered),
+			p.selected_focus.blend(p.hovered)
+		],
+		p.text
+	)
+	p.selected = _readable_under(p.selected_text, p.selected, p.hovered)
+	p.selected_focus = _readable_under(p.selected_text, p.selected_focus, p.hovered)
 	return p
+
+
+## The text colour most readable on every one of [param backgrounds]: [param text], or
+## the other theme's when it stands out more, e.g. on a very light accent in the dark
+## theme
+static func readable_text(backgrounds: Array[Color], text: Color) -> Color:
+	var best := text
+	var best_contrast := 0.0
+	for candidate: Color in [text, LIGHT_TEXT if text == DARK_TEXT else DARK_TEXT]:
+		var contrast := INF
+		for background in backgrounds:
+			contrast = minf(contrast, contrast_ratio(candidate, background))
+		if contrast > best_contrast:
+			best = candidate
+			best_contrast = contrast
+	return best
+
+
+## [param background] darkened under light [param text] or lightened under dark text,
+## as little as it takes to reach [constant MIN_CONTRAST], also shaded as [param hovered]
+static func _readable_under(text: Color, background: Color, hovered: Color) -> Color:
+	var darken := text.get_luminance() > 0.5
+	for i in 30:
+		var contrast := minf(
+			contrast_ratio(text, background), contrast_ratio(text, background.blend(hovered))
+		)
+		if contrast >= MIN_CONTRAST:
+			break
+		background = background.darkened(0.05) if darken else background.lightened(0.05)
+	return background
+
+
+## The contrast ratio between two opaque colours, from 1 (the same) to 21 (black and
+## white), as defined by WCAG
+static func contrast_ratio(a: Color, b: Color) -> float:
+	var la := a.srgb_to_linear().get_luminance()
+	var lb := b.srgb_to_linear().get_luminance()
+	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
 
 
 static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
@@ -250,37 +318,36 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	return theme
 
 
-## Trees and item lists: a sunken background, rows shaded with the text colour, and
-## scroll bars to match
+## Trees and item lists: a sunken background, rows shaded with the text colour when
+## hovered and in the accent colour when selected, and scroll bars to match
 static func _add_lists(theme: Theme, p: Palette, focus: StyleBox) -> void:
 	var margins := Vector4(4, 4, 4, 4)
-	var hovered := _box(Color(p.text, 0.07 * p.shade), 3, margins)
-	var selected := _box(Color(p.text, 0.3 * p.shade), 3, margins)
-	var hovered_selected := _box(Color(p.text, 0.4 * p.shade), 3, margins)
+	var hovered := _box(p.hovered, 3, margins)
 	var cursor := _box(Color.TRANSPARENT, 3, margins, p.text_muted, 1)
 	for type: StringName in [&"Tree", &"ItemList"]:
 		var panel_margins := Vector4(4, 4, 4, 5) if type == &"Tree" else margins
 		theme.set_stylebox("panel", type, _box(p.background, 3, panel_margins))
 		theme.set_stylebox("focus", type, focus)
 		theme.set_stylebox("hovered", type, hovered)
-		theme.set_stylebox("selected", type, selected)
-		theme.set_stylebox("selected_focus", type, selected)
-		theme.set_stylebox("hovered_selected", type, hovered_selected)
-		theme.set_stylebox("hovered_selected_focus", type, hovered_selected)
+		# Hovered, the selection is shaded like the other rows
+		for entry: Array in [
+			[&"selected", p.selected],
+			[&"selected_focus", p.selected_focus],
+			[&"hovered_selected", p.selected.blend(p.hovered)],
+			[&"hovered_selected_focus", p.selected_focus.blend(p.hovered)],
+		]:
+			theme.set_stylebox(entry[0], type, _box(entry[1], 3, margins))
 		# The keyboard cursor only shows while the list has focus
 		theme.set_stylebox("cursor", type, cursor)
 		theme.set_stylebox("cursor_unfocused", type, StyleBoxEmpty.new())
-		for color: StringName in [
-			&"font_color",
-			&"font_hovered_color",
-			&"font_hovered_selected_color",
-			&"font_selected_color",
-		]:
-			theme.set_color(color, type, p.text)
+		theme.set_color("font_color", type, p.text)
+		theme.set_color("font_hovered_color", type, p.text)
+		theme.set_color("font_selected_color", type, p.selected_text)
+		theme.set_color("font_hovered_selected_color", type, p.selected_text)
 		theme.set_color("guide_color", type, Color(p.text, 0.2 * p.shade))
 	theme.set_stylebox("hovered_dimmed", "Tree", _box(Color(p.text, 0.03 * p.shade), 3, margins))
 	theme.set_stylebox("button_hover", "Tree", hovered)
-	theme.set_stylebox("button_pressed", "Tree", selected)
+	theme.set_stylebox("button_pressed", "Tree", _box(Color(p.text, 0.3 * p.shade), 3, margins))
 	theme.set_color("font_hovered_dimmed_color", "Tree", p.text)
 	theme.set_color("font_disabled_color", "Tree", Color(p.text_muted, 0.6))
 	theme.set_color("custom_button_font_highlight", "Tree", p.text)

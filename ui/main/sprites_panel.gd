@@ -16,10 +16,10 @@ var tree := Tree.new()
 var close_button := Button.new()
 
 var _thumbnails: Dictionary[Image, Texture2D] = {}
-## The selection's highlight on the name, on the size, and on the size and pin: the list
-## highlights each cell on its own, rounded, and leaves out the pin, so the selected frames
-## get these across the row instead
-var _highlights: Array[StyleBoxFlat] = []
+## The selection's highlight on the name, on the size, and on the size and pin, without
+## and with focus on the list: the list highlights each cell on its own, rounded, and
+## leaves out the pin, so the selected frames get these across the row instead
+var _highlights: Dictionary[bool, Array] = {}
 ## Whether the selection is being copied between the list and the preview, so it isn't
 ## copied back
 var _syncing := false
@@ -78,6 +78,8 @@ func _ready() -> void:
 	tree.item_edited.connect(_on_item_edited)
 	tree.button_clicked.connect(_on_button_clicked)
 	tree.gui_input.connect(_on_tree_input)
+	tree.focus_entered.connect(_highlight_all)
+	tree.focus_exited.connect(_highlight_all)
 	Global.spritesheet.updated.connect(refresh)
 	visibility_changed.connect(refresh)
 	if preview:
@@ -97,9 +99,6 @@ func refresh() -> void:
 	var alive := {}
 	var packed := sheet.layout == Spritesheet.Layout.PACKED
 	var muted := get_theme_color("font_color", &"StatusLabel")
-	# Pinned frames show the pin like a pressed toggle; the others a faint one to click
-	var pinned_color := get_theme_color("icon_pressed_color", &"Button")
-	var unpinned_color := get_theme_color("icon_disabled_color", &"Button")
 	for coord in sheet.get_sorted_coords():
 		var img := sheet.frames[coord]
 		alive[img] = true
@@ -123,7 +122,6 @@ func refresh() -> void:
 		item.set_icon_max_width(0, THUMBNAIL_SIZE)
 		var frame_size := img.get_size()
 		item.set_text(1, "%d×%d" % [frame_size.x, frame_size.y])
-		item.set_custom_color(1, muted)
 		# Only names are picked and edited
 		item.set_selectable(1, false)
 		item.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -132,7 +130,8 @@ func refresh() -> void:
 		if packed and sheet.placements.has(coord):
 			var pinned: bool = sheet.placements[coord].get("pinned", false)
 			item.add_button(1, PIN_ICON, PIN_BUTTON, false, tr("Unpin") if pinned else tr("Pin"))
-			item.set_button_color(1, 0, pinned_color if pinned else unpinned_color)
+			item.set_metadata(1, pinned)
+		_highlight(item, false)
 	for img: Image in _thumbnails.keys():
 		if not alive.has(img):
 			_thumbnails.erase(img)
@@ -208,22 +207,26 @@ func _show_selection() -> void:
 
 ## Makes the highlights from the theme's, and stops the list drawing its own
 func _update_highlights() -> void:
-	var selected := get_theme_stylebox("selected", &"Tree") as StyleBoxFlat
-	if not selected:
-		return
-	var name_box := selected.duplicate() as StyleBoxFlat
-	name_box.corner_radius_top_right = 0
-	name_box.corner_radius_bottom_right = 0
-	var size_box := selected.duplicate() as StyleBoxFlat
-	size_box.corner_radius_top_left = 0
-	size_box.corner_radius_bottom_left = 0
-	var pin_box := size_box.duplicate() as StyleBoxFlat
-	pin_box.expand_margin_right = (
-		PIN_ICON.get_width()
-		+ tree.get_theme_stylebox("button_pressed").get_minimum_size().x
-		+ tree.get_theme_constant("button_margin")
-	)
-	_highlights = [name_box, size_box, pin_box]
+	_highlights.clear()
+	for focused: bool in [false, true]:
+		var style := &"selected_focus" if focused else &"selected"
+		var selected := get_theme_stylebox(style, &"Tree") as StyleBoxFlat
+		if not selected:
+			_highlights.clear()
+			return
+		var name_box := selected.duplicate() as StyleBoxFlat
+		name_box.corner_radius_top_right = 0
+		name_box.corner_radius_bottom_right = 0
+		var size_box := selected.duplicate() as StyleBoxFlat
+		size_box.corner_radius_top_left = 0
+		size_box.corner_radius_bottom_left = 0
+		var pin_box := size_box.duplicate() as StyleBoxFlat
+		pin_box.expand_margin_right = (
+			PIN_ICON.get_width()
+			+ tree.get_theme_stylebox("button_pressed").get_minimum_size().x
+			+ tree.get_theme_constant("button_margin")
+		)
+		_highlights[focused] = [name_box, size_box, pin_box]
 	for style: StringName in [&"selected", &"selected_focus"]:
 		tree.add_theme_stylebox_override(style, StyleBoxEmpty.new())
 	# The pointer shades a selected cell as it does the others
@@ -232,13 +235,39 @@ func _update_highlights() -> void:
 		tree.add_theme_stylebox_override(style, hovered)
 
 
-## Highlights [param item]'s row if its frame is [param selected]
+## Highlights [param item]'s row if its frame is [param selected]. The size and pin,
+## which aren't picked with the name, take the colours of the selection's text.
 func _highlight(item: TreeItem, selected: bool) -> void:
-	if _highlights.is_empty():
+	if not item.get_metadata(0) is Vector2i:
 		return
-	item.set_custom_stylebox(0, _highlights[0] if selected else null)
-	var size_box := _highlights[2] if item.get_button_count(1) else _highlights[1]
-	item.set_custom_stylebox(1, size_box if selected else null)
+	var pinnable := item.get_button_count(1) > 0
+	if not _highlights.is_empty():
+		var boxes: Array = _highlights[tree.has_focus()]
+		item.set_custom_stylebox(0, boxes[0] if selected else null)
+		item.set_custom_stylebox(1, (boxes[2] if pinnable else boxes[1]) if selected else null)
+	item.set_custom_color(
+		1,
+		(
+			tree.get_theme_color("font_selected_color")
+			if selected
+			else get_theme_color("font_color", &"StatusLabel")
+		)
+	)
+	if pinnable:
+		# Pinned frames show the pin like a pressed toggle, in its own grey over the
+		# selection; the others a faint one to click
+		var color := &"icon_disabled_color"
+		if item.get_metadata(1):
+			color = &"icon_normal_color" if selected else &"icon_pressed_color"
+		item.set_button_color(1, 0, get_theme_color(color, &"Button"))
+
+
+## Highlights the selected frames again, as they are with focus on the list or without
+func _highlight_all() -> void:
+	var item := tree.get_root().get_next_in_tree() if tree.get_root() else null
+	while item:
+		_highlight(item, item.is_selected(0))
+		item = item.get_next_in_tree()
 
 
 ## Sent for each name picked or unpicked, sometimes before the item has changed

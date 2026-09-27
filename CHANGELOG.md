@@ -211,6 +211,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The status bar shows the file a frame comes from as its folder and name; the preview's
   tooltip still has the whole path. When the status bar is full, the path is cut first.
 - The window can be made as small as 960×600, scaled with the interface.
+- Selected rows in the Sprites, History, Settings, Export and Animations lists are in the
+  accent colour, a little stronger while the list has focus, in both themes; hovering stays
+  neutral. Their text stays readable with any accent colour picked in Settings.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

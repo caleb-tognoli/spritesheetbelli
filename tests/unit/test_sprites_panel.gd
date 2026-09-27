@@ -105,6 +105,32 @@ func test_the_whole_row_is_highlighted() -> void:
 	assert_true(box.expand_margin_right > 0, "over the pin too")
 
 
+func test_the_row_is_highlighted_in_the_selection_colours() -> void:
+	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
+	var item := item_of(Vector2i(1, 0))
+	var name_box := item.get_custom_stylebox(0) as StyleBoxFlat
+	var selected := panel.get_theme_stylebox("selected", &"Tree") as StyleBoxFlat
+	assert_eq(name_box.bg_color, selected.bg_color, "the theme's selection")
+	var text := panel.get_theme_color("font_selected_color", &"Tree")
+	assert_eq(item.get_custom_color(1), text, "the size in the selection's text colour")
+	assert_ne(item_of(Vector2i(0, 0)).get_custom_color(1), text, "only when selected")
+	panel.tree.grab_focus()
+	var focused := panel.get_theme_stylebox("selected_focus", &"Tree") as StyleBoxFlat
+	name_box = item.get_custom_stylebox(0) as StyleBoxFlat
+	assert_eq(name_box.bg_color, focused.bg_color, "stronger while the list has focus")
+	panel.tree.release_focus()
+	name_box = item.get_custom_stylebox(0) as StyleBoxFlat
+	assert_eq(name_box.bg_color, selected.bg_color, "back without focus")
+	# A new accent colours the selection too
+	var accent: Color = Settings.get_value(&"accent_color")
+	Settings.set_value(&"accent_color", Color.ORANGE)
+	selected = panel.get_theme_stylebox("selected", &"Tree") as StyleBoxFlat
+	name_box = item_of(Vector2i(1, 0)).get_custom_stylebox(0) as StyleBoxFlat
+	assert_eq(name_box.bg_color, selected.bg_color, "follows the accent")
+	assert_true(selected.bg_color.r > selected.bg_color.b, "orange")
+	Settings.set_value(&"accent_color", accent)
+
+
 func test_search() -> void:
 	panel.search.text = "EA"
 	panel.search.text_changed.emit("EA")
