@@ -44,10 +44,6 @@ var frame_scale: Vector2:
 var scale_filter: Image.Interpolation:
 	get:
 		return _scale_filter
-## Optional animation names per row
-var row_names: Dictionary[int, String]:
-	get:
-		return _row_names
 ## Named animations, in the order they were made. Read only: changes go through
 ## [method add_animation], [method set_animation] and [method remove_animation].
 var animations: Array[SheetAnimation]:
@@ -77,7 +73,6 @@ var _grid_size := Vector2i.ZERO
 var _locked: Array[Vector2i] = []
 var _scale := Vector2.ONE
 var _scale_filter := Image.INTERPOLATE_NEAREST
-var _row_names: Dictionary[int, String] = {}
 var _export_settings := {}
 var _animations: Array[Dictionary] = []
 var _sprite_size := Vector2i.ZERO
@@ -208,7 +203,6 @@ func get_state() -> Dictionary:
 		"locked": _locked.duplicate(),
 		"scale": _scale,
 		"scale_filter": _scale_filter,
-		"row_names": _row_names.duplicate(),
 		"animations": _animations.duplicate(true),
 		"export": _export_settings.duplicate(),
 		"origins": _origins.duplicate(),
@@ -228,7 +222,6 @@ func set_state(state: Dictionary) -> void:
 	_locked.assign(state.get("locked", []))
 	_scale = state.get("scale", Vector2.ONE)
 	_scale_filter = state.get("scale_filter", Image.INTERPOLATE_NEAREST)
-	_row_names.assign(state.get("row_names", {}))
 	_animations.assign(state.get("animations", []).duplicate(true))
 	_export_settings = state.get("export", {}).duplicate()
 	_origins.assign(state.get("origins", {}))
@@ -274,9 +267,6 @@ func set_grid_size(size: Vector2i) -> void:
 			_frames.erase(coord)
 			_erase_cell_data(coord)
 	_locked.assign(_locked.filter(is_inside))
-	for row: int in _row_names.keys():
-		if row >= size.y:
-			_row_names.erase(row)
 	_remap_animation_cells(
 		func(cell: Vector2i) -> Vector2i: return cell if is_inside(cell) else NO_CELL
 	)
@@ -319,17 +309,6 @@ func set_export_settings(settings: Dictionary) -> void:
 	if settings == _export_settings:
 		return
 	_export_settings = settings.duplicate()
-	_changed()
-
-
-func set_row_name(row: int, row_name: String) -> void:
-	row_name = row_name.strip_edges()
-	if row_name == _row_names.get(row, ""):
-		return
-	if row_name.is_empty():
-		_row_names.erase(row)
-	else:
-		_row_names[row] = row_name
 	_changed()
 
 
@@ -581,12 +560,6 @@ func _move_rows(map: Callable) -> void:
 		if moved != NO_CELL:
 			locked.append(moved)
 	_locked = locked
-	var moved_names: Dictionary[int, String] = {}
-	for row in _row_names:
-		var moved: int = map.call(row)
-		if moved >= 0:
-			moved_names[moved] = _row_names[row]
-	_row_names = moved_names
 
 
 ## Moves every frame, with what its cell holds and the animations showing it, to the cell

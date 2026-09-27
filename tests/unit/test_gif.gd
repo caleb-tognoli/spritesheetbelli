@@ -139,8 +139,9 @@ func test_opening_and_adding_gifs() -> void:
 	await get_tree().process_frame
 	var sheet := Global.spritesheet
 	assert_eq(sheet.frames.size(), 3)
-	assert_eq(sheet.row_names.get(0), "pillow")
+	assert_eq(sheet.animations.size(), 1)
 	var animation := sheet.animations[0]
+	assert_eq(animation.name, "pillow", "named after the file")
 	assert_eq(animation.fps, 20.0)
 	assert_eq(animation.durations, [2.0, 4.0, 1.0] as Array[float])
 	assert_false(Global.document.is_dirty, "opening isn't a change")
@@ -162,7 +163,6 @@ func test_opening_and_adding_gifs() -> void:
 	for i in cells.size():
 		assert_false(cells[i] in sheet.animations[0].cells, "the added frames")
 		assert_eq(sheet.frame_sources[cells[i]].gif_frame, i)
-	assert_eq(sheet.row_names.size(), 1, "no row name")
 	Global.document.undo()
 	assert_eq(sheet.frames.size(), 3, "one step")
 	assert_eq(sheet.animations.size(), 1)

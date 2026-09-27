@@ -1,7 +1,7 @@
 class_name SpritesPanel
 extends PanelContainer
-## Lists every frame with a thumbnail, its name and size, under its row's name when rows
-## are named. Selecting frames here selects them in the preview and the other way round.
+## Lists every frame with a thumbnail, its name and size. Selecting frames here selects
+## them in the preview and the other way round.
 ## Frames are renamed by double-clicking their name or F2, found by typing in the search field, and
 ## pinned with the button on each frame in the packed layout.
 
@@ -95,28 +95,15 @@ func refresh() -> void:
 	tree.clear()
 	var root := tree.create_item()
 	var filter := search.text.strip_edges().to_lower()
-	var rows := {}  # Row headers by row
 	var alive := {}
 	var packed := sheet.layout == Spritesheet.Layout.PACKED
-	var muted := get_theme_color("font_color", &"StatusLabel")
 	for coord in sheet.get_sorted_coords():
 		var img := sheet.frames[coord]
 		alive[img] = true
 		var label := frame_label(sheet, coord)
 		if filter and filter not in label.to_lower():
 			continue
-		var parent := root
-		if sheet.row_names.has(coord.y):
-			if not rows.has(coord.y):
-				var header := tree.create_item(root)
-				header.set_text(0, sheet.row_names[coord.y])
-				header.set_selectable(0, false)
-				header.set_selectable(1, false)
-				header.disable_folding = true
-				header.set_custom_color(0, muted)
-				rows[coord.y] = header
-			parent = rows[coord.y]
-		var item := tree.create_item(parent)
+		var item := tree.create_item(root)
 		item.set_text(0, label)
 		item.set_icon(0, _thumbnail(img))
 		item.set_icon_max_width(0, THUMBNAIL_SIZE)

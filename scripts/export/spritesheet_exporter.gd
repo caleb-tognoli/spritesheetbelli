@@ -154,8 +154,10 @@ static func save_image(img: Image, path: String, options := ExportOptions.new())
 
 
 ## Fills a sprite file name pattern. Tokens: {index} (as numbered in the preview),
-## {row}, {column}, {row_name}, {frame} (position in its row) and {name} (original
-## file name). A width pads numbers with zeros: {index:3} gives 007.
+## {row}, {column}, {frame} (position in its row), {animation} (the first animation
+## showing it, or "frame"), {animation_frame} (position in that animation, or else its
+## index) and {name} (original file name). A width pads numbers with zeros: {index:3}
+## gives 007.
 static func format_sprite_name(
 	pattern: String, sheet: Spritesheet, coord: Vector2i, index_start := 0
 ) -> String:
@@ -168,9 +170,18 @@ static func format_sprite_name(
 		"row": coord.y,
 		"column": coord.x,
 		"frame": frame_in_row + index_start,
-		"row_name": sheet.row_names.get(coord.y, "row%d" % coord.y),
+		"animation": "frame",
+		"animation_frame": sheet.index_of(coord) + index_start,
 		"name": sheet.frames[coord].resource_name.get_basename(),
 	}
+	# Only looked up when asked for, as it goes through every animation
+	if "{animation" in pattern:
+		for animation in sheet.animations:
+			var position := animation.get_frame_cells(sheet).find(coord)
+			if position >= 0:
+				values.animation = animation.name
+				values.animation_frame = position + index_start
+				break
 	var regex := RegEx.create_from_string("\\{(\\w+)(?::(\\d+))?\\}")
 	# The extension is added when saving: "{index}.png" names "0.png", not "0.png.png"
 	var result := strip_written_extensions(pattern)

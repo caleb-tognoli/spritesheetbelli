@@ -47,17 +47,18 @@ A small desktop tool made with Godot.</p>
   each with its own speed and loop, ping-pong or play-once, and frames that are held
   longer (`0-3, 4*2`), typed by number or name or put together in Edit Animation, where
   sprites are dragged into place and each gets how long it's shown; mirror walk_right
-  into walk_left; preview them with onion skin and export them.
-- **Name rows** as animations (idle, walk, jump); names are used in exports.
+  into walk_left; preview them with onion skin and export them; only animations are
+  exported as animations.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
-  `walk_{frame:2}`; a tightly packed atlas, or its pages as images; or an animation as an
-  animated GIF. The Export button sits at the top of the sidebar with the size of what it
+  `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or its
+  pages as images; or an animation as an animated GIF. The Export button sits at the top of the sidebar with the size of what it
   writes, and the Export dialog shows only the settings that matter for what you export.
   Padding, spacing and edge extrusion are set in the sidebar, where the preview shows
   them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
-  Godot `SpriteFrames` resource with one animation per named row. Packed atlases can come
-  with TexturePacker JSON (hash or array), a Phaser 3 multi-atlas, a libGDX / Spine
+  Godot `SpriteFrames` resource with the sheet's animations (or every frame in one
+  "default" animation when there are none). Packed atlases can come with TexturePacker
+  JSON (hash or array), a Phaser 3 multi-atlas, a libGDX / Spine
   `.atlas`, Sparrow / Starling XML or a Godot `SpriteFrames` using every page, with
   pivots and turned frames where the format has them.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original

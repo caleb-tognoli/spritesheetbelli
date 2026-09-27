@@ -62,9 +62,6 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			zip.close()
 			return error
 
-	var row_names := {}
-	for row in sheet.row_names:
-		row_names[str(row)] = sheet.row_names[row]
 	var locked: Array[Array] = []
 	for coord in sheet.locked_coordinates:
 		locked.append([coord.x, coord.y])
@@ -82,7 +79,6 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"frame_scale": [sheet.frame_scale.x, sheet.frame_scale.y],
 		"scale_filter": sheet.scale_filter,
 		"locked": locked,
-		"row_names": row_names,
 		"animations": animations,
 		"export": JSON.from_native(sheet.export_settings),
 		"frames": frames,
@@ -154,9 +150,6 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	var locked: Array[Vector2i] = []
 	for coord: Array in data.get("locked", []):
 		locked.append(_to_vector2i(coord))
-	var row_names: Dictionary[int, String] = {}
-	for row: String in data.get("row_names", {}):
-		row_names[int(row)] = data.row_names[row]
 	var frame_scale: Array = data.get("frame_scale", [1, 1])
 	var animations: Array[Dictionary] = []
 	for animation: Variant in data.get("animations", []):
@@ -178,7 +171,6 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"locked": locked,
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
-		"row_names": row_names,
 		"animations": animations,
 		"export": _read_export_settings(data.get("export", {})),
 	}

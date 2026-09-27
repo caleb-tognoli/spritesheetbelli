@@ -108,10 +108,10 @@ func test_tags_become_rows_and_animations() -> void:
 	)
 	var sheet := data.to_spritesheet(quarters())
 	assert_eq(sheet.grid_size, Vector2i(2, 3), "idle, the untagged frame, hit")
-	assert_eq(sheet.row_names, {0: "idle", 2: "hit"} as Dictionary[int, String])
 	assert_true(sheet.has_frame(Vector2i(0, 1)))
 	var animations := sheet.animations
 	assert_eq(animations.size(), 2)
+	assert_eq(animations[0].name, "idle")
 	assert_eq(animations[0].mode, SheetAnimation.Mode.PING_PONG)
 	assert_eq(animations[1].mode, SheetAnimation.Mode.ONCE)
 	assert_eq(animations[1].cells, [Vector2i(0, 2)] as Array[Vector2i])

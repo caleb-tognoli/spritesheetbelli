@@ -26,8 +26,6 @@ signal tool_changed(tool: Tool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid or the preview. Also
 ## emitted when the sheet changes, since what's in the cell may have.
 signal hover_changed(coord: Vector2i)
-## The user double-clicked left of a row to name it
-signal row_name_requested(row: int)
 ## The user dragged packed frames, or moved them with arrow keys, by [param offset] onto
 ## [param page]
 signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vector2i)
@@ -346,14 +344,9 @@ func fit_to_view() -> void:
 		camera.position = -Vector2(50, 50) / camera.zoom
 		queue_redraw()
 		return
-	# Row names are drawn left of the grid at a fixed size on screen
-	var names_width := 0.0
-	for row_name: String in spritesheet.row_names.values():
-		names_width = maxf(names_width, ThemeDB.fallback_font.get_string_size(row_name).x + 16)
-	var usable := view - Vector2(MARGIN * 2 + names_width, MARGIN * 2)
-	var fit := usable / content
+	var fit := (view - Vector2.ONE * MARGIN * 2) / content
 	set_zoom(_fitting_zoom(minf(fit.x, fit.y)))
-	camera.position = content / 2 - (view + Vector2(names_width, 0)) / 2 / camera.zoom
+	camera.position = content / 2 - view / 2 / camera.zoom
 
 
 ## [param zoom] rounded down to a whole zoom with pixel-perfect zoom
@@ -449,12 +442,6 @@ func _zoom_with_wheel(notches: float, anchor: Vector2) -> void:
 
 
 func _on_left_press(event: InputEventMouseButton) -> void:
-	if event.double_click and not is_packed():
-		var world := screen_to_world(event.position)
-		var row := grid_view.get_cell_unclamped(world).y if spritesheet.sprite_size.y > 0 else -1
-		if world.x < 0 and row >= 0 and row < spritesheet.grid_size.y:
-			row_name_requested.emit(row)
-			return
 	if _pan_key_held:
 		_start_drag(Drag.PAN, event.position)
 		return
@@ -755,7 +742,6 @@ func _draw() -> void:
 	_draw_selection(pixel)
 	if is_index_visible():
 		_draw_indices(grid_view.get_visible_cells(visible_rect))
-	grid_view.draw_row_names(self)
 	_draw_pivots(pixel)
 	_draw_box(pixel)
 

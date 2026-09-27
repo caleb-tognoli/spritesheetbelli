@@ -193,8 +193,8 @@ static func cut_frame(img: Image, frame: Frame) -> Image:
 	return full
 
 
-## A spritesheet of the frames. Tags that don't overlap become named rows, with the
-## frames between them in rows of their own; otherwise the frames fill a square grid.
+## A spritesheet of the frames. Tags that don't overlap each get a row, with the frames
+## between them in rows of their own; otherwise the frames fill a square grid.
 ## Every tag becomes an animation. With the paths of the image and of this data file,
 ## the frames are linked to them, see [FrameSource]. Frames on other pages are cut from
 ## [param other_pages], in order, and left out when their page is missing.
@@ -218,7 +218,6 @@ func to_spritesheet(
 		var page_image: Image = page_images[frame.page] if frame.page < page_images.size() else null
 		images.append(cut_frame(page_image, frame) if page_image else null)
 	var cells: Array[Vector2i] = []
-	var row_names: Dictionary[int, String] = {}
 	var tag_rows := _rows_by_tag()
 	if tag_rows.is_empty():
 		var columns := ceili(sqrt(images.size()))
@@ -226,10 +225,7 @@ func to_spritesheet(
 			cells.append(Vector2i(i % columns, i / columns))
 	else:
 		for row in tag_rows.size():
-			var group: Dictionary = tag_rows[row]
-			if group.name:
-				row_names[row] = group.name
-			for column: int in group.count:
+			for column: int in tag_rows[row].count:
 				cells.append(Vector2i(column, row))
 
 	var sheet := Spritesheet.new()
@@ -263,8 +259,6 @@ func to_spritesheet(
 		export.atlas_data = format
 		export.sprite_name_pattern = "{name}"
 		sheet.set_export_settings(export.to_dictionary())
-	for row in row_names:
-		sheet.set_row_name(row, row_names[row])
 	for tag in tags:
 		var tag_cells: Array[Vector2i] = []
 		var indices: Array = range(tag.from, tag.to + 1)

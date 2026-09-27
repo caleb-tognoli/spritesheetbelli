@@ -109,10 +109,12 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 	return {"frames": frames, "delays": delays, "loop": loop}
 
 
-## Adds the frames of [param gif] (from [method decode]) to [param sheet] in a new row
-## named [param row_name], with an animation that plays them the way the GIF does. With
+## Adds the frames of [param gif] (from [method decode]) to [param sheet] in a new row,
+## with an animation named [param anim_name] that plays them the way the GIF does. With
 ## the [param path] of the GIF, the frames are linked to it, see [FrameSource].
-static func add_to_sheet(sheet: Spritesheet, gif: Dictionary, row_name: String, path := "") -> void:
+static func add_to_sheet(
+	sheet: Spritesheet, gif: Dictionary, anim_name: String, path := ""
+) -> void:
 	var frames: Array[Image] = gif.frames
 	var row := sheet.get_first_free_row()
 	var cells: Array[Vector2i] = []
@@ -120,8 +122,7 @@ static func add_to_sheet(sheet: Spritesheet, gif: Dictionary, row_name: String, 
 	for i in frames.size():
 		cells.append(Vector2i(i, row))
 		sheet.set_frame(cells[i], frames[i], FrameSource.for_gif(path, i) if path else {})
-	sheet.set_row_name(row, row_name)
-	add_animation(sheet, gif, cells, row_name)
+	add_animation(sheet, gif, cells, anim_name)
 	sheet.end_batch()
 
 

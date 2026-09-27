@@ -49,12 +49,31 @@ func test_background() -> void:
 
 
 func test_sprite_name_pattern() -> void:
-	sheet.set_row_name(0, "walk")
 	var sprite_name := SpritesheetExporter.format_sprite_name(
-		"{row_name}_{frame:2}", sheet, Vector2i(2, 0), 1
+		"{row}_{column}_{frame:2}", sheet, Vector2i(2, 0), 1
 	)
-	assert_eq(sprite_name, "walk_03")
+	assert_eq(sprite_name, "0_2_03")
 	assert_eq(SpritesheetExporter.format_sprite_name("a/b{index}", sheet, Vector2i(1, 0)), "a_b1")
+
+
+func test_animation_tokens() -> void:
+	var pattern := "{animation}_{animation_frame:2}"
+	assert_eq(
+		SpritesheetExporter.format_sprite_name(pattern, sheet, Vector2i(2, 0), 1),
+		"frame_03",
+		"without an animation, its index"
+	)
+	sheet.add_animation(
+		SheetAnimation.create("walk", [Vector2i(2, 0), Vector2i(1, 0)] as Array[Vector2i])
+	)
+	sheet.add_animation(SheetAnimation.create("idle", [Vector2i(1, 0)] as Array[Vector2i]))
+	assert_eq(SpritesheetExporter.format_sprite_name(pattern, sheet, Vector2i(2, 0)), "walk_00")
+	assert_eq(
+		SpritesheetExporter.format_sprite_name(pattern, sheet, Vector2i(1, 0), 1),
+		"walk_02",
+		"the first animation, counted from the setting"
+	)
+	assert_eq(SpritesheetExporter.format_sprite_name(pattern, sheet, Vector2i(0, 0)), "frame_00")
 
 
 func test_existing_files_and_selection() -> void:
@@ -75,7 +94,7 @@ func test_settings_saved_in_project_and_undoable() -> void:
 	var options := ExportOptions.new()
 	options.background = Color(0.5, 0.25, 1)
 	options.padding = 3
-	options.sprite_name_pattern = "{row_name}"
+	options.sprite_name_pattern = "{animation}"
 	sheet.set_export_settings(options.to_dictionary())
 	var path := dir.path_join("options.sbelli")
 	assert_eq(ProjectFile.save(sheet, path), OK)
@@ -84,14 +103,16 @@ func test_settings_saved_in_project_and_undoable() -> void:
 	var back := ExportOptions.from_sheet(loaded)
 	assert_eq(back.padding, 3)
 	assert_eq(back.background, Color(0.5, 0.25, 1))
-	assert_eq(back.sprite_name_pattern, "{row_name}")
+	assert_eq(back.sprite_name_pattern, "{animation}")
 
 
 func test_json_metadata_with_tags() -> void:
 	sheet.move_frame(Vector2i(2, 0), Vector2i(0, 1))
 	sheet.set_grid_size(Vector2i(2, 2))
-	sheet.set_row_name(0, "idle")
-	sheet.set_row_name(1, "walk")
+	sheet.add_animation(
+		SheetAnimation.create("idle", [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	)
+	sheet.add_animation(SheetAnimation.create("walk", [Vector2i(0, 1)] as Array[Vector2i]))
 	var options := ExportOptions.new()
 	options.metadata = ExportOptions.MetadataFormat.JSON
 	options.spacing = 2
@@ -112,7 +133,7 @@ func test_json_metadata_with_tags() -> void:
 
 
 func test_godot_sprite_frames() -> void:
-	sheet.set_row_name(0, "run")
+	sheet.add_animation(SheetAnimation.create("run", sheet.get_sorted_coords(), 8))
 	var options := ExportOptions.new()
 	options.metadata = ExportOptions.MetadataFormat.GODOT
 	options.animation_fps = 8
@@ -137,11 +158,29 @@ func test_godot_sprite_frames() -> void:
 		assert_eq(frames.get_animation_speed(&"run"), 8.0)
 
 
-func test_default_animation_without_row_names() -> void:
+func test_rows_are_not_animations() -> void:
+	sheet.move_frame(Vector2i(2, 0), Vector2i(0, 1))
+	sheet.set_grid_size(Vector2i(2, 2))
+	assert_eq(Metadata.frame_tags(sheet), [] as Array[Dictionary])
+	var frames := Metadata.grid_frames(sheet, ExportOptions.new())
+	assert_eq(Metadata.animation_frame_names(sheet, frames), {})
+	var json: Dictionary = JSON.parse_string(
+		Metadata.sheet_json(sheet, frames, "a.png", Vector2i(8, 8), 12)
+	)
+	assert_eq(json.meta.frameTags, [])
+	assert_false(json.meta.has("animations"))
+	# SpriteFrames get every frame in one "default" animation, which AnimatedSprite2D plays
 	var animations := Metadata.animations(sheet)
 	assert_eq(animations.size(), 1)
 	assert_eq(animations[0].name, "default")
 	assert_eq(animations[0].indices, [0, 1, 2])
+	var options := ExportOptions.new()
+	options.metadata = ExportOptions.MetadataFormat.GODOT
+	var path := dir.path_join("rows.png")
+	assert_eq(Metadata.write_for_image(sheet, options, path), OK)
+	var text := FileAccess.get_file_as_string(dir.path_join("rows.tres"))
+	assert_eq(text.count('"name": &'), 1, text)
+	assert_true(text.contains('"name": &"default"'))
 
 
 func test_projects_with_one_file_per_frame_still_open() -> void:
@@ -196,7 +235,7 @@ func test_animations_in_metadata() -> void:
 	walk.mode = SheetAnimation.Mode.ONCE
 	sheet.add_animation(walk)
 	var list := Metadata.animations(sheet)
-	assert_eq(list.size(), 1, "defined animations replace rows")
+	assert_eq(list.size(), 1, "no default animation besides it")
 	assert_eq(list[0].indices, [2, 0])
 	var tres := Metadata.sprite_frames_tres(
 		Metadata.grid_frames(sheet, ExportOptions.new()), list, "a.png", 12

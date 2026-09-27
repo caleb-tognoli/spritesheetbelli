@@ -43,7 +43,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Packed spritesheets with a data file: opening or adding an image that has a
   TexturePacker or Aseprite `.json` next to it (or opening the `.json` itself) cuts the
   frames where the data says. Trimmed and rotated frames come back as they were drawn,
-  and frame tags become named rows and animations. Add Spritesheet can still cut a grid
+  and frame tags become animations, each in a row of its own. Add Spritesheet can still cut a grid
   instead.
 - Add Spritesheet can find the sprites in a packed sheet without a data file: every group
   of pixels surrounded by transparency (or by the background colour in the corners) is a
@@ -61,15 +61,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - File > Export Again (Ctrl+Shift+E) repeats the last export to the same place without
   asking. Projects remember where that was.
 - Animated GIFs can be opened, added as a spritesheet or dropped: the frames go in a
-  new row named after the file, with an animation at the GIF's speed and frame times.
-  Adding a GIF as sprites adds every frame.
+  new row, with an animation named after the file at the GIF's speed and frame times.
+  Adding a GIF as sprites adds every frame and the animation too.
 - Export an animation as an animated GIF, scaled up with sharp pixels. It plays like the
   animation: its speed, frame durations, ping-pong and play-once.
 - Frame > Add Outline… draws an outline of any colour and thickness around the selected
   frames, with round or square corners.
 - Rows: Frame > Rows has Insert Row (Ctrl+Insert), Remove Row (Ctrl+Shift+Delete) and
-  Move Row Up/Down (Ctrl+Shift+Up/Down). Row names, locked cells and animations move
-  along.
+  Move Row Up/Down (Ctrl+Shift+Up/Down). Locked cells and animations move along.
 - Mirror an animation in the Animations window: its frames are flipped into a new row
   and a copy of the animation plays them, named walk_left for walk_right.
 - Onion skin in the animation players: a button shows the previous frame faintly behind
@@ -116,6 +115,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   first time, it takes 80% of the screen, centred, or is maximised on small screens.
 - Shortcuts for Frame > Pinned (K, in the packed layout) and showing or hiding the
   Sprites panel (Ctrl+L).
+- File name tokens `{animation}` (the first animation a frame is in, or "frame") and
+  `{animation_frame}` (its place in that animation, numbered like the others), e.g.
+  `{animation}_{animation_frame:2}` gives walk_00, walk_01….
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -215,6 +217,16 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Selected rows in the Sprites, History, Settings, Export and Animations lists are in the
   accent colour, a little stronger while the list has focus, in both themes; hovering stays
   neutral. Their text stays readable with any accent colour picked in Settings.
+- Only animations are exported as animations: JSON frame tags, Godot SpriteFrames and
+  atlases have the sheet's animations, and without any, SpriteFrames get every frame in
+  one "default" animation.
+
+### Removed
+- Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names
+  left of the grid and the row headers in the Sprites list. Animations are the only way
+  to group frames; exports no longer make an animation of every row, or name rows
+  "row0", "row1"….
+- The `{row_name}` file name token.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

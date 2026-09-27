@@ -29,7 +29,6 @@ const ICONS := {
 	&"rotate_cw": preload("res://assets/icons/RotateRight.svg"),
 	&"rotate_ccw": preload("res://assets/icons/RotateLeft.svg"),
 	&"color_key": preload("res://assets/icons/ColorPick.svg"),
-	&"name_row": preload("res://assets/icons/Rename.svg"),
 	&"replace_image": preload("res://assets/icons/Image.svg"),
 	&"reload_source": RELOAD_ICON,
 	&"insert_cell": preload("res://assets/icons/InsertBefore.svg"),
@@ -140,7 +139,6 @@ var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key_dialog := ColorKeyDialog.new()
 var outline_dialog := OutlineDialog.new()
-var row_name_dialog := RowNameDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
 var animation_window := AnimationWindow.new()
@@ -229,7 +227,6 @@ func _ready() -> void:
 	add_child(settings_window)
 	add_child(color_key_dialog)
 	add_child(outline_dialog)
-	add_child(row_name_dialog)
 	add_child(export_dialog)
 	export_dialog.export_requested.connect(files.choose_export_path)
 	add_child(about_dialog)
@@ -240,11 +237,6 @@ func _ready() -> void:
 	animation_preview.details_requested.connect(animation_window.open)
 	# The small player follows the animation being edited
 	animation_window.list.item_selected.connect(animation_preview.select_animation)
-	row_name_dialog.name_chosen.connect(
-		func(row: int, row_name: String) -> void:
-			Global.document.perform("Name row", Global.spritesheet.set_row_name.bind(row, row_name))
-	)
-	preview.row_name_requested.connect(open_row_name_dialog)
 	color_key_dialog.color_chosen.connect(remove_background)
 	outline_dialog.outline_chosen.connect(add_outline)
 	files.restore_session.call_deferred()
@@ -471,12 +463,6 @@ func _register_actions() -> void:
 		has_selection
 	)
 	add.call(
-		&"name_row",
-		"Name Row…",
-		func() -> void: open_row_name_dialog(preview.get_selected_coords()[0].y),
-		has_selection
-	)
-	add.call(
 		&"replace_image",
 		"Replace Image…",
 		func() -> void: files.replace_frame_image(preview.get_selected_coords()[0]),
@@ -626,10 +612,6 @@ func _selected_rows() -> Array[int]:
 			rows.append(coord.y)
 	rows.sort()
 	return rows
-
-
-func open_row_name_dialog(row: int) -> void:
-	row_name_dialog.open(row, Global.spritesheet.row_names.get(row, ""))
 
 
 ## Selected frames that came from a file, see [FrameSource]

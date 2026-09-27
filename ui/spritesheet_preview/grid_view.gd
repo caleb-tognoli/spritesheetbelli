@@ -1,7 +1,7 @@
 class_name GridView
 extends RefCounted
 ## How a [SpritesheetPreview] shows the grid layout: the cells where the export puts them,
-## with their frames, extruded edges, locks, lines and row names.
+## with their frames, extruded edges, locks and lines.
 
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
 ## On-screen size of the lock icon on locked cells
@@ -103,29 +103,6 @@ func draw_frame(
 		false,
 		modulate_color
 	)
-
-
-## Row names, right-aligned just left of the grid
-func draw_row_names(canvas: SpritesheetPreview) -> void:
-	const FONT_SIZE := 13
-	var font := ThemeDB.fallback_font
-	for row in sheet.row_names:
-		if row >= sheet.grid_size.y:
-			continue
-		var text: String = sheet.row_names[row]
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
-		var middle := Vector2(0, get_cell_rect(Vector2i(0, row)).get_center().y)
-		canvas.draw_set_transform(middle, 0, Vector2.ONE / canvas.camera.zoom)
-		canvas.draw_string(
-			font,
-			Vector2(-width - 8, FONT_SIZE / 3.0),
-			text,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			FONT_SIZE,
-			Color(0.8, 0.85, 1.0)
-		)
-	canvas.draw_set_transform(Vector2.ZERO)
 
 
 ## The frame's edge pixels repeated outward by the extrusion, like in the export

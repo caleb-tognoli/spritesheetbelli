@@ -63,7 +63,7 @@ const TARGETS := [
 	},
 ]
 const PATTERN_HELP := (
-	"Tokens: {index} {row} {column} {row_name} {frame} {name}\n"
+	"Tokens: {index} {row} {column} {frame} {animation} {animation_frame} {name}\n"
 	+ "Add :3 to pad numbers, e.g. {index:3} gives 007"
 )
 ## What a sheet in the packed layout can be exported as

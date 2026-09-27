@@ -96,9 +96,9 @@ func test_libgdx_atlas() -> void:
 	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
 	img.fill_rect(Rect2i(2, 3, 5, 8), Color.RED)
 	sheet.add_frames([img] as Array[Image])
-	sheet.set_row_name(0, "walk")
+	sheet.add_animation(SheetAnimation.create("walk", [Vector2i(0, 0)] as Array[Vector2i]))
 	var options := ExportOptions.new()
-	options.sprite_name_pattern = "{row_name}_{frame}"
+	options.sprite_name_pattern = "{animation}_{animation_frame}"
 	options.atlas_data = "atlas"
 	var path := OS.get_user_data_dir().path_join("tests/gdx.png")
 	var result := AtlasPacker.write(sheet, options, path)

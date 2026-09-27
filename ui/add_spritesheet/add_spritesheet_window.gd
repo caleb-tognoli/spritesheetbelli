@@ -332,8 +332,6 @@ static func add_sheet(target: Spritesheet, sheet: Spritesheet, lock_empty: bool)
 			data.placement = data.placement.duplicate()
 			data.placement.page += first_page
 		target.set_cell(coord + offset, data)
-	for row: int in sheet.row_names:
-		target.set_row_name(row + offset.y, sheet.row_names[row])
 	for animation in sheet.animations:
 		animation.name = target.get_unique_animation_name(animation.name)
 		var cells: Array[Vector2i] = []

@@ -290,17 +290,17 @@ func add_gif(path: String) -> void:
 		set_filepath_when_opening_spritesheet = false
 		Settings.add_recent_file(path)
 		Global.document.reset()
-	var row_name := path.get_file().get_basename()
+	var anim_name := path.get_file().get_basename()
 	_linking(path)
 	if opening:
 		var opened := Spritesheet.new()
 		opened.set_frame_scale(Vector2.ONE, Settings.get_value(&"resize_filter"))
-		GifDecoder.add_to_sheet(opened, gif, row_name, path)
+		GifDecoder.add_to_sheet(opened, gif, anim_name, path)
 		Global.document.load_state(opened.get_state())
 		Global.document.history_start = "Opened %s" % path.get_file()
 	else:
 		Global.document.perform(
-			"Add GIF", GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, row_name, path)
+			"Add GIF", GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, anim_name, path)
 		)
 
 

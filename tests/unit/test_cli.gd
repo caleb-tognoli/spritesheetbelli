@@ -77,6 +77,31 @@ func test_metadata_option() -> void:
 	)
 
 
+func test_metadata_has_only_the_projects_animations() -> void:
+	var project := dir.path_join("rows.sbelli")
+	var result := await run(["--pack", dir.path_join("frames"), "--out", project, "--columns", "2"])
+	assert_eq(result[0], "0", str(result))
+	var export := ["--export", project, "--out", dir.path_join("rows.png"), "--metadata", "json"]
+	assert_eq((await run(export))[0], "0")
+	var json: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string(dir.path_join("rows.json"))
+	)
+	assert_eq(json.meta.frameTags, [], "rows aren't animations")
+
+	var sheet := Spritesheet.new()
+	sheet.set_state(ProjectFile.load(project).state)
+	sheet.add_animation(
+		SheetAnimation.create("walk", [Vector2i(1, 0), Vector2i(0, 1)] as Array[Vector2i])
+	)
+	assert_eq(ProjectFile.save(sheet, project), OK)
+	assert_eq((await run(export))[0], "0")
+	json = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join("rows.json")))
+	assert_eq(json.meta.frameTags.size(), 1)
+	assert_eq(json.meta.frameTags[0].name, "walk")
+	assert_eq(json.meta.frameTags[0].from, 1.0)
+	assert_eq(json.meta.frameTags[0].to, 2.0)
+
+
 func test_out_extensions_are_stripped() -> void:
 	var frames := dir.path_join("frames")
 	var result := await run(

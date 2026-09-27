@@ -111,7 +111,6 @@ func test_mirror_animation() -> void:
 	var img := Image.create_empty(8, 8, false, Image.FORMAT_RGBA8)
 	img.set_pixel(0, 0, Color.RED)
 	sheet.set_frame(Vector2i(0, 0), img)
-	sheet.set_row_name(0, "walk_right")
 	var animation := SheetAnimation.create("walk_right", sheet.get_sorted_coords().slice(0, 2), 8)
 	animation.cells.append(Vector2i(0, 0))
 	animation.durations = [2.0, 1.0, 1.0] as Array[float]
@@ -123,7 +122,6 @@ func test_mirror_animation() -> void:
 	assert_eq(index, 1)
 	var mirrored := sheet.animations[1]
 	assert_eq(mirrored.name, "walk_left")
-	assert_eq(sheet.row_names.get(1), "walk_left")
 	assert_eq(mirrored.cells, [Vector2i(0, 1), Vector2i(1, 1), Vector2i(0, 1)] as Array[Vector2i])
 	assert_eq(mirrored.durations, [2.0, 1.0, 1.0] as Array[float])
 	assert_eq(mirrored.fps, 8.0)

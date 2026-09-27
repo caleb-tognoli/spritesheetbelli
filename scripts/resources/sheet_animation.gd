@@ -155,7 +155,6 @@ static func mirror(sheet: Spritesheet, index: int) -> int:
 	var targets: Array[Vector2i] = []
 	targets.assign(copies.values())
 	FrameEdits.flip(sheet, targets, true)
-	sheet.set_row_name(row, mirrored.name)
 	var new_index := sheet.add_animation(mirrored)
 	sheet.end_batch()
 	return new_index

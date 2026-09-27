@@ -57,8 +57,8 @@ static func grid_frames(
 	return frames
 
 
-## The sheet's animations, or else one per row: each row with frames becomes one, named
-## after the row. Without animations or row names, all frames form one "default" animation.
+## The sheet's animations. Without any, all frames form one "default" animation, so a
+## SpriteFrames resource still has something to play.
 ## Returns [code]{"name": String, "indices": Array, "durations": Array, "mode":
 ## SheetAnimation.Mode, "fps": float}[/code] with indices into [method grid_frames] and
 ## how many frames each is shown for; fps is 0 when not set.
@@ -84,31 +84,15 @@ static func animations(sheet: Spritesheet) -> Array[Dictionary]:
 					}
 				)
 		return result
-	if sheet.row_names.is_empty():
-		result.append(
-			{
-				"name": "default",
-				"indices": range(coords.size()),
-				"durations": [],
-				"mode": SheetAnimation.Mode.LOOP,
-				"fps": 0.0
-			}
-		)
-		return result
-	var by_row := {}
-	for i in coords.size():
-		var row := coords[i].y
-		if not by_row.has(row):
-			by_row[row] = {
-				"name": sheet.row_names.get(row, "row%d" % row),
-				"indices": [],
-				"durations": [],
-				"mode": SheetAnimation.Mode.LOOP,
-				"fps": 0.0,
-			}
-		by_row[row].indices.append(i)
-	for row: int in by_row:
-		result.append(by_row[row])
+	result.append(
+		{
+			"name": "default",
+			"indices": range(coords.size()),
+			"durations": [],
+			"mode": SheetAnimation.Mode.LOOP,
+			"fps": 0.0
+		}
+	)
 	return result
 
 
@@ -130,10 +114,10 @@ static func sheet_json(
 
 
 ## The frame names of every animation in playing order, by animation name, for animations
-## that frame tags can't describe exactly. Empty when the sheet has no animations or rows.
+## that frame tags can't describe exactly. Empty when the sheet has no animations.
 static func animation_frame_names(sheet: Spritesheet, frames: Array[Dictionary]) -> Dictionary:
 	var result := {}
-	if sheet.row_names.is_empty() and sheet.animations.is_empty():
+	if sheet.animations.is_empty():
 		return result
 	for animation in animations(sheet):
 		var names := []
@@ -165,7 +149,7 @@ static func frame_durations(sheet: Spritesheet, fps: float) -> Dictionary:
 ## animation of scattered frames spans from its first to its last one.
 static func frame_tags(sheet: Spritesheet) -> Array[Dictionary]:
 	var tags: Array[Dictionary] = []
-	if sheet.row_names.is_empty() and sheet.animations.is_empty():
+	if sheet.animations.is_empty():
 		return tags
 	for animation in animations(sheet):
 		var indices: Array = animation.indices
@@ -187,7 +171,8 @@ static func frame_tags(sheet: Spritesheet) -> Array[Dictionary]:
 	return tags
 
 
-## A Godot SpriteFrames resource using the image next to it, one animation per row
+## A Godot SpriteFrames resource using the image next to it, with [param animation_list]
+## from [method animations]
 ## The images can be the pages of a packed atlas: [param image_files] replaces
 ## [param image_file] then, and frames say which "page" they're on. A frame's "margin" puts
 ## back the transparent borders it was packed without.

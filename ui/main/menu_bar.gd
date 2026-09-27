@@ -39,7 +39,7 @@ const SUBMENUS := {
 	&"rows_menu":
 	[
 		"Rows",
-		[&"insert_row", &"remove_row", &"", &"move_row_up", &"move_row_down", &"", &"name_row"],
+		[&"insert_row", &"remove_row", &"", &"move_row_up", &"move_row_down"],
 		preload("res://assets/icons/Panels2.svg"),
 	],
 }

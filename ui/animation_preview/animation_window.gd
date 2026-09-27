@@ -188,7 +188,7 @@ func add_animation() -> void:
 	var cells := _selected_cells()
 	if cells.is_empty():
 		cells = sheet.get_sorted_coords()
-	var anim_name := sheet.get_unique_animation_name(_suggest_name(cells))
+	var anim_name := sheet.get_unique_animation_name()
 	var index: int = Global.document.perform(
 		"New animation", sheet.add_animation.bind(SheetAnimation.create(anim_name, cells))
 	)
@@ -380,14 +380,6 @@ func _edit(change: Callable) -> void:
 
 func _selected_cells() -> Array[Vector2i]:
 	return preview.get_selected_coords() if preview else ([] as Array[Vector2i])
-
-
-## A row's name when all the cells are in one named row
-func _suggest_name(cells: Array[Vector2i]) -> String:
-	var sheet := Global.spritesheet
-	if not cells.is_empty() and cells.all(func(c: Vector2i) -> bool: return c.y == cells[0].y):
-		return sheet.row_names.get(cells[0].y, "animation")
-	return "animation"
 
 
 func _add_property(text: String, control: Control) -> void:

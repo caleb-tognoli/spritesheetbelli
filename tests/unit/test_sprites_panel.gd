@@ -58,13 +58,6 @@ func test_frames_are_listed() -> void:
 	assert_false(main.layout_controller.side_split.visible, "with the history hidden too")
 
 
-func test_rows_with_names_are_headers() -> void:
-	sheet.set_row_name(0, "items")
-	var header := panel.tree.get_root().get_first_child()
-	assert_eq(header.get_text(0), "items")
-	assert_eq(header.get_child_count(), 3)
-
-
 func test_selection_goes_both_ways() -> void:
 	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
 	assert_eq(panel.get_selected_coords(), [Vector2i(1, 0)] as Array[Vector2i])

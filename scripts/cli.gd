@@ -28,7 +28,8 @@ Options:
   --padding <px>                 Empty pixels around the sheet (or each atlas page)
   --spacing <px>                 Empty pixels between cells (or packed frames)
   --extrude <px>                 Repeat frame edges outward
-  --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file
+  --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file,
+                                 with the project's animations
   --fps <n>                      Animation speed in the metadata and GIFs (default 12)
   --atlas                        Write --out as a packed atlas with a data file. Packed
                                  sheets are always written as atlases.
