@@ -5,7 +5,8 @@ class_name DialogButtons
 ## it elsewhere (the [code]gui/common/swap_cancel_ok[/code] project setting can change
 ## that), and other buttons go to the left of the two.
 
-const MIN_WIDTH := 80
+## Windows' standard button width, in interface units, so scaled with the interface
+const MIN_WIDTH := 88
 
 
 ## Moves the buttons of [param dialog] to the right, also ones added or shown later.

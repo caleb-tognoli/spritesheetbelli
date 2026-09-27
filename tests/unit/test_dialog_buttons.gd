@@ -35,6 +35,7 @@ func test_buttons_are_together_at_the_right_in_the_platform_order() -> void:
 	await get_tree().process_frame
 	for button: Button in [extra, dialog.get_ok_button(), dialog.get_cancel_button()]:
 		assert_eq(button.custom_minimum_size.x, DialogButtons.MIN_WIDTH, "from the theme")
+	assert_eq(DialogButtons.MIN_WIDTH, 88, "as wide as Windows' buttons")
 	var cancel_or_ok := expected[-1] as Button
 	assert_eq(cancel_or_ok.get_rect().end.x, row.size.x, "at the right")
 	dialog.free()

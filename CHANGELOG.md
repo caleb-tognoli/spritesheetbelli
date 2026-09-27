@@ -204,10 +204,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   are shown see-through where they'd land, in the grid and the packed layout. Releasing
   without dragging moves nothing; Alt+dragging in the grid keeps the copied frames in
   their cells.
-- Dialog buttons sit together at the right, at least 80 px wide, in the platform's order:
-  OK before Cancel on Windows, after it on macOS and Linux. Other buttons (Reset All…,
-  Don't Save, Add selected frames) go to their left. Add Spritesheet has a Cancel button,
-  Escape cancels it, and "Lock empty cells" moves to the left of its buttons.
+- Dialog buttons sit together at the right, at least 88 px wide (the standard on
+  Windows), in the platform's order: OK before Cancel on Windows, after it on macOS and
+  Linux. Other buttons (Reset All…, Don't Save, Add selected frames) go to their left.
+  Add Spritesheet has a Cancel button, Escape cancels it, and "Lock empty cells" moves to
+  the left of its buttons.
 - The status bar shows the file a frame comes from as its folder and name; the preview's
   tooltip still has the whole path. When the status bar is full, the path is cut first.
 - The window can be made as small as 960×600, scaled with the interface.
