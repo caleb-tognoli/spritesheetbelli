@@ -42,6 +42,12 @@ const SUBMENUS := {
 		[&"insert_row", &"remove_row", &"", &"move_row_up", &"move_row_down"],
 		preload("res://assets/icons/Panels2.svg"),
 	],
+	&"animation_menu":
+	[
+		"Animation",
+		[&"animation_from_row", &"animation_from_column", &"animation_from_selection"],
+		preload("res://assets/icons/Animation.svg"),
+	],
 }
 const MENUS := {
 	"File":
@@ -103,6 +109,19 @@ const MENUS := {
 		&"pin_toggle",
 		&"repack",
 	],
+	"Animation":
+	[
+		&"animation_from_row",
+		&"animation_from_column",
+		&"animation_from_selection",
+		&"",
+		&"edit_animations",
+		&"mirror_animation",
+		&"delete_animation",
+		&"",
+		&"toggle_animation",
+		&"toggle_onion_skin",
+	],
 	"View":
 	[
 		&"layout_grid",
@@ -115,8 +134,6 @@ const MENUS := {
 		&"",
 		&"toggle_grid",
 		&"toggle_indices",
-		&"toggle_animation",
-		&"edit_animations",
 		&"toggle_sprites",
 		&"toggle_history",
 		&"toggle_status_bar"

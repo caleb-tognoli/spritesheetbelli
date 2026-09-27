@@ -106,6 +106,8 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 	&"rows_menu",
 	&"pin_toggle",
 	&"",
+	&"animation_menu",
+	&"",
 	&"delete_frames",
 ]
 
@@ -144,6 +146,7 @@ var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
 var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
+var animation_commands := AnimationCommands.new()
 ## The settings and export on the left, and the sprites and history on the right
 var sidebar_split: SidebarSplit
 var panels_split: SidebarSplit
@@ -240,6 +243,8 @@ func _ready() -> void:
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
 	layout_controller.register_actions()
+	add_child(animation_commands)
+	animation_commands.setup(self)
 	add_sprites_btn.tooltip_text = Actions.get_tooltip(&"add_sprites")
 	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
 	export_btn.tooltip_text = Actions.get_tooltip(&"export")

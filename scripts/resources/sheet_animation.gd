@@ -170,6 +170,38 @@ static func mirrored_name(animation_name: String) -> String:
 	return animation_name + "_flipped"
 
 
+## The name suggested for an animation of frames named [param frame_names]: the start
+## the names have in common, without the digits and [code]_ - .[/code] it ends with, so
+## slime_walk_00 to slime_walk_05 make slime_walk. Frames without a name are left out,
+## and "animation" is used when nothing is left. A name in [param taken] gets a number:
+## slime_walk_2.
+static func default_name(frame_names: PackedStringArray, taken: PackedStringArray) -> String:
+	var prefix := ""
+	var first := true
+	for frame_name in frame_names:
+		var base := frame_name.get_basename()
+		if base.is_empty():
+			continue
+		if first:
+			prefix = base
+			first = false
+		else:
+			var length := 0
+			while length < mini(prefix.length(), base.length()) and prefix[length] == base[length]:
+				length += 1
+			prefix = prefix.left(length)
+	var end := prefix.length()
+	while end > 0 and (prefix[end - 1] in "_-. " or prefix[end - 1].is_valid_int()):
+		end -= 1
+	var suggested := prefix.left(end) if end > 0 else "animation"
+	if suggested not in taken:
+		return suggested
+	var number := 2
+	while "%s_%d" % [suggested, number] in taken:
+		number += 1
+	return "%s_%d" % [suggested, number]
+
+
 ## Reads frame numbers such as "0-3, 5*2, 9-7": single numbers and ranges, which count
 ## down when the first number is bigger, each optionally followed by how many frames it's
 ## shown for. Returns [code]{"numbers": Array[int], "durations": Array[float]}[/code], or

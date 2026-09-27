@@ -3,7 +3,8 @@ extends PanelContainer
 ## Lists every frame with a thumbnail, its name and size. Selecting frames here selects
 ## them in the preview and the other way round.
 ## Frames are renamed by double-clicking their name or F2, found by typing in the search field, and
-## pinned with the button on each frame in the packed layout.
+## pinned with the button on each frame in the packed layout. Right-clicking them offers
+## the actions given to [method set_context_actions].
 
 const THUMBNAIL_SIZE := 32
 const PIN_ICON := preload("res://assets/icons/Pin.svg")
@@ -14,6 +15,7 @@ var preview: SpritesheetPreview
 var search := LineEdit.new()
 var tree := Tree.new()
 var close_button := Button.new()
+var context_menu := ActionPopupMenu.new()
 
 var _thumbnails: Dictionary[Image, Texture2D] = {}
 ## The selection's highlight on the name, on the size, and on the size and pin, without
@@ -67,7 +69,11 @@ func _init() -> void:
 	tree.set_column_expand(1, false)
 	tree.set_column_custom_minimum_width(1, 100)
 	tree.tooltip_text = "Double-click a name to rename the frame"
+	# Right-clicking a frame outside the selection selects it, like in the preview
+	tree.allow_rmb_select = true
 	box.add_child(tree)
+	context_menu.theme = preload("res://resources/themes/popup_menu_theme.tres")
+	add_child(context_menu)
 
 
 func _ready() -> void:
@@ -129,6 +135,12 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_THEME_CHANGED:
 		_update_highlights()
 		refresh()
+
+
+## Actions offered when right-clicking frames, with [param submenus] as in
+## [method ActionPopupMenu.set_actions]
+func set_context_actions(ids: Array[StringName], submenus := {}) -> void:
+	context_menu.set_actions(ids, submenus)
 
 
 ## The frame's name, or its number when it has none
@@ -312,10 +324,21 @@ func _on_button_clicked(item: TreeItem, _column: int, id: int, _button: int) -> 
 
 
 func _on_tree_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_F2:
+	# F2 alone: with Shift or Ctrl, it makes an animation
+	var key := event as InputEventKey
+	if key and key.pressed and key.keycode == KEY_F2 and key.get_modifiers_mask() == 0:
 		_edit_selected()
 		tree.accept_event()
 	# Sizes can't be picked, and double-clicking one doesn't rename another frame
 	var mouse := event as InputEventMouseButton
 	if mouse and mouse.double_click and tree.get_column_at_position(mouse.position) == 1:
 		tree.accept_event()
+	elif (
+		mouse
+		and mouse.button_index == MOUSE_BUTTON_RIGHT
+		and not mouse.pressed
+		and context_menu.item_count > 0
+		and tree.get_item_at_position(mouse.position)
+	):
+		var screen_position := tree.get_screen_transform() * mouse.position
+		context_menu.popup(Rect2i(Vector2i(screen_position), Vector2i.ZERO))

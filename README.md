@@ -43,8 +43,9 @@ A small desktop tool made with Godot.</p>
 - **Resize without losing quality.** Sprites are always resized from the originals, with
   Nearest for sharp pixel art, and pixel-perfect zoom keeps every pixel the same size on
   screen.
-- **Animations:** make named animations from a range of cells or the selected frames,
-  each with its own speed and loop, ping-pong or play-once, and frames that are held
+- **Animations:** make named animations from a row, a column or the selected frames in a
+  keystroke (F2, Shift+F2, Ctrl+F2), named after what their frames' names share, or from a
+  range of cells, each with its own speed and loop, ping-pong or play-once, and frames that are held
   longer (`0-3, 4*2`), typed by number or name or put together in Edit Animation, where
   sprites are dragged into place and each gets how long it's shown; mirror walk_right
   into walk_left; play them in the animation panel under the sheet, with onion skin,

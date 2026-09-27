@@ -130,6 +130,15 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   fits again with a button or a double-click, pans when zoomed in, has a scrub bar to drag
   through the frames or click to one, and shows the frames over a checkerboard, a colour
   or the export background.
+- Animation from Row (F2), Animation from Column (Shift+F2) and Animation from Selection
+  (Ctrl+F2), also in the preview's right-click menu and, for the selection, the Sprites
+  panel's: they ask for a name, starting as what the frames' names begin with (slime_walk
+  from slime_walk_00 to slime_walk_05, or "animation"), skip empty cells and choose the
+  new animation in the animation panel. When an animation already has exactly those
+  frames, it's renamed instead. Rows and columns are the right-clicked cell's, or the
+  first selected frame's, in the grid layout.
+- An Animation menu with these, Edit, Mirror Animation and Delete Animation (of the
+  animation chosen in the animation panel), Animation Panel (P) and Onion Skin.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -237,8 +246,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   after the image without its extension (hero.png gives hero.json), and the same goes for
   GIFs, sprite name patterns ({index}.png names 0.png), Export Again and the command
   line's --out, whose extension picks the image format.
-- Animations… becomes Edit: it opens the animation panel at the chosen animation's
-  details.
+- Animations… becomes Animation > Edit: it opens the animation panel at the chosen
+  animation's details. The panel's toggle (P) moved from View to the Animation menu too.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names
