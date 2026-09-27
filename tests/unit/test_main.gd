@@ -121,6 +121,63 @@ func test_save_and_open_project() -> void:
 	assert_false(Global.document.can_undo())
 
 
+func test_opening_a_document_clears_the_selection() -> void:
+	var preview: SpritesheetPreview = main.preview
+	var images: Array[Image] = []
+	for i in 6:
+		images.append(make_image(Color.from_hsv(i / 6.0, 1, 1)))
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(images))
+	var first := dir.path_join("first.sbelli")
+	assert_true(await main.files.save_project(first))
+	Notify.message_dialog.hide()
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(images.slice(0, 1)))
+	var second := dir.path_join("second.sbelli")
+	assert_true(await main.files.save_project(second))
+	Notify.message_dialog.hide()
+	var image := dir.path_join("opened.png")
+	make_image(Color.RED, Vector2i(64, 16)).save_png(image)
+
+	var select_five := func() -> void:
+		var five := Global.spritesheet.get_sorted_coords().slice(0, 5)
+		preview.set_selected_coords(five)
+		preview._anchor = five[-1]
+		assert_eq(preview.get_selected_coords().size(), 5)
+		assert_true(main.sheet_info.text.contains("5 selected"))
+	var check := func(what: String) -> void:
+		assert_true(preview.get_selected_coords().is_empty(), what)
+		assert_eq(preview._anchor, SpritesheetPreview.NO_CELL, what + ": no range start")
+		assert_false(main.sheet_info.text.contains("selected"), what + ": status bar")
+
+	select_five.call()
+	assert_true(await main.files.open_project(first))
+	check.call("the same project")
+	select_five.call()
+	assert_true(await main.files.open_project(second))
+	check.call("another project")
+	select_five.call()
+	main.files.set_filepath_when_opening_spritesheet = true
+	await main.files.show_add_spritesheet_window(image)
+	main.files.add_spritesheet_window.add_spritesheet_to_global()
+	check.call("an image")
+	assert_true(await main.files.open_project(second))
+	select_five.call()
+	main.files.new_spritesheet()
+	check.call("New")
+
+	# Undo and redo keep the selection
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(images))
+	var moved := Global.spritesheet.get_sorted_coords().slice(0, 2)
+	preview.set_selected_coords(moved)
+	preview.move_requested.emit(moved, Vector2i(0, 5), false)
+	moved = preview.get_selected_coords()
+	assert_eq(moved[0].y, 5, "moved, and the selection with them")
+	Actions.run(&"flip_h")
+	Global.document.undo()
+	assert_eq(preview.get_selected_coords(), moved, "kept by undo")
+	Global.document.redo()
+	assert_eq(preview.get_selected_coords(), moved, "and redo")
+
+
 func test_opening_invalid_project_shows_error() -> void:
 	var path := dir.path_join("broken.sbelli")
 	var f := FileAccess.open(path, FileAccess.WRITE)

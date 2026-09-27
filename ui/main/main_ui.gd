@@ -276,6 +276,8 @@ func _ready() -> void:
 	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
 	preview.selection_changed.connect(update_sheet_info)
+	# Another document starts with nothing selected; undo and redo keep the selection
+	Global.document.loaded.connect(preview.clear_selection.unbind(1))
 	# Show the whole sheet when frames first appear, e.g. after adding or opening
 	Global.spritesheet.updated.connect(
 		func() -> void:

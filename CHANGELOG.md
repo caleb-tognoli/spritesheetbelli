@@ -229,6 +229,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Opening a project kept the previous sheet's zoom, which could cut the new one off; New
   kept it too.
 - Switching Add Spritesheet from Grid to Find sprites could leave frames off-screen.
+- Opening a project, an image or a GIF, and New, start with nothing selected; the
+  selection of the previous document no longer carries over to frames in the same places.
 
 ## 0.2.0
 

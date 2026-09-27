@@ -6,8 +6,8 @@ extends RefCounted
 
 ## Emitted when the path, unsaved state or undo history changes
 signal changed
-## Emitted when a sheet was opened or a new one started, with the view to show, see
-## [method load_state]
+## Emitted when [method load_state] replaced the whole sheet (opening a file, or New),
+## with the view to show
 signal loaded(view: Dictionary)
 
 ## Export settings that are part of the sheet's layout, so undone with it. The others are

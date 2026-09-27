@@ -285,6 +285,12 @@ func set_selected_coords(coords: Array[Vector2i]) -> void:
 	_selection_updated()
 
 
+## Selects nothing and forgets where Shift+click ranges start, e.g. for another document
+func clear_selection() -> void:
+	_anchor = NO_CELL
+	select_all(false)
+
+
 func select_all(select := true) -> void:
 	var coords: Array[Vector2i] = []
 	if select:
