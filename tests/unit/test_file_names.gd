@@ -1,6 +1,8 @@
 extends "res://tests/test_case.gd"
 ## The names and folders suggested when saving and exporting, and the window title
 
+## get_window_title() is static, so called on the script rather than the autoload
+const GlobalScript := preload("res://scripts/autoloaded/global.gd")
 const X := "C:/art/walk"
 const Y := "C:/art/run"
 
@@ -102,13 +104,13 @@ func test_window_title() -> void:
 		]
 	)
 	var document := Document.new()
-	assert_eq(Global.get_window_title(document), "Untitled - " + app)
+	assert_eq(GlobalScript.get_window_title(document), "Untitled - " + app)
 	document.perform(
 		"Add", document.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
-	assert_eq(Global.get_window_title(document), "(*) Untitled - " + app)
+	assert_eq(GlobalScript.get_window_title(document), "(*) Untitled - " + app)
 	document.load_state({}, "C:/projects/myproj.sbelli")
-	assert_eq(Global.get_window_title(document), "myproj.sbelli - " + app)
+	assert_eq(GlobalScript.get_window_title(document), "myproj.sbelli - " + app)
 
 
 func test_dialogs_get_a_name_and_keep_their_folder() -> void:

@@ -139,7 +139,7 @@ func update_window_title() -> void:
 static func get_window_title(doc: Document) -> String:
 	var title := "(*) " if doc.is_dirty else ""
 	var display_name := doc.get_display_name()
-	title += display_name if display_name else TranslationServer.translate("Untitled")
+	title += display_name if display_name else String(TranslationServer.translate("Untitled"))
 	title += " - " + ProjectSettings.get_setting("application/config/name")
 	title += " " + ProjectSettings.get_setting("application/config/version", "")
 	return title
