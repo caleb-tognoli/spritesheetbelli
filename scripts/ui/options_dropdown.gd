@@ -72,9 +72,9 @@ func add_field(
 
 ## Opens the panel below the button, at least as wide as it
 func open() -> void:
-	var below := get_global_rect()
-	below.position.y += below.size.y + 4
-	popup.popup_on_parent(Rect2i(Rect2(below.position, Vector2(below.size.x, 0))))
+	# The screen transform accounts for the window position and the interface's scale
+	var below := get_screen_transform() * Rect2(0, size.y + 4, size.x, 0)
+	popup.popup(Rect2i(below))
 
 
 ## Shows what's set, see [member summarize]

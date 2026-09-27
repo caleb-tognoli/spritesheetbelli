@@ -25,7 +25,7 @@ static func activate(control: Control) -> void:
 		(target as OptionButton).show_popup()
 	elif target is ColorPickerButton:
 		var picker := target as ColorPickerButton
-		var below := picker.get_screen_position() + Vector2(0, picker.size.y)
+		var below := picker.get_screen_transform() * Vector2(0, picker.size.y)
 		picker.get_popup().popup(Rect2i(Vector2i(below), Vector2i.ZERO))
 	elif target is CheckBox or target is CheckButton:
 		var check := target as BaseButton

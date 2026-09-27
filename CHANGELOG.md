@@ -197,6 +197,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - In the light theme, the Sprites, History, Settings, Export and Animations lists no
   longer look disabled, pins in the Sprites list are visible, and the Shortcuts headings,
   the Animations frames error and the empty preview's hint are readable.
+- The interface scale applies to dialogs and other separate windows (Settings, Export,
+  Add Spritesheet, File Changed, confirmations, colour pickers), not just the main
+  window, also when it changes while they're open. Dropdown panels such as Spacing &
+  Padding open right below their button at any scale.
 
 ## 0.2.0
 
