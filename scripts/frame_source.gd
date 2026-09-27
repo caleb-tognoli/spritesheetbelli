@@ -102,6 +102,18 @@ static func get_sheet_paths(sheet: Spritesheet) -> PackedStringArray:
 	return paths
 
 
+## The image the first linked frame of [param sheet] in reading order came from, or ""
+static func get_first_path(sheet: Spritesheet) -> String:
+	var first := Vector2i(-1, -1)
+	for coord in sheet.frame_sources:
+		var earlier := (
+			first.y < 0 or coord.y < first.y or (coord.y == first.y and coord.x < first.x)
+		)
+		if earlier and sheet.frame_sources[coord].get("path"):
+			first = coord
+	return sheet.frame_sources[first].path if first.y >= 0 else ""
+
+
 ## The frames of [param sheet] linked to [param path], in reading order
 static func get_linked(sheet: Spritesheet, path: String) -> Array[Vector2i]:
 	var coords: Array[Vector2i] = []

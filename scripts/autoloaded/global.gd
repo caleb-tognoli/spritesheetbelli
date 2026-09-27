@@ -62,12 +62,15 @@ func apply_ui_scale() -> void:
 
 
 func update_window_title() -> void:
-	var title := ""
-	if document.is_dirty:
-		title += "(*) "
-	title += document.get_display_name()
-	if not title.is_empty():
-		title += " - "
-	title += ProjectSettings.get_setting("application/config/name")
+	DisplayServer.window_set_title(get_window_title(document))
+
+
+## Like "(*) walk.png - spritesheetbelli 1.0", with "(*)" for unsaved changes and
+## "Untitled" for a document that isn't named after any file
+static func get_window_title(doc: Document) -> String:
+	var title := "(*) " if doc.is_dirty else ""
+	var display_name := doc.get_display_name()
+	title += display_name if display_name else TranslationServer.translate("Untitled")
+	title += " - " + ProjectSettings.get_setting("application/config/name")
 	title += " " + ProjectSettings.get_setting("application/config/version", "")
-	DisplayServer.window_set_title(title)
+	return title

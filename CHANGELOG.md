@@ -175,6 +175,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   hero.png and hero all give hero.png and hero.json, instead of hero.json.png and
   hero.json.json. The same goes for atlases, GIFs, sprite name patterns and the command
   line's --out, in any case. Other extensions stay part of the name (hero.v2.png).
+- Save As and Export no longer suggest an empty name or `spritesheet.png` in the app's
+  folder for a sheet made from sprites or opened from a GIF: they suggest the first
+  sprite's name, in its folder (e.g. `walk_0.sbelli` next to `walk_0.png`). A cancelled
+  save or export dialog no longer leaves the next one without a name.
+- The window title of an unsaved new sheet no longer reads "(*) - spritesheetbelli": it
+  shows the first sprite's file, or "Untitled".
+- The folder picker for exporting sprites is titled Export Sprites and starts next to the
+  sheet's files.
 
 ## 0.2.0
 

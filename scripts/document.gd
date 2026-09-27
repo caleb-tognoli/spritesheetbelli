@@ -140,11 +140,19 @@ func load_state(state: Dictionary, file_path := "", image_path := "") -> void:
 	mark_saved()
 
 
-## Name shown to the user: the project file, else the image it came from
+## Name shown to the user: the file of [method get_name_path], empty when there's none
 func get_display_name() -> String:
+	return get_name_path().get_file()
+
+
+## The file the document is named after: the project, else the image it came from or was
+## exported to, else the file its first linked frame came from
+func get_name_path() -> String:
 	if path:
-		return path.get_file()
-	return export_path.get_file()
+		return path
+	if export_path:
+		return export_path
+	return FrameSource.get_first_path(spritesheet)
 
 
 ## Empties the document and forgets its file and history. The new sheet resizes with

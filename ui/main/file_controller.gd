@@ -42,6 +42,8 @@ var get_selected_coords := func() -> Array[Vector2i]: return []
 
 func _ready() -> void:
 	open_spritesheet_dialog.filters = [IMAGE_FILTER, DATA_FILTER]
+	save_sprites_dialog.title = "Export Sprites"
+	save_sprites_dialog.ok_button_text = "Export"
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
 	open_dialog.file_selected.connect(open_path)
@@ -118,9 +120,6 @@ func popup_file_dialog(dialog: FileDialog) -> void:
 ## file picker and saving writes into the browser, then downloads the file
 func _web_file_dialog(dialog: FileDialog) -> void:
 	var images := WebFiles.IMAGE_TYPES
-	var base_name := Global.document.get_display_name().get_basename()
-	if base_name.is_empty():
-		base_name = "spritesheet"
 	match dialog:
 		open_sprites_dialog:
 			WebFiles.pick(images, true, add_sprites_from_paths)
@@ -139,10 +138,11 @@ func _web_file_dialog(dialog: FileDialog) -> void:
 				func(paths: PackedStringArray) -> void: dialog.file_selected.emit(paths[0])
 			)
 		save_project_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(base_name + ".sbelli"))
+			dialog.file_selected.emit(WebFiles.output_path(suggested_project_path()))
 		export_file_dialog:
 			dialog.file_selected.emit(WebFiles.output_path(dialog.current_file))
 		save_sprites_dialog:
+			var base_name := suggested_name(Global.document.get_name_path())
 			var folder := WebFiles.output_path(base_name + "_sprites")
 			DirAccess.make_dir_recursive_absolute(folder)
 			for file in DirAccess.get_files_at(folder):
@@ -378,12 +378,32 @@ func save() -> bool:
 
 
 func save_as() -> void:
-	var suggested := Global.document.path
-	if suggested.is_empty() and Global.document.export_path:
-		suggested = Global.document.export_path
-	if suggested:
-		save_project_dialog.current_path = ProjectFile.with_extension(suggested)
+	_suggest(save_project_dialog, suggested_project_path())
 	popup_file_dialog(save_project_dialog)
+
+
+## Where to suggest saving the project: next to the file the document is named after, see
+## [method Document.get_name_path], with its name
+static func suggested_project_path() -> String:
+	var base := Global.document.get_name_path()
+	return base.get_base_dir().path_join(suggested_name(base) + "." + ProjectFile.EXTENSION)
+
+
+## The name to suggest for a file named after [param base]: its name without the
+## extension, or "spritesheet"
+static func suggested_name(base: String) -> String:
+	var base_name := base.get_file().get_basename()
+	return base_name if base_name else "spritesheet"
+
+
+## Points [param dialog] at [param path]. The file name is always set, since cancelling a
+## native dialog clears it; without a folder, the dialog stays in the last one it was in.
+static func _suggest(dialog: FileDialog, path: String) -> void:
+	# In a browser, the dialog never opens: only the name is used
+	if path.get_base_dir() and not WebFiles.is_web():
+		dialog.current_dir = path.get_base_dir()
+	if dialog.file_mode == FileDialog.FILE_MODE_SAVE_FILE:
+		dialog.current_file = path.get_file()
 
 
 func save_project(path: String) -> bool:
@@ -458,7 +478,9 @@ func open_path(path: String) -> void:
 ## before overwriting a file.
 func choose_export_path() -> void:
 	var options := ExportOptions.from_sheet(Global.spritesheet)
+	var suggested := suggested_export_path(options)
 	if options.target == ExportOptions.Target.SPRITES:
+		_suggest(save_sprites_dialog, suggested)
 		popup_file_dialog(save_sprites_dialog)
 		return
 	var extension := options.get_file_extension()
@@ -470,20 +492,17 @@ func choose_export_path() -> void:
 	}
 	export_file_dialog.filters = ["%s ; %s" % [patterns[extension], names[extension]]]
 	export_file_dialog.title = "Export"
-	var suggested := suggested_export_path(options)
-	export_file_dialog.current_dir = suggested.get_base_dir()
-	export_file_dialog.current_file = suggested.get_file()
+	_suggest(export_file_dialog, suggested)
 	popup_file_dialog(export_file_dialog)
 
 
-## Where to suggest exporting: next to the last export or the project, named after it
+## Where to suggest exporting: next to the last export, else the file the document is
+## named after (see [method Document.get_name_path]), with its name
 static func suggested_export_path(options: ExportOptions) -> String:
 	var document := Global.document
-	var base := document.export_path if document.export_path else document.path
+	var base := document.export_path if document.export_path else document.get_name_path()
 	var folder := base.get_base_dir()
-	var base_name := base.get_file().get_basename()
-	if base_name.is_empty():
-		base_name = "spritesheet"
+	var base_name := suggested_name(base)
 	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
 		base_name += "_atlas"
 	if options.target == ExportOptions.Target.GIF and options.gif_animation:
