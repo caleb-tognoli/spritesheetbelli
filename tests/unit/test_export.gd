@@ -206,3 +206,81 @@ func test_animations_in_metadata() -> void:
 	var tags := Metadata.frame_tags(sheet)
 	assert_eq(tags[0].direction, "reverse")
 	assert_eq(tags[0].repeat, "1")
+
+
+func test_typed_extensions_are_stripped() -> void:
+	var options := ExportOptions.new()
+	options.target = ExportOptions.Target.JSON
+	# Typed name: the image and the data file written
+	var cases := {
+		"hero": ["hero.png", "hero.json"],
+		"hero.json": ["hero.png", "hero.json"],
+		"hero.png": ["hero.png", "hero.json"],
+		"hero.json.png": ["hero.png", "hero.json"],
+		"hero.webp": ["hero.webp", "hero.json"],
+		"hero.v2": ["hero.v2.png", "hero.v2.json"],
+		"HERO.PNG": ["HERO.PNG", "HERO.json"],
+		"HERO.JSON": ["HERO.png", "HERO.json"],
+	}
+	for typed: String in cases:
+		var image := SpritesheetExporter.with_image_extension(dir.path_join(typed))
+		assert_eq(image.get_file(), cases[typed][0], typed)
+		assert_eq(Metadata.get_path_for_image(image, options).get_file(), cases[typed][1], typed)
+	options.target = ExportOptions.Target.GODOT
+	var godot := SpritesheetExporter.with_image_extension("hero.tres")
+	assert_eq([godot, Metadata.get_path_for_image(godot, options)], ["hero.png", "hero.tres"])
+	assert_eq(SpritesheetExporter.strip_written_extensions("a.v2/hero"), "a.v2/hero")
+	assert_eq(SpritesheetExporter.format_sprite_name("{index}.PNG", sheet, Vector2i(1, 0)), "1")
+
+
+func test_typed_extensions_are_stripped_for_atlases() -> void:
+	var options := ExportOptions.new()
+	options.target = ExportOptions.Target.ATLAS
+	var cases := {
+		"hero": ["hero.png", "hero.json"],
+		"hero.json": ["hero.png", "hero.json"],
+		"hero.png": ["hero.png", "hero.json"],
+		"hero.v2": ["hero.v2.png", "hero.v2.json"],
+		"HERO.PNG": ["HERO.png", "HERO.json"],
+	}
+	for typed: String in cases:
+		var result := AtlasPacker.write(sheet, options, dir.path_join(typed))
+		assert_eq(result.error, OK, typed)
+		assert_eq(result.path.get_file(), cases[typed][0], typed)
+		assert_eq(result.json_path.get_file(), cases[typed][1], typed)
+	options.atlas_data = "sparrow"
+	var sparrow := AtlasPacker.write(sheet, options, dir.path_join("hero.xml"))
+	assert_eq(sparrow.json_path.get_file(), "hero.xml")
+
+	# Pages are numbered after the stripped name
+	sheet.resize_sprites(Vector2i(16, 16))
+	var settings := AtlasSettings.new()
+	settings.max_size = 16
+	sheet.set_atlas_settings(settings)
+	options.atlas_data = "json"
+	var pages := AtlasPacker.write(sheet, options, dir.path_join("paged.json"))
+	assert_eq(pages.pages, 3)
+	var files := Array(pages.paths).map(func(path: String) -> String: return path.get_file())
+	files.sort()
+	assert_eq(
+		files,
+		[
+			"paged_0.json",
+			"paged_0.png",
+			"paged_1.json",
+			"paged_1.png",
+			"paged_2.json",
+			"paged_2.png"
+		]
+	)
+
+
+func test_typed_extensions_are_stripped_for_gifs() -> void:
+	var options := ExportOptions.new()
+	options.target = ExportOptions.Target.GIF
+	for typed: String in ["hero", "hero.json", "hero.png", "HERO.GIF"]:
+		var result: Dictionary = await GifEncoder.write(sheet, options, dir.path_join(typed))
+		assert_eq(result.error, OK, typed)
+		assert_eq(result.path.get_file().to_lower(), "hero.gif", typed)
+	var kept: Dictionary = await GifEncoder.write(sheet, options, dir.path_join("hero.v2"))
+	assert_eq(kept.path.get_file(), "hero.v2.gif")

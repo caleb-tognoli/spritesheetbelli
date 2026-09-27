@@ -165,6 +165,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   its toolbar.
 - Picking a resize filter at the original size switching back to the one from the
   settings. The filter chosen in the settings is now the one new sheets start with.
+- Export names typed with the extension of another file the export writes: hero.json,
+  hero.png and hero all give hero.png and hero.json, instead of hero.json.png and
+  hero.json.json. The same goes for atlases, GIFs, sprite name patterns and the command
+  line's --out, in any case. Other extensions stay part of the name (hero.v2.png).
 
 ## 0.2.0
 

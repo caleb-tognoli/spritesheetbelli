@@ -95,11 +95,34 @@ static func supports_transparency(path: String) -> bool:
 	return path.get_extension().to_lower() not in ["jpg", "jpeg", "jpe"]
 
 
-## Adds .png when [param path] has no known image extension
+## [param path] with its own image extension, or else .png. Extensions of other files
+## exports write are dropped first, so "hero.json" gives "hero.png".
 static func with_image_extension(path: String) -> String:
-	if path.get_extension().to_lower() in IMAGE_EXTENSIONS:
-		return path
-	return path + ".png"
+	var extension := path.get_extension()
+	if extension.to_lower() not in IMAGE_EXTENSIONS:
+		extension = "png"
+	return strip_written_extensions(path) + "." + extension
+
+
+## Extensions of every file an export writes, lowercase: images, GIFs and data files
+static func get_written_extensions() -> PackedStringArray:
+	var extensions := IMAGE_EXTENSIONS.duplicate()
+	extensions.append(GifDecoder.EXTENSION)
+	for extension: String in Metadata.EXTENSIONS.values():
+		extensions.append(extension)
+	for format: Dictionary in AtlasFormats.FORMATS.values():
+		extensions.append(format.extension)
+	return extensions
+
+
+## [param path] without the extensions of files exports write, which the name to export
+## to may be typed with ("hero.json", "HERO.PNG" or "hero.json.png" give "hero"). Other
+## extensions are part of the name: "hero.v2" stays.
+static func strip_written_extensions(path: String) -> String:
+	var extensions := get_written_extensions()
+	while path.get_extension().to_lower() in extensions:
+		path = path.get_basename()
+	return path
 
 
 ## Saves [param img] in the format given by the extension of [param path]
@@ -132,8 +155,9 @@ static func format_sprite_name(
 		"name": sheet.frames[coord].resource_name.get_basename(),
 	}
 	var regex := RegEx.create_from_string("\\{(\\w+)(?::(\\d+))?\\}")
-	var result := pattern
-	for found in regex.search_all(pattern):
+	# The extension is added when saving: "{index}.png" names "0.png", not "0.png.png"
+	var result := strip_written_extensions(pattern)
+	for found in regex.search_all(result):
 		var key := found.get_string(1)
 		if not values.has(key):
 			continue

@@ -517,7 +517,7 @@ func export_again() -> bool:
 	var extension := options.get_file_extension()
 	# The export type changed since: same name, the new type's extension
 	if extension and path.get_extension().to_lower() != extension:
-		path = path.get_basename() + "." + extension
+		path = SpritesheetExporter.strip_written_extensions(path) + "." + extension
 	return await export_to(path)
 
 

@@ -77,6 +77,26 @@ func test_metadata_option() -> void:
 	)
 
 
+func test_out_extensions_are_stripped() -> void:
+	var frames := dir.path_join("frames")
+	var result := await run(
+		["--pack", frames, "--out", dir.path_join("hero.json"), "--metadata", "json"]
+	)
+	assert_eq(result[0], "0", str(result))
+	assert_true(FileAccess.file_exists(dir.path_join("hero.png")))
+	assert_true(FileAccess.file_exists(dir.path_join("hero.json")))
+	assert_false(FileAccess.file_exists(dir.path_join("hero.json.png")))
+
+	result = await run(["--pack", frames, "--out", dir.path_join("atlas.json"), "--atlas"])
+	assert_eq(result[0], "0", str(result))
+	assert_true(result[1].contains("atlas.png and atlas.json"), result[1])
+
+	result = await run(["--pack", frames, "--out", dir.path_join("hero.v2"), "--metadata", "json"])
+	assert_eq(result[0], "0", str(result))
+	assert_true(FileAccess.file_exists(dir.path_join("hero.v2.png")))
+	assert_true(FileAccess.file_exists(dir.path_join("hero.v2.json")))
+
+
 func test_cut_a_grid_and_find_sprites() -> void:
 	var sheet := Image.create_empty(48, 16, false, Image.FORMAT_RGBA8)
 	for i in 3:

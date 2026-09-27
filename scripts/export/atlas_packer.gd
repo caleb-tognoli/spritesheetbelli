@@ -110,7 +110,7 @@ static func write(
 	var packed := get_packed(sheet, options)
 	var regions := get_regions(packed, options.atlas_frame_size)
 	var sizes := PackedLayout.get_page_sizes(packed)
-	var base := path.get_basename()
+	var base := SpritesheetExporter.strip_written_extensions(path)
 	var result := {
 		"error": OK,
 		"message": "",

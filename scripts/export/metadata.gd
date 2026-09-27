@@ -31,7 +31,8 @@ static func write_for_image(
 
 
 static func get_path_for_image(image_path: String, options: ExportOptions) -> String:
-	return image_path.get_basename() + "." + EXTENSIONS.get(options.metadata, "json")
+	var base := SpritesheetExporter.strip_written_extensions(image_path)
+	return base + "." + EXTENSIONS.get(options.metadata, "json")
 
 
 ## Every frame of a grid export in reading order, with its cell in the image
