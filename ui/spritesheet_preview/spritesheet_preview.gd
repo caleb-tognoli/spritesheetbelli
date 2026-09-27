@@ -9,8 +9,8 @@ extends Node2D
 ##
 ## Mouse: click to select, Ctrl+click to toggle, Shift+click for a range, click an empty
 ## cell to lock it. Dragging depends on [member tool]: the select tool draws a selection
-## box, the move tool moves frames (Alt+drag copies). Middle drag or Space+drag pans, the
-## wheel zooms.
+## box, the move tool moves frames (Alt+drag copies), showing them where they'd land from
+## the press on. Middle drag or Space+drag pans, the wheel zooms.
 
 ## Emitted when the spritesheet or the selection changed
 signal preview_updated
@@ -47,6 +47,8 @@ const INDEX_FONT_SIZE := 14
 const DRAG_THRESHOLD := 4.0
 const NO_CELL := Vector2i(-1, -1)
 const INVALID_MOVE_COLOR := Color(1, 0.3, 0.3, 0.6)
+## Frames picked up with the move tool, drawn where they'd land
+const GHOST_COLOR := Color(1, 1, 1, 0.6)
 ## On-screen size of pivot marks
 const PIVOT_SIZE := 7.0
 
@@ -75,6 +77,7 @@ var tool := Tool.SELECT:
 		if value != tool:
 			tool = value
 			tool_changed.emit(tool)
+			_update_cursor()
 
 # Set from Settings
 var show_indices := true
@@ -109,6 +112,8 @@ var _drag_start_cell := NO_CELL
 ## The start cell even outside the grid, for moving
 var _drag_start_unclamped := Vector2i.ZERO
 var _drag_additive := false
+## Whether Alt is held while dragging, so frames in the grid are copied
+var _drag_copy := false
 var _box_end_world := Vector2.ZERO
 var _move_offset := Vector2i.ZERO
 var _pan_key_held := false
@@ -309,6 +314,7 @@ func _select_range(coord: Vector2i, additive: bool) -> void:
 
 func _selection_updated() -> void:
 	queue_redraw()
+	_update_cursor()
 	selection_changed.emit()
 	preview_updated.emit()
 
@@ -468,15 +474,22 @@ func _on_left_press(event: InputEventMouseButton) -> void:
 	if _pan_key_held:
 		_start_drag(Drag.PAN, event.position)
 		return
-	_start_drag(Drag.PENDING, event.position)
 	_drag_start_world = screen_to_world(event.position)
 	_drag_start_cell = get_cell_at_screen_position(event.position)
 	_drag_start_unclamped = _cell_unclamped(screen_to_world(event.position))
 	_drag_additive = event.is_command_or_control_pressed() or event.shift_pressed
+	_drag_copy = event.alt_pressed
+	_start_drag(Drag.PENDING, event.position)
+	# What a drag would move shows right away, where it is
+	_move_offset = Vector2i.ZERO
+	_move_page = _dragged_page()
+	_move_fits = true
+	queue_redraw()
 
 
 func _on_left_release(event: InputEventMouseButton) -> void:
 	var drag := _drag
+	var start_page := _dragged_page()
 	_end_drag()
 	match drag:
 		Drag.PENDING:
@@ -485,7 +498,7 @@ func _on_left_release(event: InputEventMouseButton) -> void:
 			_finish_box_selection()
 		Drag.MOVE:
 			if is_packed():
-				var moved := _move_offset != Vector2i.ZERO or _move_page != _dragged_page()
+				var moved := _move_offset != Vector2i.ZERO or _move_page != start_page
 				if _move_fits and moved:
 					placement_move_requested.emit(get_selected_coords(), _move_page, _move_offset)
 			elif _move_offset != Vector2i.ZERO:
@@ -569,6 +582,11 @@ func _click(cell: Vector2i, event: InputEventMouseButton) -> void:
 
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	_set_hovered_cell(get_cell_at_screen_position(event.position))
+	if _drag_copy != event.alt_pressed and _drag in [Drag.PENDING, Drag.MOVE]:
+		_drag_copy = event.alt_pressed
+		queue_redraw()
+	# The cursor is shared with the other previews, e.g. in Add Spritesheet
+	_update_cursor()
 	match _drag:
 		Drag.PAN:
 			camera.position = (
@@ -606,8 +624,7 @@ func _begin_real_drag() -> void:
 		_pivot_coord = _drag_start_cell
 		_pivot = world_to_pivot(_pivot_coord, _drag_start_world)
 		return
-	var can_move := tool == Tool.MOVE and able_to_move_frames and not _drag_additive
-	if can_move and (not _selected.is_empty() or spritesheet.has_frame(_drag_start_cell)):
+	if _drag_moves(_drag_start_cell, _drag_additive):
 		# The selection moves from wherever it's dragged; without one, the dragged frame
 		if _selected.is_empty():
 			set_selected_coords([_drag_start_cell] as Array[Vector2i])
@@ -619,6 +636,25 @@ func _begin_real_drag() -> void:
 		_drag = Drag.BOX
 		_box_end_world = screen_to_world(_drag_start_screen)
 	_update_cursor()
+
+
+## Whether dragging from [param cell] moves frames: with the move tool, the selection from
+## wherever it's dragged, else the frame at [param cell]. Otherwise it draws a box.
+func _drag_moves(cell: Vector2i, additive: bool) -> bool:
+	if tool != Tool.MOVE or not able_to_move_frames or additive:
+		return false
+	return not _selected.is_empty() or spritesheet.has_frame(cell)
+
+
+## The frames picked up with the move tool, in reading order: from the press on, before
+## the mouse moves, so it's clear what a drag moves
+func _get_lifted_coords() -> Array[Vector2i]:
+	var pressed := _drag == Drag.PENDING and _drag_moves(_drag_start_cell, _drag_additive)
+	if _drag != Drag.MOVE and not pressed:
+		return []
+	if _selected.is_empty():
+		return [_drag_start_cell] as Array[Vector2i]
+	return get_selected_coords()
 
 
 func _finish_box_selection() -> void:
@@ -637,9 +673,9 @@ func _finish_box_selection() -> void:
 	_selection_updated()
 
 
-## The page of the first selected frame, which dragging starts from
+## The page of the first frame picked up, which dragging starts from
 func _dragged_page() -> int:
-	var coords := get_selected_coords()
+	var coords := _get_lifted_coords()
 	if coords.is_empty() or not spritesheet.placements.has(coords[0]):
 		return 0
 	return spritesheet.placements[coords[0]].page
@@ -693,12 +729,18 @@ func _end_drag() -> void:
 
 
 func _update_cursor() -> void:
-	var shape := Input.CURSOR_ARROW
+	Input.set_default_cursor_shape(_get_cursor_shape())
+
+
+## The pan cursor while panning, and the move cursor wherever dragging would move frames
+func _get_cursor_shape() -> Input.CursorShape:
 	if _drag == Drag.PAN or _pan_key_held:
-		shape = Input.CURSOR_DRAG
-	elif _drag == Drag.MOVE:
-		shape = Input.CURSOR_MOVE
-	Input.set_default_cursor_shape(shape)
+		return Input.CURSOR_DRAG
+	if _drag == Drag.MOVE or not _get_lifted_coords().is_empty():
+		return Input.CURSOR_MOVE
+	if _drag == Drag.NONE and _drag_moves(hovered_cell, false):
+		return Input.CURSOR_MOVE
+	return Input.CURSOR_ARROW
 
 
 func _set_hovered_cell(cell: Vector2i) -> void:
@@ -729,14 +771,19 @@ func _draw() -> void:
 
 	var visible_rect := _visible_world_rect()
 	var visible_cells := _visible_cells(visible_rect)
+	# Frames being moved leave their cells, copied ones stay
+	var lifted: Dictionary[Vector2i, bool] = {}
+	if not _drag_copy:
+		lifted = _as_set(_get_lifted_coords())
 	for y in range(visible_cells.position.y, visible_cells.end.y):
 		for x in range(visible_cells.position.x, visible_cells.end.x):
 			var coord := Vector2i(x, y)
 			var rect := cell_rect(coord)
 			if spritesheet.has_frame(coord):
-				_draw_frame(coord, rect)
-				if _extrude > 0:
-					_draw_extrusion(coord, rect)
+				if not lifted.has(coord):
+					_draw_frame(coord, rect)
+					if _extrude > 0:
+						_draw_extrusion(coord, rect)
 			elif spritesheet.is_locked(coord):
 				_draw_lock(rect, pixel)
 			if coord == hovered_cell and _drag == Drag.NONE:
@@ -756,7 +803,8 @@ func _draw() -> void:
 func _draw_packed() -> void:
 	var pixel := 1.0 / camera.zoom.x
 	var visible_rect := _visible_world_rect()
-	packed_view.draw(self, visible_rect, pixel)
+	var lifted := _get_lifted_coords()
+	packed_view.draw(self, visible_rect, pixel, _as_set(lifted))
 	var hovered := packed_view.get_frame_rect(hovered_cell)
 	if spritesheet.placements.has(hovered_cell) and _drag == Drag.NONE:
 		draw_rect(hovered, HOVER_COLOR)
@@ -764,15 +812,15 @@ func _draw_packed() -> void:
 		var rect := packed_view.get_frame_rect(coord)
 		draw_rect(rect, Color(selection_color, 0.25))
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
-	if _drag == Drag.MOVE and (_move_offset != Vector2i.ZERO or _move_page != _dragged_page()):
-		var origins := packed_view.page_origins
-		for coord in _selected:
-			var place: Dictionary = spritesheet.placements[coord]
-			var target := packed_view.get_frame_rect(coord)
-			target.position += Vector2(_move_offset) + origins[_move_page] - origins[place.page]
-			packed_view.draw_frame(self, coord, target, Color(1, 1, 1, 0.6))
-			var color := selection_color if _move_fits else INVALID_MOVE_COLOR
-			draw_rect(target.grow(-pixel), color, false, pixel * 2)
+	# Frames picked up with the move tool, where they would land
+	var origins := packed_view.page_origins
+	for coord in lifted:
+		var place: Dictionary = spritesheet.placements[coord]
+		var target := packed_view.get_frame_rect(coord)
+		target.position += Vector2(_move_offset) + origins[_move_page] - origins[place.page]
+		packed_view.draw_frame(self, coord, target, GHOST_COLOR)
+		var color := selection_color if _move_fits else INVALID_MOVE_COLOR
+		draw_rect(target.grow(-pixel), color, false, pixel * 2)
 	if show_indices:
 		for coord in packed_view.get_frames_in(visible_rect):
 			var rect := packed_view.get_frame_rect(coord)
@@ -901,12 +949,11 @@ func _draw_selection(pixel: float) -> void:
 		draw_rect(rect, Color(selection_color, 0.25))
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
 
-	# Ghosts of the frames being moved, where they would land
-	if _drag == Drag.MOVE and _move_offset != Vector2i.ZERO:
-		for coord in _selected:
-			var target := cell_rect(coord + _move_offset)
-			_draw_frame(coord, target, Color(1, 1, 1, 0.6))
-			draw_rect(target.grow(-pixel), selection_color, false, pixel * 2)
+	# Frames picked up with the move tool, where they would land
+	for coord in _get_lifted_coords():
+		var target := cell_rect(coord + _move_offset)
+		_draw_frame(coord, target, GHOST_COLOR)
+		draw_rect(target.grow(-pixel), selection_color, false, pixel * 2)
 
 
 func _draw_indices(visible_cells: Rect2i) -> void:
@@ -964,6 +1011,13 @@ func _visible_cells(visible_rect: Rect2) -> Rect2i:
 
 func _visible_world_rect() -> Rect2:
 	return Rect2(camera.position, get_viewport_rect().size / camera.zoom)
+
+
+static func _as_set(coords: Array[Vector2i]) -> Dictionary[Vector2i, bool]:
+	var coords_set: Dictionary[Vector2i, bool] = {}
+	for coord in coords:
+		coords_set[coord] = true
+	return coords_set
 
 
 static func _make_checker_texture() -> ImageTexture:

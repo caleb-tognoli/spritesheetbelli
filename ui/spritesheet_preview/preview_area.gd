@@ -218,7 +218,6 @@ func update_ui() -> void:
 	)
 	move_tool_btn.set_pressed_no_signal(moving)
 	pivot_tool_btn.set_pressed_no_signal(spritesheet_preview.tool == SpritesheetPreview.Tool.PIVOT)
-	container.mouse_default_cursor_shape = (Control.CURSOR_MOVE if moving else Control.CURSOR_ARROW)
 
 
 ## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids

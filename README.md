@@ -28,16 +28,16 @@ A small desktop tool made with Godot.</p>
   sharing identical frames and power-of-two or square pages are in Settings.
 - **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
   the pivot tool or presets and exported where the format has them.
-- **Edit frames.** Drag to move or copy, flip, rotate, trim, remove a background
-  colour, add an outline, replace, cut/copy/paste (also images copied in other apps),
-  duplicate, insert or remove cells, insert, remove or reorder rows. Everything can be
-  undone.
+- **Edit frames.** The Select tool clicks and box-selects frames; the Move tool drags
+  them, or copies them with Alt. Flip, rotate, trim, remove a background colour, add an
+  outline, replace, cut/copy/paste (also images copied in other apps), duplicate, insert
+  or remove cells, insert, remove or reorder rows. Everything can be undone.
 - **Stay linked to your art files.** Sprites and sheets remember the file they came from.
   When you save it again in your drawing program, spritesheetbelli asks whether to reload
   it, keeping the flips, trims, outlines and moves made here or going back to the file as
   it is; with several changed files, answer once for all of them. Sheets are cut again in
   the same places (data-file frames by name), GIF frames by number.
-- **Line frames up.** Move frames inside their cells a pixel at a time in the move mode,
+- **Line frames up.** Move frames inside their cells a pixel at a time with the Move tool,
   or align them to an edge of their cells; trimming keeps every pixel where it was, so
   animations don't jump.
 - **Resize without losing quality.** Sprites are always resized from the originals, with

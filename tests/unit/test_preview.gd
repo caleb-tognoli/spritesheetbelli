@@ -131,6 +131,48 @@ func test_move_tool_without_selection_moves_the_dragged_frame() -> void:
 	assert_color(Global.spritesheet.frames[Vector2i(2, 1)], Vector2i.ZERO, Color.BLUE)
 
 
+func test_move_tool_shows_what_moves_from_the_press_on() -> void:
+	var some: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
+	preview.set_selected_coords(some)
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 0)))
+	assert_true(preview._get_lifted_coords().is_empty(), "the select tool draws a box")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(3, 0)))
+
+	preview.tool = SpritesheetPreview.Tool.MOVE
+	preview.set_selected_coords(some)
+	var steps := Global.document.get_history().size()
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 0)))
+	assert_eq(preview._get_lifted_coords(), some, "the selection, before the mouse moves")
+	assert_eq(preview._get_cursor_shape(), Input.CURSOR_MOVE)
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(3, 0)))
+	assert_true(preview._get_lifted_coords().is_empty(), "put down on release")
+	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
+	assert_eq(Global.document.get_history().size(), steps, "no step")
+
+	preview.select_all(false)
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(2, 0)))
+	assert_eq(preview._get_lifted_coords(), [Vector2i(2, 0)] as Array[Vector2i], "no selection")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(2, 0)))
+	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "a click still selects")
+	preview.select_all(false)
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 1)))
+	assert_true(preview._get_lifted_coords().is_empty(), "an empty cell draws a box")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(3, 1)))
+
+
+func test_move_cursor_where_dragging_moves() -> void:
+	move_to(at(Vector2i(0, 0)))
+	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW, "select tool")
+	Actions.run(&"tool_move")
+	assert_eq(preview._get_cursor_shape(), Input.CURSOR_MOVE, "over a frame")
+	move_to(at(Vector2i(3, 1)))
+	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW, "over an empty cell")
+	preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	assert_eq(preview._get_cursor_shape(), Input.CURSOR_MOVE, "the selection moves from anywhere")
+	Actions.run(&"tool_select")
+	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW)
+
+
 func test_tool_actions() -> void:
 	Actions.run(&"tool_move")
 	assert_eq(preview.tool, SpritesheetPreview.Tool.MOVE)

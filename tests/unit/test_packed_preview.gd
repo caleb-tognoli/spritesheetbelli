@@ -136,6 +136,19 @@ func test_frames_can_go_on_a_new_page() -> void:
 	assert_eq(PackedLayout.get_page_count(sheet), 2)
 
 
+func test_pressing_picks_frames_up_without_moving_them() -> void:
+	preview.tool = SpritesheetPreview.Tool.MOVE
+	var before := sheet.placements.duplicate(true)
+	var some: Array[Vector2i] = [Vector2i(0, 0), Vector2i(2, 0)]
+	preview.set_selected_coords(some)
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(1, 0)))
+	assert_eq(preview._get_lifted_coords(), some, "the selection, before the mouse moves")
+	assert_false(preview.is_dragging_frames(), "not dragged yet")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(1, 0)))
+	assert_true(preview._get_lifted_coords().is_empty(), "put down on release")
+	assert_eq(sheet.placements, before, "nothing moved")
+
+
 func test_arrow_keys_move_frames_in_the_move_mode() -> void:
 	preview.tool = SpritesheetPreview.Tool.MOVE
 	var coord := Vector2i(3, 0)

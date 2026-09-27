@@ -185,6 +185,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   atlas or GIF) shows whole.
 - The Add Spritesheet preview shows the whole sheet again when Cut or Keep the packed
   layout changes; grid sizes, offset, spacing and the Find sprites settings keep the zoom.
+- The Move tool shows the move cursor wherever dragging would move frames: anywhere while
+  frames are selected, since the selection moves from wherever it's dragged, else over a
+  frame.
+- Pressing with the Move tool picks the frames up right away: they leave their places and
+  are shown see-through where they'd land, in the grid and the packed layout. Releasing
+  without dragging moves nothing; Alt+dragging in the grid keeps the copied frames in
+  their cells.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

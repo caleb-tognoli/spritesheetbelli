@@ -138,8 +138,11 @@ func world_to_pivot(coord: Vector2i, world: Vector2) -> Vector2:
 	return (point + Vector2(src.position)) / sheet.frame_scale
 
 
-## The pages and their frames, under the selection
-func draw(canvas: SpritesheetPreview, visible_rect: Rect2, pixel: float) -> void:
+## The pages and their frames, under the selection. Frames in [param lifted] are picked up
+## to move, so the canvas draws them where they'd land instead.
+func draw(
+	canvas: SpritesheetPreview, visible_rect: Rect2, pixel: float, lifted: Dictionary = {}
+) -> void:
 	for page in page_sizes.size():
 		var rect := get_page_rect(page)
 		if not rect.intersects(visible_rect):
@@ -158,7 +161,8 @@ func draw(canvas: SpritesheetPreview, visible_rect: Rect2, pixel: float) -> void
 	for coord in _order:
 		var rect := get_frame_rect(coord)
 		if rect.intersects(visible_rect):
-			draw_frame(canvas, coord, rect)
+			if not lifted.has(coord):
+				draw_frame(canvas, coord, rect)
 			if canvas.show_grid:
 				canvas.draw_rect(rect, OUTLINE_COLOR, false, pixel)
 			_draw_marks(canvas, coord, rect, pixel)
