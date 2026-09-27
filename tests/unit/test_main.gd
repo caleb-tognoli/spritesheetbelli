@@ -192,6 +192,41 @@ func test_add_spritesheet_only_locks_its_own_cells() -> void:
 	assert_true(Global.spritesheet.is_locked(Vector2i(1, 1)), "new sheet's empty cell locked")
 
 
+func test_add_spritesheet_can_leave_empty_cells_free() -> void:
+	var img := Image.create_empty(32, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(0, 0, 16, 16), Color.BLUE)
+	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
+	window.setup(img)
+	window.update_grid_size(2, 1)
+	assert_true(window.keep_empty_cells.button_pressed, "on by default")
+	assert_false(window.keep_empty_cells.disabled, "the sheet has an empty cell")
+	window.keep_empty_cells.button_pressed = false
+	assert_false(Settings.get_value(&"keep_empty_cells"), "remembered")
+	window.add_spritesheet_to_global()
+	assert_false(Global.spritesheet.is_locked(Vector2i(1, 0)), "empty cell stays free")
+
+	window.setup(make_image(Color.RED, Vector2i(32, 16)))
+	window.update_grid_size(2, 1)
+	assert_false(window.keep_empty_cells.button_pressed, "unchecked the next time")
+	assert_true(window.keep_empty_cells.disabled, "no empty cells to keep")
+	Settings.set_value(&"keep_empty_cells", true)
+
+
+func test_add_sheet_locks_empty_cells_when_asked() -> void:
+	var sheet := Spritesheet.new()
+	sheet.set_grid_size(Vector2i(2, 2))
+	sheet.set_frame(Vector2i(0, 0), make_image(Color.RED))
+	for keep_empty: bool in [true, false]:
+		var target := Spritesheet.new()
+		target.add_frames([make_image(Color.GREEN)] as Array[Image])
+		AddSpritesheetWindow.add_sheet(target, sheet, keep_empty)
+		assert_eq(target.frames.size(), 2, "added below the frames")
+		var locked: Array[Vector2i] = []
+		if keep_empty:
+			locked = [Vector2i(1, 1), Vector2i(0, 2), Vector2i(1, 2)]
+		assert_eq(target.locked_coordinates, locked, "keep empty: %s" % keep_empty)
+
+
 func test_opening_a_file_is_not_an_unsaved_change() -> void:
 	var path := dir.path_join("open_me.png")
 	make_image(Color.RED, Vector2i(32, 16)).save_png(path)

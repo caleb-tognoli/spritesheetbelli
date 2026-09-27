@@ -93,6 +93,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Command line: `--cut <image>` cuts a spritesheet (grid, data file or `--detect`) or
   an animated GIF; `--atlas` writes a packed atlas; an `--out` ending in `.gif` writes an
   animated GIF (`--animation`, `--scale`); `--pack` takes GIFs too.
+- Add Spritesheet has "Keep the empty cells empty" next to its button, on by default and
+  remembered. Turned off, the added sheet's empty cells aren't locked, so added sprites
+  can fill them.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

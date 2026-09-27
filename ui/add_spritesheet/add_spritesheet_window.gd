@@ -15,6 +15,8 @@ signal frames_added
 @onready var spacing_x: SpinBox = %SpacingX
 @onready var spacing_y: SpinBox = %SpacingY
 @onready var slice_info: Label = %SliceInfo
+## Locks the added sheet's empty cells, so added sprites skip them
+@onready var keep_empty_cells: CheckBox = %KeepEmptyCells
 
 @export var spritesheet_image: Image
 
@@ -51,6 +53,9 @@ func _ready() -> void:
 	add_selected_frames_btn.icon = preload("res://assets/icons/Add.svg")
 	add_spritesheet_btn.icon = preload("res://assets/icons/SpriteSheet.svg")
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
+	keep_empty_cells.toggled.connect(
+		func(on: bool) -> void: Settings.set_value(&"keep_empty_cells", on)
+	)
 	preview_area.spritesheet_preview.selection_changed.connect(on_preview_update)
 	grid_columns.value_changed.connect(
 		func(columns: float) -> void: update_grid_size(int(columns), spritesheet.grid_size.y)
@@ -122,6 +127,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	keep_layout.set_pressed_no_signal(
 		target.is_empty() or target.layout == Spritesheet.Layout.PACKED
 	)
+	keep_empty_cells.set_pressed_no_signal(Settings.get_value(&"keep_empty_cells"))
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
 	_update_options_label()
@@ -254,6 +260,9 @@ func on_preview_update() -> void:
 	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
 	add_selected_frames_btn.disabled = selection_size == 0
 	add_selected_frames_btn.text = tr("Add selected frames (%d)") % selection_size
+	# Only matters when some cells have no sprite
+	var grid := spritesheet.grid_size if spritesheet else Vector2i.ZERO
+	keep_empty_cells.disabled = spritesheet == null or spritesheet.frames.size() >= grid.x * grid.y
 
 
 func update_grid_size(columns: int, rows: int) -> void:
@@ -284,42 +293,46 @@ func add_spritesheet_to_global() -> void:
 		close_requested.emit()
 		return
 
-	# Place the whole grid below the existing frames, keeping empty rows and columns
 	var target := Global.spritesheet
-	Global.document.perform(
-		"Add spritesheet",
-		func() -> void:
-			var offset := Vector2i(0, target.get_first_free_row())
-			var packed := spritesheet.layout == Spritesheet.Layout.PACKED
-			# A packed sheet's pages go after the open sheet's
-			var first_page := 0
-			if packed and target.is_empty():
-				target.set_atlas_settings(spritesheet.atlas_settings)
-				target.set_export_settings(spritesheet.export_settings)
-				target.set_layout(Spritesheet.Layout.PACKED)
-			elif packed:
-				first_page = PackedLayout.get_page_count(target)
-			target.set_grid_size(target.grid_size.max(spritesheet.grid_size + offset))
-			for coord: Vector2i in spritesheet.frames:
-				var data := spritesheet.get_cell_data(coord)
-				if data.has("placement"):
-					data.placement = data.placement.duplicate()
-					data.placement.page += first_page
-				target.set_cell(coord + offset, data)
-			for row: int in spritesheet.row_names:
-				target.set_row_name(row + offset.y, spritesheet.row_names[row])
-			for animation in spritesheet.animations:
-				animation.name = target.get_unique_animation_name(animation.name)
-				var cells: Array[Vector2i] = []
-				for cell in animation.cells:
-					cells.append(cell + offset)
-				animation.cells = cells
-				target.add_animation(animation)
-			# Keep the added sheet's layout without touching free cells elsewhere
-			target.lock_free_cells(Rect2i(offset, spritesheet.grid_size))
-	)
+	var keep_empty: bool = Settings.get_value(&"keep_empty_cells")
+	Global.document.perform("Add spritesheet", add_sheet.bind(target, spritesheet, keep_empty))
 	frames_added.emit()
 	close_requested.emit()
+
+
+## Places the whole grid of [param sheet] below the frames of [param target], keeping
+## empty rows and columns. With [param keep_empty], its empty cells are locked so added
+## sprites skip them.
+static func add_sheet(target: Spritesheet, sheet: Spritesheet, keep_empty: bool) -> void:
+	var offset := Vector2i(0, target.get_first_free_row())
+	var packed := sheet.layout == Spritesheet.Layout.PACKED
+	# A packed sheet's pages go after the open sheet's
+	var first_page := 0
+	if packed and target.is_empty():
+		target.set_atlas_settings(sheet.atlas_settings)
+		target.set_export_settings(sheet.export_settings)
+		target.set_layout(Spritesheet.Layout.PACKED)
+	elif packed:
+		first_page = PackedLayout.get_page_count(target)
+	target.set_grid_size(target.grid_size.max(sheet.grid_size + offset))
+	for coord: Vector2i in sheet.frames:
+		var data := sheet.get_cell_data(coord)
+		if data.has("placement"):
+			data.placement = data.placement.duplicate()
+			data.placement.page += first_page
+		target.set_cell(coord + offset, data)
+	for row: int in sheet.row_names:
+		target.set_row_name(row + offset.y, sheet.row_names[row])
+	for animation in sheet.animations:
+		animation.name = target.get_unique_animation_name(animation.name)
+		var cells: Array[Vector2i] = []
+		for cell in animation.cells:
+			cells.append(cell + offset)
+		animation.cells = cells
+		target.add_animation(animation)
+	if keep_empty:
+		# Only the added sheet's cells, not free cells elsewhere
+		target.lock_free_cells(Rect2i(offset, sheet.grid_size))
 
 
 func add_selected_frames_to_global() -> void:

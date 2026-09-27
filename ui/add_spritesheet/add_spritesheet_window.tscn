@@ -192,3 +192,9 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(170, 0)
 layout_mode = 2
 text = "Add Spritesheet"
+
+[node name="KeepEmptyCells" type="CheckBox" parent="VBoxContainer/PanelContainer2/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Locks the empty cells of this sheet, so added sprites skip them. Click a locked cell to unlock it."
+text = "Keep the empty cells empty"

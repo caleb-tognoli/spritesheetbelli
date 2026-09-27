@@ -47,6 +47,8 @@ const DEFAULTS := {
 	&"history_width": 0,
 	&"show_sprites": false,
 	&"onion_skin": false,
+	# Add Spritesheet locks the empty cells of the added sheet
+	&"keep_empty_cells": true,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
 const REMEMBERED: Array[StringName] = [
@@ -57,6 +59,7 @@ const REMEMBERED: Array[StringName] = [
 	&"history_width",
 	&"show_sprites",
 	&"onion_skin",
+	&"keep_empty_cells",
 ]
 const MAX_RECENT_FILES := 10
 
