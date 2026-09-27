@@ -154,5 +154,45 @@ func test_opening_and_adding_gifs() -> void:
 
 	await main.files.add_sprites_from_paths(PackedStringArray([path]))
 	assert_eq(sheet.frames.size(), 6, "as sprites, every frame")
+	assert_eq(sheet.animations.size(), 2, "and its animation")
+	assert_eq(sheet.animations[1].name, "pillow2")
+	assert_eq(sheet.animations[1].durations, [2.0, 4.0, 1.0] as Array[float])
+	var cells := sheet.animations[1].cells
+	assert_eq(cells.size(), 3)
+	for i in cells.size():
+		assert_false(cells[i] in sheet.animations[0].cells, "the added frames")
+		assert_eq(sheet.frame_sources[cells[i]].gif_frame, i)
+	assert_eq(sheet.row_names.size(), 1, "no row name")
+	Global.document.undo()
+	assert_eq(sheet.frames.size(), 3, "one step")
+	assert_eq(sheet.animations.size(), 1)
+	main.queue_free()
+	Global.document.reset()
+
+
+func test_add_sprites_gives_each_gif_an_animation() -> void:
+	var main: Control = load(MAIN_SCENE).instantiate()
+	Global.document.reset()
+	add_child(main)
+	await get_tree().process_frame
+	assert_true("*.gif" in main.files.open_sprites_dialog.filters[0])
+	var dir := OS.get_user_data_dir().path_join("tests")
+	DirAccess.make_dir_recursive_absolute(dir)
+	var fixture := ProjectSettings.globalize_path("res://tests/fixtures/pillow.gif")
+	for file_name: String in ["a.gif", "b.gif"]:
+		DirAccess.copy_absolute(fixture, dir.path_join(file_name))
+	make_image(Color.RED).save_png(dir.path_join("a_png.png"))
+	await main.files.add_sprites_from_paths(
+		PackedStringArray(
+			["a.gif", "a_png.png", "b.gif"].map(func(f: String) -> String: return dir.path_join(f))
+		)
+	)
+	var sheet := Global.spritesheet
+	assert_eq(sheet.frames.size(), 7)
+	assert_eq(sheet.animations.map(func(a: SheetAnimation) -> String: return a.name), ["a", "b"])
+	assert_eq(sheet.animations[1].cells.size(), 3)
+	var first: Vector2i = sheet.animations[1].cells[0]
+	assert_eq(sheet.frame_sources[first].path, dir.path_join("b.gif"))
+	assert_eq(sheet.frame_sources[first].gif_frame, 0)
 	main.queue_free()
 	Global.document.reset()

@@ -136,3 +136,12 @@ func test_dialogs_get_a_name_and_keep_their_folder() -> void:
 	files.save_sprites_dialog.hide()
 	files.open_file_dialogs.clear()
 	main.queue_free()
+
+
+func test_picked_data_file_brings_its_image() -> void:
+	var upload := WebFiles.UPLOAD_DIR
+	var picked := PackedStringArray([upload + "/hero.png", upload + "/hero.json"])
+	assert_eq(FileController.main_picked_file(picked), upload + "/hero.json")
+	picked = PackedStringArray([upload + "/a.gif"])
+	assert_eq(FileController.main_picked_file(picked), upload + "/a.gif")
+	assert_true(".gif" in WebFiles.IMAGE_TYPES)

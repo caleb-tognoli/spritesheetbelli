@@ -114,7 +114,6 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 ## the [param path] of the GIF, the frames are linked to it, see [FrameSource].
 static func add_to_sheet(sheet: Spritesheet, gif: Dictionary, row_name: String, path := "") -> void:
 	var frames: Array[Image] = gif.frames
-	var seconds: Array[float] = gif.delays
 	var row := sheet.get_first_free_row()
 	var cells: Array[Vector2i] = []
 	sheet.begin_batch()
@@ -122,14 +121,25 @@ static func add_to_sheet(sheet: Spritesheet, gif: Dictionary, row_name: String, 
 		cells.append(Vector2i(i, row))
 		sheet.set_frame(cells[i], frames[i], FrameSource.for_gif(path, i) if path else {})
 	sheet.set_row_name(row, row_name)
-	if frames.size() > 1:
-		var animation := SheetAnimation.create_timed(
-			sheet.get_unique_animation_name(row_name), cells, seconds
-		)
-		if not gif.loop:
-			animation.mode = SheetAnimation.Mode.ONCE
-		sheet.add_animation(animation)
+	add_animation(sheet, gif, cells, row_name)
 	sheet.end_batch()
+
+
+## Adds an animation named [param anim_name] (or a free name like it) that plays
+## [param cells], which hold the frames of [param gif], the way the GIF does. Nothing is
+## added for a single frame.
+static func add_animation(
+	sheet: Spritesheet, gif: Dictionary, cells: Array[Vector2i], anim_name: String
+) -> void:
+	if cells.size() < 2:
+		return
+	var seconds: Array[float] = gif.delays
+	var animation := SheetAnimation.create_timed(
+		sheet.get_unique_animation_name(anim_name), cells, seconds
+	)
+	if not gif.loop:
+		animation.mode = SheetAnimation.Mode.ONCE
+	sheet.add_animation(animation)
 
 
 ## GIF's LZW decompression of [param data] into at most [param count] palette indices

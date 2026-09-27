@@ -5,7 +5,9 @@ class_name WebFiles
 
 const UPLOAD_DIR := "user://web_uploads"
 const OUTPUT_DIR := "user://web_output"
-const IMAGE_TYPES := ".png,.jpg,.jpeg,.jpe,.webp"
+const IMAGE_TYPES := ".png,.jpg,.jpeg,.jpe,.webp,.gif"
+## Spritesheet data files, see [SheetData]
+const DATA_TYPES := ".json,.atlas"
 
 ## Opens the browser's file picker and sends each file to Godot as base64
 const PICKER_SCRIPT := """
@@ -21,7 +23,7 @@ const PICKER_SCRIPT := """
 	input.onchange = function() {
 		input.remove();
 		var files = Array.from(input.files).filter(function(f) {
-			return !%s || /\\.(png|jpe?g|jpe|webp)$/i.test(f.name);
+			return !%s || /\\.(png|jpe?g|jpe|webp|gif)$/i.test(f.name);
 		});
 		files.forEach(function(file) {
 			var reader = new FileReader();
@@ -41,6 +43,7 @@ const MIME_TYPES := {
 	"jpeg": "image/jpeg",
 	"jpe": "image/jpeg",
 	"webp": "image/webp",
+	"gif": "image/gif",
 	"json": "application/json",
 	"atlas": "text/plain",
 	"xml": "application/xml",

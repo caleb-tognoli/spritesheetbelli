@@ -163,6 +163,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Keyboard Shortcuts (F1) also lists panning with Space+drag, Ctrl+click, Shift+click,
   copying with Alt+drag, locking cells and the right-click menu. The README no longer
   lists shortcuts and points to F1 instead.
+- Adding a GIF with Add Sprites also makes its animation, like Add Spritesheet and
+  dropping it do.
+- In the web version, Open and Add Spritesheet accept spritesheet data files
+  (TexturePacker, Aseprite, Phaser, libGDX), picked together with their image.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
@@ -183,6 +187,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   shows the first sprite's file, or "Untitled".
 - The folder picker for exporting sprites is titled Export Sprites and starts next to the
   sheet's files.
+- Add Sprites lists GIFs, and the web version accepts them too.
 
 ## 0.2.0
 

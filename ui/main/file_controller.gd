@@ -41,6 +41,7 @@ var get_selected_coords := func() -> Array[Vector2i]: return []
 
 
 func _ready() -> void:
+	open_sprites_dialog.filters = [IMAGE_FILTER]
 	open_spritesheet_dialog.filters = [IMAGE_FILTER, DATA_FILTER]
 	save_sprites_dialog.title = "Export Sprites"
 	save_sprites_dialog.ok_button_text = "Export"
@@ -120,23 +121,22 @@ func popup_file_dialog(dialog: FileDialog) -> void:
 ## file picker and saving writes into the browser, then downloads the file
 func _web_file_dialog(dialog: FileDialog) -> void:
 	var images := WebFiles.IMAGE_TYPES
+	var images_and_data := images + "," + WebFiles.DATA_TYPES
+	# A data file is picked along with its image, so they land in the same folder
+	var emit_main := func(paths: PackedStringArray) -> void:
+		if not paths.is_empty():
+			dialog.file_selected.emit(main_picked_file(paths))
 	match dialog:
 		open_sprites_dialog:
 			WebFiles.pick(images, true, add_sprites_from_paths)
 		open_folder_dialog:
 			WebFiles.pick(images, true, add_sprites_from_paths, true)
-		open_spritesheet_dialog, replace_image_dialog:
-			WebFiles.pick(
-				images,
-				false,
-				func(paths: PackedStringArray) -> void: dialog.file_selected.emit(paths[0])
-			)
+		open_spritesheet_dialog:
+			WebFiles.pick(images_and_data, true, emit_main)
+		replace_image_dialog:
+			WebFiles.pick(images, false, emit_main)
 		open_dialog:
-			WebFiles.pick(
-				".sbelli," + images,
-				false,
-				func(paths: PackedStringArray) -> void: dialog.file_selected.emit(paths[0])
-			)
+			WebFiles.pick(".%s,%s" % [ProjectFile.EXTENSION, images_and_data], true, emit_main)
 		save_project_dialog:
 			dialog.file_selected.emit(WebFiles.output_path(suggested_project_path()))
 		export_file_dialog:
@@ -148,6 +148,15 @@ func _web_file_dialog(dialog: FileDialog) -> void:
 			for file in DirAccess.get_files_at(folder):
 				DirAccess.remove_absolute(folder.path_join(file))
 			dialog.dir_selected.emit(folder)
+
+
+## Of files picked together in a browser, the one to open: a data file, which brings its
+## image along, else the first one
+static func main_picked_file(paths: PackedStringArray) -> String:
+	for path in paths:
+		if SheetData.is_data_path(path):
+			return path
+	return paths[0]
 
 
 func add_sprites_from_paths(paths: PackedStringArray) -> void:
@@ -168,25 +177,45 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 	Notify.hide_progress()
 	var imgs: Array[Image] = []
 	var sources: Array[Dictionary] = []
+	# Each GIF, with the index of its first frame in imgs and its name
+	var gifs: Array[Dictionary] = []
 	var failed_files: PackedStringArray = []
 	for i in loaded.size():
 		var path := sorted_paths[i]
-		if loaded[i].is_empty():
+		var frames: Array = loaded[i].frames
+		if frames.is_empty():
 			failed_files.append(path.get_file())
 		_linking(path)
 		var is_gif := GifDecoder.is_gif_path(path)
-		for frame: int in loaded[i].size():
-			imgs.append(loaded[i][frame])
+		if is_gif and not frames.is_empty():
+			gifs.append(
+				{"gif": loaded[i], "first": imgs.size(), "name": path.get_file().get_basename()}
+			)
+		for frame: int in frames.size():
+			imgs.append(frames[frame])
 			sources.append(
 				FrameSource.for_gif(path, frame) if is_gif else FrameSource.for_file(path)
 			)
-	Global.document.perform(
-		"Add sprites",
-		Global.spritesheet.add_frames.bind(imgs, Settings.get_value(&"add_mode"), sources)
-	)
+	Global.document.perform("Add sprites", _add_sprites.bind(imgs, sources, gifs))
 
 	if not failed_files.is_empty():
 		Notify.error(tr("Could not load: %s.") % ", ".join(failed_files))
+
+
+## Adds [param imgs] as sprites, and an animation for each of [param gifs] that plays
+## its frames, see [method add_sprites_from_paths]
+static func _add_sprites(
+	imgs: Array[Image], sources: Array[Dictionary], gifs: Array[Dictionary]
+) -> void:
+	var sheet := Global.spritesheet
+	var coords := sheet.add_frames(imgs, Settings.get_value(&"add_mode"), sources)
+	# Images that can't be added are skipped, which would shift the GIFs' frames
+	if coords.size() != imgs.size():
+		return
+	for gif in gifs:
+		var first: int = gif.first
+		var cells := coords.slice(first, first + gif.gif.frames.size())
+		GifDecoder.add_animation(sheet, gif.gif, cells, gif.name)
 
 
 ## Asks for an image to replace the frame at [param coord]

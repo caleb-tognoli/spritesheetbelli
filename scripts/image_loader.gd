@@ -19,11 +19,11 @@ static func load_all(paths: PackedStringArray, on_progress := Callable()) -> Arr
 	return images
 
 
-## Like [method load_all], but with every frame of animated images (GIFs): an array of
-## frames for each path, empty for files that couldn't be loaded
+## Like [method load_all], but with every frame of animated images (GIFs): what
+## [method load_file] returns for each path
 static func load_all_frames(paths: PackedStringArray, on_progress := Callable()) -> Array:
 	return await Parallel.map(
-		paths.size(), func(i: int) -> Array: return load_frames(paths[i]), on_progress
+		paths.size(), func(i: int) -> Dictionary: return load_file(paths[i]), on_progress
 	)
 
 
@@ -31,11 +31,18 @@ static func load_all_frames(paths: PackedStringArray, on_progress := Callable())
 ## can't be loaded.
 static func load_frames(path: String) -> Array[Image]:
 	var frames: Array[Image] = []
-	if GifDecoder.is_gif_path(path):
-		frames.assign(GifDecoder.load_file(path).get("frames", []))
-		return frames
-	var img := Image.load_from_file(path)
-	if img:
-		img.resource_name = path.get_file()
-		frames.append(img)
+	frames.assign(load_file(path).frames)
 	return frames
+
+
+## The image at [param path] as [code]{"frames": Array[Image]}[/code], without frames
+## when it can't be loaded. A GIF comes with its timing, see [method GifDecoder.decode].
+static func load_file(path: String) -> Dictionary:
+	if GifDecoder.is_gif_path(path):
+		var gif := GifDecoder.load_file(path)
+		return {"frames": []} if gif.has("error") else gif
+	var img := Image.load_from_file(path)
+	if not img:
+		return {"frames": []}
+	img.resource_name = path.get_file()
+	return {"frames": [img]}
