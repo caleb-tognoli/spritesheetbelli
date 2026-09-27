@@ -96,6 +96,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Add Spritesheet has "Keep the empty cells empty" next to its button, on by default and
   remembered. Turned off, the added sheet's empty cells aren't locked, so added sprites
   can fill them.
+- Projects save the zoom and where the preview was looking, and open there again, also in
+  a window of another size. Looking around alone doesn't make a project unsaved; the view
+  is saved with the next save.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -173,6 +176,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   themes, and menu and dropdown arrows follow the theme.
 - Repack and Frame > Pack Again have their own icon instead of a circular arrow like
   Turn frames to fit.
+- New and empty sheets show at 100%, and a sheet opened without a saved view (an image,
+  atlas or GIF) shows whole.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
@@ -204,6 +209,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The Sprites list highlights a selected frame's whole row, size and pin included, as one
   box; the keyboard cursor's box shows only while the list has focus, on the first frame
   selected in the preview.
+- Opening a project kept the previous sheet's zoom, which could cut the new one off; New
+  kept it too.
 
 ## 0.2.0
 

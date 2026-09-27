@@ -343,6 +343,9 @@ func fit_to_view() -> void:
 			camera.position = pages.get_center() - view / 2 / camera.zoom
 			return
 	if content.x <= 0 or content.y <= 0 or view.x <= MARGIN * 2 or view.y <= MARGIN * 2:
+		# An empty sheet is shown at 100%
+		if content.x <= 0 or content.y <= 0:
+			set_zoom(1)
 		camera.position = -Vector2(50, 50) / camera.zoom
 		queue_redraw()
 		return
@@ -354,6 +357,20 @@ func fit_to_view() -> void:
 	var fit := usable / content
 	set_zoom(minf(fit.x, fit.y))
 	camera.position = content / 2 - (view + Vector2(names_width, 0)) / 2 / camera.zoom
+
+
+## Where the view looks, to show the same place again with [method set_view]: the zoom
+## and the point in the middle of the view, in pixels of the sheet. The middle rather
+## than the corner, so a window of another size shows the same place.
+func get_view() -> Dictionary:
+	return {"centre": screen_to_world(get_viewport_rect().size / 2), "zoom": camera.zoom.x}
+
+
+## Shows a view from [method get_view]
+func set_view(view: Dictionary) -> void:
+	set_zoom(view.zoom)
+	camera.position = view.centre - get_viewport_rect().size / 2 / camera.zoom
+	queue_redraw()
 
 
 ## Whether cell indices are big enough on screen to be drawn

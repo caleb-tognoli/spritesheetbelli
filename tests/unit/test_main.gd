@@ -414,6 +414,58 @@ func test_view_fits_when_first_frames_appear() -> void:
 	assert_eq(main.preview.camera.zoom.x, 1.0, "later additions keep the view")
 
 
+func test_opened_sheet_shows_whole_and_new_one_100_percent() -> void:
+	var imgs: Array[Image] = []
+	for i in 3:
+		imgs.append(make_image(Color.RED))
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(imgs))
+	await get_tree().process_frame
+	main.preview.set_zoom(7.32)
+	Global.document.load_state(Global.spritesheet.get_state(), dir.path_join("other.sbelli"))
+	await get_tree().process_frame
+	var opened: Dictionary = main.preview.get_view()
+	main.preview.fit_to_view()
+	assert_eq(opened, main.preview.get_view(), "a sheet without a saved view is fitted")
+	assert_ne(opened.zoom, 7.32)
+	Global.document.reset()
+	await get_tree().process_frame
+	assert_eq(main.preview.camera.zoom.x, 1.0, "a new sheet is shown at 100%")
+
+
+func test_view_is_saved_with_the_project() -> void:
+	var imgs: Array[Image] = []
+	for i in 3:
+		imgs.append(make_image(Color.RED))
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(imgs))
+	await get_tree().process_frame
+	main.preview.set_zoom(5)
+	main.preview.camera.position = Vector2(3, 7)
+	var saved: Dictionary = main.preview.get_view()
+	var path := dir.path_join("view.sbelli")
+	assert_true(await main.files.save_project(path))
+	Notify.message_dialog.hide()
+	main.preview.set_zoom(2)
+	assert_false(Global.document.is_dirty, "the view isn't an unsaved change")
+
+	Global.document.reset()
+	await get_tree().process_frame
+	assert_true(await main.files.open_project(path))
+	await get_tree().process_frame
+	var view: Dictionary = main.preview.get_view()
+	assert_eq(view.zoom, 5.0)
+	assert_true(view.centre.is_equal_approx(saved.centre), "centred where it was saved")
+
+
+func test_view_json() -> void:
+	var view := {"centre": Vector2(12.5, -3), "zoom": 2.0}
+	var json: Variant = JSON.parse_string(JSON.stringify(FileController.view_to_json(view)))
+	assert_eq(FileController.view_from_json(json), view)
+	assert_eq(FileController.view_from_json(null), {})
+	assert_eq(FileController.view_from_json({"centre": [1, 2], "zoom": 0}), {}, "no zoom")
+	assert_eq(FileController.view_from_json({"centre": "1, 2", "zoom": 2}), {})
+	assert_eq(FileController.view_to_json({}), {})
+
+
 func test_ctrl_scroll_steps_fields_and_triple_size() -> void:
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])

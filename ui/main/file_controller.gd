@@ -33,6 +33,8 @@ var replace_image_dialog := _create_file_dialog(
 var _replace_coord := Vector2i.ZERO
 ## Returns the selected frames, for exporting only those
 var get_selected_coords := func() -> Array[Vector2i]: return []
+## Returns the preview's view (see [method SpritesheetPreview.get_view]), saved with projects
+var get_view := func() -> Dictionary: return {}
 
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
@@ -445,6 +447,7 @@ func _save_project(path: String) -> bool:
 		"export_path": Global.document.export_path,
 		"last_export": Global.document.last_export,
 		"source_hashes": _hashes_to_json(Global.document.source_hashes, path.get_base_dir()),
+		"view": view_to_json(get_view.call()),
 	}
 	var error := ProjectFile.save(Global.spritesheet, path, extra)
 	if error != OK:
@@ -477,7 +480,12 @@ func _open_project(path: String) -> bool:
 	if result.has("error"):
 		Notify.error(result.error)
 		return false
-	Global.document.load_state(result.state, path, result.extra.get("export_path", ""))
+	Global.document.load_state(
+		result.state,
+		path,
+		result.extra.get("export_path", ""),
+		view_from_json(result.extra.get("view"))
+	)
 	Global.document.last_export = str(result.extra.get("last_export", ""))
 	Global.document.source_hashes = _hashes_from_json(
 		result.extra.get("source_hashes"), path.get_base_dir()
@@ -765,6 +773,26 @@ static func _hashes_from_json(value: Variant, folder: String) -> Dictionary[Stri
 		if entry is Dictionary and entry.get("path") is String and entry.get("md5") is String:
 			hashes[FrameSource.resolve_path(entry.path, entry.get("relative"), folder)] = entry.md5
 	return hashes
+
+
+## A view from [method SpritesheetPreview.get_view] as JSON
+static func view_to_json(view: Dictionary) -> Dictionary:
+	if not view.get("centre") is Vector2 or not view.get("zoom") is float:
+		return {}
+	return {"centre": [view.centre.x, view.centre.y], "zoom": view.zoom}
+
+
+## A view saved with [method view_to_json], or empty when there's none
+static func view_from_json(value: Variant) -> Dictionary:
+	if not value is Dictionary:
+		return {}
+	var centre: Variant = value.get("centre")
+	var zoom: Variant = value.get("zoom")
+	if not centre is Array or centre.size() < 2 or not (zoom is float or zoom is int):
+		return {}
+	if zoom <= 0:
+		return {}
+	return {"centre": Vector2(float(centre[0]), float(centre[1])), "zoom": float(zoom)}
 
 
 func new_spritesheet() -> void:

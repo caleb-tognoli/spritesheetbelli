@@ -6,6 +6,9 @@ extends RefCounted
 
 ## Emitted when the path, unsaved state or undo history changes
 signal changed
+## Emitted when a sheet was opened or a new one started, with the view to show, see
+## [method load_state]
+signal loaded(view: Dictionary)
 
 ## Export settings that are part of the sheet's layout, so undone with it. The others are
 ## choices of how to export, which the History doesn't show.
@@ -126,8 +129,10 @@ func mark_saved() -> void:
 	changed.emit()
 
 
-## Replaces the whole state without undo history, e.g. when opening a file
-func load_state(state: Dictionary, file_path := "", image_path := "") -> void:
+## Replaces the whole state without undo history, e.g. when opening a file. [param view]
+## is where the preview looked when the project was saved (see
+## [method SpritesheetPreview.get_view]), or empty to show the whole sheet.
+func load_state(state: Dictionary, file_path := "", image_path := "", view := {}) -> void:
 	spritesheet.set_state(state)
 	undo_redo.clear_history()
 	source_hashes.clear()
@@ -138,6 +143,7 @@ func load_state(state: Dictionary, file_path := "", image_path := "") -> void:
 	var opened := file_path if file_path else image_path
 	history_start = "Opened %s" % opened.get_file() if opened else "New spritesheet"
 	mark_saved()
+	loaded.emit(view)
 
 
 ## Name shown to the user: the file of [method get_name_path], empty when there's none

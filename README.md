@@ -59,7 +59,8 @@ A small desktop tool made with Godot.</p>
   with TexturePacker JSON (hash or array), a Phaser 3 multi-atlas, a libGDX / Spine
   `.atlas`, Sparrow / Starling XML or a Godot `SpriteFrames` using every page, with
   pivots and turned frames where the format has them.
-- **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original size.
+- **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
+  size and the view you left them at.
 - Light and dark themes, an accent colour, interface scaling and keyboard shortcuts.
 
 <details>

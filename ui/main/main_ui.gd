@@ -147,6 +147,9 @@ var animation_window := AnimationWindow.new()
 var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 var _was_empty := true
+## The view to show once the sheet is laid out (see [method SpritesheetPreview.get_view]),
+## empty to show the whole sheet, or null when there's none, see [method _queue_view]
+var _queued_view: Variant = null
 
 
 func _ready() -> void:
@@ -249,6 +252,7 @@ func _ready() -> void:
 	outline_dialog.outline_chosen.connect(add_outline)
 	files.restore_session.call_deferred()
 	files.get_selected_coords = preview.get_selected_coords
+	files.get_view = preview.get_view
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
 	layout_controller.register_actions()
@@ -276,9 +280,11 @@ func _ready() -> void:
 	Global.spritesheet.updated.connect(
 		func() -> void:
 			if _was_empty and not Global.spritesheet.is_empty():
-				preview.fit_to_view.call_deferred()
+				_queue_view({})
 			_was_empty = Global.spritesheet.is_empty()
 	)
+	# A new or opened sheet shows the view saved with it, or else the whole sheet
+	Global.document.loaded.connect(_queue_view)
 	preview.move_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i, copy: bool) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
@@ -311,6 +317,27 @@ func _ready() -> void:
 		func(coords: Array[Vector2i], pivot: Vector2) -> void:
 			Global.document.perform("Set pivot", Global.spritesheet.set_pivots.bind(coords, pivot))
 	)
+
+
+## Shows [param view] once the current changes are laid out, or the whole sheet when it's
+## empty. When several are queued, the last one is shown: opening a project shows its
+## saved view rather than fitting its first frames.
+func _queue_view(view: Dictionary) -> void:
+	if _queued_view == null:
+		_show_queued_view.call_deferred()
+	_queued_view = view
+
+
+func _show_queued_view() -> void:
+	var view: Dictionary = _queued_view
+	_queued_view = null
+	if not is_inside_tree():
+		return
+	# An empty sheet always shows at 100%
+	if view and not Global.spritesheet.is_empty():
+		preview.set_view(view)
+	else:
+		preview.fit_to_view()
 
 
 func _register_actions() -> void:
