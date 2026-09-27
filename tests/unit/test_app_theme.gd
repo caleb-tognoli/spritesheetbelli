@@ -99,5 +99,20 @@ func test_text_on_the_selection_is_readable_whatever_the_accent() -> void:
 	assert_eq(white.get_color("font_selected_color", "Tree"), AppTheme.LIGHT_TEXT)
 
 
+func test_windows_inside_the_main_one_have_an_opaque_title_bar() -> void:
+	for light: bool in [false, true]:
+		var theme := AppTheme.build(light)
+		var height := theme.get_constant("title_height", "Window")
+		for style: StringName in [&"embedded_border", &"embedded_unfocused_border"]:
+			var border := theme.get_stylebox(style, "Window") as StyleBoxFlat
+			assert_eq(border.bg_color.a, 1.0, "opaque, %s" % style)
+			assert_true(border.expand_margin_top >= height, "reaches over the title bar")
+		var panel := theme.get_stylebox("panel", "AcceptDialog") as StyleBoxFlat
+		var frame := theme.get_stylebox("embedded_border", "Window") as StyleBoxFlat
+		assert_eq(frame.bg_color, panel.bg_color, "the dialogs' colour")
+		assert_eq(theme.get_color("title_color", "Window"), theme.get_color("font_color", "Label"))
+		assert_eq(theme.get_icon("close", "Window"), AppTheme.CLOSE, "the themed close icon")
+
+
 static func _distance(a: Color, b: Color) -> float:
 	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()

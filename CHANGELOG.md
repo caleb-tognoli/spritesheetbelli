@@ -260,6 +260,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   moving the toolbar and the preview.
 - Opening the Sprites panel made the panels on the right as narrow as they can be,
   forgetting their width.
+- In the web version, dialogs and other windows had a see-through title bar that showed
+  the window behind through it; it's now opaque in the dialogs' colour, with the title and
+  close button readable in both themes.
 
 ## 0.2.0
 

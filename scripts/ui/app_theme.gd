@@ -32,6 +32,9 @@ const DARK_ICON_GREY := Color("e0e0e0")
 const LIGHT_ICON_GREY := Color("5a5a5a")
 const ARROW_DOWN := preload("res://assets/icons/GuiTreeArrowDown.svg")
 const ARROW_RIGHT := preload("res://assets/icons/GuiTreeArrowRight.svg")
+const CLOSE := preload("res://assets/icons/Close.svg")
+## The height of the title bar Godot draws over windows drawn inside the main one
+const TITLE_HEIGHT := 32
 
 ## The icons recoloured so far, kept loaded so that they stay recoloured
 static var _icons: Dictionary[String, DPITexture] = {}
@@ -301,10 +304,7 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox("panel", "AcceptDialog", _box(p.surface, 0, Vector4(12, 12, 12, 12)))
 	# Dialog buttons as wide as each other, e.g. OK as Cancel (see DialogButtons)
 	theme.set_constant("buttons_min_width", "AcceptDialog", DialogButtons.MIN_WIDTH)
-	theme.set_stylebox(
-		"embedded_border", "Window", _box(p.surface, 6, Vector4(8, 32, 8, 8), p.border, 1)
-	)
-	theme.set_color("title_color", "Window", p.text)
+	_add_embedded_windows(theme, p)
 	var separator := StyleBoxLine.new()
 	separator.color = p.border
 	theme.set_stylebox("separator", "HSeparator", separator)
@@ -316,6 +316,35 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_constant("autohide", "HSplitContainer", 0)
 	_add_lists(theme, p, focus)
 	return theme
+
+
+## Windows drawn inside the main window instead of as the system's own, which is every
+## window on the web: Godot draws their title bar and border around them from the
+## stylebox, which reaches past the window by its expand margins. Like the Godot editor's,
+## the title bar is the colour of the dialogs, with the title in the text colour and the
+## close icon. Separate windows keep the system's title bar.
+static func _add_embedded_windows(theme: Theme, p: Palette) -> void:
+	var frame := _box(p.surface, 6, Vector4(8, 0, 8, 0), p.border, 1)
+	frame.corner_radius_bottom_left = 0
+	frame.corner_radius_bottom_right = 0
+	# The border goes just outside the window, and the title bar above it
+	frame.expand_margin_left = 1
+	frame.expand_margin_right = 1
+	frame.expand_margin_bottom = 1
+	frame.expand_margin_top = TITLE_HEIGHT
+	# Focused or not: Godot's own is grey
+	theme.set_stylebox("embedded_border", "Window", frame)
+	theme.set_stylebox("embedded_unfocused_border", "Window", frame)
+	theme.set_constant("title_height", "Window", TITLE_HEIGHT)
+	theme.set_font_size("title_font_size", "Window", 14)
+	theme.set_color("title_color", "Window", p.text)
+	# The close icon's top-left corner, from the window's top-right one: centred in the
+	# title bar, as far from the right edge as from the top and bottom
+	var margin := (TITLE_HEIGHT - CLOSE.get_height()) / 2
+	theme.set_constant("close_h_offset", "Window", CLOSE.get_width() + margin)
+	theme.set_constant("close_v_offset", "Window", CLOSE.get_height() + margin)
+	theme.set_icon("close", "Window", CLOSE)
+	theme.set_icon("close_pressed", "Window", CLOSE)
 
 
 ## Trees and item lists: a sunken background, rows shaded with the text colour when
