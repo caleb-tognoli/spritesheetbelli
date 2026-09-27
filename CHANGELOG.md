@@ -167,6 +167,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   dropping it do.
 - In the web version, Open and Add Spritesheet accept spritesheet data files
   (TexturePacker, Aseprite, Phaser, libGDX), picked together with their image.
+- Icons follow the theme like in the Godot editor: the light theme swaps their greys for
+  darker ones instead of tinting them, so icons in several greys such as Align in Cell and
+  the zoom buttons keep their parts. Pressed toggles show the accent colour in both
+  themes, and menu and dropdown arrows follow the theme.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

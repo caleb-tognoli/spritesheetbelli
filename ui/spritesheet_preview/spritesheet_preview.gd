@@ -33,7 +33,6 @@ signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vect
 ## The user dragged the pivot of frames to [param pivot], in unscaled pixels of the frame
 signal pivot_requested(coords: Array[Vector2i], pivot: Vector2)
 
-const LOCK_ICON := preload("res://assets/icons/Lock.svg")
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
 ## On-screen size of the lock icon on locked cells
 const LOCK_ICON_SIZE := 28.0
@@ -58,6 +57,9 @@ enum Tool {
 	MOVE,  ## Moves the selected frames, or the dragged frame when none are selected
 	PIVOT,  ## Moves the pivot of the selected frames
 }
+
+## Drawn over the cells, so the same in both themes
+static var _lock_icon := AppTheme.unthemed_icon(preload("res://assets/icons/Lock.svg"))
 
 @export var able_to_lock_spaces := true
 ## When off, frames can't be moved and dragging always selects
@@ -822,7 +824,7 @@ func _draw_lock(rect: Rect2, pixel: float) -> void:
 	draw_rect(rect, Color(0, 0, 0, 0.25))
 	var icon_size := minf(LOCK_ICON_SIZE * pixel, minf(rect.size.x, rect.size.y) * 0.6)
 	var icon_rect := Rect2(rect.get_center() - Vector2.ONE * icon_size / 2, Vector2.ONE * icon_size)
-	draw_texture_rect(LOCK_ICON, icon_rect, false, LOCKED_COLOR)
+	draw_texture_rect(_lock_icon, icon_rect, false, LOCKED_COLOR)
 
 
 ## Lines between the cells, or around each cell when there's space between them

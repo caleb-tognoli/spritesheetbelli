@@ -1,8 +1,34 @@
 class_name AppTheme
 ## Builds the interface theme from a light or dark palette and an accent colour.
-## Icons are light grey SVGs, tinted through the icon colours so they work on both.
+## Icons are Godot editor SVGs drawn for dark backgrounds. Like the editor, the light
+## theme swaps their greys for darker ones, see [constant LIGHT_ICON_COLORS].
 
 const DEFAULT_ACCENT := Color("4c9cff")
+## Every SVG in here is imported as a DPITexture and recoloured with the theme
+const ICON_DIR := "res://assets/icons"
+## Icon colours in the light theme, from the Godot editor's (editor_color_map.cpp)
+const LIGHT_ICON_COLORS := {
+	"#e0e0e0": "#5a5a5a",  # Common icon colour
+	"#ffffff": "#414141",
+	"#000000": "#bfbfbf",  # The see-through backdrop of the Zoom* icons
+	"#808080": "#808080",
+	"#b3b3b3": "#363636",
+	"#f9f9f9": "#606060",
+	# Icons in three greys, such as ControlAlign*
+	"#d6d6d6": "#474747",  # Highlighted part
+	"#474747": "#d6d6d6",  # Background part
+	"#919191": "#6e6e6e",  # Border part
+}
+## Icons that keep their colours in the light theme
+const ICON_EXCEPTIONS: Array[StringName] = [&"StatusWarning"]
+## The common icon grey in each theme, to turn pressed icons into the accent colour
+const DARK_ICON_GREY := Color("e0e0e0")
+const LIGHT_ICON_GREY := Color("5a5a5a")
+const ARROW_DOWN := preload("res://assets/icons/GuiTreeArrowDown.svg")
+const ARROW_RIGHT := preload("res://assets/icons/GuiTreeArrowRight.svg")
+
+## The icons recoloured so far, kept loaded so that they stay recoloured
+static var _icons: Dictionary[String, DPITexture] = {}
 
 
 class Palette:
@@ -40,6 +66,7 @@ static func palette(light: bool, accent: Color) -> Palette:
 
 static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	var p := palette(light, accent)
+	recolor_icons(light)
 	var theme := Theme.new()
 	# Dialogs and windows; the sidebar, menus and preview set their own smaller sizes
 	theme.default_font_size = 14
@@ -80,6 +107,13 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	var disabled := _box(Color(p.raised, 0.5), 4, Vector4(8, 4, 8, 4))
 	var focus := _box(Color.TRANSPARENT, 4, Vector4.ZERO, p.accent, 1)
 	var flat := StyleBoxEmpty.new()
+	# Icons keep their own colours. Pressed ones become the accent colour, the same in both
+	# themes although the light theme's icons are darker.
+	var icon_grey := LIGHT_ICON_GREY if light else DARK_ICON_GREY
+	var icon_pressed := p.accent * DARK_ICON_GREY / icon_grey
+	icon_pressed.a = 1.0
+	# Dark icons fade into a light background sooner
+	var icon_disabled := Color(1, 1, 1, 0.55 if light else 0.4)
 	for type: StringName in [
 		&"Button", &"MenuButton", &"OptionButton", &"CheckBox", &"CheckButton"
 	]:
@@ -98,12 +132,12 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		theme.set_color("font_pressed_color", type, p.text)
 		theme.set_color("font_hover_pressed_color", type, p.text)
 		theme.set_color("font_disabled_color", type, Color(p.text_muted, 0.6))
-		theme.set_color("icon_normal_color", type, p.text)
-		theme.set_color("icon_hover_color", type, p.text)
-		theme.set_color("icon_focus_color", type, p.text)
-		theme.set_color("icon_pressed_color", type, p.accent)
-		theme.set_color("icon_hover_pressed_color", type, p.accent)
-		theme.set_color("icon_disabled_color", type, Color(p.text_muted, 0.5))
+		theme.set_color("icon_normal_color", type, Color.WHITE)
+		theme.set_color("icon_hover_color", type, Color.WHITE)
+		theme.set_color("icon_focus_color", type, Color.WHITE)
+		theme.set_color("icon_pressed_color", type, icon_pressed)
+		theme.set_color("icon_hover_pressed_color", type, icon_pressed)
+		theme.set_color("icon_disabled_color", type, icon_disabled)
 	# Toolbar buttons are flat until hovered or pressed, like Godot's
 	theme.set_type_variation(&"ToolbarButton", "Button")
 	var tool_margins := Vector4(5, 3, 5, 3)
@@ -136,6 +170,8 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("font_uneditable_color", "LineEdit", Color(p.text_muted, 0.7))
 	theme.set_color("font_placeholder_color", "LineEdit", Color(p.text_muted, 0.7))
 	theme.set_color("caret_color", "LineEdit", p.text)
+	theme.set_color("clear_button_color", "LineEdit", p.text)
+	theme.set_color("clear_button_color_pressed", "LineEdit", p.accent)
 	theme.set_color("selection_color", "LineEdit", Color(p.accent, 0.35))
 	for color: StringName in [&"up_icon_modulate", &"down_icon_modulate"]:
 		theme.set_color(color, "SpinBox", p.text)
@@ -157,6 +193,9 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("font_disabled_color", "PopupMenu", Color(p.text_muted, 0.6))
 	theme.set_color("font_accelerator_color", "PopupMenu", p.text_muted)
 	theme.set_color("font_separator_color", "PopupMenu", p.text_muted)
+	# Arrows from the icons, so they follow the theme like them
+	theme.set_icon("submenu", "PopupMenu", ARROW_RIGHT)
+	theme.set_icon("arrow", "OptionButton", ARROW_DOWN)
 	# Controls floating over the preview
 	theme.set_stylebox(
 		"panel", &"PreviewOverlay", _box(Color(p.surface, 0.9), 6, Vector4(4, 3, 4, 3), p.border, 1)
@@ -192,6 +231,41 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox("split_bar_background", "HSplitContainer", split)
 	theme.set_color("font_color", "ItemList", p.text)
 	return theme
+
+
+## The colours swapped in the icons: none in the dark theme
+static func icon_color_map(light: bool) -> Dictionary:
+	var colors := {}
+	if light:
+		for from: String in LIGHT_ICON_COLORS:
+			colors[Color(from)] = Color(LIGHT_ICON_COLORS[from])
+	return colors
+
+
+## Recolours every icon in place, so the buttons, menus and lists that show one follow
+## the theme. Each is drawn again from its SVG at the interface's scale.
+static func recolor_icons(light: bool) -> void:
+	var colors := icon_color_map(light)
+	for file in ResourceLoader.list_directory(ICON_DIR):
+		if file.get_extension() != "svg" or StringName(file.get_basename()) in ICON_EXCEPTIONS:
+			continue
+		if not _icons.has(file):
+			var icon := load(ICON_DIR.path_join(file)) as DPITexture
+			if icon == null:
+				push_warning("%s isn't imported as a DPITexture" % file)
+				continue
+			_icons[file] = icon
+		if _icons[file].color_map != colors:
+			_icons[file].color_map = colors
+
+
+## A copy of [param icon] in its own colours, for drawing over sprites rather than on the
+## interface
+static func unthemed_icon(icon: Texture2D) -> Texture2D:
+	var copy := icon.duplicate() as Texture2D
+	if copy is DPITexture:
+		(copy as DPITexture).color_map = {}
+	return copy
 
 
 static func _box(
