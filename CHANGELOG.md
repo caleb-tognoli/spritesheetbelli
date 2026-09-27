@@ -220,6 +220,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Only animations are exported as animations: JSON frame tags, Godot SpriteFrames and
   atlases have the sheet's animations, and without any, SpriteFrames get every frame in
   one "default" animation.
+- The export's format decides the file's extension, and only that extension is taken off
+  the typed name: hero as JPG gives hero.jpg, hero.png as JPG gives hero.png.jpg, and
+  hero.png as PNG stays hero.png (so does HERO.PNG, and .jpeg or .jpe for JPG), so the
+  file named in the save dialog is the one written. Data files and atlas pages are named
+  after the image without its extension (hero.png gives hero.json), and the same goes for
+  GIFs, sprite name patterns ({index}.png names 0.png), Export Again and the command
+  line's --out, whose extension picks the image format.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names
@@ -235,13 +242,6 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   its toolbar.
 - Picking a resize filter at the original size switching back to the one from the
   settings. The filter chosen in the settings is now the one new sheets start with.
-- Export names typed with the extension of another file the export writes: hero.json,
-  hero.png and hero all give hero.png and hero.json, instead of hero.json.png and
-  hero.json.json. The export's format always decides the extension, whatever the name is
-  typed with: hero.png exported as JPG gives hero.jpg, hero as WebP gives hero.webp and
-  HERO.PNG gives HERO.png. The same goes for atlases, GIFs, sprite name patterns, Export
-  Again and the command line's --out, whose extension picks the image format (PNG when it
-  names none). Other extensions stay part of the name (hero.v2.png).
 - Save As and Export no longer suggest an empty name or `spritesheet.png` in the app's
   folder for a sheet made from sprites or opened from a GIF: they suggest the first
   sprite's name, in its folder (e.g. `walk_0.sbelli` next to `walk_0.png`). A cancelled

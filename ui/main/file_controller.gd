@@ -535,7 +535,8 @@ func choose_export_path() -> void:
 
 
 ## Where to suggest exporting: next to the last export, else the file the document is
-## named after (see [method Document.get_name_path]), with its name
+## named after (see [method Document.get_name_path]), with its name and the export's
+## extension (see [method SpritesheetExporter.with_extension])
 static func suggested_export_path(options: ExportOptions) -> String:
 	var document := Global.document
 	var base := document.export_path if document.export_path else document.get_name_path()
@@ -545,13 +546,24 @@ static func suggested_export_path(options: ExportOptions) -> String:
 		base_name += "_atlas"
 	if options.target == ExportOptions.Target.GIF and options.gif_animation:
 		base_name += "_" + options.gif_animation.validate_filename()
-	return folder.path_join(base_name + "." + options.get_file_extension())
+	var path := folder.path_join(base_name)
+	var extension := options.get_file_extension()
+	if not extension:
+		return path
+	# The same file, spelled as it was ("HERO.PNG")
+	if path == base.get_basename() and SpritesheetExporter.has_extension(base, extension):
+		return base
+	return SpritesheetExporter.with_extension(path, extension)
 
 
-## Exports to [param path] what the sheet's export settings say
+## Exports to [param path] what the sheet's export settings say, with the extension of
+## the file written unless it's typed with it (see [method SpritesheetExporter.with_extension])
 func export_to(path: String) -> bool:
+	var options := ExportOptions.from_sheet(Global.spritesheet)
+	if options.get_file_extension():
+		path = SpritesheetExporter.with_extension(path, options.get_file_extension())
 	var exported := false
-	match ExportOptions.from_sheet(Global.spritesheet).target:
+	match options.target:
 		ExportOptions.Target.ATLAS:
 			exported = await export_atlas(path)
 		ExportOptions.Target.GIF:
@@ -571,9 +583,10 @@ func export_again() -> bool:
 	if path.is_empty():
 		return false
 	var extension := ExportOptions.from_sheet(Global.spritesheet).get_file_extension()
-	# The export type or format may have changed since: same name, its extension
-	if extension:
-		path = SpritesheetExporter.with_extension(path, extension)
+	# The export type or format may have changed since: the same name, without the
+	# extension written last time, with this one's
+	if extension and not SpritesheetExporter.has_extension(path, extension):
+		path = SpritesheetExporter.with_extension(path.get_basename(), extension)
 	return await export_to(path)
 
 
@@ -609,7 +622,7 @@ func _export_image_to(path: String) -> bool:
 		return false
 
 	var options := ExportOptions.from_sheet(Global.spritesheet)
-	# The chosen format decides the extension, whatever the name was typed with
+	# The chosen format's extension, unless the name was typed with it
 	path = SpritesheetExporter.with_extension(path, options.get_file_extension())
 	if Global.spritesheet.layout == Spritesheet.Layout.PACKED:
 		return _export_pages(path, options)

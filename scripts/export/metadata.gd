@@ -30,8 +30,11 @@ static func write_for_image(
 	return OK
 
 
+## The data file next to [param image_path], named after it without the image's extension:
+## "hero.png" gives "hero.json" and "hero.json.png" gives "hero.json.json"
 static func get_path_for_image(image_path: String, options: ExportOptions) -> String:
-	var base := SpritesheetExporter.strip_written_extensions(image_path)
+	var format := SpritesheetExporter.get_image_format(image_path)
+	var base := SpritesheetExporter.without_extension(image_path, format)
 	return base + "." + EXTENSIONS.get(options.metadata, "json")
 
 

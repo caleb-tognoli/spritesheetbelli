@@ -79,7 +79,7 @@ static func encode(
 static func write(
 	sheet: Spritesheet, options: ExportOptions, path: String, on_progress := Callable()
 ) -> Dictionary:
-	path = SpritesheetExporter.strip_written_extensions(path) + "." + GifDecoder.EXTENSION
+	path = SpritesheetExporter.with_extension(path, GifDecoder.EXTENSION)
 	var data := animation_frames(
 		sheet,
 		options.get_gif_animation(sheet),

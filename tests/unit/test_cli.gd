@@ -102,17 +102,28 @@ func test_metadata_has_only_the_projects_animations() -> void:
 	assert_eq(json.meta.frameTags[0].to, 2.0)
 
 
-func test_out_extensions_are_stripped() -> void:
+func test_out_is_the_image_written() -> void:
 	var frames := dir.path_join("frames")
 	var result := await run(
-		["--pack", frames, "--out", dir.path_join("hero.json"), "--metadata", "json"]
+		["--pack", frames, "--out", dir.path_join("hero.png"), "--metadata", "json"]
 	)
 	assert_eq(result[0], "0", str(result))
 	assert_true(FileAccess.file_exists(dir.path_join("hero.png")))
 	assert_true(FileAccess.file_exists(dir.path_join("hero.json")))
-	assert_false(FileAccess.file_exists(dir.path_join("hero.json.png")))
+
+	# Not an image's extension: part of the name of a PNG and its data file
+	result = await run(
+		["--pack", frames, "--out", dir.path_join("data.json"), "--metadata", "json"]
+	)
+	assert_eq(result[0], "0", str(result))
+	assert_true(FileAccess.file_exists(dir.path_join("data.json.png")))
+	assert_true(FileAccess.file_exists(dir.path_join("data.json.json")))
+	assert_false(FileAccess.file_exists(dir.path_join("data.json")))
 
 	result = await run(["--pack", frames, "--out", dir.path_join("atlas.json"), "--atlas"])
+	assert_eq(result[0], "0", str(result))
+	assert_true(result[1].contains("atlas.json.png and atlas.json.json"), result[1])
+	result = await run(["--pack", frames, "--out", dir.path_join("atlas.png"), "--atlas"])
 	assert_eq(result[0], "0", str(result))
 	assert_true(result[1].contains("atlas.png and atlas.json"), result[1])
 
@@ -121,11 +132,11 @@ func test_out_extensions_are_stripped() -> void:
 	assert_true(FileAccess.file_exists(dir.path_join("hero.v2.png")))
 	assert_true(FileAccess.file_exists(dir.path_join("hero.v2.json")))
 
-	# The name picks the format, which gives the extension
+	# The name picks the format, so it's written as typed
 	result = await run(["--pack", frames, "--out", dir.path_join("photo.JPEG")])
 	assert_eq(result[0], "0", str(result))
-	assert_true(result[1].contains("photo.jpg"), result[1])
-	assert_true(Image.load_from_file(dir.path_join("photo.jpg")) != null)
+	assert_true(result[1].contains("photo.JPEG"), result[1])
+	assert_true(Image.load_from_file(dir.path_join("photo.JPEG")) != null)
 
 
 func test_cut_a_grid_and_find_sprites() -> void:

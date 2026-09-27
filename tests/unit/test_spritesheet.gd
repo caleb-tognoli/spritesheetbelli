@@ -154,7 +154,7 @@ func test_jpg_export_fills_transparency() -> void:
 	var saved := Image.load_from_file(path)
 	assert_true(saved.get_pixel(12, 8).r > 0.9, "transparent half is white, not black")
 	assert_eq(SpritesheetExporter.with_image_extension("a/b"), "a/b.png")
-	assert_eq(SpritesheetExporter.with_image_extension("a/b.JPEG"), "a/b.jpg")
+	assert_eq(SpritesheetExporter.with_image_extension("a/b.JPEG"), "a/b.JPEG")
 
 
 func test_frame_names_survive_edits_and_projects() -> void:

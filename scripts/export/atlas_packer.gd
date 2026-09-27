@@ -110,7 +110,8 @@ static func write(
 	var packed := get_packed(sheet, options)
 	var regions := get_regions(packed, options.atlas_frame_size)
 	var sizes := PackedLayout.get_page_sizes(packed)
-	var base := SpritesheetExporter.strip_written_extensions(path)
+	# Pages are PNGs: "hero.png" gives hero.png and hero.json, "hero.json" hero.json.png
+	var base := SpritesheetExporter.without_extension(path, "png")
 	var result := {
 		"error": OK,
 		"message": "",

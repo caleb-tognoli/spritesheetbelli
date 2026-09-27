@@ -247,19 +247,18 @@ func test_animations_in_metadata() -> void:
 	assert_eq(tags[0].repeat, "1")
 
 
-func test_typed_extensions_are_stripped() -> void:
+func test_only_the_written_extension_is_left_out() -> void:
 	var options := ExportOptions.new()
 	options.target = ExportOptions.Target.JSON
 	# Typed name: the image and the data file written
 	var cases := {
 		"hero": ["hero.png", "hero.json"],
-		"hero.json": ["hero.png", "hero.json"],
 		"hero.png": ["hero.png", "hero.json"],
-		"hero.json.png": ["hero.png", "hero.json"],
-		"hero.webp": ["hero.png", "hero.json"],
+		"HERO.PNG": ["HERO.PNG", "HERO.json"],
+		"hero.json": ["hero.json.png", "hero.json.json"],
+		"hero.json.png": ["hero.json.png", "hero.json.json"],
+		"hero.webp": ["hero.webp.png", "hero.webp.json"],
 		"hero.v2": ["hero.v2.png", "hero.v2.json"],
-		"HERO.PNG": ["HERO.png", "HERO.json"],
-		"HERO.JSON": ["HERO.png", "HERO.json"],
 	}
 	for typed: String in cases:
 		var image := SpritesheetExporter.with_extension(
@@ -268,44 +267,58 @@ func test_typed_extensions_are_stripped() -> void:
 		assert_eq(image.get_file(), cases[typed][0], typed)
 		assert_eq(Metadata.get_path_for_image(image, options).get_file(), cases[typed][1], typed)
 	options.target = ExportOptions.Target.GODOT
+	options.metadata = ExportOptions.MetadataFormat.GODOT
 	var godot := SpritesheetExporter.with_extension("hero.tres", options.get_file_extension())
-	assert_eq([godot, Metadata.get_path_for_image(godot, options)], ["hero.png", "hero.tres"])
-	assert_eq(SpritesheetExporter.strip_written_extensions("a.v2/hero"), "a.v2/hero")
-	assert_eq(SpritesheetExporter.format_sprite_name("{index}.PNG", sheet, Vector2i(1, 0)), "1")
+	var tres := Metadata.get_path_for_image(godot, options)
+	assert_eq([godot, tres], ["hero.tres.png", "hero.tres.tres"])
+	assert_eq(Metadata.get_path_for_image("hero.jpeg", options), "hero.tres")
+	assert_eq(SpritesheetExporter.without_extension("a.png/hero", "png"), "a.png/hero")
+	# Sprite names: only the PNG's extension
+	for pattern: String in ["{index}.png", "{index}.PNG", "{index}"]:
+		assert_eq(SpritesheetExporter.format_sprite_name(pattern, sheet, Vector2i(1, 0)), "1")
+	var json := SpritesheetExporter.format_sprite_name("{index}.json", sheet, Vector2i(1, 0))
+	assert_eq(json, "1.json")
 
 
-func test_the_format_decides_the_extension() -> void:
+func test_the_format_adds_its_extension() -> void:
 	var options := ExportOptions.new()
 	# Typed name, chosen format: the image written
 	var cases := [
-		["hero.png", "jpg", "hero.jpg"],
+		["hero.png", "jpg", "hero.png.jpg"],
+		["hero.png", "png", "hero.png"],
 		["hero", "webp", "hero.webp"],
+		["HERO.PNG", "png", "HERO.PNG"],
+		["hero.jpeg", "jpg", "hero.jpeg"],
+		["hero.JPE", "jpg", "hero.JPE"],
+		["hero.JPG", "webp", "hero.JPG.webp"],
 		["hero.v2", "jpg", "hero.v2.jpg"],
-		["HERO.PNG", "png", "HERO.png"],
-		["hero.jpeg", "jpg", "hero.jpg"],
-		["hero.JPG", "webp", "hero.webp"],
-		["hero.webp.json", "png", "hero.png"],
+		["hero.webp.json", "png", "hero.webp.json.png"],
 	]
 	for case: Array in cases:
 		options.image_format = case[1]
 		var image := SpritesheetExporter.with_extension(case[0], options.get_file_extension())
 		assert_eq(image, case[2], "%s as %s" % [case[0], case[1]])
-	# On the command line, the name picks the format
-	assert_eq(SpritesheetExporter.with_image_extension("hero.JPEG"), "hero.jpg")
-	assert_eq(SpritesheetExporter.with_image_extension("hero.WebP"), "hero.webp")
-	assert_eq(SpritesheetExporter.with_image_extension("hero.json"), "hero.png")
+	# Pages are numbered before the extension written
+	assert_eq(
+		SpritesheetExporter.get_page_paths("hero.png.jpg", 2),
+		PackedStringArray(["hero.png_0.jpg", "hero.png_1.jpg"])
+	)
+	# On the command line, the name picks the format, so it's the extension written
+	assert_eq(SpritesheetExporter.with_image_extension("hero.JPEG"), "hero.JPEG")
+	assert_eq(SpritesheetExporter.with_image_extension("hero.WebP"), "hero.WebP")
+	assert_eq(SpritesheetExporter.with_image_extension("hero.json"), "hero.json.png")
 	assert_eq(SpritesheetExporter.with_image_extension("hero.v2"), "hero.v2.png")
 
 
-func test_typed_extensions_are_stripped_for_atlases() -> void:
+func test_only_the_png_extension_is_left_out_for_atlases() -> void:
 	var options := ExportOptions.new()
 	options.target = ExportOptions.Target.ATLAS
 	var cases := {
 		"hero": ["hero.png", "hero.json"],
-		"hero.json": ["hero.png", "hero.json"],
 		"hero.png": ["hero.png", "hero.json"],
-		"hero.v2": ["hero.v2.png", "hero.v2.json"],
 		"HERO.PNG": ["HERO.png", "HERO.json"],
+		"hero.json": ["hero.json.png", "hero.json.json"],
+		"hero.v2": ["hero.v2.png", "hero.v2.json"],
 	}
 	for typed: String in cases:
 		var result := AtlasPacker.write(sheet, options, dir.path_join(typed))
@@ -313,16 +326,16 @@ func test_typed_extensions_are_stripped_for_atlases() -> void:
 		assert_eq(result.path.get_file(), cases[typed][0], typed)
 		assert_eq(result.json_path.get_file(), cases[typed][1], typed)
 	options.atlas_data = "sparrow"
-	var sparrow := AtlasPacker.write(sheet, options, dir.path_join("hero.xml"))
+	var sparrow := AtlasPacker.write(sheet, options, dir.path_join("hero.png"))
 	assert_eq(sparrow.json_path.get_file(), "hero.xml")
 
-	# Pages are numbered after the stripped name
+	# Pages are numbered after the name, without the PNG's extension
 	sheet.resize_sprites(Vector2i(16, 16))
 	var settings := AtlasSettings.new()
 	settings.max_size = 16
 	sheet.set_atlas_settings(settings)
 	options.atlas_data = "json"
-	var pages := AtlasPacker.write(sheet, options, dir.path_join("paged.json"))
+	var pages := AtlasPacker.write(sheet, options, dir.path_join("paged.png"))
 	assert_eq(pages.pages, 3)
 	var files := Array(pages.paths).map(func(path: String) -> String: return path.get_file())
 	files.sort()
@@ -339,12 +352,17 @@ func test_typed_extensions_are_stripped_for_atlases() -> void:
 	)
 
 
-func test_typed_extensions_are_stripped_for_gifs() -> void:
+func test_only_the_gif_extension_is_left_out_for_gifs() -> void:
 	var options := ExportOptions.new()
 	options.target = ExportOptions.Target.GIF
-	for typed: String in ["hero", "hero.json", "hero.png", "HERO.GIF"]:
+	var cases := {
+		"walk": "walk.gif",
+		"walk.gif": "walk.gif",
+		"WALK.GIF": "WALK.GIF",
+		"walk.png": "walk.png.gif",
+		"walk.json": "walk.json.gif",
+	}
+	for typed: String in cases:
 		var result: Dictionary = await GifEncoder.write(sheet, options, dir.path_join(typed))
 		assert_eq(result.error, OK, typed)
-		assert_eq(result.path.get_file().to_lower(), "hero.gif", typed)
-	var kept: Dictionary = await GifEncoder.write(sheet, options, dir.path_join("hero.v2"))
-	assert_eq(kept.path.get_file(), "hero.v2.gif")
+		assert_eq(result.path.get_file(), cases[typed], typed)

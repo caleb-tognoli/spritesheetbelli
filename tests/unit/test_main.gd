@@ -85,26 +85,44 @@ func test_export_appends_png_extension() -> void:
 	Notify.message_dialog.hide()
 
 
-func test_the_export_format_decides_the_extension() -> void:
+func test_the_export_format_adds_its_extension() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	options.image_format = "jpg"
 	Global.spritesheet.set_export_settings(options.to_dictionary())
 	var typed := dir.path_join("format.png")
+	var written := typed + ".jpg"
 	DirAccess.remove_absolute(typed)
+	DirAccess.remove_absolute(written)
 	assert_true(await main.files.export_to(typed))
-	assert_true(FileAccess.file_exists(dir.path_join("format.jpg")), "a JPG, named so")
+	assert_true(FileAccess.file_exists(written), "a JPG, the PNG's extension part of its name")
 	assert_false(FileAccess.file_exists(typed))
-	assert_eq(Global.document.export_path, dir.path_join("format.jpg"))
-	assert_eq(FileController.suggested_export_path(options), dir.path_join("format.jpg"))
+	assert_eq(Global.document.export_path, written)
+	assert_eq(Global.document.last_export, written)
+	assert_eq(FileController.suggested_export_path(options), written)
 
+	# Another format since: the same name, format.png
 	options.image_format = "webp"
 	Global.spritesheet.set_export_settings(options.to_dictionary())
-	assert_eq(FileController.suggested_export_path(options), dir.path_join("format.webp"))
-	DirAccess.remove_absolute(dir.path_join("format.webp"))
+	assert_eq(FileController.suggested_export_path(options), typed + ".webp")
+	DirAccess.remove_absolute(typed + ".webp")
 	assert_true(await main.files.export_again())
-	assert_true(FileAccess.file_exists(dir.path_join("format.webp")), "again, as WebP")
-	assert_eq(Global.document.last_export, dir.path_join("format.webp"))
+	assert_true(FileAccess.file_exists(typed + ".webp"), "again, as WebP")
+	assert_eq(Global.document.last_export, typed + ".webp")
+
+	# Typed with the format's extension, in any case or spelling: written as typed
+	options.image_format = "jpg"
+	Global.spritesheet.set_export_settings(options.to_dictionary())
+	var jpeg := dir.path_join("FORMAT.JPEG")
+	DirAccess.remove_absolute(jpeg)
+	assert_true(await main.files.export_to(jpeg))
+	assert_true(FileAccess.file_exists(jpeg))
+	assert_eq(Global.document.last_export, jpeg)
+	assert_eq(FileController.suggested_export_path(options), jpeg)
+	assert_true(await main.files.export_again())
+	assert_eq(Global.document.last_export, jpeg, "the same file again")
+	for path: String in [written, typed + ".webp", jpeg]:
+		DirAccess.remove_absolute(path)
 
 
 func test_save_and_open_project() -> void:
@@ -761,13 +779,14 @@ func test_export_again() -> void:
 	assert_true(await main.files.export_again())
 	assert_true(FileAccess.file_exists(path), "written again")
 
-	# Another export type since: the same name with its extension
+	# Another export type since: the same name, without the PNG's extension, with its own
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	options.target = ExportOptions.Target.GIF
 	Global.spritesheet.set_export_settings(options.to_dictionary())
 	DirAccess.remove_absolute(dir.path_join("again.gif"))
 	assert_true(await main.files.export_again())
 	assert_true(FileAccess.file_exists(dir.path_join("again.gif")))
+	assert_false(FileAccess.file_exists(dir.path_join("again.png.gif")))
 
 	var project := dir.path_join("again.sbelli")
 	assert_true(main.files.save_project(project))

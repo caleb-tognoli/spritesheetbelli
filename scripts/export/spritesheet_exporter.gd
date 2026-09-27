@@ -95,12 +95,27 @@ static func supports_transparency(path: String) -> bool:
 	return path.get_extension().to_lower() not in ["jpg", "jpeg", "jpe"]
 
 
-## [param path] with [param extension], lowercase, whatever extension it was typed with:
-## the extensions of files exports write are dropped first, so "hero.png" with "jpg" gives
-## "hero.jpg" and "HERO.PNG" with "png" gives "HERO.png". Other extensions are part of
-## the name: "hero.v2" gives "hero.v2.jpg".
+## Whether [param path] ends with [param extension], in any case. JPG's is also
+## spelled "jpeg" and "jpe".
+static func has_extension(path: String, extension: String) -> bool:
+	var typed := path.get_extension().to_lower()
+	if extension.to_lower() == "jpg":
+		return typed in ["jpg", "jpeg", "jpe"]
+	return typed == extension.to_lower()
+
+
+## [param path] as a file with [param extension]: kept as typed when it has it ("HERO.PNG"
+## and "hero.jpeg" stay), else with it added. Other extensions are part of the name, so
+## the file typed is the file written: "hero.png" with "jpg" gives "hero.png.jpg".
 static func with_extension(path: String, extension: String) -> String:
-	return strip_written_extensions(path) + "." + extension.to_lower()
+	return path if has_extension(path, extension) else path + "." + extension
+
+
+## [param path] without [param extension], when it ends with it (see
+## [method has_extension]): the name the files an export writes next to it are named
+## from ("hero.png" and "png" give "hero", "hero.json" stays).
+static func without_extension(path: String, extension: String) -> String:
+	return path.get_basename() if has_extension(path, extension) else path
 
 
 ## The image format of [constant ExportOptions.IMAGE_FORMATS] the extension of
@@ -114,32 +129,11 @@ static func get_image_format(path: String) -> String:
 	return "png"
 
 
-## [param path] as an image in the format its extension names, or else PNG, with that
-## format's extension (see [method with_extension]): "hero.jpeg" gives "hero.jpg" and
-## "hero.json" gives "hero.png". For the command line, where the name picks the format.
+## [param path] as an image in the format its extension names, or else as a PNG (see
+## [method with_extension]): "hero.JPEG" stays and "hero.json" gives "hero.json.png". For
+## the command line, where the name picks the format.
 static func with_image_extension(path: String) -> String:
 	return with_extension(path, get_image_format(path))
-
-
-## Extensions of every file an export writes, lowercase: images, GIFs and data files
-static func get_written_extensions() -> PackedStringArray:
-	var extensions := IMAGE_EXTENSIONS.duplicate()
-	extensions.append(GifDecoder.EXTENSION)
-	for extension: String in Metadata.EXTENSIONS.values():
-		extensions.append(extension)
-	for format: Dictionary in AtlasFormats.FORMATS.values():
-		extensions.append(format.extension)
-	return extensions
-
-
-## [param path] without the extensions of files exports write, which the name to export
-## to may be typed with ("hero.json", "HERO.PNG" or "hero.json.png" give "hero"). Other
-## extensions are part of the name: "hero.v2" stays.
-static func strip_written_extensions(path: String) -> String:
-	var extensions := get_written_extensions()
-	while path.get_extension().to_lower() in extensions:
-		path = path.get_basename()
-	return path
 
 
 ## Saves [param img] in the format given by the extension of [param path]
@@ -184,7 +178,7 @@ static func format_sprite_name(
 				break
 	var regex := RegEx.create_from_string("\\{(\\w+)(?::(\\d+))?\\}")
 	# The extension is added when saving: "{index}.png" names "0.png", not "0.png.png"
-	var result := strip_written_extensions(pattern)
+	var result := without_extension(pattern, "png")
 	for found in regex.search_all(result):
 		var key := found.get_string(1)
 		if not values.has(key):
