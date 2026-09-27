@@ -12,6 +12,7 @@ var tolerance := SpinBox.new()
 func _init() -> void:
 	title = "Remove Background Colour"
 	ok_button_text = "Remove"
+	DialogButtons.apply(self)
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)

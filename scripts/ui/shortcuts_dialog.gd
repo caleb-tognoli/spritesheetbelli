@@ -7,6 +7,7 @@ var _grid := GridContainer.new()
 
 func _init() -> void:
 	title = "Keyboard Shortcuts"
+	DialogButtons.apply(self)
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(360, 420)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

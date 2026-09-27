@@ -13,6 +13,7 @@ var corners := CheckBox.new()
 func _init() -> void:
 	title = "Add Outline"
 	ok_button_text = "Add"
+	DialogButtons.apply(self)
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)

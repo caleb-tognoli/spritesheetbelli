@@ -7,6 +7,7 @@ const REPOSITORY := "https://github.com/caleb-tognoli/spritesheetbelli"
 
 func _init() -> void:
 	title = "About spritesheetbelli"
+	DialogButtons.apply(self)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 8)

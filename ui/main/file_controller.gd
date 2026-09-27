@@ -375,7 +375,8 @@ func _save_sprites(folder: String) -> bool:
 func _create_unsaved_changes_dialog() -> void:
 	unsaved_changes_dialog.title = "Unsaved changes"
 	unsaved_changes_dialog.ok_button_text = "Save"
-	unsaved_changes_dialog.add_button("Don't Save", true, "discard")
+	DialogButtons.apply(unsaved_changes_dialog)
+	unsaved_changes_dialog.add_button("Don't Save", false, "discard")
 	add_child(unsaved_changes_dialog)
 	unsaved_changes_dialog.confirmed.connect(
 		func() -> void:

@@ -42,6 +42,7 @@ var _updating := false
 func _init() -> void:
 	title = "Animations"
 	ok_button_text = "Close"
+	DialogButtons.apply(self)
 	min_size = Vector2i(720, 480)
 	var layout := HBoxContainer.new()
 	layout.add_theme_constant_override("separation", 16)

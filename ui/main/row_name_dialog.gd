@@ -10,6 +10,7 @@ var _row := 0
 
 func _init() -> void:
 	ok_button_text = "Rename"
+	DialogButtons.apply(self)
 	line_edit.placeholder_text = "For example: walk"
 	line_edit.custom_minimum_size = Vector2(260, 0)
 	add_child(line_edit)

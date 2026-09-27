@@ -22,6 +22,7 @@ var _others_edited := false
 
 func _init() -> void:
 	title = "File Changed"
+	DialogButtons.apply(self)
 	dialog_hide_on_ok = true
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)

@@ -176,25 +176,28 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer2/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 15
-alignment = 1
-
-[node name="AddSelectedFrames" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/HBoxContainer"]
+[node name="Buttons" type="HBoxContainer" parent="VBoxContainer/PanelContainer2/MarginContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+
+[node name="KeepEmptyCells" type="CheckBox" parent="VBoxContainer/PanelContainer2/MarginContainer/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 2
+tooltip_text = "Locks the empty cells of this sheet, so added sprites skip them. Click a locked cell to unlock it."
+text = "Keep the empty cells empty"
+
+[node name="AddSelectedFrames" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Add Selected Frames (0)"
 
-[node name="AddSpritesheet" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/HBoxContainer"]
+[node name="AddSpritesheet" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/Buttons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(170, 0)
 layout_mode = 2
 text = "Add Spritesheet"
 
-[node name="KeepEmptyCells" type="CheckBox" parent="VBoxContainer/PanelContainer2/MarginContainer/HBoxContainer"]
+[node name="Cancel" type="Button" parent="VBoxContainer/PanelContainer2/MarginContainer/Buttons"]
 unique_name_in_owner = true
 layout_mode = 2
-tooltip_text = "Locks the empty cells of this sheet, so added sprites skip them. Click a locked cell to unlock it."
-text = "Keep the empty cells empty"
+text = "Cancel"

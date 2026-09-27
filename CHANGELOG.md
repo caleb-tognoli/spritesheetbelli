@@ -195,6 +195,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   are shown see-through where they'd land, in the grid and the packed layout. Releasing
   without dragging moves nothing; Alt+dragging in the grid keeps the copied frames in
   their cells.
+- Dialog buttons sit together at the right, at least 80 px wide, in the platform's order:
+  OK before Cancel on Windows, after it on macOS and Linux. Other buttons (Reset All…,
+  Don't Save, Add selected frames) go to their left. Add Spritesheet has a Cancel button,
+  Escape cancels it, and "Keep the empty cells empty" moves to the left of its buttons.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

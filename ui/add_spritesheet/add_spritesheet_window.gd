@@ -8,6 +8,7 @@ signal frames_added
 @onready var preview_area: PreviewArea = %PreviewArea
 @onready var add_selected_frames_btn: Button = %AddSelectedFrames
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
+@onready var cancel_btn: Button = %Cancel
 @onready var grid_columns: SpinBox = %GridColumns
 @onready var grid_rows: SpinBox = %GridRows
 @onready var offset_x: SpinBox = %OffsetX
@@ -53,6 +54,16 @@ func _ready() -> void:
 	add_selected_frames_btn.icon = preload("res://assets/icons/Add.svg")
 	add_spritesheet_btn.icon = preload("res://assets/icons/SpriteSheet.svg")
 	add_spritesheet_btn.pressed.connect(add_spritesheet_to_global)
+	cancel_btn.pressed.connect(close_requested.emit)
+	# Like a dialog's: Add Spritesheet where OK goes, Escape cancels
+	DialogButtons.arrange(
+		%Buttons as HBoxContainer, add_spritesheet_btn, cancel_btn, [add_selected_frames_btn]
+	)
+	window_input.connect(
+		func(event: InputEvent) -> void:
+			if event.is_action_pressed(&"ui_cancel") and not event.is_echo():
+				close_requested.emit()
+	)
 	keep_empty_cells.toggled.connect(
 		func(on: bool) -> void: Settings.set_value(&"keep_empty_cells", on)
 	)

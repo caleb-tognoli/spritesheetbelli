@@ -16,6 +16,7 @@ func _ready() -> void:
 		dialog.dialog_autowrap = true
 		dialog.min_size = Vector2i(400, 0)
 		dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		DialogButtons.apply(dialog)
 		add_child(dialog)
 		_return_when_hidden(dialog)
 	confirm_dialog.confirmed.connect(

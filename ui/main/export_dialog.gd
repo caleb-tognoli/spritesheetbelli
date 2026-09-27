@@ -103,6 +103,7 @@ var _updating := false
 func _init() -> void:
 	title = "Export"
 	ok_button_text = "Export…"
+	DialogButtons.apply(self)
 	# Big enough for every export type, so it doesn't change size when switching
 	min_size = Vector2i(760, 470)
 	var layout := HBoxContainer.new()

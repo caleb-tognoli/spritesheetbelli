@@ -231,6 +231,8 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox("panel", "TooltipPanel", _box(p.raised, 4, Vector4(8, 6, 8, 6), p.border, 1))
 	theme.set_color("font_color", "TooltipLabel", p.text)
 	theme.set_stylebox("panel", "AcceptDialog", _box(p.surface, 0, Vector4(12, 12, 12, 12)))
+	# Dialog buttons as wide as each other, e.g. OK as Cancel (see DialogButtons)
+	theme.set_constant("buttons_min_width", "AcceptDialog", DialogButtons.MIN_WIDTH)
 	theme.set_stylebox(
 		"embedded_border", "Window", _box(p.surface, 6, Vector4(8, 32, 8, 8), p.border, 1)
 	)
