@@ -1,7 +1,8 @@
 class_name SpritesPanel
 extends PanelContainer
-## Lists every frame with a thumbnail, its name and size. Selecting frames here selects
-## them in the preview and the other way round.
+## Lists every frame with a thumbnail, its name and size, under the first animation showing
+## it, or under its row. Selecting frames here selects them in the preview and the other way
+## round; clicking a group's name selects its frames, and its arrow folds it.
 ## Frames are renamed by double-clicking their name or F2, found by typing in the search field, and
 ## pinned with the button on each frame in the packed layout. Right-clicking them offers
 ## the actions given to [method set_context_actions].
@@ -9,10 +10,14 @@ extends PanelContainer
 const THUMBNAIL_SIZE := 32
 const PIN_ICON := preload("res://assets/icons/Pin.svg")
 const PIN_BUTTON := 0
+## Where frames in no animation are listed, see [method group_frames]
+const NO_ANIMATION := "none"
 
 ## Where the frames are selected, and shown
 var preview: SpritesheetPreview
 var search := LineEdit.new()
+## Lists the frames by row rather than by animation
+var by_row_button := Button.new()
 var tree := Tree.new()
 var close_button := Button.new()
 var context_menu := ActionPopupMenu.new()
@@ -25,6 +30,8 @@ var _highlights: Dictionary[bool, Array] = {}
 ## Whether the selection is being copied between the list and the preview, so it isn't
 ## copied back
 var _syncing := false
+## The groups folded in the list, by key, see [method group_frames]. Kept while the app runs.
+var _collapsed: Dictionary[String, bool] = {}
 
 
 func _init() -> void:
@@ -53,18 +60,24 @@ func _init() -> void:
 	search.placeholder_text = "Search by name"
 	search.clear_button_enabled = true
 	search.right_icon = preload("res://assets/icons/Search.svg")
+	search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	by_row_button.flat = true
+	by_row_button.toggle_mode = true
+	by_row_button.icon = preload("res://assets/icons/Rows.svg")
+	by_row_button.tooltip_text = "Group by row instead of by animation"
+	var search_row := HBoxContainer.new()
+	search_row.add_child(search)
+	search_row.add_child(by_row_button)
 	var search_margin := MarginContainer.new()
 	for side: String in ["left", "right"]:
 		search_margin.add_theme_constant_override("margin_" + side, 6)
-	search_margin.add_child(search)
+	search_margin.add_child(search_row)
 	box.add_child(search_margin)
 
 	tree.hide_root = true
 	tree.select_mode = Tree.SELECT_MULTI
 	tree.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tree.add_theme_font_size_override("font_size", 13)
-	# Frames start at the left edge; only frames under a row's name are indented
-	tree.add_theme_constant_override("item_margin", 4)
 	tree.columns = 2
 	tree.set_column_expand(1, false)
 	tree.set_column_custom_minimum_width(1, 100)
@@ -79,6 +92,10 @@ func _init() -> void:
 func _ready() -> void:
 	close_button.pressed.connect(func() -> void: Settings.set_value(&"show_sprites", false))
 	search.text_changed.connect(refresh.unbind(1))
+	by_row_button.set_pressed_no_signal(Settings.get_value(&"sprites_by_row"))
+	by_row_button.toggled.connect(func(on: bool) -> void: Settings.set_value(&"sprites_by_row", on))
+	Settings.changed.connect(_on_setting_changed)
+	tree.item_collapsed.connect(_on_item_collapsed)
 	tree.multi_selected.connect(_on_tree_multi_selected)
 	tree.item_activated.connect(_edit_selected)
 	tree.item_edited.connect(_on_item_edited)
@@ -102,33 +119,102 @@ func refresh() -> void:
 	var root := tree.create_item()
 	var filter := search.text.strip_edges().to_lower()
 	var alive := {}
-	var packed := sheet.layout == Spritesheet.Layout.PACKED
-	for coord in sheet.get_sorted_coords():
-		var img := sheet.frames[coord]
-		alive[img] = true
-		var label := frame_label(sheet, coord)
-		if filter and filter not in label.to_lower():
-			continue
-		var item := tree.create_item(root)
-		item.set_text(0, label)
-		item.set_icon(0, _thumbnail(img))
-		item.set_icon_max_width(0, THUMBNAIL_SIZE)
-		var frame_size := img.get_size()
-		item.set_text(1, "%d×%d" % [frame_size.x, frame_size.y])
-		# Only names are picked and edited
-		item.set_selectable(1, false)
-		item.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
-		item.set_metadata(0, coord)
-		item.set_tooltip_text(0, PreviewArea.describe_cell(sheet, coord))
-		if packed and sheet.placements.has(coord):
-			var pinned: bool = sheet.placements[coord].get("pinned", false)
-			item.add_button(1, PIN_ICON, PIN_BUTTON, false, tr("Unpin") if pinned else tr("Pin"))
-			item.set_metadata(1, pinned)
-		_highlight(item, false)
+	for group in group_frames(sheet, Settings.get_value(&"sprites_by_row")):
+		# Only groups with frames found are listed
+		var header: TreeItem = null
+		for coord: Vector2i in group.coords:
+			alive[sheet.frames[coord]] = true
+			var label := frame_label(sheet, coord)
+			if filter and filter not in label.to_lower():
+				continue
+			if not header:
+				header = _add_header(root, group)
+			_add_frame(header, coord, label)
+		if header:
+			header.set_text(1, str(header.get_child_count()))
+			# Frames found are shown even in folded groups
+			if not filter:
+				header.collapsed = _collapsed.get(group.key, false)
 	for img: Image in _thumbnails.keys():
 		if not alive.has(img):
 			_thumbnails.erase(img)
 	_show_selection()
+
+
+## Every frame of [param sheet] in groups, each a dictionary with a "key" that stays the same
+## while the sheet changes, a "title" and the frames' "coords". By animation, in the sheet's
+## order, a frame is in the first one showing it, at its first place in play order; frames in
+## none follow in reading order. With [param by_row], each row is a group. Groups without
+## frames are left out.
+static func group_frames(sheet: Spritesheet, by_row := false) -> Array[Dictionary]:
+	var groups: Array[Dictionary] = []
+	if by_row:
+		for coord in sheet.get_sorted_coords():
+			var key := "row:%d" % coord.y
+			if groups.is_empty() or groups[-1].key != key:
+				var title := TranslationServer.translate("Row %d") % coord.y
+				var coords: Array[Vector2i] = []
+				groups.append({"key": key, "title": title, "coords": coords})
+			groups[-1].coords.append(coord)
+		return groups
+	var listed := {}
+	for animation in sheet.animations:
+		var coords: Array[Vector2i] = []
+		for cell in animation.get_frame_cells(sheet):
+			if not listed.has(cell):
+				listed[cell] = true
+				coords.append(cell)
+		if coords:
+			groups.append(
+				{"key": "animation:" + animation.name, "title": animation.name, "coords": coords}
+			)
+	var rest: Array[Vector2i] = []
+	for coord in sheet.get_sorted_coords():
+		if not listed.has(coord):
+			rest.append(coord)
+	if rest:
+		var title := TranslationServer.translate("No animation")
+		groups.append({"key": NO_ANIMATION, "title": title, "coords": rest})
+	return groups
+
+
+## Adds the name of [param group], from [method group_frames], with the number of frames
+## listed under it. It isn't a frame: clicking it selects its frames instead.
+func _add_header(root: TreeItem, group: Dictionary) -> TreeItem:
+	var header := tree.create_item(root)
+	header.set_text(0, group.title)
+	header.set_metadata(0, group.key)
+	header.set_tooltip_text(0, tr("Click to select these frames"))
+	header.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
+	var muted := get_theme_color("font_color", &"StatusLabel")
+	for column in tree.columns:
+		header.set_selectable(column, false)
+		header.set_custom_color(column, muted)
+	return header
+
+
+## Lists the frame at [param coord] under [param header], named [param label]
+func _add_frame(header: TreeItem, coord: Vector2i, label: String) -> void:
+	var sheet := Global.spritesheet
+	var img := sheet.frames[coord]
+	var item := tree.create_item(header)
+	# No room is kept for an arrow, so frames line up under their group's name
+	item.disable_folding = true
+	item.set_text(0, label)
+	item.set_icon(0, _thumbnail(img))
+	item.set_icon_max_width(0, THUMBNAIL_SIZE)
+	var frame_size := img.get_size()
+	item.set_text(1, "%d×%d" % [frame_size.x, frame_size.y])
+	# Only names are picked and edited
+	item.set_selectable(1, false)
+	item.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
+	item.set_metadata(0, coord)
+	item.set_tooltip_text(0, PreviewArea.describe_cell(sheet, coord))
+	if sheet.layout == Spritesheet.Layout.PACKED and sheet.placements.has(coord):
+		var pinned: bool = sheet.placements[coord].get("pinned", false)
+		item.add_button(1, PIN_ICON, PIN_BUTTON, false, tr("Unpin") if pinned else tr("Pin"))
+		item.set_metadata(1, pinned)
+	_highlight(item, false)
 
 
 func _notification(what: int) -> void:
@@ -200,7 +286,9 @@ func _show_selection() -> void:
 		_highlight(item, item.is_selected(0))
 		item = item.get_next_in_tree()
 	if first_selected:
-		tree.scroll_to_item(first_selected)
+		# To its group's name when the group is folded
+		var parent := first_selected.get_parent()
+		tree.scroll_to_item(parent if parent.collapsed else first_selected)
 	_syncing = false
 
 
@@ -323,15 +411,62 @@ func _on_button_clicked(item: TreeItem, _column: int, id: int, _button: int) -> 
 	)
 
 
+## The name of the group at [param at] in the list, off its arrow, or null
+func _header_at(at: Vector2) -> TreeItem:
+	var item := tree.get_item_at_position(at)
+	if not item or item.get_metadata(0) is Vector2i:
+		return null
+	var arrow_end := (
+		tree.get_theme_stylebox("panel").get_margin(SIDE_LEFT)
+		+ tree.get_theme_constant("item_margin")
+	)
+	return item if at.x >= arrow_end else null
+
+
+## Selects the frames listed under [param header], clicked with [param mouse]. Shift or Ctrl
+## adds them to the selection; right-clicking keeps the selection when it has them all, like
+## right-clicking a frame.
+func _select_group(header: TreeItem, mouse: InputEventMouseButton) -> void:
+	if not preview:
+		return
+	var coords: Array[Vector2i] = []
+	for item in header.get_children():
+		coords.append(item.get_metadata(0))
+	if mouse.button_index == MOUSE_BUTTON_RIGHT:
+		if coords.all(preview.is_selected):
+			return
+	elif mouse.shift_pressed or mouse.is_command_or_control_pressed():
+		coords.append_array(preview.get_selected_coords())
+	preview.set_selected_coords(coords)
+
+
+func _on_setting_changed(key: StringName) -> void:
+	if key == &"sprites_by_row":
+		by_row_button.set_pressed_no_signal(Settings.get_value(key))
+		refresh()
+
+
+## Remembers which groups are folded, to fold them again when the list is refreshed
+func _on_item_collapsed(item: TreeItem) -> void:
+	var key: Variant = item.get_metadata(0)
+	if key is String:
+		_collapsed[key] = item.collapsed
+
+
 func _on_tree_input(event: InputEvent) -> void:
 	# F2 alone: with Shift or Ctrl, it makes an animation
 	var key := event as InputEventKey
 	if key and key.pressed and key.keycode == KEY_F2 and key.get_modifiers_mask() == 0:
 		_edit_selected()
 		tree.accept_event()
-	# Sizes can't be picked, and double-clicking one doesn't rename another frame
 	var mouse := event as InputEventMouseButton
-	if mouse and mouse.double_click and tree.get_column_at_position(mouse.position) == 1:
+	var header := _header_at(mouse.position) if mouse and mouse.pressed else null
+	if header and mouse.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+		# Instead of folding the group, and double-clicking it doesn't rename a frame
+		_select_group(header, mouse)
+		tree.accept_event()
+	# Sizes can't be picked, and double-clicking one doesn't rename another frame
+	elif mouse and mouse.double_click and tree.get_column_at_position(mouse.position) == 1:
 		tree.accept_event()
 	elif (
 		mouse

@@ -59,6 +59,8 @@ const DEFAULTS := {
 	&"animation_panel": "auto",
 	&"show_history": false,
 	&"show_sprites": false,
+	# The Sprites panel lists frames under their row rather than their animation
+	&"sprites_by_row": false,
 	# Where the main window was left, in pixels, and whether it was maximised, see
 	# WindowPlacement. No size yet before the first launch.
 	&"window_rect": Rect2i(),
@@ -84,6 +86,7 @@ const REMEMBERED: Array[StringName] = [
 	&"animation_panel",
 	&"show_history",
 	&"show_sprites",
+	&"sprites_by_row",
 	&"window_rect",
 	&"window_screen",
 	&"window_maximized",

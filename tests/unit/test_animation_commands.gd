@@ -280,9 +280,10 @@ func test_sprites_panel_menu() -> void:
 	select([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
 	await get_tree().process_frame
 	var right_click := func(coord: Vector2i) -> void:
-		var item := tree.get_root().get_first_child()
-		while item.get_metadata(0) != coord:
-			item = item.get_next()
+		# Frames are listed under their group's name
+		var item := tree.get_root().get_next_in_tree()
+		while not (item.get_metadata(0) is Vector2i and item.get_metadata(0) == coord):
+			item = item.get_next_in_tree()
 		var pos := tree.get_global_transform() * tree.get_item_area_rect(item).get_center()
 		for pressed: bool in [true, false]:
 			var event := InputEventMouseButton.new()

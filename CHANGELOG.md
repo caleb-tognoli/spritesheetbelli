@@ -35,9 +35,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Pivots, turned on in Settings > General: a pivot mode (E) drags the pivot of the
   selected frames, and Frame > Pivot has presets, top left and bottom left included. Pivots follow flips and turns, stay on their pixel when trimming, and are
   exported where the format has them. Frames without one use the atlas's default.
-- View > Sprites lists every frame with a thumbnail, its name and size. Selection follows
-  the preview both ways, double-click a name or F2 renames a frame, and frames can be
-  searched and pinned. It opens as narrow as it can be.
+- View > Sprites lists every frame with a thumbnail, its name and size, under the first
+  animation showing it, in play order, and the others under "No animation"; the button
+  next to the search field groups them by row instead. Clicking a group's name selects
+  its frames, and its arrow folds it. Selection follows the preview both ways,
+  double-click a name or F2 renames a frame, and frames can be searched and pinned.
 - Command line: `--layout grid|packed`, `--max-size`, `--rotate` and `--repack`, and
   `--atlas-data` takes every format above. Packed sheets are written as atlases.
 - Packed spritesheets with a data file: opening or adding an image that has a
