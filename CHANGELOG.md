@@ -171,6 +171,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   darker ones instead of tinting them, so icons in several greys such as Align in Cell and
   the zoom buttons keep their parts. Pressed toggles show the accent colour in both
   themes, and menu and dropdown arrows follow the theme.
+- Repack and Frame > Pack Again have their own icon instead of a circular arrow like
+  Turn frames to fit.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

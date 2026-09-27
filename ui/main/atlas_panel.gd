@@ -84,7 +84,7 @@ func _init() -> void:
 		toggle.custom_minimum_size = Vector2(32, 30)
 		toggle.toggled.connect(_changed.unbind(1))
 		row.add_child(toggle)
-	repack.icon = preload("res://assets/icons/Reload.svg")
+	repack.icon = preload("res://assets/icons/GridLayout.svg")
 	repack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repack.custom_minimum_size = Vector2(0, 30)
 	# The text only shows when it fits whole

@@ -62,7 +62,7 @@ const ICONS := {
 	&"layout_grid": preload("res://assets/icons/LayoutGrid.svg"),
 	&"layout_packed": preload("res://assets/icons/LayoutPacked.svg"),
 	&"pin_toggle": preload("res://assets/icons/Pin.svg"),
-	&"repack": RELOAD_ICON,
+	&"repack": preload("res://assets/icons/GridLayout.svg"),
 	&"pivot_clear": preload("res://assets/icons/Clear.svg"),
 	&"pivot_top_left": preload("res://assets/icons/ControlAlignTopLeft.svg"),
 	&"pivot_bottom_left": preload("res://assets/icons/ControlAlignBottomLeft.svg"),
