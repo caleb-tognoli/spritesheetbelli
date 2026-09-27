@@ -45,10 +45,11 @@ const DEFAULTS := {
 	# Remembered between runs
 	&"last_session": "",
 	&"recent_files": [],
+	# Widths of the sidebar on the left and of the sprites and history panels on the right,
+	# 0 for as narrow as they can be, see SidebarSplit
 	&"sidebar_width": 0,
+	&"panels_width": 0,
 	&"show_history": false,
-	# From the preview's side: negative is wider than the panels' smallest width
-	&"history_width": 0,
 	&"show_sprites": false,
 	&"onion_skin": false,
 	# Add Spritesheet locks the empty cells of the added sheet
@@ -59,8 +60,8 @@ const REMEMBERED: Array[StringName] = [
 	&"last_session",
 	&"recent_files",
 	&"sidebar_width",
+	&"panels_width",
 	&"show_history",
-	&"history_width",
 	&"show_sprites",
 	&"onion_skin",
 	&"keep_empty_cells",

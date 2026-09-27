@@ -146,6 +146,9 @@ var about_dialog := AboutDialog.new()
 var animation_window := AnimationWindow.new()
 var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
+## The settings and export on the left, and the sprites and history on the right
+var sidebar_split: SidebarSplit
+var panels_split: SidebarSplit
 var _was_empty := true
 ## The view to show once the sheet is laid out (see [method SpritesheetPreview.get_view]),
 ## empty to show the whole sheet, or null when there's none, see [method _queue_view]
@@ -176,15 +179,10 @@ func _ready() -> void:
 	export_btn.pressed.connect(Actions.run.bind(&"export"))
 	export_btn.icon = ICONS[&"export"]
 	get_window().min_size = Vector2i(820, 520)
-	split.split_offset = Settings.get_value(&"sidebar_width")
-	split.dragged.connect(func(offset: int) -> void: Settings.set_value(&"sidebar_width", offset))
+	sidebar_split = SidebarSplit.new(split, %Sidebar, &"sidebar_width")
+	panels_split = SidebarSplit.new(preview_split, layout_controller.side_split, &"panels_width")
 	status_bar.visible = Settings.get_value(&"show_status_bar")
 	history_panel.visible = Settings.get_value(&"show_history")
-	# The split offset is from the preview's side, so a wider history is a negative offset
-	preview_split.split_offset = Settings.get_value(&"history_width")
-	preview_split.dragged.connect(
-		func(offset: int) -> void: Settings.set_value(&"history_width", offset)
-	)
 	Settings.changed.connect(
 		func(key: StringName) -> void:
 			if key == &"show_status_bar":

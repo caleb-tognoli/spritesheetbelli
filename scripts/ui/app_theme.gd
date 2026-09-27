@@ -244,6 +244,8 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	split.color = p.border
 	split.vertical = true
 	theme.set_stylebox("split_bar_background", "HSplitContainer", split)
+	# The handle for dragging the sidebars wider always shows
+	theme.set_constant("autohide", "HSplitContainer", 0)
 	_add_lists(theme, p, focus)
 	return theme
 

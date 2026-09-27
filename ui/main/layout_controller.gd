@@ -58,6 +58,7 @@ func setup(main_ui: Control) -> void:
 	main = main_ui
 	_build_sidebar()
 	_build_side_panels()
+	_fit_sidebars()
 
 
 ## Puts the sprites panel above the history panel
@@ -79,10 +80,6 @@ func _build_side_panels() -> void:
 		func(key: StringName) -> void:
 			if key == &"show_sprites":
 				sprites_panel.visible = Settings.get_value(key)
-				# Opened as narrow as it can be
-				if sprites_panel.visible:
-					preview_split.set(&"split_offset", 0)
-					Settings.set_value(&"history_width", 0)
 				Actions.refresh()
 	)
 	_update_side_split()
@@ -92,10 +89,35 @@ func _update_side_split() -> void:
 	side_split.visible = sprites_panel.visible or main.history_panel.visible
 
 
+## Keeps both sidebars as wide as their widest content, also the parts that are hidden
+## (the settings of the other layout, a closed panel), so the preview doesn't move when
+## switching layouts or opening a panel
+func _fit_sidebars() -> void:
+	var sections: Control = main.sheet_size.get_parent()
+	sections.custom_minimum_size.x = _widest(sections.get_children())
+	side_split.custom_minimum_size.x = _widest([sprites_panel, main.history_panel])
+
+
+static func _widest(controls: Array[Node]) -> float:
+	var widest := 0.0
+	for control in controls:
+		if control is Control:
+			widest = maxf(widest, (control as Control).get_combined_minimum_size().x)
+	return widest
+
+
 ## The layout switch and the atlas settings in the sidebar, which replace the grid
 ## settings in the packed layout
 func _build_sidebar() -> void:
 	var sections: Node = main.sheet_size.get_parent()
+	# The scroll bar has room kept for it in the right margin, so the sidebar is as wide
+	# whether it shows or not
+	var margin: MarginContainer = sections.get_parent()
+	var scroll: ScrollContainer = margin.get_parent()
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_RESERVE
+	var bar_width := roundi(scroll.get_v_scroll_bar().get_combined_minimum_size().x)
+	var margin_width := margin.get_theme_constant("margin_right")
+	margin.add_theme_constant_override("margin_right", maxi(0, margin_width - bar_width))
 	var grid_heading: int = main.grid_rows.get_parent().get_index() - 1
 	for index: int in [grid_heading, grid_heading + 1, grid_heading + 2]:
 		_grid_parts.append(sections.get_child(index))
@@ -164,6 +186,7 @@ func update() -> void:
 		var options := ExportOptions.from_sheet(sheet)
 		grid_gaps.set_values(options.padding, options.spacing, options.extrude)
 		grid_gaps.disabled = sheet.is_empty()
+	_fit_sidebars()
 
 
 ## Stores the grid's spacing with the sheet's export settings, where exports take it from
