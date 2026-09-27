@@ -114,6 +114,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   them as narrow as they can be again. Their width is remembered.
 - The window opens where it was left: same size, place, screen and maximised state. The
   first time, it takes 80% of the screen, centred, or is maximised on small screens.
+- Shortcuts for Frame > Pinned (K, in the packed layout) and showing or hiding the
+  Sprites panel (Ctrl+L).
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

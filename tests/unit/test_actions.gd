@@ -77,6 +77,8 @@ func test_shortcuts_dialog_lists_actions() -> void:
 	for child: Label in main.shortcuts_dialog.find_children("*", "Label", true, false):
 		labels.append(child.text)
 	assert_true("Ctrl+Shift+S" in labels)
+	assert_true("K" in labels, "Pinned")
+	assert_true("Ctrl+L" in labels, "Sprites")
 	main.shortcuts_dialog.hide()
 
 
@@ -251,6 +253,33 @@ func test_every_shortcut_runs_a_menu_action() -> void:
 			assert_true(id in in_menus, "%s is in a menu" % id)
 
 
+func test_pin_and_sprites_shortcuts() -> void:
+	var coord := Vector2i(1, 0)
+	Actions.run(&"layout_packed")
+	main.preview.set_selected_coords([coord] as Array[Vector2i])
+	await get_tree().process_frame
+	await press(KEY_K)
+	assert_true(Global.spritesheet.placements[coord].pinned, "K pins")
+	# Letters typed in a text field stay there
+	var search: LineEdit = main.layout_controller.sprites_panel.search
+	search.grab_focus()
+	var event := InputEventKey.new()
+	event.keycode = KEY_K
+	event.unicode = "k".unicode_at(0)
+	event.pressed = true
+	get_viewport().push_input(event)
+	await get_tree().process_frame
+	assert_eq(search.text, "k")
+	assert_true(Global.spritesheet.placements[coord].pinned, "not unpinned while typing")
+	search.release_focus()
+	assert_true(Settings.get_value(&"show_sprites"), "shown by the packed layout")
+	await press(KEY_L, true)
+	assert_false(Settings.get_value(&"show_sprites"), "Ctrl+L hides the sprites")
+	await press(KEY_L, true)
+	assert_true(Settings.get_value(&"show_sprites"), "and shows them")
+	Settings.set_value(&"show_sprites", false)
+
+
 func test_tooltip_format() -> void:
 	assert_eq(Actions.get_tooltip(&"flip_h"), "Flip Horizontally (H)", "no description")
 	assert_eq(Actions.get_tooltip(&"save_as"), "Save As (Ctrl+Shift+S)", "without the dots")
@@ -262,6 +291,11 @@ func test_tooltip_format() -> void:
 	)
 	assert_eq(
 		Actions.get_tooltip(&"toggle_history", "Hide the history"), "Hide the history (Ctrl+H)"
+	)
+	assert_eq(Actions.get_tooltip(&"toggle_sprites"), "Sprites (Ctrl+L)")
+	assert_eq(
+		Actions.get_tooltip(&"pin_toggle"),
+		"Pinned (K)\n" + Actions.get_action(&"pin_toggle").description
 	)
 	assert_eq(Actions.get_tooltip(&"no_such_action"), "")
 
@@ -297,6 +331,6 @@ func test_buttons_have_the_tooltips_of_their_actions() -> void:
 	assert_eq(main.export_btn.tooltip_text.get_slice("\n", 0), "Export (Ctrl+E)")
 	assert_true(main.export_btn.tooltip_text.contains("\n"), "and what it does")
 	assert_eq(main.history_panel.close_button.tooltip_text, "Hide the history (Ctrl+H)")
-	assert_eq(layout.sprites_panel.close_button.tooltip_text, "Hide the sprites")
+	assert_eq(layout.sprites_panel.close_button.tooltip_text, "Hide the sprites (Ctrl+L)")
 	for menu_button: Button in area._menu_buttons:
 		assert_true(menu_button.tooltip_text.contains("every frame when none are selected"))
