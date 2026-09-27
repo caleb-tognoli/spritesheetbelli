@@ -67,6 +67,19 @@ const ICONS := {
 	&"pivot_top_left": preload("res://assets/icons/ControlAlignTopLeft.svg"),
 	&"pivot_bottom_left": preload("res://assets/icons/ControlAlignBottomLeft.svg"),
 }
+## What tooltips say after an action's name and shortcut, see [member AppAction.description]
+const DESCRIPTIONS := {
+	&"export": "The spritesheet as an image, as sprites or for a game engine",
+	&"add_sprites": "Image files as sprites",
+	&"add_spritesheet": "Cut a spritesheet image into frames and add them",
+	&"tool_select": "Click or drag to select frames",
+	&"tool_move":
+	(
+		"Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys "
+		+ "move the selected frames inside their cells."
+	),
+	&"trim": "Of the selected frames, or of every frame when none are selected",
+}
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
 ## Action buttons in the toolbar, in groups, and the view toggles next to the zoom. The
@@ -239,11 +252,22 @@ func _ready() -> void:
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
 	_register_actions()
 	layout_controller.register_actions()
+	add_sprites_btn.tooltip_text = Actions.get_tooltip(&"add_sprites")
+	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
+	export_btn.tooltip_text = Actions.get_tooltip(&"export")
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	preview_area.set_toolbar_actions(TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS)
+	var add_keys := [
+		Actions.get_shortcut_text(&"add_sprites"), Actions.get_shortcut_text(&"add_spritesheet")
+	]
 	preview_area.empty_hint.text = (
-		"Drop images, folders or a .sbelli project here\n"
-		+ "or use Add Sprite(s) and Add Spritesheet (Ctrl+I, Ctrl+Shift+I)"
+		tr(
+			(
+				"Drop images, folders or a .sbelli project here\n"
+				+ "or use Add Sprite(s) and Add Spritesheet (%s, %s)"
+			)
+		)
+		% add_keys
 	)
 	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
@@ -562,6 +586,8 @@ func _register_actions() -> void:
 	add.call(
 		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
 	)
+	for id: StringName in DESCRIPTIONS:
+		Actions.get_action(id).description = DESCRIPTIONS[id]
 
 
 ## Rows with a selected frame, from top to bottom

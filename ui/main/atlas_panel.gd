@@ -85,7 +85,6 @@ func _init() -> void:
 		toggle.toggled.connect(_changed.unbind(1))
 		row.add_child(toggle)
 	repack.icon = preload("res://assets/icons/Reload.svg")
-	repack.tooltip_text = "Pack every frame that isn't pinned again, as tightly as possible"
 	repack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	repack.custom_minimum_size = Vector2(0, 30)
 	# The text only shows when it fits whole

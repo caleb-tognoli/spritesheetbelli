@@ -28,7 +28,7 @@ A small desktop tool made with Godot.</p>
   sharing identical frames and power-of-two or square pages are in Settings.
 - **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
   the pivot tool or presets and exported where the format has them.
-- **Edit frames.** Drag to move or copy (Alt), flip, rotate, trim, remove a background
+- **Edit frames.** Drag to move or copy, flip, rotate, trim, remove a background
   colour, add an outline, replace, cut/copy/paste (also images copied in other apps),
   duplicate, insert or remove cells, insert, remove or reorder rows. Everything can be
   undone.
@@ -37,7 +37,7 @@ A small desktop tool made with Godot.</p>
   it, keeping the flips, trims, outlines and moves made here or going back to the file as
   it is; with several changed files, answer once for all of them. Sheets are cut again in
   the same places (data-file frames by name), GIF frames by number.
-- **Line frames up.** Move frames inside their cells with the arrow keys in the move mode,
+- **Line frames up.** Move frames inside their cells a pixel at a time in the move mode,
   or align them to an edge of their cells; trimming keeps every pixel where it was, so
   animations don't jump.
 - **Resize without losing quality.** Sprites are always resized from the originals, with
@@ -60,8 +60,7 @@ A small desktop tool made with Godot.</p>
   `.atlas`, Sparrow / Starling XML or a Godot `SpriteFrames` using every page, with
   pivots and turned frames where the format has them.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original size.
-- Light and dark themes, an accent colour, interface scaling and a keyboard shortcut for
-  every action.
+- Light and dark themes, an accent colour, interface scaling and keyboard shortcuts.
 
 <details>
 <summary>Packed layout</summary>
@@ -92,37 +91,8 @@ the repository variable `ITCH_GAME` (like `your-name/spritesheetbelli`) and the 
 
 ## Keyboard shortcuts
 
-Press **F1** in the app for the full list. The most useful:
-
-| Action | Shortcut |
-| --- | --- |
-| Add sprites / spritesheet | Ctrl+I / Ctrl+Shift+I |
-| Save project / Save As | Ctrl+S / Ctrl+Shift+S |
-| Export / Export again | Ctrl+E / Ctrl+Shift+E |
-| Undo / Redo | Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z |
-| Cut / Copy / Paste / Duplicate | Ctrl+X / Ctrl+C / Ctrl+V / Ctrl+D |
-| Select all / none | Ctrl+A / Esc |
-| Delete frames / Remove cells | Delete / Shift+Delete |
-| Flip / Rotate | H, V / R, Shift+R |
-| Trim transparent borders | T |
-| Align in cell: top / bottom / left / right / centre | Alt+T / B / L / R / C |
-| Move frames inside their cells (move mode) | Arrow keys (Shift for 8 pixels) |
-| Name row | F2 |
-| Insert / remove row | Ctrl+Insert / Ctrl+Shift+Delete |
-| Move row up / down | Ctrl+Shift+Up / Ctrl+Shift+Down |
-| Zoom / Actual size / Fit | Ctrl+= and Ctrl+- / Ctrl+0 / F |
-| Grid lines / Frame numbers | G / N |
-| Select / move / pivot tool | Q / W / E (pivots when on in Settings) |
-| Animation preview | P |
-
-In the preview: click selects, Ctrl+click toggles, Shift+click selects a range, drag on
-empty space draws a selection box, drag frames to move them, click an empty cell to lock it
-so added sprites skip it. In the packed layout, the move tool drags frames to any place on
-a page, and the pivot tool drags the pivot of the selected frames. Align in Cell, Pivot,
-Trim and Pinned work on every frame when none are selected. Pan with the middle mouse
-button or Space+drag, zoom with the wheel or the buttons over the top-right corner, where
-the zoom level goes back to 100% when clicked. Arrow keys move the selection, or in the move mode the selected frames. Right-click
-for the Transform, Align in Cell and Rows submenus.
+Press **F1** in the app for every shortcut and what the mouse does in the preview. Menus
+show each action's shortcut, and toolbar buttons show it when hovered.
 
 ## Command line
 

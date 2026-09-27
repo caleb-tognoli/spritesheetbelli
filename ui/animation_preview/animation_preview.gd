@@ -33,7 +33,9 @@ func _init() -> void:
 	header.add_child(selector)
 	details_button.icon = DETAILS_ICON
 	details_button.flat = true
-	details_button.tooltip_text = "Edit animations in a bigger preview"
+	details_button.tooltip_text = Actions.get_tooltip(
+		&"edit_animations", "Edit animations in a bigger preview"
+	)
 	header.add_child(details_button)
 	player.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(player)

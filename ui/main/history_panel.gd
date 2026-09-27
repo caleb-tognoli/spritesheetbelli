@@ -27,7 +27,7 @@ func _init() -> void:
 	header.add_child(title)
 	close_button.flat = true
 	close_button.icon = preload("res://assets/icons/Close.svg")
-	close_button.tooltip_text = "Hide the history (Ctrl+H)"
+	close_button.tooltip_text = Actions.get_tooltip(&"toggle_history", "Hide the history")
 	header.add_child(close_button)
 
 	list.size_flags_vertical = Control.SIZE_EXPAND_FILL

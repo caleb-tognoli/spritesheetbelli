@@ -227,3 +227,76 @@ func test_toolbar_buttons_follow_their_actions() -> void:
 	Settings.set_value(&"show_grid", true)
 	await get_tree().process_frame
 	assert_true(grid.button_pressed, "follows the setting")
+
+
+func test_escape_selects_none() -> void:
+	Actions.run(&"select_all")
+	await get_tree().process_frame
+	await press(KEY_ESCAPE)
+	assert_true(main.preview.get_selected_coords().is_empty())
+
+
+func test_every_shortcut_runs_a_menu_action() -> void:
+	var in_menus: Array[StringName] = []
+	for menu: String in MainMenuBar.MENUS:
+		for id: StringName in MainMenuBar.MENUS[menu]:
+			if MainMenuBar.SUBMENUS.has(id):
+				in_menus.append_array(MainMenuBar.SUBMENUS[id][1])
+			else:
+				in_menus.append(id)
+	for id in InputMap.get_actions():
+		if not str(id).begins_with("ui_"):
+			assert_true(Actions.has(id), "%s is an action" % id)
+			# Menus handle the shortcuts, and F1 lists what's in them
+			assert_true(id in in_menus, "%s is in a menu" % id)
+
+
+func test_tooltip_format() -> void:
+	assert_eq(Actions.get_tooltip(&"flip_h"), "Flip Horizontally (H)", "no description")
+	assert_eq(Actions.get_tooltip(&"save_as"), "Save As (Ctrl+Shift+S)", "without the dots")
+	assert_eq(Actions.get_tooltip(&"about"), "About spritesheetbelli", "no shortcut")
+	assert_eq(
+		Actions.get_tooltip(&"trim"),
+		"Trim Transparent Borders (T)\n" + Actions.get_action(&"trim").description,
+		"the description on its own line"
+	)
+	assert_eq(
+		Actions.get_tooltip(&"toggle_history", "Hide the history"), "Hide the history (Ctrl+H)"
+	)
+	assert_eq(Actions.get_tooltip(&"no_such_action"), "")
+
+
+func test_buttons_have_the_tooltips_of_their_actions() -> void:
+	var area: PreviewArea = main.preview_area
+	var layout: LayoutController = main.layout_controller
+	var buttons := {
+		main.export_btn: &"export",
+		main.add_sprites_btn: &"add_sprites",
+		main.add_spritesheet_btn: &"add_spritesheet",
+		area.select_tool_btn: &"tool_select",
+		area.move_tool_btn: &"tool_move",
+		area.pivot_tool_btn: &"tool_pivot",
+		area.center_view_btn: &"zoom_fit",
+		area.zoom_out_btn: &"zoom_out",
+		area.zoom_label_btn: &"zoom_reset",
+		area.zoom_in_btn: &"zoom_in",
+		layout.layout_grid_btn: &"layout_grid",
+		layout.layout_packed_btn: &"layout_packed",
+		layout.atlas_panel.repack: &"repack",
+	}
+	for id: StringName in area._action_buttons:
+		buttons[area._action_buttons[id]] = id
+	for button: Button in buttons:
+		var id: StringName = buttons[button]
+		assert_eq(button.tooltip_text, Actions.get_tooltip(id), id)
+		var first_line := button.tooltip_text.get_slice("\n", 0)
+		assert_true(first_line.begins_with(Actions.get_action(id).label.trim_suffix("…")), id)
+		var shortcut := Actions.get_shortcut_text(id)
+		if shortcut:
+			assert_true(first_line.ends_with("(%s)" % shortcut), "%s shows its shortcut" % id)
+	assert_eq(main.export_btn.tooltip_text.get_slice("\n", 0), "Export (Ctrl+E)")
+	assert_true(main.export_btn.tooltip_text.contains("\n"), "and what it does")
+	assert_eq(main.history_panel.close_button.tooltip_text, "Hide the history (Ctrl+H)")
+	assert_eq(layout.sprites_panel.close_button.tooltip_text, "Hide the sprites")
+	for menu_button: Button in area._menu_buttons:
+		assert_true(menu_button.tooltip_text.contains("every frame when none are selected"))

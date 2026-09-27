@@ -107,6 +107,22 @@ func get_shortcut_text(id: StringName) -> String:
 	return ""
 
 
+## Tooltip for a button that runs the action: its name and shortcut, like "Save (Ctrl+S)",
+## then its description on the next line. [param text] replaces both, for a button that
+## says it differently, like a close button: "Hide the history (Ctrl+H)".
+func get_tooltip(id: StringName, text := "") -> String:
+	var action: AppAction = _actions.get(id)
+	if text.is_empty() and action == null:
+		return ""
+	var tooltip := tr(text) if text else tr(action.label).trim_suffix("…")
+	var shortcut := get_shortcut_text(id)
+	if shortcut:
+		tooltip += " (%s)" % shortcut
+	if text.is_empty() and action.description:
+		tooltip += "\n" + tr(action.description)
+	return tooltip
+
+
 ## Notifies menus and buttons that enabled states may have changed. Coalesced per frame.
 func refresh() -> void:
 	if not is_queued_for_deletion() and not _refresh_queued:

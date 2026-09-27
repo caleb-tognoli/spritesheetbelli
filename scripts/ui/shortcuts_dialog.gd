@@ -32,11 +32,16 @@ func _fill() -> void:
 			else:
 				_add_action_row(id)
 	_add_row("Preview", "", true)
-	_add_row("Pan", "Middle mouse drag")
+	_add_row("Pan", "Middle mouse drag or Space+drag")
 	_add_row("Zoom", "Mouse wheel")
 	_add_row("Select frames", "Click or drag")
+	_add_row("Select or unselect a frame", "Ctrl+click")
+	_add_row("Select a range of frames", "Shift+click")
 	_add_row("Select the next frame", "Arrow keys (Shift adds)")
+	_add_row("Copy frames in the grid (move mode)", "Alt+drag")
 	_add_row("Move frames in their cells (move mode)", "Arrow keys (Shift: 8 px)")
+	_add_row("Lock or unlock an empty cell", "Click it")
+	_add_row("Frame actions", "Right-click")
 
 
 func _add_action_row(id: StringName, prefix := "") -> void:

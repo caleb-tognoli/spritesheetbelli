@@ -3,7 +3,8 @@ extends MenuBar
 ## The main menu, built from [code]Actions[/code]. An empty id is a separator.
 
 const POPUP_THEME := preload("res://resources/themes/popup_menu_theme.tres")
-## Submenus of actions, shown when hovering them: [code][label, action ids, icon][/code]
+## Submenus of actions, shown when hovering them: [code][label, action ids, icon][/code],
+## and for a toolbar button that opens one, a description for its tooltip
 const SUBMENUS := {
 	&"transform_menu":
 	[
@@ -16,6 +17,7 @@ const SUBMENUS := {
 		"Align in Cell",
 		[&"align_top", &"align_bottom", &"align_left", &"align_right", &"align_center"],
 		preload("res://assets/icons/ControlAlignCenter.svg"),
+		"Of the selected frames, or of every frame when none are selected",
 	],
 	&"pivot_menu":
 	[
@@ -32,6 +34,7 @@ const SUBMENUS := {
 			&"pivot_clear",
 		],
 		preload("res://assets/icons/EditPivot.svg"),
+		"Of the selected frames, or of every frame when none are selected",
 	],
 	&"rows_menu":
 	[

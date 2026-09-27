@@ -4,6 +4,8 @@ extends RefCounted
 
 var id: StringName
 var label: String
+## Says more than the label in tooltips, in one line. Left out when the label is enough.
+var description: String
 var run: Callable
 ## Returns whether the action can run. Always enabled when not set.
 var can_run: Callable

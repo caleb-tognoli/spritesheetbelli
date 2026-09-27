@@ -26,6 +26,18 @@ const GRID_ONLY_ACTIONS: Array[StringName] = [
 	&"move_row_down",
 	&"name_row",
 ]
+## What tooltips say after an action's name and shortcut, see [member AppAction.description]
+const DESCRIPTIONS := {
+	&"layout_grid": "Frames in the cells of a grid",
+	&"layout_packed": "Frames packed tightly on pages",
+	&"tool_pivot": "Drag on a frame to put the pivot of the selected frames there",
+	&"repack": "Pack every frame that isn't pinned again, as tightly as possible",
+	&"pin_toggle":
+	(
+		"Pins the selected frames, or every frame when none are selected, so packing again "
+		+ "keeps their place"
+	),
+}
 
 var main: Control
 var atlas_panel := AtlasPanel.new()
@@ -99,13 +111,12 @@ func _build_sidebar() -> void:
 	var row := HBoxContainer.new()
 	var group := ButtonGroup.new()
 	for entry: Array in [
-		[layout_grid_btn, "Grid", &"layout_grid", "Frames in the cells of a grid"],
-		[layout_packed_btn, "Packed", &"layout_packed", "Frames packed tightly on pages"],
+		[layout_grid_btn, "Grid", &"layout_grid"],
+		[layout_packed_btn, "Packed", &"layout_packed"],
 	]:
 		var button: Button = entry[0]
 		button.text = entry[1]
 		button.icon = main.ICONS[entry[2]]
-		button.tooltip_text = entry[3]
 		button.toggle_mode = true
 		button.button_group = group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -167,7 +178,8 @@ func _on_grid_gaps_changed() -> void:
 	)
 
 
-## Actions of the packed layout, pivots and the layout switch
+## Actions of the packed layout, pivots and the layout switch, and the tooltips of the
+## buttons for them
 func register_actions() -> void:
 	var sheet := Global.spritesheet
 	var has_frames := func() -> bool: return not sheet.is_empty()
@@ -278,3 +290,8 @@ func register_actions() -> void:
 		Callable(),
 		pivots
 	)
+	for id: StringName in DESCRIPTIONS:
+		Actions.get_action(id).description = DESCRIPTIONS[id]
+	layout_grid_btn.tooltip_text = Actions.get_tooltip(&"layout_grid")
+	layout_packed_btn.tooltip_text = Actions.get_tooltip(&"layout_packed")
+	atlas_panel.repack.tooltip_text = Actions.get_tooltip(&"repack")

@@ -24,10 +24,10 @@ const WARNING_ICON := preload("res://assets/icons/StatusWarning.svg")
 var select_tool_btn := _tool_button(SELECT_ICON)
 var move_tool_btn := _tool_button(MOVE_ICON)
 var pivot_tool_btn := _tool_button(PIVOT_ICON)
-var center_view_btn := _tool_button(CENTER_VIEW_ICON, "Fit to view (F)")
-var zoom_out_btn := _tool_button(ZOOM_OUT_ICON, "Zoom out (Ctrl+Minus)")
-var zoom_label_btn := _tool_button(null, "Actual size (Ctrl+0)")
-var zoom_in_btn := _tool_button(ZOOM_IN_ICON, "Zoom in (Ctrl+Equal)")
+var center_view_btn := _tool_button(CENTER_VIEW_ICON)
+var zoom_out_btn := _tool_button(ZOOM_OUT_ICON)
+var zoom_label_btn := _tool_button(null)
+var zoom_in_btn := _tool_button(ZOOM_IN_ICON)
 ## Something to know about what's shown, with a warning icon, in the bottom-right corner
 var notice := PanelContainer.new()
 var notice_label := Label.new()
@@ -83,14 +83,6 @@ func _build_toolbar() -> void:
 
 	# Tools
 	var tools := ButtonGroup.new()
-	select_tool_btn.tooltip_text = "Select mode (Q): click or drag to select frames"
-	move_tool_btn.tooltip_text = (
-		"Move mode (W): drag to move the selected frames, or the dragged one; Alt+drag "
-		+ "copies. Arrow keys move the selected frames inside their cells."
-	)
-	pivot_tool_btn.tooltip_text = (
-		"Pivot mode (E): drag on a frame to put the pivot of the selected frames " + "there"
-	)
 	for button: Button in [select_tool_btn, move_tool_btn, pivot_tool_btn]:
 		button.toggle_mode = true
 		button.button_group = tools
@@ -223,8 +215,21 @@ func update_ui() -> void:
 ## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids
 ## after the tools, each group after a separator, and [param view_ids] are
 ## toggles before the zoom. An id in [param submenus] (as in
-## [method ActionPopupMenu.set_actions]) is a button that opens that menu.
+## [method ActionPopupMenu.set_actions]) is a button that opens that menu, with a
+## description after the icon for its tooltip. The tools and the zoom buttons get the
+## tooltips of their actions too.
 func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submenus := {}) -> void:
+	for entry: Array in [
+		[select_tool_btn, &"tool_select"],
+		[move_tool_btn, &"tool_move"],
+		[pivot_tool_btn, &"tool_pivot"],
+		[center_view_btn, &"zoom_fit"],
+		[zoom_out_btn, &"zoom_out"],
+		[zoom_label_btn, &"zoom_reset"],
+		[zoom_in_btn, &"zoom_in"],
+	]:
+		var button: Button = entry[0]
+		button.tooltip_text = Actions.get_tooltip(entry[1])
 	for group: Array in edit_groups:
 		_edit_bar.add_child(VSeparator.new())
 		for id: StringName in group:
@@ -239,7 +244,9 @@ func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submen
 func _action_button(id: StringName, submenus: Dictionary) -> Button:
 	if submenus.has(id):
 		var entry: Array = submenus[id]
-		var menu_button := _tool_button(entry[2] if entry.size() > 2 else null, entry[0])
+		var menu_button := _tool_button(entry[2] if entry.size() > 2 else null, tr(entry[0]))
+		if entry.size() > 3:
+			menu_button.tooltip_text += "\n" + tr(entry[3])
 		var menu := ActionPopupMenu.new()
 		menu_button.add_child(menu)
 		var ids: Array[StringName] = []
@@ -253,10 +260,7 @@ func _action_button(id: StringName, submenus: Dictionary) -> Button:
 		_menu_buttons[menu_button] = ids
 		return menu_button
 	var action := Actions.get_action(id)
-	var button := _tool_button(action.icon, action.label.trim_suffix("…"))
-	var shortcut := Actions.get_shortcut_text(id)
-	if shortcut:
-		button.tooltip_text += " (%s)" % shortcut
+	var button := _tool_button(action.icon, Actions.get_tooltip(id))
 	button.toggle_mode = Actions.is_toggle(id)
 	button.pressed.connect(func() -> void: Actions.run(id))
 	_action_buttons[id] = button

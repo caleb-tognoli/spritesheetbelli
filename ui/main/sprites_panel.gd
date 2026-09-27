@@ -41,7 +41,7 @@ func _init() -> void:
 	header.add_child(title)
 	close_button.flat = true
 	close_button.icon = preload("res://assets/icons/Close.svg")
-	close_button.tooltip_text = "Hide the sprites"
+	close_button.tooltip_text = Actions.get_tooltip(&"toggle_sprites", "Hide the sprites")
 	header.add_child(close_button)
 
 	search.placeholder_text = "Search by name"

@@ -157,6 +157,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Changing the export settings is no longer a step in the History, so Ctrl+Z after
   exporting undoes the last edit. They still count as unsaved changes. Spacing, padding
   and extruded edges set in the sidebar are still undone like the rest of the layout.
+- Toolbar and sidebar buttons show the name and current shortcut of their action, like
+  "Export (Ctrl+E)", with what it does on the next line where that helps. Align in Cell,
+  Pivot, Trim and Pinned say they work on every frame when none are selected.
+- Keyboard Shortcuts (F1) also lists panning with Space+drag, Ctrl+click, Shift+click,
+  copying with Alt+drag, locking cells and the right-click menu. The README no longer
+  lists shortcuts and points to F1 instead.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
