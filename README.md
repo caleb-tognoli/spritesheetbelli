@@ -15,7 +15,7 @@ A small desktop tool made with Godot.</p>
 - **Cut sheets into frames.** The grid size is guessed from the file name
   (`hero_32x32.png`, `walk_8x2.png`) or from the gaps between sprites; offset and spacing
   handle sheets that aren't packed edge to edge. The empty cells of an added sheet are
-  locked so added sprites skip them, unless "Keep the empty cells empty" is unticked.
+  locked so added sprites skip them, unless "Lock empty cells" is unticked.
 - **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
   `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
   frames are restored and tags become animations. Without one, the sprites are found by

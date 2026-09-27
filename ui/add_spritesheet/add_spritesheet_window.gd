@@ -17,7 +17,7 @@ signal frames_added
 @onready var spacing_y: SpinBox = %SpacingY
 @onready var slice_info: Label = %SliceInfo
 ## Locks the added sheet's empty cells, so added sprites skip them
-@onready var keep_empty_cells: CheckBox = %KeepEmptyCells
+@onready var lock_empty_cells: CheckBox = %LockEmptyCells
 
 @export var spritesheet_image: Image
 
@@ -64,8 +64,8 @@ func _ready() -> void:
 			if event.is_action_pressed(&"ui_cancel") and not event.is_echo():
 				close_requested.emit()
 	)
-	keep_empty_cells.toggled.connect(
-		func(on: bool) -> void: Settings.set_value(&"keep_empty_cells", on)
+	lock_empty_cells.toggled.connect(
+		func(on: bool) -> void: Settings.set_value(&"lock_empty_cells", on)
 	)
 	preview_area.spritesheet_preview.selection_changed.connect(on_preview_update)
 	grid_columns.value_changed.connect(
@@ -138,7 +138,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	keep_layout.set_pressed_no_signal(
 		target.is_empty() or target.layout == Spritesheet.Layout.PACKED
 	)
-	keep_empty_cells.set_pressed_no_signal(Settings.get_value(&"keep_empty_cells"))
+	lock_empty_cells.set_pressed_no_signal(Settings.get_value(&"lock_empty_cells"))
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
 	_update_options_label()
@@ -270,9 +270,10 @@ func on_preview_update() -> void:
 	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
 	add_selected_frames_btn.disabled = selection_size == 0
 	add_selected_frames_btn.text = tr("Add selected frames (%d)") % selection_size
-	# Only matters when some cells have no sprite
+	# Only shown when some cells have no sprite. The buttons are at the end of the row, so
+	# they stay where they are.
 	var grid := spritesheet.grid_size if spritesheet else Vector2i.ZERO
-	keep_empty_cells.disabled = spritesheet == null or spritesheet.frames.size() >= grid.x * grid.y
+	lock_empty_cells.visible = spritesheet != null and spritesheet.frames.size() < grid.x * grid.y
 
 
 func update_grid_size(columns: int, rows: int) -> void:
@@ -304,16 +305,16 @@ func add_spritesheet_to_global() -> void:
 		return
 
 	var target := Global.spritesheet
-	var keep_empty: bool = Settings.get_value(&"keep_empty_cells")
-	Global.document.perform("Add spritesheet", add_sheet.bind(target, spritesheet, keep_empty))
+	var lock_empty: bool = Settings.get_value(&"lock_empty_cells")
+	Global.document.perform("Add spritesheet", add_sheet.bind(target, spritesheet, lock_empty))
 	frames_added.emit()
 	close_requested.emit()
 
 
 ## Places the whole grid of [param sheet] below the frames of [param target], keeping
-## empty rows and columns. With [param keep_empty], its empty cells are locked so added
+## empty rows and columns. With [param lock_empty], its empty cells are locked so added
 ## sprites skip them.
-static func add_sheet(target: Spritesheet, sheet: Spritesheet, keep_empty: bool) -> void:
+static func add_sheet(target: Spritesheet, sheet: Spritesheet, lock_empty: bool) -> void:
 	var offset := Vector2i(0, target.get_first_free_row())
 	var packed := sheet.layout == Spritesheet.Layout.PACKED
 	# A packed sheet's pages go after the open sheet's
@@ -340,7 +341,7 @@ static func add_sheet(target: Spritesheet, sheet: Spritesheet, keep_empty: bool)
 			cells.append(cell + offset)
 		animation.cells = cells
 		target.add_animation(animation)
-	if keep_empty:
+	if lock_empty:
 		# Only the added sheet's cells, not free cells elsewhere
 		target.lock_free_cells(Rect2i(offset, sheet.grid_size))
 

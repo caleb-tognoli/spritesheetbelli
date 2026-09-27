@@ -58,7 +58,7 @@ const DEFAULTS := {
 	&"window_maximized": false,
 	&"onion_skin": false,
 	# Add Spritesheet locks the empty cells of the added sheet
-	&"keep_empty_cells": true,
+	&"lock_empty_cells": true,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
 const REMEMBERED: Array[StringName] = [
@@ -72,7 +72,7 @@ const REMEMBERED: Array[StringName] = [
 	&"window_screen",
 	&"window_maximized",
 	&"onion_skin",
-	&"keep_empty_cells",
+	&"lock_empty_cells",
 ]
 const MAX_RECENT_FILES := 10
 

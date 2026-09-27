@@ -93,9 +93,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Command line: `--cut <image>` cuts a spritesheet (grid, data file or `--detect`) or
   an animated GIF; `--atlas` writes a packed atlas; an `--out` ending in `.gif` writes an
   animated GIF (`--animation`, `--scale`); `--pack` takes GIFs too.
-- Add Spritesheet has "Keep the empty cells empty" next to its button, on by default and
-  remembered. Turned off, the added sheet's empty cells aren't locked, so added sprites
-  can fill them.
+- Add Spritesheet has "Lock empty cells" next to its buttons, shown when the sheet has
+  empty cells, on by default and remembered. Turned off, the added sheet's empty cells
+  aren't locked, so added sprites can fill them.
 - Projects save the zoom and where the preview was looking, and open there again, also in
   a window of another size. Looking around alone doesn't make a project unsaved; the view
   is saved with the next save.
@@ -207,7 +207,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Dialog buttons sit together at the right, at least 80 px wide, in the platform's order:
   OK before Cancel on Windows, after it on macOS and Linux. Other buttons (Reset All…,
   Don't Save, Add selected frames) go to their left. Add Spritesheet has a Cancel button,
-  Escape cancels it, and "Keep the empty cells empty" moves to the left of its buttons.
+  Escape cancels it, and "Lock empty cells" moves to the left of its buttons.
 - The status bar shows the file a frame comes from as its folder and name; the preview's
   tooltip still has the whole path. When the status bar is full, the path is cut first.
 - The window can be made as small as 960×600, scaled with the interface.

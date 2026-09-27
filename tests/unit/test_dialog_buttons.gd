@@ -1,5 +1,7 @@
 extends "res://tests/test_case.gd"
 
+const ADD_SPRITESHEET := preload("res://ui/add_spritesheet/add_spritesheet_window.tscn")
+
 
 ## The visible buttons of [param dialog]'s row, and whether anything else shows between
 ## them
@@ -67,18 +69,44 @@ func test_every_dialog_has_its_buttons_at_the_right() -> void:
 
 
 func test_add_spritesheet_buttons_are_in_the_dialog_order() -> void:
-	var window: AddSpritesheetWindow = (
-		load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
-	)
+	var window: AddSpritesheetWindow = ADD_SPRITESHEET.instantiate()
 	add_child(window)
 	var row := window.add_spritesheet_btn.get_parent()
 	var buttons: Array = [window.add_selected_frames_btn]
 	buttons.append_array(pair(window.add_spritesheet_btn, window.cancel_btn))
 	var last := Array(row.get_children().slice(row.get_child_count() - 3))
 	assert_eq(last, buttons, "at the end, the main two in the dialogs' order")
-	assert_eq(row.get_child(0), window.keep_empty_cells, "the option at the left")
+	assert_eq(row.get_child(0), window.lock_empty_cells, "the option at the left")
 	var canceled := [0]
 	window.canceled.connect(func() -> void: canceled[0] += 1)
 	window.cancel_btn.pressed.emit()
 	assert_eq(canceled[0], 1, "Cancel cancels")
+	window.free()
+
+
+func test_add_spritesheet_buttons_stay_put_without_the_option() -> void:
+	var window: AddSpritesheetWindow = ADD_SPRITESHEET.instantiate()
+	add_child(window)
+	window.setup(Image.create_empty(32, 16, false, Image.FORMAT_RGBA8))
+	window.update_grid_size(2, 1)
+	window.popup_centered(Vector2i(900, 600))
+	await get_tree().process_frame
+	var row := window.add_spritesheet_btn.get_parent() as Control
+	var rects := {}
+	for button: Button in [window.add_selected_frames_btn, window.cancel_btn]:
+		rects[button] = button.get_global_rect()
+	var row_rect := row.get_global_rect()
+	assert_true(window.lock_empty_cells.visible, "shown for a sheet with empty cells")
+	var option_x := window.lock_empty_cells.get_global_rect().position.x
+	assert_eq(option_x, row_rect.position.x, "the option at the left end")
+
+	var img := Image.create_empty(32, 16, false, Image.FORMAT_RGBA8)
+	img.fill(Color.RED)
+	window.setup(img)
+	window.update_grid_size(2, 1)
+	await get_tree().process_frame
+	assert_false(window.lock_empty_cells.visible, "hidden when every cell has a sprite")
+	assert_eq(row.get_global_rect(), row_rect, "the row keeps its size")
+	for button: Button in rects:
+		assert_eq(button.get_global_rect(), rects[button], "%s stays put" % button.name)
 	window.free()
