@@ -93,3 +93,55 @@ func test_go_to_history() -> void:
 	doc.go_to_history(0)
 	assert_true(sheet.is_empty())
 	assert_false(doc.is_dirty, "back to where it started")
+
+
+func export_as(target: ExportOptions.Target) -> void:
+	var settings := sheet.export_settings.duplicate()
+	settings.target = target
+	doc.perform("Export settings", sheet.set_export_settings.bind(settings))
+
+
+func test_export_choices_are_unsaved_but_not_undo_steps() -> void:
+	add(Color.RED)
+	doc.mark_saved()
+	export_as(ExportOptions.Target.GIF)
+	assert_true(doc.is_dirty)
+	assert_eq(doc.get_history(), PackedStringArray(["Add"]))
+	doc.mark_saved()
+	assert_false(doc.is_dirty, "saving clears it")
+	export_as(ExportOptions.Target.SPRITES)
+	export_as(ExportOptions.Target.GIF)
+	assert_false(doc.is_dirty, "back to the saved choice")
+
+
+func test_undo_after_export_choices_undoes_the_last_edit() -> void:
+	add(Color.RED)
+	add(Color.BLUE)
+	export_as(ExportOptions.Target.GIF)
+	doc.undo()
+	assert_eq(sheet.frames.size(), 1)
+	assert_eq(sheet.export_settings.target, ExportOptions.Target.GIF, "choices aren't undone")
+	doc.redo()
+	assert_eq(sheet.frames.size(), 2)
+	assert_eq(sheet.export_settings.target, ExportOptions.Target.GIF)
+
+
+func test_undo_to_saved_version_with_other_export_choices_stays_unsaved() -> void:
+	add(Color.RED)
+	doc.mark_saved()
+	add(Color.BLUE)
+	export_as(ExportOptions.Target.GIF)
+	doc.undo()
+	assert_true(doc.is_dirty, "the export choices still differ")
+	doc.load_state({})
+	assert_false(doc.is_dirty, "opening clears it")
+
+
+func test_layout_export_settings_are_still_undone() -> void:
+	export_as(ExportOptions.Target.GIF)
+	var spaced := {"target": ExportOptions.Target.GIF, "spacing": 4}
+	doc.perform("Spacing", sheet.set_export_settings.bind(spaced))
+	assert_eq(doc.get_history(), PackedStringArray(["Spacing"]))
+	doc.undo()
+	assert_false(sheet.export_settings.has("spacing"))
+	assert_eq(sheet.export_settings.target, ExportOptions.Target.GIF, "only the layout's")

@@ -151,6 +151,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Godot SpriteFrames, Aseprite/TexturePacker JSON or a packed atlas) and shows only the
   settings that matter. Exports
   always ask where to save, so only projects are overwritten without asking.
+- Changing the export settings is no longer a step in the History, so Ctrl+Z after
+  exporting undoes the last edit. They still count as unsaved changes. Spacing, padding
+  and extruded edges set in the sidebar are still undone like the rest of the layout.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

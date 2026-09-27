@@ -289,7 +289,8 @@ func _options() -> ExportOptions:
 	return options
 
 
-## Saves the choices with the sheet (one undoable step) and the JPG ones as settings
+## Saves the choices with the sheet (an unsaved change, not an undo step) and the JPG ones
+## as settings
 func _on_confirmed() -> void:
 	var options := _options()
 	Settings.set_value(&"jpg_quality", options.jpg_quality)
