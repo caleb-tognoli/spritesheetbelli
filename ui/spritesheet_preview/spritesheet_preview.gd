@@ -92,6 +92,8 @@ var hovered_cell := NO_CELL
 var grid_view := GridView.new()
 ## Where things are when the sheet is packed
 var packed_view := PackedView.new()
+## Names of animations on the grid, once enabled
+var animation_labels := AnimationLabels.new()
 
 var _selected: Dictionary[Vector2i, bool] = {}
 ## Selection range start for Shift+click
@@ -169,6 +171,7 @@ func _on_spritesheet_updated() -> void:
 			_textures.erase(img)
 	packed_view.update(spritesheet)
 	grid_view.update(spritesheet)
+	animation_labels.update(spritesheet, grid_view)
 	queue_redraw()
 	if hovered_cell != NO_CELL:
 		hover_changed.emit(hovered_cell)
@@ -178,6 +181,11 @@ func _on_spritesheet_updated() -> void:
 ## Whether the sheet is shown packed instead of as a grid
 func is_packed() -> bool:
 	return spritesheet.layout == Spritesheet.Layout.PACKED
+
+
+## Whether nothing is being dragged, panned or pressed
+func is_idle() -> bool:
+	return _drag == Drag.NONE and not _pan_key_held
 
 
 ## Whether frames are being dragged to another place
@@ -344,9 +352,13 @@ func fit_to_view() -> void:
 		camera.position = -Vector2(50, 50) / camera.zoom
 		queue_redraw()
 		return
-	var fit := (view - Vector2.ONE * MARGIN * 2) / content
+	# Names of animations in the margins stay the same size, so they get room of their own
+	var labels := animation_labels.get_margins()
+	var space := view - Vector2.ONE * MARGIN * 2 - Vector2(labels.x + labels.z, labels.y + labels.w)
+	var fit := space.max(Vector2.ONE) / content
 	set_zoom(_fitting_zoom(minf(fit.x, fit.y)))
-	camera.position = content / 2 - view / 2 / camera.zoom
+	var corner := Vector2.ONE * MARGIN + Vector2(labels.x, labels.y)
+	camera.position = -(corner + (space - content * camera.zoom) / 2) / camera.zoom
 
 
 ## [param zoom] rounded down to a whole zoom with pixel-perfect zoom
@@ -384,6 +396,9 @@ func is_index_visible() -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if animation_labels.handle_input(self, event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.keycode == KEY_SPACE:
 		_pan_key_held = event.pressed
 		_update_cursor()
@@ -740,6 +755,7 @@ func _draw() -> void:
 	var hovered := hovered_cell if _drag == Drag.NONE else NO_CELL
 	grid_view.draw(self, visible_rect, pixel, lifted, hovered)
 	_draw_selection(pixel)
+	animation_labels.draw(self)
 	if is_index_visible():
 		_draw_indices(grid_view.get_visible_cells(visible_rect))
 	_draw_pivots(pixel)
@@ -836,10 +852,16 @@ func _draw_selection(pixel: float) -> void:
 
 func _draw_indices(visible_cells: Rect2i) -> void:
 	for coord in spritesheet.frames:
-		if not visible_cells.has_point(coord):
+		if not visible_cells.has_point(coord) or _is_index_under_label(coord):
 			continue
 		_draw_index(coord, cell_rect(coord))
 	draw_set_transform(Vector2.ZERO)
+
+
+## Whether an animation's name is drawn where the frame's number would be
+func _is_index_under_label(coord: Vector2i) -> bool:
+	var corner := (cell_rect(coord).position - camera.position) * camera.zoom
+	return animation_labels.covers(Rect2(corner + Vector2(4, 2), Vector2(36, INDEX_FONT_SIZE + 6)))
 
 
 ## The frame's number in the top-left corner of [param rect]

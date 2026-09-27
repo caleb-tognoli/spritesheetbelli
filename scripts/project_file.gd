@@ -80,6 +80,7 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"scale_filter": sheet.scale_filter,
 		"locked": locked,
 		"animations": animations,
+		"animation_labels": "playing" if sheet.label_playing_only else "chosen",
 		"export": JSON.from_native(sheet.export_settings),
 		"frames": frames,
 		"extra": extra,
@@ -172,6 +173,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
 		"animations": animations,
+		"label_playing_only": data.get("animation_labels") == "playing",
 		"export": _read_export_settings(data.get("export", {})),
 	}
 	return {"state": state, "extra": data.get("extra", {})}

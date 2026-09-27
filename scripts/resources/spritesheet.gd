@@ -52,6 +52,11 @@ var animations: Array[SheetAnimation]:
 		for data in _animations:
 			result.append(SheetAnimation.from_dictionary(data))
 		return result
+## Whether only the animation playing in the animation panel is named on the grid, rather
+## than every animation whose [member SheetAnimation.show_label] is on. Read only.
+var label_playing_only: bool:
+	get:
+		return _label_playing_only
 ## How this sheet is exported, see [ExportOptions]. Read only.
 var export_settings: Dictionary:
 	get:
@@ -75,6 +80,7 @@ var _scale := Vector2.ONE
 var _scale_filter := Image.INTERPOLATE_NEAREST
 var _export_settings := {}
 var _animations: Array[Dictionary] = []
+var _label_playing_only := false
 var _sprite_size := Vector2i.ZERO
 ## The top-left of every cell, relative to the point frames are placed around
 var _cell_origin := Vector2i.ZERO
@@ -204,6 +210,7 @@ func get_state() -> Dictionary:
 		"scale": _scale,
 		"scale_filter": _scale_filter,
 		"animations": _animations.duplicate(true),
+		"label_playing_only": _label_playing_only,
 		"export": _export_settings.duplicate(),
 		"origins": _origins.duplicate(),
 		"sources": _sources.duplicate(),
@@ -223,6 +230,7 @@ func set_state(state: Dictionary) -> void:
 	_scale = state.get("scale", Vector2.ONE)
 	_scale_filter = state.get("scale_filter", Image.INTERPOLATE_NEAREST)
 	_animations.assign(state.get("animations", []).duplicate(true))
+	_label_playing_only = state.get("label_playing_only", false)
 	_export_settings = state.get("export", {}).duplicate()
 	_origins.assign(state.get("origins", {}))
 	_sources.assign(state.get("sources", {}))
@@ -602,6 +610,13 @@ func remove_animation(index: int) -> void:
 		return
 	_animations.remove_at(index)
 	_changed()
+
+
+## Names only the playing animation on the grid, or every animation that shows its label
+func set_label_playing_only(value: bool) -> void:
+	if value != _label_playing_only:
+		_label_playing_only = value
+		_changed()
 
 
 ## A name not used by any animation, based on [param base]

@@ -121,6 +121,7 @@ const MENUS := {
 		&"",
 		&"toggle_animation",
 		&"toggle_onion_skin",
+		&"animation_labels",
 	],
 	"View":
 	[

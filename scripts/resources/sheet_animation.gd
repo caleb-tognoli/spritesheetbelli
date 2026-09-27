@@ -15,6 +15,8 @@ var cells: Array[Vector2i] = []
 var durations: Array[float] = []
 var fps := 12.0
 var mode := Mode.LOOP
+## Whether its name is shown on the grid, see [AnimationLabels]
+var show_label := true
 
 
 static func create(
@@ -60,6 +62,7 @@ static func from_dictionary(data: Dictionary) -> SheetAnimation:
 	animation.fps = clampf(float(data.get("fps", 12.0)), 0.1, 120.0)
 	var saved_mode := int(data.get("mode", Mode.LOOP))
 	animation.mode = saved_mode as Mode if saved_mode in Mode.values() else Mode.LOOP
+	animation.show_label = bool(data.get("label", true))
 	return animation
 
 
@@ -67,6 +70,8 @@ func to_dictionary() -> Dictionary:
 	var data := {"name": name, "cells": cells.duplicate(), "fps": fps, "mode": mode}
 	if durations.any(func(duration: float) -> bool: return duration != 1.0):
 		data.durations = durations.slice(0, cells.size())
+	if not show_label:
+		data.label = false
 	return data
 
 
@@ -141,6 +146,7 @@ static func mirror(sheet: Spritesheet, index: int) -> int:
 		return -1
 	var mirrored := SheetAnimation.from_dictionary(source.to_dictionary())
 	mirrored.name = sheet.get_unique_animation_name(mirrored_name(source.name))
+	mirrored.show_label = true
 	mirrored.cells.clear()
 	mirrored.durations.clear()
 	for i in source.cells.size():

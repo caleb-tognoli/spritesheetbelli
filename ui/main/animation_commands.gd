@@ -3,7 +3,8 @@ extends Node
 ## Makes animations quickly from the frames of a row, a column or the selection, asking
 ## for a name that starts as what the frames' names share. When an animation already has
 ## exactly those frames, it's renamed instead. Also the actions on the animation chosen
-## in the animation panel: mirroring and deleting it, and onion skin.
+## in the animation panel: mirroring and deleting it, and onion skin. Names animations on
+## the grid, see [AnimationLabelControls], and does what their right-click menu asks.
 ## Rows and columns are the ones of the right-clicked cell for the preview's menu, and of
 ## the first selected frame otherwise.
 
@@ -12,6 +13,7 @@ const ICONS := {
 	&"mirror_animation": preload("res://assets/icons/MirrorX.svg"),
 	&"delete_animation": preload("res://assets/icons/Remove.svg"),
 	&"toggle_onion_skin": preload("res://assets/icons/Onion.svg"),
+	&"animation_labels": AnimationLabelControls.ICON,
 }
 ## Actions offered when right-clicking frames in the Sprites panel
 const SPRITES_CONTEXT_ACTIONS: Array[StringName] = [&"animation_from_selection"]
@@ -41,6 +43,7 @@ func setup(main_ui: Control) -> void:
 	menu.popup_hide.connect(func() -> void: menu_cell = NO_CELL, CONNECT_DEFERRED)
 	_register_actions()
 	main.layout_controller.sprites_panel.set_context_actions(SPRITES_CONTEXT_ACTIONS)
+	_setup_labels()
 
 
 func _register_actions() -> void:
@@ -85,12 +88,51 @@ func _register_actions() -> void:
 		ICONS[&"delete_animation"]
 	)
 	Actions.add(
+		&"animation_labels",
+		"Animation Labels…",
+		func() -> void: main.preview_area.label_controls.open_flyover(),
+		func() -> bool: return not sheet.animations.is_empty(),
+		ICONS[&"animation_labels"],
+		Callable(),
+		grid
+	)
+	Actions.get_action(&"animation_labels").description = "Name animations on the grid"
+	Actions.add(
 		&"toggle_onion_skin",
 		"Onion Skin",
 		func() -> void: Settings.set_value(&"onion_skin", not Settings.get_value(&"onion_skin")),
 		Callable(),
 		ICONS[&"toggle_onion_skin"],
 		func() -> bool: return Settings.get_value(&"onion_skin")
+	)
+
+
+## Names animations on the grid, and makes the animation panel do what names ask
+func _setup_labels() -> void:
+	var controls: AnimationLabelControls = main.preview_area.enable_animation_labels()
+	var panel: AnimationPanel = main.animation_panel
+	controls.labels.get_playing = panel.get_selected
+	controls.button.tooltip_text = Actions.get_tooltip(&"animation_labels")
+	controls.animation_chosen.connect(
+		func(index: int) -> void:
+			var animation := Global.spritesheet.animations[index]
+			main.preview.set_selected_coords(animation.get_frame_cells(Global.spritesheet))
+			_choose_animation(index)
+	)
+	controls.edit_requested.connect(
+		func(index: int) -> void:
+			_choose_animation(index)
+			panel.edit()
+	)
+	controls.mirror_requested.connect(
+		func(index: int) -> void:
+			_choose_animation(index)
+			panel.detail.mirror_animation()
+	)
+	controls.delete_requested.connect(
+		func(index: int) -> void:
+			_choose_animation(index)
+			panel.detail.remove_animation()
 	)
 
 

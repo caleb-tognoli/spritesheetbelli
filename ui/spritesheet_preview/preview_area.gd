@@ -33,6 +33,8 @@ var notice := PanelContainer.new()
 var notice_label := Label.new()
 ## Shown in the middle while the spritesheet is empty. Hidden when empty.
 var empty_hint := Label.new()
+## Names animations on the grid, once [method enable_animation_labels] is called
+var label_controls: AnimationLabelControls
 
 var _tool_group := HBoxContainer.new()
 ## Action buttons after the tools, and view toggles before the zoom
@@ -147,6 +149,19 @@ func _build_overlay() -> void:
 	notice.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 
+## Names animations on the grid, with a button before the view toggles choosing which,
+## see [AnimationLabelControls]
+func enable_animation_labels() -> AnimationLabelControls:
+	if not label_controls:
+		label_controls = AnimationLabelControls.new()
+		add_child(label_controls)
+		var button := _tool_button(AnimationLabelControls.ICON)
+		_view_bar.add_child(button)
+		_view_bar.move_child(button, 0)
+		label_controls.setup(self, button)
+	return label_controls
+
+
 ## Shows [param text] with a warning icon over the preview, or hides it when empty
 func show_notice(text: String, tooltip := "") -> void:
 	notice_label.text = text
@@ -182,7 +197,8 @@ func update_zoom_label(value: float) -> void:
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if not event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-			if options_menu.item_count == 0:
+			# A name of an animation has a menu of its own
+			if options_menu.item_count == 0 or spritesheet_preview.animation_labels.hovered >= 0:
 				return
 			if options_menu.visible:
 				options_menu.visible = false

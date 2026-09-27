@@ -1,0 +1,245 @@
+class_name AnimationLabelLayout
+extends RefCounted
+## Where the names of animations go on the grid, see [AnimationLabels], worked out from
+## their cells alone so it can be tested without drawing.
+##
+## Frames shown more than once count once, where they're first shown: a ping-pong written
+## out as 0-5, 4-1 or a frame held with 3, 3 is still the run 0-5. An animation gets a
+## label when those cells, in that order, are:
+## [br]- a run along a row or a column, either way, named in the margin where it starts;
+## [br]- a rectangle of whole rows, or whole columns, in reading order, outlined;
+## [br]- any area whose every frame touches the one before it or follows it in reading
+## order, such as frames wrapping onto the next row or an L-shape, outlined.
+## [br]Other animations are scattered or out of order, and get none.
+
+enum Shape {
+	NONE,  ## Scattered or out of order: no label
+	ROW,  ## A run along a row, named in the margin where it starts
+	COLUMN,  ## A run along a column, named above or below it
+	BLOCK,  ## Whole rows or columns of a rectangle, outlined and named on its edge
+	AREA,  ## Any other area, outlined and named at its first frame
+}
+## The margin of the grid a run's label goes in
+enum Side { NONE, LEFT, RIGHT, TOP, BOTTOM }
+
+## Hues far apart for animations next to each other in the list, see [method color_of]
+const GOLDEN_RATIO := 0.618034
+
+
+## The cells of [param cells] without repeats, in the order they're first shown
+static func distinct_cells(cells: Array[Vector2i]) -> Array[Vector2i]:
+	var seen: Dictionary[Vector2i, bool] = {}
+	var result: Array[Vector2i] = []
+	for cell in cells:
+		if not seen.has(cell):
+			seen[cell] = true
+			result.append(cell)
+	return result
+
+
+## What shape the animation of [param cells] makes in a grid of [param grid_size]. Returns
+## [code]{"shape": Shape, "cells": Array[Vector2i], "side": Side, "line": int,
+## "opens": bool, "closes": bool}[/code]: the cells without repeats, and for runs the
+## margin the label goes in, the row or column, and whether a mark shows where the run
+## starts and ends because it doesn't reach the edge of the grid there.
+static func classify(cells: Array[Vector2i], grid_size: Vector2i) -> Dictionary:
+	var distinct := distinct_cells(cells)
+	var result := {
+		"shape": Shape.NONE,
+		"cells": distinct,
+		"side": Side.NONE,
+		"line": -1,
+		"opens": false,
+		"closes": false,
+	}
+	var grid := Rect2i(Vector2i.ZERO, grid_size)
+	var inside := func(cell: Vector2i) -> bool: return grid.has_point(cell)
+	if distinct.is_empty() or not distinct.all(inside):
+		return result
+	var first := distinct[0]
+	var last := distinct[-1]
+	var step := _run_step(distinct)
+	if step.y == 0 and step.x != 0:
+		var forward := step.x > 0
+		var near := 0 if forward else grid_size.x - 1
+		result.shape = Shape.ROW
+		result.side = Side.LEFT if forward else Side.RIGHT
+		result.line = first.y
+		result.opens = first.x != near
+		result.closes = last.x != grid_size.x - 1 - near
+	elif step.x == 0 and step.y != 0:
+		var forward := step.y > 0
+		var near := 0 if forward else grid_size.y - 1
+		result.shape = Shape.COLUMN
+		result.side = Side.TOP if forward else Side.BOTTOM
+		result.line = first.x
+		result.opens = first.y != near
+		result.closes = last.y != grid_size.y - 1 - near
+	elif _is_block(distinct):
+		result.shape = Shape.BLOCK
+	elif _is_area(distinct, grid_size):
+		result.shape = Shape.AREA
+	return result
+
+
+## How each cell of a run follows the one before, or zero when they aren't a run. A single
+## cell is a run along its row.
+static func _run_step(cells: Array[Vector2i]) -> Vector2i:
+	if cells.size() == 1:
+		return Vector2i.RIGHT
+	var step := cells[1] - cells[0]
+	if absi(step.x) + absi(step.y) != 1:
+		return Vector2i.ZERO
+	for i in range(2, cells.size()):
+		if cells[i] - cells[i - 1] != step:
+			return Vector2i.ZERO
+	return step
+
+
+## Whether [param cells] fill a rectangle of at least two rows and two columns, row after
+## row or column after column in reading order
+static func _is_block(cells: Array[Vector2i]) -> bool:
+	var bounds := Rect2i(cells[0], Vector2i.ONE)
+	for cell in cells:
+		bounds = bounds.merge(Rect2i(cell, Vector2i.ONE))
+	var size := bounds.size
+	if size.x < 2 or size.y < 2 or cells.size() != size.x * size.y:
+		return false
+	var by_rows := true
+	var by_columns := true
+	for i in cells.size():
+		by_rows = by_rows and cells[i] == bounds.position + Vector2i(i % size.x, i / size.x)
+		by_columns = by_columns and cells[i] == bounds.position + Vector2i(i / size.y, i % size.y)
+	return by_rows or by_columns
+
+
+## Whether every cell of [param cells] touches the one before it, or follows it in reading
+## order from the end of a row to the start of the next
+static func _is_area(cells: Array[Vector2i], grid_size: Vector2i) -> bool:
+	for i in range(1, cells.size()):
+		var before := cells[i - 1]
+		var step := cells[i] - before
+		var wraps := before.x == grid_size.x - 1 and cells[i] == Vector2i(0, before.y + 1)
+		if absi(step.x) + absi(step.y) != 1 and not wraps:
+			return false
+	return true
+
+
+## How labels that overlap are told apart. [param labels] are results of [method classify]
+## in the order of their animations. Labels overlap when their animations share cells, or
+## when they go in the same margin of the same row or column. Returns for each label
+## [code]{"stack": int, "stack_size": int, "inset": int, "colored": bool}[/code]:
+## [br]- its place among the labels in the same margin of its row or column, or among the
+## outlines named at the same cell, first to last, and how many there are;
+## [br]- for outlines, how many steps inside the cells it's drawn, so outlines around the
+## same cells don't hide each other: each takes the first step no earlier outline around
+## any of its cells takes;
+## [br]- whether it overlaps another label, so it's shown in a colour of its own.
+static func arrange(labels: Array[Dictionary]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var cell_sets: Array[Dictionary] = []
+	var slots := {}
+	for i in labels.size():
+		result.append({"stack": 0, "stack_size": 1, "inset": 0, "colored": false})
+		var cells: Dictionary[Vector2i, bool] = {}
+		for cell: Vector2i in labels[i].cells:
+			cells[cell] = true
+		cell_sets.append(cells)
+		var slot := get_slot(labels[i])
+		if not slots.has(slot):
+			slots[slot] = []
+		slots[slot].append(i)
+	for slot: Vector3i in slots:
+		var members: Array = slots[slot]
+		for k in members.size():
+			result[members[k]].stack = k
+			result[members[k]].stack_size = members.size()
+			result[members[k]].colored = members.size() > 1
+	for i in labels.size():
+		var used: Array[int] = []
+		for j in i:
+			if not _shares_cells(cell_sets[i], cell_sets[j]):
+				continue
+			result[i].colored = true
+			result[j].colored = true
+			if is_outlined(labels[i]) and is_outlined(labels[j]):
+				used.append(result[j].inset)
+		if is_outlined(labels[i]):
+			var inset := 0
+			while inset in used:
+				inset += 1
+			result[i].inset = inset
+	return result
+
+
+## Whether the label is an outline around the cells, rather than a name in a margin
+static func is_outlined(label: Dictionary) -> bool:
+	return label.shape in [Shape.BLOCK, Shape.AREA]
+
+
+## Where the label's name goes: the margin and the row or column of a run, or the first
+## cell of an outline. Labels in the same place are stacked.
+static func get_slot(label: Dictionary) -> Vector3i:
+	if is_outlined(label):
+		var first: Vector2i = label.cells[0]
+		return Vector3i(Side.NONE, first.x, first.y)
+	return Vector3i(label.side, label.line, -1)
+
+
+static func _shares_cells(a: Dictionary[Vector2i, bool], b: Dictionary[Vector2i, bool]) -> bool:
+	var smaller := a if a.size() <= b.size() else b
+	var larger := b if smaller == a else a
+	for cell in smaller:
+		if larger.has(cell):
+			return true
+	return false
+
+
+## The colour of the animation at [param index] when its label overlaps another: the same
+## for as long as it's there, and far from the colours of the animations around it
+static func color_of(index: int) -> Color:
+	return Color.from_ok_hsl(fposmod(0.6 + index * GOLDEN_RATIO, 1.0), 0.85, 0.62)
+
+
+## Moves text so none of it is drawn over other text. [param wanted] are where each text
+## would go, most important first, and [param away] the way each may move to make room,
+## e.g. further into its margin. Each is moved past what it overlaps, up to
+## [param tries] times. Returns where each goes, or an empty rectangle for text that
+## found no room and isn't drawn.
+static func place(
+	wanted: Array[Rect2], away: Array[Vector2], gap := 2.0, tries := 4
+) -> Array[Rect2]:
+	var placed: Array[Rect2] = []
+	for i in wanted.size():
+		var rect := wanted[i]
+		var fits := false
+		for attempt in tries + 1:
+			var blocking: Variant = _overlapping(rect, placed, gap)
+			if blocking == null:
+				fits = true
+				break
+			rect = _moved_past(rect, blocking, away[i], gap)
+		placed.append(rect if fits else Rect2())
+	return placed
+
+
+## The first of [param placed] that [param rect] overlaps, or null
+static func _overlapping(rect: Rect2, placed: Array[Rect2], gap: float) -> Variant:
+	for other in placed:
+		if other.has_area() and rect.grow(gap / 2).intersects(other.grow(gap / 2)):
+			return other
+	return null
+
+
+## [param rect] moved along [param direction] until it's [param gap] past [param other]
+static func _moved_past(rect: Rect2, other: Rect2, direction: Vector2, gap: float) -> Rect2:
+	var moved := rect
+	if direction.x < 0:
+		moved.position.x = other.position.x - gap - rect.size.x
+	elif direction.x > 0:
+		moved.position.x = other.end.x + gap
+	elif direction.y < 0:
+		moved.position.y = other.position.y - gap - rect.size.y
+	else:
+		moved.position.y = other.end.y + gap
+	return moved
