@@ -276,8 +276,10 @@ func _ready() -> void:
 	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
 	preview.selection_changed.connect(update_sheet_info)
-	# Another document starts with nothing selected; undo and redo keep the selection
+	# Another document starts with nothing selected or described; undo and redo keep the
+	# selection
 	Global.document.loaded.connect(preview.clear_selection.unbind(1))
+	Global.document.loaded.connect(preview.clear_hover.unbind(1))
 	# Show the whole sheet when frames first appear, e.g. after adding or opening
 	Global.spritesheet.updated.connect(
 		func() -> void:
@@ -881,9 +883,12 @@ func update_sheet_info() -> void:
 	legend.tooltip_text = "Locked cells are kept empty when adding sprites. Click one to unlock it."
 
 
-## Describes the cell under the mouse in the status bar
+## Describes the cell under the mouse in the status bar, with only the folder and name of
+## the file its frame comes from: the preview's tooltip has the whole path. Being last, the
+## path is cut first when the status bar is full.
 func update_cell_info(coord: Vector2i) -> void:
-	cell_info.text = PreviewArea.describe_cell(Global.spritesheet, coord).replace("\n", " · ")
+	var text := PreviewArea.describe_cell(Global.spritesheet, coord, true)
+	cell_info.text = text.replace("\n", " · ")
 
 
 func disable_if_empty() -> void:

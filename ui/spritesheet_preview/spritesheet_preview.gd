@@ -23,7 +23,8 @@ signal move_requested(coords: Array[Vector2i], offset: Vector2i, copy: bool)
 ## The user pressed arrow keys in the move mode to move frames inside their cells
 signal nudge_requested(coords: Array[Vector2i], offset: Vector2i)
 signal tool_changed(tool: Tool)
-## The cell under the mouse changed. (-1, -1) when outside the grid.
+## The cell under the mouse changed. (-1, -1) when outside the grid or the preview. Also
+## emitted when the sheet changes, since what's in the cell may have.
 signal hover_changed(coord: Vector2i)
 ## The user double-clicked left of a row to name it
 signal row_name_requested(row: int)
@@ -171,6 +172,8 @@ func _on_spritesheet_updated() -> void:
 	packed_view.update(spritesheet)
 	grid_view.update(spritesheet)
 	queue_redraw()
+	if hovered_cell != NO_CELL:
+		hover_changed.emit(hovered_cell)
 	preview_updated.emit()
 
 
@@ -713,6 +716,12 @@ func _get_cursor_shape() -> Input.CursorShape:
 	if _drag == Drag.NONE and _drag_moves(hovered_cell, false):
 		return Input.CURSOR_MOVE
 	return Input.CURSOR_ARROW
+
+
+## Forgets the cell under the mouse, e.g. when the mouse leaves the preview or another
+## document opens
+func clear_hover() -> void:
+	_set_hovered_cell(NO_CELL)
 
 
 func _set_hovered_cell(cell: Vector2i) -> void:

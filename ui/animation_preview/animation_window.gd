@@ -316,8 +316,17 @@ func _show_frames_info(animation: SheetAnimation, sheet: Spritesheet) -> void:
 	frames_info.text = tr("%d frames") % with_frames
 	if with_frames > 0:
 		frames_info.text += tr(", %.2f s") % animation.get_length(sheet)
-	if total > with_frames:
-		frames_info.text += tr(" (%d empty cells are skipped)") % (total - with_frames)
+	# Numbers past the end of the sheet aren't empty cells of it
+	var outside := animation.cells.filter(
+		func(cell: Vector2i) -> bool: return not sheet.is_inside(cell)
+	)
+	var skipped := PackedStringArray()
+	if total - outside.size() > with_frames:
+		skipped.append(tr("%d empty cells are skipped") % (total - outside.size() - with_frames))
+	if outside:
+		skipped.append(tr("%d are outside the sheet") % outside.size())
+	if skipped:
+		frames_info.text += " (%s)" % ", ".join(skipped)
 
 
 ## The numbers of [param cells] as typed in the frames field

@@ -72,6 +72,8 @@ func _ready() -> void:
 	spritesheet_preview.preview_updated.connect(update_ui)
 	spritesheet_preview.zoom_changed.connect(update_zoom_label)
 	spritesheet_preview.hover_changed.connect(update_tooltip)
+	# Over the toolbar, a floating panel or outside, no cell is under the mouse
+	container.mouse_exited.connect(spritesheet_preview.clear_hover)
 	spritesheet_preview.tool_changed.connect(func(_tool: int) -> void: update_ui())
 	update_zoom_label(spritesheet_preview.camera.zoom.x)
 
@@ -325,9 +327,11 @@ func update_tooltip(coord: Vector2i) -> void:
 	container.tooltip_text = describe_cell(spritesheet_preview.spritesheet, coord)
 
 
-static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
+## What's in the cell at [param coord], on several lines. [param short_paths] names the
+## files frames come from by their folder and name only, see [method shorten_path].
+static func describe_cell(sheet: Spritesheet, coord: Vector2i, short_paths := false) -> String:
 	if sheet.layout == Spritesheet.Layout.PACKED:
-		return describe_packed_frame(sheet, coord)
+		return describe_packed_frame(sheet, coord, short_paths)
 	if not sheet.is_inside(coord):
 		return ""
 	var index: int = sheet.index_of(coord) + Settings.get_value(&"index_start")
@@ -342,7 +346,7 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 			text += "\n" + source.resource_name
 		var link: Dictionary = sheet.frame_sources.get(coord, {})
 		if link:
-			text += "\n" + describe_link(link)
+			text += "\n" + describe_link(link, short_paths)
 		return text
 	if sheet.is_locked(coord):
 		return (
@@ -364,7 +368,9 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i) -> String:
 
 
 ## Describes a frame in the packed layout: its name, where it is and how it's packed
-static func describe_packed_frame(sheet: Spritesheet, coord: Vector2i) -> String:
+static func describe_packed_frame(
+	sheet: Spritesheet, coord: Vector2i, short_paths := false
+) -> String:
 	var place: Dictionary = sheet.placements.get(coord, {})
 	if place.is_empty():
 		return ""
@@ -401,13 +407,19 @@ static func describe_packed_frame(sheet: Spritesheet, coord: Vector2i) -> String
 		lines.append(", ".join(notes))
 	var link: Dictionary = sheet.frame_sources.get(coord, {})
 	if link:
-		lines.append(describe_link(link))
+		lines.append(describe_link(link, short_paths))
 	return "\n".join(lines)
 
 
 ## The file a linked frame comes from, and whether it was edited here since
-static func describe_link(link: Dictionary) -> String:
-	var text: String = link.path
+static func describe_link(link: Dictionary, short_path := false) -> String:
+	var text: String = shorten_path(link.path) if short_path else link.path
 	if FrameSource.has_edits(link):
 		text += " " + TranslationServer.translate("(edited here)")
 	return text
+
+
+## [param path] as its folder's name and the file name, like "slime/walk_02.png"
+static func shorten_path(path: String) -> String:
+	var folder := path.get_base_dir().get_file()
+	return folder.path_join(path.get_file()) if folder else path

@@ -107,6 +107,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Settings > Preview > Selection tint sets how strongly the accent colour covers selected
   frames, from 0% (only their outline) to 100%; the default 25% looks as before. It
   applies to the preview and to Add Spritesheet.
+- An animation's Frames field reports numbers past the end of the sheet as "outside the
+  sheet", apart from the empty cells that are skipped.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -199,6 +201,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   OK before Cancel on Windows, after it on macOS and Linux. Other buttons (Reset All…,
   Don't Save, Add selected frames) go to their left. Add Spritesheet has a Cancel button,
   Escape cancels it, and "Keep the empty cells empty" moves to the left of its buttons.
+- The status bar shows the file a frame comes from as its folder and name; the preview's
+  tooltip still has the whole path. When the status bar is full, the path is cut first.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
@@ -235,6 +239,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Switching Add Spritesheet from Grid to Find sprites could leave frames off-screen.
 - Opening a project, an image or a GIF, and New, start with nothing selected; the
   selection of the previous document no longer carries over to frames in the same places.
+- The status bar kept describing a cell after the mouse left the preview, or after New or
+  opening a file.
 
 ## 0.2.0
 

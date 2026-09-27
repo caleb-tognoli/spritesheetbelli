@@ -152,6 +152,30 @@ func test_animation_window() -> void:
 	window.hide()
 
 
+func test_frames_past_the_end_are_outside_the_sheet() -> void:
+	var window: AnimationWindow = main.animation_window
+	var sheet := Global.spritesheet
+	# A 4×1 grid with an empty cell at the end
+	Global.document.perform("Grid", sheet.set_grid_size.bind(Vector2i(4, 1)))
+	window.open()
+	window.new_button.pressed.emit()
+	window.frames_edit.text = "0-3"
+	window.frames_edit.text_submitted.emit(window.frames_edit.text)
+	assert_true("1 empty cells are skipped" in window.frames_info.text, window.frames_info.text)
+	assert_false("outside" in window.frames_info.text)
+	window.frames_edit.text = "0, 1, 8, 9"
+	window.frames_edit.text_submitted.emit(window.frames_edit.text)
+	assert_true("2 are outside the sheet" in window.frames_info.text, window.frames_info.text)
+	assert_false("empty" in window.frames_info.text, "not empty cells")
+	window.frames_edit.text = "3, 9"
+	window.frames_edit.text_submitted.emit(window.frames_edit.text)
+	assert_true(
+		"(1 empty cells are skipped, 1 are outside the sheet)" in window.frames_info.text,
+		window.frames_info.text
+	)
+	window.hide()
+
+
 func test_onion_skin_shows_the_previous_frame() -> void:
 	var sheet := Spritesheet.new()
 	for i in 3:
