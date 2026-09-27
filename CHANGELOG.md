@@ -178,6 +178,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Turn frames to fit.
 - New and empty sheets show at 100%, and a sheet opened without a saved view (an image,
   atlas or GIF) shows whole.
+- The Add Spritesheet preview shows the whole sheet again when Cut or Keep the packed
+  layout changes; grid sizes, offset, spacing and the Find sprites settings keep the zoom.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
@@ -211,6 +213,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   selected in the preview.
 - Opening a project kept the previous sheet's zoom, which could cut the new one off; New
   kept it too.
+- Switching Add Spritesheet from Grid to Find sprites could leave frames off-screen.
 
 ## 0.2.0
 

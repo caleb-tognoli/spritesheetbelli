@@ -142,20 +142,18 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 		cut_option.add_item(tr("Data: %s") % data_file.get_file(), Cut.DATA)
 	set_cut(Cut.DATA if data else Cut.GRID)
 
-	preview_area.spritesheet_preview.camera.position = Vector2.ONE * -50
-	preview_area.spritesheet_preview.set_zoom(1)
-
 
 func get_cut() -> Cut:
 	return cut_option.get_selected_id() as Cut
 
 
-## Cuts the image another way. Cutting with data needs a data file.
+## Cuts the image another way and shows all of it. Cutting with data needs a data file.
 func set_cut(cut: Cut) -> void:
 	var index := cut_option.get_item_index(cut)
 	if index >= 0:
 		cut_option.select(index)
 	_slice()
+	preview_area.spritesheet_preview.fit_to_view()
 
 
 func _slice() -> void:
@@ -221,7 +219,7 @@ func _build_cut_controls() -> void:
 		"Grid: equal cells. Find sprites: every group of pixels surrounded by transparency."
 		+ " Data: where the data file exported with the image says."
 	)
-	cut_option.item_selected.connect(func(_index: int) -> void: _slice())
+	cut_option.item_selected.connect(func(_index: int) -> void: set_cut(get_cut()))
 	LabelLink.link(cut_label, cut_option)
 	grid_box.add_sibling(cut_box)
 	grid_box.get_parent().move_child(cut_box, 0)
@@ -252,7 +250,8 @@ func _build_cut_controls() -> void:
 		"Keeps every sprite where it is in the image, in the packed layout, so an atlas "
 		+ "exported again has its frames in the same places"
 	)
-	keep_layout.toggled.connect(func(_on: bool) -> void: _slice())
+	# Frames move to other places in the other layout, so it's shown whole again
+	keep_layout.toggled.connect(func(_on: bool) -> void: set_cut(get_cut()))
 	cut_box.add_child(keep_layout)
 
 

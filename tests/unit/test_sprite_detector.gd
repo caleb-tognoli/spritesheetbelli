@@ -65,14 +65,44 @@ func test_spritesheet_keeps_rows_and_aligns() -> void:
 		assert_eq(sheet.get_frame_rect_in_cell(coord).end.y, 16, str(coord))
 
 
-func test_add_spritesheet_window_finds_sprites() -> void:
+## An Add Spritesheet window showing [method packed_sheet]
+func open_window() -> AddSpritesheetWindow:
 	var window: AddSpritesheetWindow = (
 		load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
 	)
 	add_child(window)
 	window.setup(packed_sheet())
+	return window
+
+
+func test_add_spritesheet_window_finds_sprites() -> void:
+	var window := open_window()
 	window.align_option.select(1)
 	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
 	assert_eq(window.spritesheet.frames.size(), 5)
 	assert_true(window.spritesheet.has_frame_origin(Vector2i(0, 0)), "aligned to the bottom")
+	window.queue_free()
+
+
+func test_add_spritesheet_window_fits_when_the_cut_changes() -> void:
+	var window := open_window()
+	var preview := window.preview_area.spritesheet_preview
+	# Headless windows have no size, so the preview is given one
+	window.preview_area.container.stretch = false
+	(preview.get_viewport() as SubViewport).size = Vector2i(600, 400)
+	preview.set_zoom(20)
+	preview.camera.position = Vector2(500, 500)
+	window.cut_option.select(window.cut_option.get_item_index(AddSpritesheetWindow.Cut.DETECT))
+	window.cut_option.item_selected.emit(window.cut_option.selected)
+	var shown := Rect2(preview.screen_to_world(Vector2.ZERO), preview.get_viewport_rect().size)
+	shown.size /= preview.camera.zoom
+	for coord in window.spritesheet.frames:
+		assert_true(shown.encloses(preview.get_frame_world_rect(coord)), "%s shown" % coord)
+	preview.set_zoom(3)
+	window.merge_distance.value = 2
+	assert_eq(preview.camera.zoom.x, 3.0, "detection settings keep the zoom")
+	window.set_cut(AddSpritesheetWindow.Cut.GRID)
+	preview.set_zoom(3)
+	window.grid_columns.value = 2
+	assert_eq(preview.camera.zoom.x, 3.0, "grid sizes keep the zoom")
 	window.queue_free()
