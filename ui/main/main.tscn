@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://3jpkfh0hyod3" path="res://assets/icons/Link.svg" id="8_link"]
 [ext_resource type="Script" uid="uid://ctwlyg4n3odn0" path="res://ui/main/file_controller.gd" id="10_files"]
 [ext_resource type="Script" uid="uid://b5qiq6t17j0wt" path="res://ui/main/history_panel.gd" id="11_history"]
+[ext_resource type="Script" uid="uid://cm1ta1eutyomu" path="res://ui/animation_preview/animation_panel.gd" id="12_animation"]
 
 [node name="Main" type="Control" unique_id=1567927908]
 layout_mode = 3
@@ -312,9 +313,21 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PreviewArea" parent="Layout/Split/PreviewSplit" unique_id=1166460088 instance=ExtResource("6_q2y6a")]
+[node name="CanvasSplit" type="VSplitContainer" parent="Layout/Split/PreviewSplit" unique_id=1938275461]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"CanvasSplit"
+
+[node name="PreviewArea" parent="Layout/Split/PreviewSplit/CanvasSplit" unique_id=1166460088 instance=ExtResource("6_q2y6a")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AnimationPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit/CanvasSplit" unique_id=702184533]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("12_animation")
 
 [node name="HistoryPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit" unique_id=349232644]
 unique_name_in_owner = true

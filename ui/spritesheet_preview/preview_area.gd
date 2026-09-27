@@ -31,7 +31,6 @@ var zoom_in_btn := _tool_button(ZOOM_IN_ICON)
 ## Something to know about what's shown, with a warning icon, in the bottom-right corner
 var notice := PanelContainer.new()
 var notice_label := Label.new()
-var animation_preview := AnimationPreview.new()
 ## Shown in the middle while the spritesheet is empty. Hidden when empty.
 var empty_hint := Label.new()
 
@@ -60,13 +59,6 @@ func _ready() -> void:
 	Settings.changed.connect(_update_hint_color.unbind(1))
 	_update_hint_color()
 
-	animation_preview.preview = spritesheet_preview
-	animation_preview.visible = false
-	stage.add_child(animation_preview)
-	animation_preview.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	animation_preview.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	animation_preview.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	animation_preview.position -= Vector2(10, 10)
 	_build_overlay()
 	update_ui()
 	spritesheet_preview.preview_updated.connect(update_ui)

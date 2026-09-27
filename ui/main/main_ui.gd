@@ -133,6 +133,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var cell_info: Label = %CellInfo
 @onready var legend: Label = %Legend
 @onready var preview: SpritesheetPreview = preview_area.spritesheet_preview
+@onready var animation_panel: AnimationPanel = %AnimationPanel
 
 var shortcuts_dialog := ShortcutsDialog.new()
 var settings_window := SettingsWindow.new()
@@ -141,7 +142,6 @@ var color_key_dialog := ColorKeyDialog.new()
 var outline_dialog := OutlineDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
-var animation_window := AnimationWindow.new()
 var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 ## The settings and export on the left, and the sprites and history on the right
@@ -231,12 +231,7 @@ func _ready() -> void:
 	export_dialog.export_requested.connect(files.choose_export_path)
 	add_child(about_dialog)
 	add_child(source_watcher)
-	animation_window.preview = preview
-	add_child(animation_window)
-	var animation_preview := preview_area.animation_preview
-	animation_preview.details_requested.connect(animation_window.open)
-	# The small player follows the animation being edited
-	animation_window.list.item_selected.connect(animation_preview.select_animation)
+	animation_panel.setup(preview)
 	color_key_dialog.color_chosen.connect(remove_background)
 	outline_dialog.outline_chosen.connect(add_outline)
 	files.restore_session.call_deferred()
@@ -570,15 +565,14 @@ func _register_actions() -> void:
 		ICONS[&"toggle_history"],
 		func() -> bool: return history_panel.visible
 	)
-	add.call(&"edit_animations", "Animations…", func() -> void: animation_window.open(), has_frames)
-	var animation := preview_area.animation_preview
+	add.call(&"edit_animations", "Edit", animation_panel.edit, has_frames)
 	Actions.add(
 		&"toggle_animation",
-		"Animation Preview",
-		func() -> void: animation.visible = not animation.visible,
-		has_frames,
+		"Animation Panel",
+		animation_panel.toggle,
+		Callable(),
 		ICONS[&"toggle_animation"],
-		func() -> bool: return animation.visible
+		animation_panel.is_expanded
 	)
 	for toggle: Array in [
 		[&"toggle_grid", "Grid Lines", &"show_grid"],

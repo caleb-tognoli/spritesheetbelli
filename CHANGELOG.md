@@ -50,13 +50,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frame, in rows as they're laid out. Close parts can be joined, and frames can be
   aligned at the bottom so characters stand on one line.
 - Animations: make named animations from a range of cells or the selected frames, each
-  with its own speed and type (once, loop or ping-pong), in View > Animations… or with
-  the button on the animation preview. The preview can play any of them. Exports use
+  with its own speed and type (once, loop or ping-pong), in the animation panel under
+  the preview, which can play any of them. Exports use
   them: SpriteFrames get their speed and looping, JSON gets frame tags.
 - Frames can be shown longer than others: in an animation's frames, `4*2` shows sprite 4
   for two frames and `5*0.5` for half of one. The preview plays them that way, Godot
   SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
-  durations from Aseprite JSON are kept. The Animations window shows how long a cycle
+  durations from Aseprite JSON are kept. The animation panel shows how long a cycle
   takes.
 - File > Export Again (Ctrl+Shift+E) repeats the last export to the same place without
   asking. Projects remember where that was.
@@ -69,7 +69,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frames, with round or square corners.
 - Rows: Frame > Rows has Insert Row (Ctrl+Insert), Remove Row (Ctrl+Shift+Delete) and
   Move Row Up/Down (Ctrl+Shift+Up/Down). Locked cells and animations move along.
-- Mirror an animation in the Animations window: its frames are flipped into a new row
+- Mirror an animation in the animation panel: its frames are flipped into a new row
   and a copy of the animation plays them, named walk_left for walk_right.
 - Onion skin in the animation players: a button shows the previous frame faintly behind
   the current one.
@@ -118,6 +118,18 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - File name tokens `{animation}` (the first animation a frame is in, or "frame") and
   `{animation_frame}` (its place in that animation, numbered like the others), e.g.
   `{animation}_{animation_frame:2}` gives walk_00, walk_01….
+- Animation panel: animations get a panel under the preview, between the sidebars, in
+  place of the small player over the preview and the Animations window: the preview, the
+  list of animations (with the selected frames, or every frame, at the top) and the
+  chosen animation's details, side by side. Drag its top edge to make it taller (up to
+  half the window, remembered) and the separators between its parts. P or the arrow
+  collapses it to a bar with the name of what plays and play/pause; it stays collapsed
+  until a sheet has animations, then opens once. Frames can still be selected while it's
+  open.
+- The animation preview zooms with the wheel (by whole steps with pixel-perfect zoom) and
+  fits again with a button or a double-click, pans when zoomed in, has a scrub bar to drag
+  through the frames or click to one, and shows the frames over a checkerboard, a colour
+  or the export background.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -133,8 +145,6 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Add Spritesheet warns about a grid that doesn't divide the image in the bottom-right
   corner of the preview, with a warning icon, so the bar above keeps its layout.
 - The history has a toolbar button, after the sprites list.
-- The animation preview's button to open the Animations window has the Animations icon,
-  and its list says "All frames" when fewer than two frames are selected.
 - Settings have short names; hovering one says what it does.
 - Grid actions (cells and rows) are left out of the menus and the toolbar in the packed
   layout.
@@ -143,7 +153,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   frame when none are selected; Select All and Select None are in the Edit menu only.
 - A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
   rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
-  animation preview (P). Zoom floats over the top-right corner of the preview, like in
+  animation panel (P). Zoom floats over the top-right corner of the preview, like in
   Godot: a button fits the view, and clicking the zoom level goes back to 100%.
 - The right-click menu groups flipping and rotating under Transform, and has Align in
   Cell and Rows submenus.
@@ -227,6 +237,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   after the image without its extension (hero.png gives hero.json), and the same goes for
   GIFs, sprite name patterns ({index}.png names 0.png), Export Again and the command
   line's --out, whose extension picks the image format.
+- Animations… becomes Edit: it opens the animation panel at the chosen animation's
+  details.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

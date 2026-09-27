@@ -1,13 +1,15 @@
-class_name AnimationWindow
-extends AcceptDialog
-## A bigger preview where animations are made and edited: which frames (sprite numbers,
-## names and ranges such as "0-3, 5, idle", or put together in [AnimationFramesEditor]),
-## how fast and how they repeat. Every change can be undone.
+class_name AnimationDetail
+extends ScrollContainer
+## Where the animation chosen in the animation panel is edited: its name, which frames
+## (sprite numbers, names and ranges such as "0-3, 5, idle", or put together in
+## [AnimationFramesEditor]), how fast and how it repeats. It's also mirrored or deleted
+## here. Every change can be undone.
 
-const ADD_ICON := preload("res://assets/icons/Add.svg")
+## A mirrored copy was added at [param index]
+signal animation_added(index: int)
+
 const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
 const MIRROR_ICON := preload("res://assets/icons/MirrorX.svg")
-const ANIMATION_ICON := preload("res://assets/icons/Animation.svg")
 const MODE_ICONS := {
 	SheetAnimation.Mode.ONCE: preload("res://assets/icons/PlayStart.svg"),
 	SheetAnimation.Mode.LOOP: preload("res://assets/icons/Loop.svg"),
@@ -18,13 +20,8 @@ const MODES: Array[SheetAnimation.Mode] = [
 	SheetAnimation.Mode.ONCE, SheetAnimation.Mode.LOOP, SheetAnimation.Mode.PING_PONG
 ]
 
-## Where selected frames come from
-var preview: SpritesheetPreview
-var list := ItemList.new()
-var new_button := Button.new()
 var delete_button := Button.new()
 var mirror_button := Button.new()
-var player := FramePlayer.new()
 var name_edit := LineEdit.new()
 var frames_edit := LineEdit.new()
 ## Opens [member frames_editor] to put the frames together by dragging them
@@ -33,59 +30,52 @@ var frames_editor := AnimationFramesEditor.new()
 var frames_info := Label.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
+## Says what to do while no animation is chosen
 var empty_hint := Label.new()
 
+## The animation edited, or -1
+var _index := -1
 var _properties := GridContainer.new()
 var _updating := false
+## The name and frames last shown, to tell them from what's typed
+var _shown_name := ""
+var _shown_frames := ""
 
 
 func _init() -> void:
-	title = "Animations"
-	ok_button_text = "Close"
-	DialogButtons.apply(self)
-	min_size = Vector2i(720, 480)
-	var layout := HBoxContainer.new()
-	layout.add_theme_constant_override("separation", 16)
-	add_child(layout)
+	# Never so wide that the panel makes the sidebars narrower: it scrolls instead
+	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	var margin := MarginContainer.new()
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	for side: String in ["left", "right"]:
+		margin.add_theme_constant_override("margin_" + side, 8)
+	margin.add_theme_constant_override("margin_bottom", 6)
+	add_child(margin)
+	var box := VBoxContainer.new()
+	margin.add_child(box)
 
-	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(200, 0)
-	layout.add_child(left)
-	var buttons := HBoxContainer.new()
-	left.add_child(buttons)
-	new_button.text = "New"
-	new_button.icon = ADD_ICON
-	new_button.tooltip_text = "A new animation of the selected frames, or of every frame"
-	new_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buttons.add_child(new_button)
-	mirror_button.icon = MIRROR_ICON
-	mirror_button.tooltip_text = "Mirrored copy: the frames flipped into a new row"
-	buttons.add_child(mirror_button)
-	delete_button.icon = REMOVE_ICON
-	delete_button.tooltip_text = "Delete the animation"
-	buttons.add_child(delete_button)
-	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	list.fixed_icon_size = Vector2i(16, 16)
-	left.add_child(list)
-
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 12)
-	layout.add_child(right)
-	player.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	player.custom_minimum_size = Vector2(360, 260)
-	right.add_child(player)
-	empty_hint.text = "No animations yet.\nSelect frames in the sheet and press New."
 	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	empty_hint.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	empty_hint.theme_type_variation = &"StatusLabel"
-	right.add_child(empty_hint)
+	box.add_child(empty_hint)
 
 	_properties.columns = 2
-	_properties.add_theme_constant_override("h_separation", 16)
-	_properties.add_theme_constant_override("v_separation", 8)
-	right.add_child(_properties)
+	_properties.add_theme_constant_override("h_separation", 12)
+	_properties.add_theme_constant_override("v_separation", 6)
+	box.add_child(_properties)
 	name_edit.placeholder_text = "walk"
-	_add_property("Name", name_edit)
+	var name_row := HBoxContainer.new()
+	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_row.add_child(name_edit)
+	mirror_button.icon = MIRROR_ICON
+	mirror_button.tooltip_text = "Mirrored copy: the frames flipped into a new row"
+	name_row.add_child(mirror_button)
+	delete_button.icon = REMOVE_ICON
+	delete_button.tooltip_text = "Delete the animation"
+	name_row.add_child(delete_button)
+	_add_property("Name", name_row)
 
 	# Speed and type share a row
 	var timing := HBoxContainer.new()
@@ -106,6 +96,7 @@ func _init() -> void:
 		)
 	mode_option.tooltip_text = "Once plays to the end, Loop starts over, Ping-pong plays back"
 	mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	LabelLink.link(type_label, mode_option)
 	timing.add_child(mode_option)
 	_add_property("Speed", timing)
 
@@ -124,10 +115,10 @@ func _init() -> void:
 	frames_row.add_child(edit_frames_button)
 	_add_property("Frames", frames_row)
 	frames_info.theme_type_variation = &"StatusLabel"
+	frames_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	frames_info.custom_minimum_size.x = 120
 	_add_property("", frames_info)
 
-	list.item_selected.connect(func(_index: int) -> void: _show_selected())
-	new_button.pressed.connect(add_animation)
 	delete_button.pressed.connect(remove_animation)
 	mirror_button.pressed.connect(mirror_animation)
 	name_edit.text_submitted.connect(func(_text: String) -> void: _apply())
@@ -142,83 +133,80 @@ func _init() -> void:
 	)
 	add_child(frames_editor)
 	fps_spin.value_changed.connect(func(_value: float) -> void: _apply())
-	mode_option.item_selected.connect(func(_index: int) -> void: _apply())
+	mode_option.item_selected.connect(func(_item: int) -> void: _apply())
 
 
 func _ready() -> void:
-	player.sheet = Global.spritesheet
-	Global.spritesheet.updated.connect(
-		func() -> void:
-			if visible:
-				refresh()
-	)
 	fps_spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	SpinScroll.enable(fps_spin)
+	show_animation(_index)
 
 
-## Shows the window with the animation at [param index] selected (-1: the first)
-func open(index := -1) -> void:
+## Shows the animation at [param index] to edit, or a hint with -1
+func show_animation(index: int) -> void:
+	_index = index if index < Global.spritesheet.animations.size() else -1
 	refresh()
-	if list.item_count > 0:
-		list.select(clampi(index, 0, list.item_count - 1))
-	_show_selected()
-	popup_centered()
 
 
-## Index of the selected animation, or -1
-func get_selected() -> int:
-	var selected := list.get_selected_items()
-	return selected[0] if not selected.is_empty() else -1
+## Index of the animation edited, or -1
+func get_animation_index() -> int:
+	return _index
 
 
-## Rebuilds the list of animations, keeping the selection
+## Starts editing the name
+func focus_name() -> void:
+	if _index >= 0:
+		name_edit.grab_focus()
+		name_edit.select_all()
+
+
+## Shows the animation's current name, frames, speed and type
 func refresh() -> void:
-	var selected := get_selected()
-	list.clear()
-	for animation in Global.spritesheet.animations:
-		list.add_item(animation.name, ANIMATION_ICON)
-	if list.item_count > 0:
-		list.select(clampi(selected, 0, list.item_count - 1))
-	_show_selected()
-
-
-## A new animation of the selected frames, or of every frame, selected for editing
-func add_animation() -> void:
 	var sheet := Global.spritesheet
-	var cells := _selected_cells()
-	if cells.is_empty():
-		cells = sheet.get_sorted_coords()
-	var anim_name := sheet.get_unique_animation_name()
-	var index: int = Global.document.perform(
-		"New animation", sheet.add_animation.bind(SheetAnimation.create(anim_name, cells))
-	)
-	refresh()
-	list.select(index)
-	_show_selected()
-	name_edit.grab_focus()
-	name_edit.select_all()
+	if _index >= sheet.animations.size():
+		_index = -1
+	var has_animation := _index >= 0
+	_properties.visible = has_animation
+	empty_hint.visible = not has_animation
+	if not has_animation:
+		empty_hint.text = (
+			tr("Choose an animation to edit it.")
+			if sheet.animations
+			else tr("No animations yet.\nSelect frames in the sheet and press New.")
+		)
+		return
+	var animation := sheet.animations[_index]
+	_updating = true
+	# What's being typed stays, but what was shown follows, e.g. when undoing
+	if not name_edit.has_focus() or name_edit.text == _shown_name:
+		name_edit.text = animation.name
+	_shown_name = animation.name
+	var frames_text := _format_cells(animation.cells, animation.durations)
+	if not frames_edit.has_focus() or frames_edit.text == _shown_frames:
+		frames_edit.text = frames_text
+	_shown_frames = frames_text
+	_show_frames_info(animation, sheet)
+	fps_spin.set_value_no_signal(animation.fps)
+	mode_option.select(mode_option.get_item_index(animation.mode))
+	_updating = false
 
 
-## Adds a mirrored copy of the selected animation and selects it
+## Adds a mirrored copy of the animation
 func mirror_animation() -> void:
-	var index := get_selected()
-	if index < 0:
+	if _index < 0:
 		return
 	var added: int = Global.document.perform(
-		"Mirror animation", SheetAnimation.mirror.bind(Global.spritesheet, index)
+		"Mirror animation", SheetAnimation.mirror.bind(Global.spritesheet, _index)
 	)
-	refresh()
 	if added >= 0:
-		list.select(added)
-		_show_selected()
+		animation_added.emit(added)
 
 
-## Opens the selected animation's frames in [member frames_editor]
+## Opens the animation's frames in [member frames_editor]
 func edit_frames() -> void:
-	var index := get_selected()
-	if index < 0:
+	if _index < 0:
 		return
-	var animation := Global.spritesheet.animations[index]
+	var animation := Global.spritesheet.animations[_index]
 	var durations: Array[float] = []
 	for i in animation.cells.size():
 		durations.append(animation.get_duration(i))
@@ -234,39 +222,14 @@ func edit_frames() -> void:
 
 
 func remove_animation() -> void:
-	var index := get_selected()
-	if index >= 0:
-		Global.document.perform("Delete animation", Global.spritesheet.remove_animation.bind(index))
-
-
-func _show_selected() -> void:
-	var index := get_selected()
-	var has_animation := index >= 0
-	_properties.visible = has_animation
-	player.visible = has_animation
-	delete_button.disabled = not has_animation
-	mirror_button.disabled = not has_animation
-	empty_hint.visible = not has_animation
-	if not has_animation:
-		return
-	var sheet := Global.spritesheet
-	var animation := sheet.animations[index]
-	_updating = true
-	if not name_edit.has_focus():
-		name_edit.text = animation.name
-	if not frames_edit.has_focus():
-		frames_edit.text = _format_cells(animation.cells, animation.durations)
-	_show_frames_info(animation, sheet)
-	fps_spin.set_value_no_signal(animation.fps)
-	mode_option.select(mode_option.get_item_index(animation.mode))
-	_updating = false
-	player.fps = animation.fps
-	player.mode = animation.mode
-	player.set_cells(animation.cells, animation.durations)
+	if _index >= 0:
+		Global.document.perform(
+			"Delete animation", Global.spritesheet.remove_animation.bind(_index)
+		)
 
 
 func _apply() -> void:
-	if _updating or get_selected() < 0:
+	if _updating or _index < 0 or _index >= Global.spritesheet.animations.size():
 		return
 	var new_name := name_edit.text.strip_edges()
 	_edit(
@@ -280,7 +243,7 @@ func _apply() -> void:
 
 ## Plays the sprites whose numbers are typed in the frames field
 func _apply_frames() -> void:
-	if _updating or get_selected() < 0:
+	if _updating or _index < 0 or _index >= Global.spritesheet.animations.size():
 		return
 	var parsed := SheetAnimation.parse_numbers(frames_edit.text, _frame_names())
 	if parsed.has("error"):
@@ -306,7 +269,7 @@ func _apply_frames() -> void:
 			animation.cells = cells
 			animation.durations = durations
 	)
-	_show_selected()
+	refresh()
 
 
 func _show_frames_info(animation: SheetAnimation, sheet: Spritesheet) -> void:
@@ -367,19 +330,12 @@ func _frame_names() -> Dictionary:
 	return names
 
 
-## Changes the selected animation with [param change] as one undoable step
+## Changes the animation with [param change] as one undoable step
 func _edit(change: Callable) -> void:
-	var index := get_selected()
-	if index < 0:
-		return
 	var sheet := Global.spritesheet
-	var animation := sheet.animations[index]
+	var animation := sheet.animations[_index]
 	change.call(animation)
-	Global.document.perform("Edit animation", sheet.set_animation.bind(index, animation))
-
-
-func _selected_cells() -> Array[Vector2i]:
-	return preview.get_selected_coords() if preview else ([] as Array[Vector2i])
+	Global.document.perform("Edit animation", sheet.set_animation.bind(_index, animation))
 
 
 func _add_property(text: String, control: Control) -> void:

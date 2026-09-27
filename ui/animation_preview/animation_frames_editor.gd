@@ -3,8 +3,8 @@ extends Window
 ## Puts an animation's frames together by hand: sprites are dragged (or double-clicked)
 ## from the sheet into a timeline, where they're dragged or moved with their arrows, and
 ## each gets how long it's shown. Applying gives the frames as text, like the Frames field
-## of the Animations window, with [signal frames_chosen]. Closing with changes asks first:
-## a plain window rather than a dialog, since dialogs close before they can ask.
+## of [AnimationDetail], with [signal frames_chosen]. Closing with changes asks first: a
+## plain window rather than a dialog, since dialogs close before they can ask.
 
 ## The frames as typed in the Frames field, e.g. "idle, 3-5, 6*2"
 signal frames_chosen(text: String)

@@ -59,7 +59,7 @@ func test_every_dialog_has_its_buttons_at_the_right() -> void:
 		assert_eq(row.alignment, BoxContainer.ALIGNMENT_END, dialog.title)
 		for control in visible_row(dialog):
 			assert_true(control is Button, "%s: only buttons show" % dialog.title)
-	assert_true(checked >= 11, "found the dialogs")
+	assert_true(checked >= 10, "found the dialogs")
 
 	var unsaved: ConfirmationDialog = main.files.unsaved_changes_dialog
 	var expected: Array[Control] = [visible_row(unsaved)[0]]

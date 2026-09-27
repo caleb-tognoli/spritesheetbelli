@@ -49,6 +49,14 @@ const DEFAULTS := {
 	# 0 for as narrow as they can be, see SidebarSplit
 	&"sidebar_width": 0,
 	&"panels_width": 0,
+	# Height of the animation panel under the preview, and the widths of its preview (0: as
+	# wide as it's tall) and its list (0: as narrow as it can be), see AnimationPanel
+	&"animation_panel_height": 240,
+	&"animation_preview_width": 0,
+	&"animation_list_width": 0,
+	# Whether the animation panel is "open" or "closed". "auto" keeps it closed until the
+	# sheet has animations, then opens it once.
+	&"animation_panel": "auto",
 	&"show_history": false,
 	&"show_sprites": false,
 	# Where the main window was left, in pixels, and whether it was maximised, see
@@ -57,6 +65,10 @@ const DEFAULTS := {
 	&"window_screen": 0,
 	&"window_maximized": false,
 	&"onion_skin": false,
+	# Behind the frames in the animation preview: "checkerboard", "color" or "export", the
+	# export background
+	&"animation_background": "checkerboard",
+	&"animation_background_color": Color(0.31, 0.31, 0.31),
 	# Add Spritesheet locks the empty cells of the added sheet
 	&"lock_empty_cells": true,
 }
@@ -66,12 +78,18 @@ const REMEMBERED: Array[StringName] = [
 	&"recent_files",
 	&"sidebar_width",
 	&"panels_width",
+	&"animation_panel_height",
+	&"animation_preview_width",
+	&"animation_list_width",
+	&"animation_panel",
 	&"show_history",
 	&"show_sprites",
 	&"window_rect",
 	&"window_screen",
 	&"window_maximized",
 	&"onion_skin",
+	&"animation_background",
+	&"animation_background_color",
 	&"lock_empty_cells",
 ]
 const MAX_RECENT_FILES := 10

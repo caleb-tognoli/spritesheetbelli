@@ -1,58 +1,36 @@
 class_name AnimationPreview
-extends PanelContainer
-## A small player over the preview. Plays one of the sheet's animations, or the selected
-## frames (every frame when fewer than two are selected).
+extends MarginContainer
+## The preview of the animation panel, see [AnimationPanel]. Plays one of the sheet's
+## animations, or the selected frames (every frame when fewer than two are selected).
 
-## The details button was pressed: open the animation editor at this animation (-1: none)
-signal details_requested(animation_index: int)
+## What's played changed: another animation, or another name
+signal title_changed(title: String)
 
-const DETAILS_ICON := preload("res://assets/icons/Animation.svg")
 ## Speed of the selection, which isn't an animation of its own
 const SELECTION_FPS := 12.0
 
-var preview: SpritesheetPreview
+## Where selected frames come from, see [method set_preview]
+var preview: SpritesheetPreview:
+	set = set_preview
 var player := FramePlayer.new()
-var selector := OptionButton.new()
-var details_button := Button.new()
 
 ## Index of the animation being played, or -1 for the selected frames
 var _animation_index := -1
+var _title := ""
 
 
 func _init() -> void:
-	custom_minimum_size = Vector2(220, 230)
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	var box := VBoxContainer.new()
-	add_child(box)
-	var header := HBoxContainer.new()
-	box.add_child(header)
-	selector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	selector.fit_to_longest_item = false
-	selector.clip_text = true
-	selector.tooltip_text = "Animation to play"
-	header.add_child(selector)
-	details_button.icon = DETAILS_ICON
-	details_button.flat = true
-	details_button.tooltip_text = Actions.get_tooltip(
-		&"edit_animations", "Edit animations in a bigger preview"
-	)
-	header.add_child(details_button)
-	player.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(player)
-
-	selector.item_selected.connect(
-		func(item: int) -> void:
-			# Ids are animation indices plus one, since -1 can't be an id
-			_animation_index = selector.get_item_id(item) - 1
-			refresh()
-	)
-	details_button.pressed.connect(func() -> void: details_requested.emit(_animation_index))
+	add_theme_constant_override("margin_left", 6)
+	add_theme_constant_override("margin_right", 2)
+	add_theme_constant_override("margin_bottom", 4)
+	add_child(player)
 
 
-func _ready() -> void:
+## Plays from [param value]'s sheet and selection, following them
+func set_preview(value: SpritesheetPreview) -> void:
+	preview = value
 	player.sheet = preview.spritesheet
 	preview.preview_updated.connect(refresh)
-	visibility_changed.connect(refresh)
 	refresh()
 
 
@@ -66,9 +44,21 @@ func get_animation_index() -> int:
 	return _animation_index
 
 
+## What's played: the animation's name, or which frames
+func get_title() -> String:
+	return _title
+
+
+## What the selected frames are called, which depends on how many there are: fewer than
+## two play every frame
+func get_selection_title() -> String:
+	var all_frames := not preview or preview.get_selected_coords().size() < 2
+	return tr("All frames") if all_frames else tr("Selected frames")
+
+
 ## Picks up the current animations, frames and selection
 func refresh() -> void:
-	if not preview or not visible:
+	if not preview:
 		return
 	var sheet := preview.spritesheet
 	if player.sheet != sheet:
@@ -77,21 +67,18 @@ func refresh() -> void:
 	if _animation_index >= animations.size():
 		_animation_index = -1
 
-	selector.clear()
-	# Fewer than two selected frames play every frame
-	var selected := preview.get_selected_coords()
-	var all_frames := selected.size() < 2
-	selector.add_item(tr("All frames") if all_frames else tr("Selected frames"), 0)
-	for i in animations.size():
-		selector.add_item(animations[i].name, i + 1)
-	selector.select(selector.get_item_index(_animation_index + 1))
-
+	var title := get_selection_title()
 	if _animation_index >= 0:
 		var animation := animations[_animation_index]
+		title = animation.name
 		player.fps = animation.fps
 		player.mode = animation.mode
 		player.set_cells(animation.cells, animation.durations)
 	else:
+		var selected := preview.get_selected_coords()
 		player.fps = SELECTION_FPS
 		player.mode = SheetAnimation.Mode.LOOP
-		player.set_cells(sheet.get_sorted_coords() if all_frames else selected)
+		player.set_cells(sheet.get_sorted_coords() if selected.size() < 2 else selected)
+	if title != _title:
+		_title = title
+		title_changed.emit(title)

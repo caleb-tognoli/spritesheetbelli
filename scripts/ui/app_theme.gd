@@ -314,6 +314,18 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox("split_bar_background", "HSplitContainer", split)
 	# The handle for dragging the sidebars wider always shows
 	theme.set_constant("autohide", "HSplitContainer", 0)
+	# And the one for dragging the animation panel under the preview taller
+	theme.set_type_variation(&"CanvasSplit", "VSplitContainer")
+	var canvas_split := StyleBoxLine.new()
+	canvas_split.color = p.border
+	theme.set_stylebox("split_bar_background", &"CanvasSplit", canvas_split)
+	theme.set_constant("autohide", &"CanvasSplit", 0)
+	# The animation preview's scrub bar: a thin track, in the accent colour up to the grabber
+	theme.set_type_variation(&"ScrubBar", "HSlider")
+	var track := Vector4(0, 2, 0, 2)
+	theme.set_stylebox("slider", &"ScrubBar", _box(Color(p.text, 0.2 * p.shade), 2, track))
+	theme.set_stylebox("grabber_area", &"ScrubBar", _box(Color(p.accent, 0.8), 2, track))
+	theme.set_stylebox("grabber_area_highlight", &"ScrubBar", _box(p.accent, 2, track))
 	_add_lists(theme, p, focus)
 	return theme
 

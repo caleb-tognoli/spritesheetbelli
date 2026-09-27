@@ -47,7 +47,8 @@ A small desktop tool made with Godot.</p>
   each with its own speed and loop, ping-pong or play-once, and frames that are held
   longer (`0-3, 4*2`), typed by number or name or put together in Edit Animation, where
   sprites are dragged into place and each gets how long it's shown; mirror walk_right
-  into walk_left; preview them with onion skin and export them; only animations are
+  into walk_left; play them in the animation panel under the sheet, with onion skin,
+  zoom, a scrub bar and a choice of background, and export them; only animations are
   exported as animations.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
   `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or its
