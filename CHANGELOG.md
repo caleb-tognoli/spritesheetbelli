@@ -104,6 +104,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   buttons, shortcuts and wheel step through whole zooms, so every pixel is the same size
   on screen, in the preview and the Add Spritesheet window. Auto applies when the sheet's
   resize filter is Nearest.
+- Settings > Preview > Selection tint sets how strongly the accent colour covers selected
+  frames, from 0% (only their outline) to 100%; the default 25% looks as before. It
+  applies to the preview and to Add Spritesheet.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

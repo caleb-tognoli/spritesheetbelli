@@ -89,6 +89,8 @@ var checker_size := 8
 var zoom_speed := 0.2
 var index_start := 0
 var selection_color := AppTheme.DEFAULT_ACCENT
+## Opacity of the accent colour over selected frames
+var selection_tint := 0.25
 
 var spritesheet: Spritesheet = Spritesheet.new():
 	set = set_spritesheet
@@ -151,6 +153,7 @@ func apply_settings() -> void:
 	zoom_speed = Settings.get_value(&"zoom_speed")
 	index_start = Settings.get_value(&"index_start")
 	selection_color = Settings.get_value(&"accent_color")
+	selection_tint = Settings.get_value(&"selection_tint") / 100.0
 	queue_redraw()
 
 
@@ -810,7 +813,7 @@ func _draw_packed() -> void:
 		draw_rect(hovered, HOVER_COLOR)
 	for coord in _selected:
 		var rect := packed_view.get_frame_rect(coord)
-		draw_rect(rect, Color(selection_color, 0.25))
+		draw_rect(rect, Color(selection_color, selection_tint))
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
 	# Frames picked up with the move tool, where they would land
 	var origins := packed_view.page_origins
@@ -946,7 +949,7 @@ func _draw_grid(visible_cells: Rect2i, pixel: float) -> void:
 func _draw_selection(pixel: float) -> void:
 	for coord in _selected:
 		var rect := cell_rect(coord)
-		draw_rect(rect, Color(selection_color, 0.25))
+		draw_rect(rect, Color(selection_color, selection_tint))
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
 
 	# Frames picked up with the move tool, where they would land

@@ -36,6 +36,7 @@ const CATEGORIES := [
 			[&"show_checkerboard", "Show checkerboard", "check"],
 			[&"grid_color", "Grid colour", "color"],
 			[&"background_color", "Background colour", "color"],
+			[&"selection_tint", "Selection tint", "spin", [0, 100, 1, "%"]],
 			[&"checker_size", "Checker size", "spin", [2, 64, 1, "px"]],
 			[&"zoom_speed", "Zoom speed", "spin", [0.05, 1.0, 0.05, ""]],
 			[
@@ -90,6 +91,8 @@ const DETAILS := {
 		"Fit and zoom to 200%, 300%… or 50%, 33%… so every pixel is the same size on "
 		+ "screen. Auto does when the sheet's resize filter is Nearest."
 	),
+	&"selection_tint":
+	"How strongly the accent colour covers selected frames. At 0% only their outline shows.",
 	&"atlas_dedupe": "Frames that look the same are packed once and share their place",
 	&"atlas_power_of_two": "Pages are 256, 512, 1024… px wide and tall, for older engines",
 	&"atlas_square": "Pages are as wide as they're tall",

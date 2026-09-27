@@ -173,6 +173,21 @@ func test_move_cursor_where_dragging_moves() -> void:
 	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW)
 
 
+func test_selection_tint_setting() -> void:
+	assert_eq(preview.selection_tint, 0.25, "25% by default, as before the setting")
+	var import_preview: SpritesheetPreview = (
+		main.files.add_spritesheet_window.preview_area.spritesheet_preview
+	)
+	Settings.set_value(&"selection_tint", 60)
+	assert_eq(preview.selection_tint, 0.6)
+	assert_eq(import_preview.selection_tint, 0.6, "Add Spritesheet too")
+	Settings.set_value(&"selection_tint", Settings.DEFAULTS[&"selection_tint"])
+	var window := SettingsWindow.new()
+	add_child(window)
+	assert_eq((window.get_control(&"selection_tint") as SpinBox).suffix, "%")
+	window.queue_free()
+
+
 func test_tool_actions() -> void:
 	Actions.run(&"tool_move")
 	assert_eq(preview.tool, SpritesheetPreview.Tool.MOVE)

@@ -22,6 +22,8 @@ const DEFAULTS := {
 	&"show_checkerboard": true,
 	&"grid_color": Color(0.85, 0.85, 0.85, 0.5),
 	&"background_color": Color(0.31, 0.31, 0.31),
+	# How much of the accent colour covers selected frames, in percent
+	&"selection_tint": 25,
 	&"checker_size": 8,
 	&"zoom_speed": 0.2,
 	# "auto", "on" or "off", see PixelZoom
