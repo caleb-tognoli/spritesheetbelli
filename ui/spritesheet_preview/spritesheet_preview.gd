@@ -1,8 +1,8 @@
 class_name SpritesheetPreview
 extends Node2D
-## Draws a spritesheet and handles selecting, moving and locking its cells. A sheet in the
-## packed layout is shown as its pages instead, see [PackedView]: frames are dragged to
-## any place on a page, and there are no cells to lock.
+## Draws a spritesheet and handles selecting, moving and locking its cells. The grid is
+## drawn by [GridView]. A sheet in the packed layout is shown as its pages instead, see
+## [PackedView]: frames are dragged to any place on a page, and there are no cells to lock.
 ##
 ## Everything is drawn by this node, so large sheets need no node per cell.
 ## Frame textures are cached per image and only created for new images.
@@ -33,9 +33,6 @@ signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vect
 ## The user dragged the pivot of frames to [param pivot], in unscaled pixels of the frame
 signal pivot_requested(coords: Array[Vector2i], pivot: Vector2)
 
-const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
-## On-screen size of the lock icon on locked cells
-const LOCK_ICON_SIZE := 28.0
 const HOVER_COLOR := Color(1, 1, 1, 0.08)
 const CHECKER_COLORS: Array[Color] = [Color(0.36, 0.36, 0.36), Color(0.42, 0.42, 0.42)]
 const MAX_ZOOM := 32.0
@@ -59,9 +56,6 @@ enum Tool {
 	MOVE,  ## Moves the selected frames, or the dragged frame when none are selected
 	PIVOT,  ## Moves the pivot of the selected frames
 }
-
-## Drawn over the cells, so the same in both themes
-static var _lock_icon := AppTheme.unthemed_icon(preload("res://assets/icons/Lock.svg"))
 
 @export var able_to_lock_spaces := true
 ## When off, frames can't be moved and dragging always selects
@@ -95,6 +89,8 @@ var selection_tint := 0.25
 var spritesheet: Spritesheet = Spritesheet.new():
 	set = set_spritesheet
 var hovered_cell := NO_CELL
+## Where the cells are when the sheet is a grid
+var grid_view := GridView.new()
 ## Where things are when the sheet is packed
 var packed_view := PackedView.new()
 
@@ -126,12 +122,6 @@ var _move_fits := true
 ## The frame whose pivot is dragged, and where to
 var _pivot_coord := NO_CELL
 var _pivot := Vector2.ZERO
-## Where the grid's cells are, as in the exported image: after its padding, a step apart
-## with the spacing and extruded edges between them. See [method _update_grid_geometry].
-var _grid_origin := Vector2.ZERO
-var _grid_step := Vector2.ZERO
-var _grid_content := Vector2.ZERO
-var _extrude := 0
 
 @onready var camera: Camera2D = $Camera2D
 
@@ -179,27 +169,9 @@ func _on_spritesheet_updated() -> void:
 		if not alive.has(img):
 			_textures.erase(img)
 	packed_view.update(spritesheet)
-	_update_grid_geometry()
+	grid_view.update(spritesheet)
 	queue_redraw()
 	preview_updated.emit()
-
-
-## Places cells as the export does, see [method SpritesheetExporter.get_cell_rect]
-func _update_grid_geometry() -> void:
-	var options := ExportOptions.new()
-	options.apply(spritesheet.export_settings)
-	var cell := spritesheet.sprite_size
-	_extrude = options.extrude
-	_grid_origin = Vector2(
-		SpritesheetExporter.get_cell_rect(spritesheet, Vector2i.ZERO, options).position
-	)
-	_grid_step = Vector2(cell + Vector2i.ONE * (options.extrude * 2 + options.spacing))
-	_grid_content = Vector2(SpritesheetExporter.get_image_size(spritesheet, options))
-
-
-## Whether there's room between or around the cells
-func _has_gaps() -> bool:
-	return _grid_origin != Vector2.ZERO or _grid_step != Vector2(spritesheet.sprite_size)
 
 
 ## Whether the sheet is shown packed instead of as a grid
@@ -222,12 +194,12 @@ func screen_to_world(screen_position: Vector2) -> Vector2:
 func world_to_cell(world_position: Vector2) -> Vector2i:
 	if spritesheet.sprite_size.x <= 0 or spritesheet.sprite_size.y <= 0:
 		return NO_CELL
-	var cell := _cell_unclamped(world_position)
+	var cell := grid_view.get_cell_unclamped(world_position)
 	return cell if spritesheet.is_inside(cell) else NO_CELL
 
 
 func cell_rect(coord: Vector2i) -> Rect2:
-	return Rect2(_grid_origin + Vector2(coord) * _grid_step, Vector2(spritesheet.sprite_size))
+	return grid_view.get_cell_rect(coord)
 
 
 ## The cell under [param screen_position], or in the packed layout the frame there
@@ -355,7 +327,7 @@ func zoom_by(factor: float, anchor := get_viewport_rect().size / 2) -> void:
 ## Zooms and centres the view so the whole spritesheet is visible
 func fit_to_view() -> void:
 	const MARGIN := 40.0
-	var content := _grid_content
+	var content := grid_view.content_size
 	var view := get_viewport_rect().size
 	if is_packed():
 		var pages := packed_view.get_content_rect()
@@ -476,7 +448,7 @@ func _zoom_with_wheel(notches: float, anchor: Vector2) -> void:
 func _on_left_press(event: InputEventMouseButton) -> void:
 	if event.double_click and not is_packed():
 		var world := screen_to_world(event.position)
-		var row := _cell_unclamped(world).y if spritesheet.sprite_size.y > 0 else -1
+		var row := grid_view.get_cell_unclamped(world).y if spritesheet.sprite_size.y > 0 else -1
 		if world.x < 0 and row >= 0 and row < spritesheet.grid_size.y:
 			row_name_requested.emit(row)
 			return
@@ -485,7 +457,7 @@ func _on_left_press(event: InputEventMouseButton) -> void:
 		return
 	_drag_start_world = screen_to_world(event.position)
 	_drag_start_cell = get_cell_at_screen_position(event.position)
-	_drag_start_unclamped = _cell_unclamped(screen_to_world(event.position))
+	_drag_start_unclamped = grid_view.get_cell_unclamped(screen_to_world(event.position))
 	_drag_additive = event.is_command_or_control_pressed() or event.shift_pressed
 	_drag_copy = event.alt_pressed
 	_start_drag(Drag.PENDING, event.position)
@@ -614,7 +586,7 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 		Drag.MOVE when is_packed():
 			_update_packed_move(screen_to_world(event.position))
 		Drag.MOVE:
-			var cell := _cell_unclamped(screen_to_world(event.position))
+			var cell := grid_view.get_cell_unclamped(screen_to_world(event.position))
 			var offset := cell - _drag_start_unclamped
 			# Keep every moved frame inside the positive quadrant
 			for coord in _selected:
@@ -715,15 +687,6 @@ func _box_rect() -> Rect2:
 	return Rect2(start, Vector2.ZERO).expand(_box_end_world)
 
 
-## The cell at [param world_position], also outside the grid. The space between cells is
-## split between its neighbours.
-func _cell_unclamped(world_position: Vector2) -> Vector2i:
-	if spritesheet.sprite_size.x <= 0 or spritesheet.sprite_size.y <= 0:
-		return Vector2i.ZERO
-	var gap := _grid_step - Vector2(spritesheet.sprite_size)
-	return Vector2i(((world_position - _grid_origin + gap / 2) / _grid_step).floor())
-
-
 func _start_drag(kind: Drag, screen_position: Vector2) -> void:
 	_drag = kind
 	_drag_start_screen = screen_position
@@ -772,38 +735,18 @@ func _draw() -> void:
 	var cell_size := Vector2(spritesheet.sprite_size)
 	if cell_size.x <= 0 or cell_size.y <= 0 or spritesheet.grid_size == Vector2i.ZERO:
 		return
-	var sheet_rect := Rect2(Vector2.ZERO, _grid_content)
 	var pixel := 1.0 / camera.zoom.x
-
-	if show_checkerboard:
-		draw_checkerboard(sheet_rect, pixel)
-
 	var visible_rect := _visible_world_rect()
-	var visible_cells := _visible_cells(visible_rect)
 	# Frames being moved leave their cells, copied ones stay
 	var lifted: Dictionary[Vector2i, bool] = {}
 	if not _drag_copy:
 		lifted = _as_set(_get_lifted_coords())
-	for y in range(visible_cells.position.y, visible_cells.end.y):
-		for x in range(visible_cells.position.x, visible_cells.end.x):
-			var coord := Vector2i(x, y)
-			var rect := cell_rect(coord)
-			if spritesheet.has_frame(coord):
-				if not lifted.has(coord):
-					_draw_frame(coord, rect)
-					if _extrude > 0:
-						_draw_extrusion(coord, rect)
-			elif spritesheet.is_locked(coord):
-				_draw_lock(rect, pixel)
-			if coord == hovered_cell and _drag == Drag.NONE:
-				draw_rect(rect, HOVER_COLOR)
-
-	if show_grid:
-		_draw_grid(visible_cells, pixel)
+	var hovered := hovered_cell if _drag == Drag.NONE else NO_CELL
+	grid_view.draw(self, visible_rect, pixel, lifted, hovered)
 	_draw_selection(pixel)
 	if is_index_visible():
-		_draw_indices(visible_cells)
-	_draw_row_names()
+		_draw_indices(grid_view.get_visible_cells(visible_rect))
+	grid_view.draw_row_names(self)
 	_draw_pivots(pixel)
 	_draw_box(pixel)
 
@@ -883,75 +826,6 @@ func get_frame_texture(coord: Vector2i) -> Dictionary:
 	return {"texture": _textures[img], "scale": shown_scale}
 
 
-func _draw_frame(coord: Vector2i, rect: Rect2, modulate_color := Color.WHITE) -> void:
-	var texture: Texture2D = get_frame_texture(coord).texture
-	var in_cell := spritesheet.get_frame_rect_in_cell(coord)
-	draw_texture_rect(
-		texture,
-		Rect2(rect.position + Vector2(in_cell.position), in_cell.size),
-		false,
-		modulate_color
-	)
-
-
-## The frame's edge pixels repeated outward by the extrusion, like in the export
-func _draw_extrusion(coord: Vector2i, cell: Rect2) -> void:
-	var texture: Texture2D = get_frame_texture(coord).texture
-	var in_cell := Rect2(spritesheet.get_frame_rect_in_cell(coord))
-	var frame := Rect2(cell.position + in_cell.position, in_cell.size)
-	var size := texture.get_size()
-	var amount := float(_extrude)
-	var last := size - Vector2.ONE
-	# Sides, then corners: where to draw, and which pixels of the frame to stretch there
-	for part: Array in [
-		[
-			Rect2(frame.position.x - amount, frame.position.y, amount, frame.size.y),
-			Rect2(0, 0, 1, size.y)
-		],
-		[Rect2(frame.end.x, frame.position.y, amount, frame.size.y), Rect2(last.x, 0, 1, size.y)],
-		[
-			Rect2(frame.position.x, frame.position.y - amount, frame.size.x, amount),
-			Rect2(0, 0, size.x, 1)
-		],
-		[Rect2(frame.position.x, frame.end.y, frame.size.x, amount), Rect2(0, last.y, size.x, 1)],
-		[Rect2(frame.position - Vector2.ONE * amount, Vector2.ONE * amount), Rect2(0, 0, 1, 1)],
-		[Rect2(frame.end.x, frame.position.y - amount, amount, amount), Rect2(last.x, 0, 1, 1)],
-		[Rect2(frame.position.x - amount, frame.end.y, amount, amount), Rect2(0, last.y, 1, 1)],
-		[Rect2(frame.end, Vector2.ONE * amount), Rect2(last, Vector2.ONE)],
-	]:
-		draw_texture_rect_region(texture, part[0], part[1])
-
-
-## A dimmed cell with a lock in the middle, kept small when zoomed out
-func _draw_lock(rect: Rect2, pixel: float) -> void:
-	draw_rect(rect, Color(0, 0, 0, 0.25))
-	var icon_size := minf(LOCK_ICON_SIZE * pixel, minf(rect.size.x, rect.size.y) * 0.6)
-	var icon_rect := Rect2(rect.get_center() - Vector2.ONE * icon_size / 2, Vector2.ONE * icon_size)
-	draw_texture_rect(_lock_icon, icon_rect, false, LOCKED_COLOR)
-
-
-## Lines between the cells, or around each cell when there's space between them
-func _draw_grid(visible_cells: Rect2i, pixel: float) -> void:
-	if _has_gaps():
-		for y in range(visible_cells.position.y, visible_cells.end.y):
-			for x in range(visible_cells.position.x, visible_cells.end.x):
-				draw_rect(cell_rect(Vector2i(x, y)), grid_color, false, pixel)
-		return
-	var cell_size := Vector2(spritesheet.sprite_size)
-	var size := cell_size * Vector2(spritesheet.grid_size)
-	for row in spritesheet.grid_size.y + 1:
-		draw_line(
-			Vector2(0, row * cell_size.y), Vector2(size.x, row * cell_size.y), grid_color, pixel
-		)
-	for column in spritesheet.grid_size.x + 1:
-		draw_line(
-			Vector2(column * cell_size.x, 0),
-			Vector2(column * cell_size.x, size.y),
-			grid_color,
-			pixel
-		)
-
-
 func _draw_selection(pixel: float) -> void:
 	for coord in _selected:
 		var rect := cell_rect(coord)
@@ -961,7 +835,7 @@ func _draw_selection(pixel: float) -> void:
 	# Frames picked up with the move tool, where they would land
 	for coord in _get_lifted_coords():
 		var target := cell_rect(coord + _move_offset)
-		_draw_frame(coord, target, GHOST_COLOR)
+		grid_view.draw_frame(self, coord, target, GHOST_COLOR)
 		draw_rect(target.grow(-pixel), selection_color, false, pixel * 2)
 
 
@@ -984,38 +858,6 @@ func _draw_index(coord: Vector2i, rect: Rect2) -> void:
 		font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE, 6, Color.BLACK
 	)
 	draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
-
-
-## Row names, right-aligned just left of the grid
-func _draw_row_names() -> void:
-	const FONT_SIZE := 13
-	var font := ThemeDB.fallback_font
-	for row in spritesheet.row_names:
-		if row >= spritesheet.grid_size.y:
-			continue
-		var text: String = spritesheet.row_names[row]
-		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x
-		var middle := Vector2(0, cell_rect(Vector2i(0, row)).get_center().y)
-		draw_set_transform(middle, 0, Vector2.ONE / camera.zoom)
-		draw_string(
-			font,
-			Vector2(-width - 8, FONT_SIZE / 3.0),
-			text,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			FONT_SIZE,
-			Color(0.8, 0.85, 1.0)
-		)
-	draw_set_transform(Vector2.ZERO)
-
-
-## The range of cells on screen, so drawing skips the rest of large sheets
-func _visible_cells(visible_rect: Rect2) -> Rect2i:
-	var start := Vector2i(((visible_rect.position - _grid_origin) / _grid_step).floor())
-	start = start.max(Vector2i.ZERO)
-	var end := Vector2i(((visible_rect.end - _grid_origin) / _grid_step).ceil())
-	end = end.min(spritesheet.grid_size)
-	return Rect2i(start, (end - start).max(Vector2i.ZERO))
 
 
 func _visible_world_rect() -> Rect2:
