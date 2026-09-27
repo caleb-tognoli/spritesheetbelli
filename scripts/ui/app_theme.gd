@@ -263,8 +263,9 @@ static func _add_lists(theme: Theme, p: Palette, focus: StyleBox) -> void:
 		theme.set_stylebox("selected_focus", type, selected)
 		theme.set_stylebox("hovered_selected", type, hovered_selected)
 		theme.set_stylebox("hovered_selected_focus", type, hovered_selected)
+		# The keyboard cursor only shows while the list has focus
 		theme.set_stylebox("cursor", type, cursor)
-		theme.set_stylebox("cursor_unfocused", type, cursor)
+		theme.set_stylebox("cursor_unfocused", type, StyleBoxEmpty.new())
 		for color: StringName in [
 			&"font_color",
 			&"font_hovered_color",

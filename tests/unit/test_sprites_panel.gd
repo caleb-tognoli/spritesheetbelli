@@ -77,6 +77,34 @@ func test_selection_goes_both_ways() -> void:
 	)
 
 
+func test_the_cursor_follows_the_preview() -> void:
+	main.preview.set_selected_coords([Vector2i(2, 0), Vector2i(1, 0)] as Array[Vector2i])
+	assert_eq(panel.tree.get_selected(), item_of(Vector2i(1, 0)), "on the first selected")
+	main.preview.set_selected_coords([] as Array[Vector2i])
+	assert_true(panel.tree.get_selected() == null, "on none")
+	assert_true(
+		panel.tree.get_theme_stylebox("cursor_unfocused") is StyleBoxEmpty, "only drawn with focus"
+	)
+
+
+func test_the_whole_row_is_highlighted() -> void:
+	main.preview.set_selected_coords([Vector2i(1, 0)] as Array[Vector2i])
+	var item := item_of(Vector2i(1, 0))
+	assert_true(item.get_custom_stylebox(0) is StyleBoxFlat, "the name")
+	assert_true(item.get_custom_stylebox(1) is StyleBoxFlat, "the size")
+	assert_true(item_of(Vector2i(0, 0)).get_custom_stylebox(0) == null)
+	assert_true(
+		panel.tree.get_theme_stylebox("selected") is StyleBoxEmpty, "not cell by cell as well"
+	)
+	# Picked in the list
+	panel.tree.set_selected(item_of(Vector2i(0, 0)), 0)
+	assert_true(item_of(Vector2i(0, 0)).get_custom_stylebox(1) is StyleBoxFlat)
+	assert_true(item.get_custom_stylebox(1) == null, "no longer selected")
+	Actions.run(&"layout_packed")
+	var box: StyleBoxFlat = item_of(Vector2i(0, 0)).get_custom_stylebox(1)
+	assert_true(box.expand_margin_right > 0, "over the pin too")
+
+
 func test_search() -> void:
 	panel.search.text = "EA"
 	panel.search.text_changed.emit("EA")
@@ -125,7 +153,14 @@ func test_double_clicking_a_size_does_nothing() -> void:
 
 func test_only_names_are_edited() -> void:
 	var item := item_of(Vector2i(0, 0))
-	panel.tree.set_selected(item, 1)
+	panel.tree.set_selected(item, 0)
+	# The cursor moved onto the size with the keyboard
+	panel.tree.grab_focus()
+	var right := InputEventKey.new()
+	right.keycode = KEY_RIGHT
+	right.pressed = true
+	panel.tree.get_viewport().push_input(right)
+	assert_eq(panel.tree.get_selected_column(), 1)
 	panel._edit_selected()
 	assert_eq(panel.tree.get_selected_column(), 0, "the name, not the size")
 	assert_false(item.is_editable(1))

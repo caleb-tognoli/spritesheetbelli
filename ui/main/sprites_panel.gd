@@ -16,6 +16,10 @@ var tree := Tree.new()
 var close_button := Button.new()
 
 var _thumbnails: Dictionary[Image, Texture2D] = {}
+## The selection's highlight on the name, on the size, and on the size and pin: the list
+## highlights each cell on its own, rounded, and leaves out the pin, so the selected frames
+## get these across the row instead
+var _highlights: Array[StyleBoxFlat] = []
 ## Whether the selection is being copied between the list and the preview, so it isn't
 ## copied back
 var _syncing := false
@@ -69,7 +73,7 @@ func _init() -> void:
 func _ready() -> void:
 	close_button.pressed.connect(func() -> void: Settings.set_value(&"show_sprites", false))
 	search.text_changed.connect(refresh.unbind(1))
-	tree.multi_selected.connect(_on_tree_selected.unbind(3))
+	tree.multi_selected.connect(_on_tree_multi_selected)
 	tree.item_activated.connect(_edit_selected)
 	tree.item_edited.connect(_on_item_edited)
 	tree.button_clicked.connect(_on_button_clicked)
@@ -137,6 +141,7 @@ func refresh() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_THEME_CHANGED:
+		_update_highlights()
 		refresh()
 
 
@@ -176,7 +181,8 @@ func _thumbnail(img: Image) -> Texture2D:
 	return _thumbnails[img]
 
 
-## Selects in the list what's selected in the preview
+## Selects in the list what's selected in the preview, with the keyboard cursor on the
+## first selected frame, or on none
 func _show_selection() -> void:
 	if _syncing or not preview or not visible:
 		return
@@ -184,21 +190,61 @@ func _show_selection() -> void:
 	var selected := {}
 	for coord in preview.get_selected_coords():
 		selected[coord] = true
+	tree.deselect_all()
 	var item := tree.get_root().get_next_in_tree() if tree.get_root() else null
 	var first_selected: TreeItem = null
 	while item:
 		var coord: Variant = item.get_metadata(0)
-		if coord is Vector2i:
-			if selected.has(coord):
-				item.select(0)
-				if not first_selected:
-					first_selected = item
-			else:
-				item.deselect(0)
+		if coord is Vector2i and selected.has(coord):
+			item.select(0, not first_selected)
+			if not first_selected:
+				first_selected = item
+		_highlight(item, item.is_selected(0))
 		item = item.get_next_in_tree()
 	if first_selected:
 		tree.scroll_to_item(first_selected)
 	_syncing = false
+
+
+## Makes the highlights from the theme's, and stops the list drawing its own
+func _update_highlights() -> void:
+	var selected := get_theme_stylebox("selected", &"Tree") as StyleBoxFlat
+	if not selected:
+		return
+	var name_box := selected.duplicate() as StyleBoxFlat
+	name_box.corner_radius_top_right = 0
+	name_box.corner_radius_bottom_right = 0
+	var size_box := selected.duplicate() as StyleBoxFlat
+	size_box.corner_radius_top_left = 0
+	size_box.corner_radius_bottom_left = 0
+	var pin_box := size_box.duplicate() as StyleBoxFlat
+	pin_box.expand_margin_right = (
+		PIN_ICON.get_width()
+		+ tree.get_theme_stylebox("button_pressed").get_minimum_size().x
+		+ tree.get_theme_constant("button_margin")
+	)
+	_highlights = [name_box, size_box, pin_box]
+	for style: StringName in [&"selected", &"selected_focus"]:
+		tree.add_theme_stylebox_override(style, StyleBoxEmpty.new())
+	# The pointer shades a selected cell as it does the others
+	var hovered := get_theme_stylebox("hovered", &"Tree")
+	for style: StringName in [&"hovered_selected", &"hovered_selected_focus"]:
+		tree.add_theme_stylebox_override(style, hovered)
+
+
+## Highlights [param item]'s row if its frame is [param selected]
+func _highlight(item: TreeItem, selected: bool) -> void:
+	if _highlights.is_empty():
+		return
+	item.set_custom_stylebox(0, _highlights[0] if selected else null)
+	var size_box := _highlights[2] if item.get_button_count(1) else _highlights[1]
+	item.set_custom_stylebox(1, size_box if selected else null)
+
+
+## Sent for each name picked or unpicked, sometimes before the item has changed
+func _on_tree_multi_selected(item: TreeItem, _column: int, selected: bool) -> void:
+	_highlight(item, selected)
+	_on_tree_selected()
 
 
 func _on_tree_selected() -> void:

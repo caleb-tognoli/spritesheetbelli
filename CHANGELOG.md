@@ -201,6 +201,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Add Spritesheet, File Changed, confirmations, colour pickers), not just the main
   window, also when it changes while they're open. Dropdown panels such as Spacing &
   Padding open right below their button at any scale.
+- The Sprites list highlights a selected frame's whole row, size and pin included, as one
+  box; the keyboard cursor's box shows only while the list has focus, on the first frame
+  selected in the preview.
 
 ## 0.2.0
 
