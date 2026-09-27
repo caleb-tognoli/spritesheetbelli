@@ -99,6 +99,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Projects save the zoom and where the preview was looking, and open there again, also in
   a window of another size. Looking around alone doesn't make a project unsaved; the view
   is saved with the next save.
+- Settings > Preview > Pixel-perfect zoom: Auto, On or Off. When it applies, Fit to View
+  rounds down to a whole zoom (200%, 300%… or 50%, 33%, 25%… below 100%) and the zoom
+  buttons, shortcuts and wheel step through whole zooms, so every pixel is the same size
+  on screen, in the preview and the Add Spritesheet window. Auto applies when the sheet's
+  resize filter is Nearest.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

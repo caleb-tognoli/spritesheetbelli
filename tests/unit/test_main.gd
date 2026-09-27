@@ -368,11 +368,13 @@ func test_empty_hint_and_toasts() -> void:
 
 func test_zoom_buttons() -> void:
 	var area: PreviewArea = main.preview_area
+	Settings.set_value(&"pixel_perfect_zoom", "off")
 	main.preview.set_zoom(1)
 	area.zoom_in_btn.pressed.emit()
 	assert_eq(area.zoom_label_btn.text, "125%")
 	area.zoom_out_btn.pressed.emit()
 	assert_eq(area.zoom_label_btn.text, "100%")
+	Settings.set_value(&"pixel_perfect_zoom", "auto")
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	area.center_view_btn.pressed.emit()
 	assert_true(main.preview.camera.zoom.x > 4.0, "fits the view")
@@ -381,6 +383,41 @@ func test_zoom_buttons() -> void:
 	assert_false(area.zoom_in_btn.get_parent() is HFlowContainer, "not in the toolbar")
 	var corner := area.zoom_in_btn.get_global_rect().end.x
 	assert_true(corner > area.stage.get_global_rect().end.x - 20, "top right of the preview")
+
+
+func test_pixel_perfect_zoom() -> void:
+	var area: PreviewArea = main.preview_area
+	var preview: SpritesheetPreview = main.preview
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	assert_eq(Global.spritesheet.scale_filter, Image.INTERPOLATE_NEAREST)
+	preview.set_zoom(1)
+	area.zoom_in_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "200%", "Auto with Nearest steps by whole zooms")
+	area.zoom_out_btn.pressed.emit()
+	area.zoom_out_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "50%")
+	area.center_view_btn.pressed.emit()
+	var zoom := preview.camera.zoom.x
+	assert_eq(zoom, roundf(zoom), "fits at a whole zoom")
+
+	preview.set_zoom(3)
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel.pressed = true
+	wheel.factor = 0.5
+	preview._unhandled_input(wheel)
+	assert_eq(preview.camera.zoom.x, 3.0, "half a notch doesn't zoom yet")
+	preview._unhandled_input(wheel)
+	assert_eq(preview.camera.zoom.x, 4.0, "a whole notch goes a whole zoom")
+
+	Global.spritesheet.set_frame_scale(Vector2.ONE, Image.INTERPOLATE_BILINEAR)
+	preview.set_zoom(1)
+	area.zoom_in_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "125%", "Auto is off when the filter smooths")
+	Settings.set_value(&"pixel_perfect_zoom", "on")
+	area.zoom_in_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "200%")
+	Settings.set_value(&"pixel_perfect_zoom", "auto")
 
 
 func test_formatted_text_is_translatable() -> void:

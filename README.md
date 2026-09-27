@@ -41,7 +41,8 @@ A small desktop tool made with Godot.</p>
   or align them to an edge of their cells; trimming keeps every pixel where it was, so
   animations don't jump.
 - **Resize without losing quality.** Sprites are always resized from the originals, with
-  Nearest for sharp pixel art.
+  Nearest for sharp pixel art, and pixel-perfect zoom keeps every pixel the same size on
+  screen.
 - **Animations:** make named animations from a range of cells or the selected frames,
   each with its own speed and loop, ping-pong or play-once, and frames that are held
   longer (`0-3, 4*2`), typed by number or name or put together in Edit Animation, where

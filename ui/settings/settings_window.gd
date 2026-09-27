@@ -38,6 +38,13 @@ const CATEGORIES := [
 			[&"background_color", "Background colour", "color"],
 			[&"checker_size", "Checker size", "spin", [2, 64, 1, "px"]],
 			[&"zoom_speed", "Zoom speed", "spin", [0.05, 1.0, 0.05, ""]],
+			[
+				&"pixel_perfect_zoom",
+				"Pixel-perfect zoom",
+				"option",
+				["Auto", "On", "Off"],
+				["auto", "on", "off"]
+			],
 		]
 	],
 	[
@@ -78,6 +85,11 @@ const DETAILS := {
 	&"restore_session": "Open the last project again when the app starts",
 	&"show_checkerboard": "A checkerboard behind sprites shows their transparent pixels",
 	&"checker_size": "The size of the checkerboard's squares",
+	&"pixel_perfect_zoom":
+	(
+		"Fit and zoom to 200%, 300%… or 50%, 33%… so every pixel is the same size on "
+		+ "screen. Auto does when the sheet's resize filter is Nearest."
+	),
 	&"atlas_dedupe": "Frames that look the same are packed once and share their place",
 	&"atlas_power_of_two": "Pages are 256, 512, 1024… px wide and tall, for older engines",
 	&"atlas_square": "Pages are as wide as they're tall",

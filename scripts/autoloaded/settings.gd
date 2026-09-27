@@ -24,6 +24,8 @@ const DEFAULTS := {
 	&"background_color": Color(0.31, 0.31, 0.31),
 	&"checker_size": 8,
 	&"zoom_speed": 0.2,
+	# "auto", "on" or "off", see PixelZoom
+	&"pixel_perfect_zoom": "auto",
 	# Export
 	&"jpg_quality": 0.9,
 	&"jpg_background": Color.WHITE,

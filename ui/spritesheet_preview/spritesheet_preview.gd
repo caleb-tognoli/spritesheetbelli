@@ -98,6 +98,9 @@ var _selected: Dictionary[Vector2i, bool] = {}
 var _anchor := NO_CELL
 var _textures: Dictionary[Image, ImageTexture] = {}
 var _checker := _make_checker_texture()
+## Wheel notches not zoomed by yet: touchpads scroll by parts of a notch, which add up to
+## a whole zoom step with pixel-perfect zoom
+var _wheel_notches := 0.0
 
 var _drag := Drag.NONE
 var _drag_start_screen := Vector2.ZERO
@@ -325,9 +328,13 @@ func set_zoom(value: float, anchor := Vector2.ZERO) -> void:
 	zoom_changed.emit(value)
 
 
-## Zooms by [param factor] around the centre of the view
-func zoom_by(factor: float) -> void:
-	set_zoom(camera.zoom.x * factor, get_viewport_rect().size / 2)
+## Zooms by [param factor] around the centre of the view, or to the next whole zoom that
+## way with pixel-perfect zoom, see [PixelZoom]
+func zoom_by(factor: float, anchor := get_viewport_rect().size / 2) -> void:
+	if PixelZoom.is_on():
+		set_zoom(PixelZoom.step(camera.zoom.x, factor), anchor)
+	else:
+		set_zoom(camera.zoom.x * factor, anchor)
 
 
 ## Zooms and centres the view so the whole spritesheet is visible
@@ -339,7 +346,7 @@ func fit_to_view() -> void:
 		var pages := packed_view.get_content_rect()
 		if pages.has_area() and view.x > MARGIN * 2 and view.y > MARGIN * 2:
 			var room := (view - Vector2.ONE * MARGIN * 2) / pages.size
-			set_zoom(minf(room.x, room.y))
+			set_zoom(_fitting_zoom(minf(room.x, room.y)))
 			camera.position = pages.get_center() - view / 2 / camera.zoom
 			return
 	if content.x <= 0 or content.y <= 0 or view.x <= MARGIN * 2 or view.y <= MARGIN * 2:
@@ -355,8 +362,13 @@ func fit_to_view() -> void:
 		names_width = maxf(names_width, ThemeDB.fallback_font.get_string_size(row_name).x + 16)
 	var usable := view - Vector2(MARGIN * 2 + names_width, MARGIN * 2)
 	var fit := usable / content
-	set_zoom(minf(fit.x, fit.y))
+	set_zoom(_fitting_zoom(minf(fit.x, fit.y)))
 	camera.position = content / 2 - (view + Vector2(names_width, 0)) / 2 / camera.zoom
+
+
+## [param zoom] rounded down to a whole zoom with pixel-perfect zoom
+static func _fitting_zoom(zoom: float) -> float:
+	return PixelZoom.round_down(zoom) if PixelZoom.is_on() else zoom
 
 
 ## Where the view looks, to show the same place again with [method set_view]: the zoom
@@ -408,9 +420,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
 	match event.button_index:
 		MOUSE_BUTTON_WHEEL_UP when event.pressed:
-			set_zoom(camera.zoom.x * (1 + zoom_speed * event.factor), event.position)
+			_zoom_with_wheel(event.factor, event.position)
 		MOUSE_BUTTON_WHEEL_DOWN when event.pressed:
-			set_zoom(camera.zoom.x / (1 + zoom_speed * event.factor), event.position)
+			_zoom_with_wheel(-event.factor, event.position)
 		MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
 				_start_drag(Drag.PAN, event.position)
@@ -427,6 +439,23 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 			if spritesheet.has_frame(cell) and not is_selected(cell):
 				set_selected_coords([cell] as Array[Vector2i])
 				_anchor = cell
+
+
+## Zooms in by [param notches] of the wheel, or out when negative, keeping the point under
+## [param anchor] in place
+func _zoom_with_wheel(notches: float, anchor: Vector2) -> void:
+	if not PixelZoom.is_on():
+		var factor := 1 + zoom_speed * absf(notches)
+		set_zoom(camera.zoom.x * (factor if notches > 0 else 1 / factor), anchor)
+		return
+	# A whole zoom step per notch
+	if signf(notches) != signf(_wheel_notches):
+		_wheel_notches = 0
+	_wheel_notches += notches
+	if absf(_wheel_notches) < 1 - PixelZoom.EPSILON:
+		return
+	_wheel_notches = 0
+	zoom_by(1 + zoom_speed if notches > 0 else 1 / (1 + zoom_speed), anchor)
 
 
 func _on_left_press(event: InputEventMouseButton) -> void:
