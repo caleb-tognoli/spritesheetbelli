@@ -95,13 +95,30 @@ static func supports_transparency(path: String) -> bool:
 	return path.get_extension().to_lower() not in ["jpg", "jpeg", "jpe"]
 
 
-## [param path] with its own image extension, or else .png. Extensions of other files
-## exports write are dropped first, so "hero.json" gives "hero.png".
+## [param path] with [param extension], lowercase, whatever extension it was typed with:
+## the extensions of files exports write are dropped first, so "hero.png" with "jpg" gives
+## "hero.jpg" and "HERO.PNG" with "png" gives "HERO.png". Other extensions are part of
+## the name: "hero.v2" gives "hero.v2.jpg".
+static func with_extension(path: String, extension: String) -> String:
+	return strip_written_extensions(path) + "." + extension.to_lower()
+
+
+## The image format of [constant ExportOptions.IMAGE_FORMATS] the extension of
+## [param path] names, or else "png"
+static func get_image_format(path: String) -> String:
+	match path.get_extension().to_lower():
+		"jpg", "jpeg", "jpe":
+			return "jpg"
+		"webp":
+			return "webp"
+	return "png"
+
+
+## [param path] as an image in the format its extension names, or else PNG, with that
+## format's extension (see [method with_extension]): "hero.jpeg" gives "hero.jpg" and
+## "hero.json" gives "hero.png". For the command line, where the name picks the format.
 static func with_image_extension(path: String) -> String:
-	var extension := path.get_extension()
-	if extension.to_lower() not in IMAGE_EXTENSIONS:
-		extension = "png"
-	return strip_written_extensions(path) + "." + extension
+	return with_extension(path, get_image_format(path))
 
 
 ## Extensions of every file an export writes, lowercase: images, GIFs and data files

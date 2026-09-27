@@ -217,20 +217,45 @@ func test_typed_extensions_are_stripped() -> void:
 		"hero.json": ["hero.png", "hero.json"],
 		"hero.png": ["hero.png", "hero.json"],
 		"hero.json.png": ["hero.png", "hero.json"],
-		"hero.webp": ["hero.webp", "hero.json"],
+		"hero.webp": ["hero.png", "hero.json"],
 		"hero.v2": ["hero.v2.png", "hero.v2.json"],
-		"HERO.PNG": ["HERO.PNG", "HERO.json"],
+		"HERO.PNG": ["HERO.png", "HERO.json"],
 		"HERO.JSON": ["HERO.png", "HERO.json"],
 	}
 	for typed: String in cases:
-		var image := SpritesheetExporter.with_image_extension(dir.path_join(typed))
+		var image := SpritesheetExporter.with_extension(
+			dir.path_join(typed), options.get_file_extension()
+		)
 		assert_eq(image.get_file(), cases[typed][0], typed)
 		assert_eq(Metadata.get_path_for_image(image, options).get_file(), cases[typed][1], typed)
 	options.target = ExportOptions.Target.GODOT
-	var godot := SpritesheetExporter.with_image_extension("hero.tres")
+	var godot := SpritesheetExporter.with_extension("hero.tres", options.get_file_extension())
 	assert_eq([godot, Metadata.get_path_for_image(godot, options)], ["hero.png", "hero.tres"])
 	assert_eq(SpritesheetExporter.strip_written_extensions("a.v2/hero"), "a.v2/hero")
 	assert_eq(SpritesheetExporter.format_sprite_name("{index}.PNG", sheet, Vector2i(1, 0)), "1")
+
+
+func test_the_format_decides_the_extension() -> void:
+	var options := ExportOptions.new()
+	# Typed name, chosen format: the image written
+	var cases := [
+		["hero.png", "jpg", "hero.jpg"],
+		["hero", "webp", "hero.webp"],
+		["hero.v2", "jpg", "hero.v2.jpg"],
+		["HERO.PNG", "png", "HERO.png"],
+		["hero.jpeg", "jpg", "hero.jpg"],
+		["hero.JPG", "webp", "hero.webp"],
+		["hero.webp.json", "png", "hero.png"],
+	]
+	for case: Array in cases:
+		options.image_format = case[1]
+		var image := SpritesheetExporter.with_extension(case[0], options.get_file_extension())
+		assert_eq(image, case[2], "%s as %s" % [case[0], case[1]])
+	# On the command line, the name picks the format
+	assert_eq(SpritesheetExporter.with_image_extension("hero.JPEG"), "hero.jpg")
+	assert_eq(SpritesheetExporter.with_image_extension("hero.WebP"), "hero.webp")
+	assert_eq(SpritesheetExporter.with_image_extension("hero.json"), "hero.png")
+	assert_eq(SpritesheetExporter.with_image_extension("hero.v2"), "hero.v2.png")
 
 
 func test_typed_extensions_are_stripped_for_atlases() -> void:

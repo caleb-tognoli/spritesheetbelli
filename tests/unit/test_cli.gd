@@ -96,6 +96,12 @@ func test_out_extensions_are_stripped() -> void:
 	assert_true(FileAccess.file_exists(dir.path_join("hero.v2.png")))
 	assert_true(FileAccess.file_exists(dir.path_join("hero.v2.json")))
 
+	# The name picks the format, which gives the extension
+	result = await run(["--pack", frames, "--out", dir.path_join("photo.JPEG")])
+	assert_eq(result[0], "0", str(result))
+	assert_true(result[1].contains("photo.jpg"), result[1])
+	assert_true(Image.load_from_file(dir.path_join("photo.jpg")) != null)
+
 
 func test_cut_a_grid_and_find_sprites() -> void:
 	var sheet := Image.create_empty(48, 16, false, Image.FORMAT_RGBA8)

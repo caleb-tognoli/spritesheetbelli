@@ -570,11 +570,10 @@ func export_again() -> bool:
 	var path := Global.document.last_export
 	if path.is_empty():
 		return false
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	var extension := options.get_file_extension()
-	# The export type changed since: same name, the new type's extension
-	if extension and path.get_extension().to_lower() != extension:
-		path = SpritesheetExporter.strip_written_extensions(path) + "." + extension
+	var extension := ExportOptions.from_sheet(Global.spritesheet).get_file_extension()
+	# The export type or format may have changed since: same name, its extension
+	if extension:
+		path = SpritesheetExporter.with_extension(path, extension)
 	return await export_to(path)
 
 
@@ -610,7 +609,8 @@ func _export_image_to(path: String) -> bool:
 		return false
 
 	var options := ExportOptions.from_sheet(Global.spritesheet)
-	path = SpritesheetExporter.with_image_extension(path)
+	# The chosen format decides the extension, whatever the name was typed with
+	path = SpritesheetExporter.with_extension(path, options.get_file_extension())
 	if Global.spritesheet.layout == Spritesheet.Layout.PACKED:
 		return _export_pages(path, options)
 	var problem := ImageUtils.size_problem(
