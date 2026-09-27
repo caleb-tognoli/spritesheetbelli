@@ -112,6 +112,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Both sidebars (the settings on the left, the sprites and history on the right) have a
   visible handle on their inner edge: drag it to make them wider, double-click it to make
   them as narrow as they can be again. Their width is remembered.
+- The window opens where it was left: same size, place, screen and maximised state. The
+  first time, it takes 80% of the screen, centred, or is maximised on small screens.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -206,6 +208,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Escape cancels it, and "Keep the empty cells empty" moves to the left of its buttons.
 - The status bar shows the file a frame comes from as its folder and name; the preview's
   tooltip still has the whole path. When the status bar is full, the path is cut first.
+- The window can be made as small as 960×600, scaled with the interface.
 
 ### Fixed
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.

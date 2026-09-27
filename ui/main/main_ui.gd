@@ -178,7 +178,6 @@ func _ready() -> void:
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	export_btn.pressed.connect(Actions.run.bind(&"export"))
 	export_btn.icon = ICONS[&"export"]
-	get_window().min_size = Vector2i(820, 520)
 	sidebar_split = SidebarSplit.new(split, %Sidebar, &"sidebar_width")
 	panels_split = SidebarSplit.new(preview_split, layout_controller.side_split, &"panels_width")
 	status_bar.visible = Settings.get_value(&"show_status_bar")

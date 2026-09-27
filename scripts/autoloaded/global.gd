@@ -6,6 +6,8 @@ var document := Document.new()
 var cli_mode := false
 ## The interface's scale, the [code]ui_scale[/code] setting or the screen's for "Automatic"
 var ui_scale := 1.0
+## Places and sizes the main window, on desktops only, see [method WindowPlacement.is_supported]
+var window_placement: WindowPlacement
 ## The open document's spritesheet
 var spritesheet: Spritesheet:
 	get:
@@ -29,8 +31,14 @@ func _ready() -> void:
 				apply_theme()
 	)
 	get_tree().node_added.connect(_on_node_added)
+	# Placed now, before the main window is set up, so it only changes once after the splash
+	if WindowPlacement.is_supported():
+		window_placement = WindowPlacement.new()
+		add_child(window_placement)
 	apply_ui_scale()
 	apply_theme()
+	if window_placement:
+		window_placement.restore()
 
 
 ## Frees the nodes held in [param holder]'s variables that were never added to the tree,
@@ -63,6 +71,9 @@ func apply_ui_scale() -> void:
 	if ui_scale <= 0:
 		ui_scale = DisplayServer.screen_get_scale()
 	get_tree().root.content_scale_factor = ui_scale
+	# The main window's smallest size is in interface units too
+	if window_placement:
+		window_placement.apply_min_size(ui_scale)
 	var nodes: Array[Node] = [get_tree().root]
 	while not nodes.is_empty():
 		var node: Node = nodes.pop_back()

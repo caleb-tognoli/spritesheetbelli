@@ -51,6 +51,11 @@ const DEFAULTS := {
 	&"panels_width": 0,
 	&"show_history": false,
 	&"show_sprites": false,
+	# Where the main window was left, in pixels, and whether it was maximised, see
+	# WindowPlacement. No size yet before the first launch.
+	&"window_rect": Rect2i(),
+	&"window_screen": 0,
+	&"window_maximized": false,
 	&"onion_skin": false,
 	# Add Spritesheet locks the empty cells of the added sheet
 	&"keep_empty_cells": true,
@@ -63,6 +68,9 @@ const REMEMBERED: Array[StringName] = [
 	&"panels_width",
 	&"show_history",
 	&"show_sprites",
+	&"window_rect",
+	&"window_screen",
+	&"window_maximized",
 	&"onion_skin",
 	&"keep_empty_cells",
 ]
