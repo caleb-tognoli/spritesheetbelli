@@ -286,7 +286,7 @@ func _apply_frames() -> void:
 		frames_info.text = (
 			tr('Can\'t read "%s". Use numbers, names and ranges like 0-3, 5*2') % parsed.error
 		)
-		frames_info.add_theme_color_override("font_color", Color(1.0, 0.55, 0.45))
+		frames_info.theme_type_variation = &"ErrorLabel"
 		return
 	var sheet := Global.spritesheet
 	var start: int = Settings.get_value(&"index_start")
@@ -311,7 +311,7 @@ func _apply_frames() -> void:
 func _show_frames_info(animation: SheetAnimation, sheet: Spritesheet) -> void:
 	var with_frames := animation.get_frame_cells(sheet).size()
 	var total := animation.cells.size()
-	frames_info.remove_theme_color_override("font_color")
+	frames_info.theme_type_variation = &"StatusLabel"
 	frames_info.text = tr("%d frames") % with_frames
 	if with_frames > 0:
 		frames_info.text += tr(", %.2f s") % animation.get_length(sheet)

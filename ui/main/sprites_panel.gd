@@ -92,6 +92,10 @@ func refresh() -> void:
 	var rows := {}  # Row headers by row
 	var alive := {}
 	var packed := sheet.layout == Spritesheet.Layout.PACKED
+	var muted := get_theme_color("font_color", &"StatusLabel")
+	# Pinned frames show the pin like a pressed toggle; the others a faint one to click
+	var pinned_color := get_theme_color("icon_pressed_color", &"Button")
+	var unpinned_color := get_theme_color("icon_disabled_color", &"Button")
 	for coord in sheet.get_sorted_coords():
 		var img := sheet.frames[coord]
 		alive[img] = true
@@ -106,7 +110,7 @@ func refresh() -> void:
 				header.set_selectable(0, false)
 				header.set_selectable(1, false)
 				header.disable_folding = true
-				header.set_custom_color(0, get_theme_color("font_color", &"StatusLabel"))
+				header.set_custom_color(0, muted)
 				rows[coord.y] = header
 			parent = rows[coord.y]
 		var item := tree.create_item(parent)
@@ -115,6 +119,7 @@ func refresh() -> void:
 		item.set_icon_max_width(0, THUMBNAIL_SIZE)
 		var frame_size := img.get_size()
 		item.set_text(1, "%d×%d" % [frame_size.x, frame_size.y])
+		item.set_custom_color(1, muted)
 		# Only names are picked and edited
 		item.set_selectable(1, false)
 		item.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -123,11 +128,16 @@ func refresh() -> void:
 		if packed and sheet.placements.has(coord):
 			var pinned: bool = sheet.placements[coord].get("pinned", false)
 			item.add_button(1, PIN_ICON, PIN_BUTTON, false, tr("Unpin") if pinned else tr("Pin"))
-			item.set_button_color(1, 0, Color.WHITE if pinned else Color(1, 1, 1, 0.25))
+			item.set_button_color(1, 0, pinned_color if pinned else unpinned_color)
 	for img: Image in _thumbnails.keys():
 		if not alive.has(img):
 			_thumbnails.erase(img)
 	_show_selection()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_THEME_CHANGED:
+		refresh()
 
 
 ## The frame's name, or its number when it has none

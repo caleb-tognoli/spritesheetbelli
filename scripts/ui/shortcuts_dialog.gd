@@ -58,6 +58,6 @@ func _add_row(text: String, shortcut: String, heading := false) -> void:
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	keys.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if heading:
-		label.add_theme_color_override("font_color", Color(0.6, 0.75, 1.0))
+		label.theme_type_variation = &"AccentLabel"
 	_grid.add_child(label)
 	_grid.add_child(keys)

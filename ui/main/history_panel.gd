@@ -49,6 +49,11 @@ func _ready() -> void:
 	refresh()
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_THEME_CHANGED:
+		refresh()
+
+
 func refresh() -> void:
 	if not visible:
 		return

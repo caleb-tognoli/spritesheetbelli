@@ -192,6 +192,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The folder picker for exporting sprites is titled Export Sprites and starts next to the
   sheet's files.
 - Add Sprites lists GIFs, and the web version accepts them too.
+- In the light theme, the Sprites, History, Settings, Export and Animations lists no
+  longer look disabled, pins in the Sprites list are visible, and the Shortcuts headings,
+  the Animations frames error and the empty preview's hint are readable.
 
 ## 0.2.0
 

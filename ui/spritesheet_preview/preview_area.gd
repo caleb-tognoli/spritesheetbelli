@@ -57,6 +57,8 @@ func _ready() -> void:
 	empty_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	empty_hint.theme_type_variation = &"EmptyHint"
 	stage.add_child(empty_hint)
+	Settings.changed.connect(_update_hint_color.unbind(1))
+	_update_hint_color()
 
 	animation_preview.preview = spritesheet_preview
 	animation_preview.visible = false
@@ -194,6 +196,13 @@ func _gui_input(event: InputEvent) -> void:
 				# The screen transform accounts for the window position and display scaling
 				var screen_position := get_screen_transform() * (event.position as Vector2)
 				options_menu.popup(Rect2i(Vector2i(screen_position), Vector2i.ZERO))
+
+
+## The hint is over the preview's background colour, which doesn't follow the theme
+func _update_hint_color() -> void:
+	var background: Color = Settings.get_value(&"background_color")
+	var ink := Color.WHITE if background.get_luminance() < 0.5 else Color.BLACK
+	empty_hint.add_theme_color_override("font_color", Color(ink, 0.5))
 
 
 func update_ui() -> void:

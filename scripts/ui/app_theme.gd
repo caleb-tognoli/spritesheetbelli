@@ -40,6 +40,10 @@ class Palette:
 	var text: Color
 	var text_muted: Color
 	var accent: Color
+	var accent_text: Color  ## Text in the accent colour, such as headings
+	var error: Color  ## Text saying what's wrong
+	## How strongly list rows are shaded with the text colour when hovered or selected
+	var shade: float
 
 
 static func palette(light: bool, accent: Color) -> Palette:
@@ -53,6 +57,9 @@ static func palette(light: bool, accent: Color) -> Palette:
 		p.border = Color("c9cdd6")
 		p.text = Color("1f2329")
 		p.text_muted = Color("5d6470")
+		p.accent_text = accent.darkened(0.35)
+		p.error = Color("c43d2b")
+		p.shade = 0.6
 	else:
 		p.background = Color("1b1c1f")
 		p.surface = Color("25262a")
@@ -61,6 +68,9 @@ static func palette(light: bool, accent: Color) -> Palette:
 		p.border = Color("454852")
 		p.text = Color("e6e7ea")
 		p.text_muted = Color("9da2ad")
+		p.accent_text = accent.lightened(0.45)
+		p.error = Color(1.0, 0.55, 0.45)
+		p.shade = 1.0
 	return p
 
 
@@ -96,8 +106,11 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("font_color", &"StatusLabel", p.text_muted)
 	theme.set_type_variation(&"EmptyHint", "Label")
 	theme.set_font_size("font_size", &"EmptyHint", 15)
-	theme.set_color("font_color", &"EmptyHint", p.text_muted)
 	theme.set_color("font_color", &"HeaderSmall", p.text_muted)
+	theme.set_type_variation(&"ErrorLabel", &"StatusLabel")
+	theme.set_color("font_color", &"ErrorLabel", p.error)
+	theme.set_type_variation(&"AccentLabel", "Label")
+	theme.set_color("font_color", &"AccentLabel", p.accent_text)
 	theme.set_color("font_color", "Label", p.text)
 
 	# Buttons and everything drawn like them
@@ -229,8 +242,64 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	split.color = p.border
 	split.vertical = true
 	theme.set_stylebox("split_bar_background", "HSplitContainer", split)
-	theme.set_color("font_color", "ItemList", p.text)
+	_add_lists(theme, p, focus)
 	return theme
+
+
+## Trees and item lists: a sunken background, rows shaded with the text colour, and
+## scroll bars to match
+static func _add_lists(theme: Theme, p: Palette, focus: StyleBox) -> void:
+	var margins := Vector4(4, 4, 4, 4)
+	var hovered := _box(Color(p.text, 0.07 * p.shade), 3, margins)
+	var selected := _box(Color(p.text, 0.3 * p.shade), 3, margins)
+	var hovered_selected := _box(Color(p.text, 0.4 * p.shade), 3, margins)
+	var cursor := _box(Color.TRANSPARENT, 3, margins, p.text_muted, 1)
+	for type: StringName in [&"Tree", &"ItemList"]:
+		var panel_margins := Vector4(4, 4, 4, 5) if type == &"Tree" else margins
+		theme.set_stylebox("panel", type, _box(p.background, 3, panel_margins))
+		theme.set_stylebox("focus", type, focus)
+		theme.set_stylebox("hovered", type, hovered)
+		theme.set_stylebox("selected", type, selected)
+		theme.set_stylebox("selected_focus", type, selected)
+		theme.set_stylebox("hovered_selected", type, hovered_selected)
+		theme.set_stylebox("hovered_selected_focus", type, hovered_selected)
+		theme.set_stylebox("cursor", type, cursor)
+		theme.set_stylebox("cursor_unfocused", type, cursor)
+		for color: StringName in [
+			&"font_color",
+			&"font_hovered_color",
+			&"font_hovered_selected_color",
+			&"font_selected_color",
+		]:
+			theme.set_color(color, type, p.text)
+		theme.set_color("guide_color", type, Color(p.text, 0.2 * p.shade))
+	theme.set_stylebox("hovered_dimmed", "Tree", _box(Color(p.text, 0.03 * p.shade), 3, margins))
+	theme.set_stylebox("button_hover", "Tree", hovered)
+	theme.set_stylebox("button_pressed", "Tree", selected)
+	theme.set_color("font_hovered_dimmed_color", "Tree", p.text)
+	theme.set_color("font_disabled_color", "Tree", Color(p.text_muted, 0.6))
+	theme.set_color("custom_button_font_highlight", "Tree", p.text)
+	theme.set_color("title_button_color", "Tree", p.text)
+	theme.set_color("drop_position_color", "Tree", p.accent)
+	for color: StringName in [
+		&"relationship_line_color", &"parent_hl_line_color", &"children_hl_line_color"
+	]:
+		theme.set_color(color, "Tree", p.border)
+	theme.set_icon("arrow", "Tree", ARROW_DOWN)
+	theme.set_icon("arrow_collapsed", "Tree", ARROW_RIGHT)
+
+	# Scroll bars keep Godot's shapes, in the palette's colours
+	var defaults := ThemeDB.get_default_theme()
+	for type: StringName in [&"HScrollBar", &"VScrollBar"]:
+		for entry: Array in [
+			[&"scroll", Color(p.background, 0.6)],
+			[&"grabber", Color(p.text, 0.4 * p.shade)],
+			[&"grabber_highlight", Color(p.text, 0.75 * p.shade)],
+			[&"grabber_pressed", Color(p.text_muted, 0.75)],
+		]:
+			var box := defaults.get_stylebox(entry[0], type).duplicate() as StyleBoxFlat
+			box.bg_color = entry[1]
+			theme.set_stylebox(entry[0], type, box)
 
 
 ## The colours swapped in the icons: none in the dark theme
