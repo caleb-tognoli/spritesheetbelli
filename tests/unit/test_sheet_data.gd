@@ -138,6 +138,39 @@ func test_overlapping_tags_fill_a_grid() -> void:
 	assert_eq(sheet.animations[1].cells, [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
 
 
+func test_aseprite_tag_colours() -> void:
+	var frames := []
+	for i in 4:
+		frames.append({"filename": str(i), "frame": {"x": i * 8, "y": 0, "w": 8, "h": 8}})
+	var tags := [
+		{"name": "walk", "from": 0, "to": 0, "color": "#e0404080"},
+		{"name": "idle", "from": 1, "to": 1, "color": "#000000ff"},
+		{"name": "hit", "from": 2, "to": 2, "color": "#00000000"},
+		{"name": "jump", "from": 3, "to": 3},
+	]
+	var data := SheetData.parse_json(
+		JSON.stringify({"frames": frames, "meta": {"frameTags": tags}})
+	)
+	var sheet := data.to_spritesheet(quarters())
+	var colors: Array[Color] = []
+	for animation in sheet.animations:
+		colors.append(animation.color)
+	assert_eq(colors[0], Color("e04040"), "the tag's, opaque")
+	for i in range(1, 4):
+		assert_true(
+			SheetAnimation.is_palette_color(colors[i]), "Aseprite's default black is picked for"
+		)
+		assert_false(colors[i] in colors.slice(0, i), "apart from the others")
+	# Added to an open sheet, the tag's colour stays and the picked ones are picked again
+	var target := Spritesheet.new()
+	target.set_frame(Vector2i.ZERO, make_image(Color.RED))
+	target.add_animation(SheetAnimation.create("run", [Vector2i.ZERO] as Array[Vector2i]))
+	AddSpritesheetWindow.add_sheet(target, sheet, false)
+	var added := target.animations
+	assert_eq(added[1].color, Color("e04040"))
+	assert_ne(added[2].color, added[0].color, "apart from the open sheet's")
+
+
 func test_not_sheet_data() -> void:
 	assert_ne(SheetData.parse_json("[1, 2]").error, "")
 	assert_ne(SheetData.parse_json('{"frames": {}}').error, "")

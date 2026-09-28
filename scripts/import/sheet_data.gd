@@ -42,7 +42,9 @@ var related_files: PackedStringArray = []
 var _animation_names := {}
 var frames: Array[Frame] = []
 ## Aseprite-style frame tags: [code]{"name": String, "from": int, "to": int,
-## "direction": String, "repeat": int}[/code], with valid frame indices only
+## "direction": String, "repeat": int, "color": Color}[/code], with valid frame indices
+## only. The colour is [constant SheetAnimation.NO_COLOR] when the tag has Aseprite's
+## default (black) or none.
 var tags: Array[Dictionary] = []
 ## Frames of each animation in playing order, by animation name, from the "animations"
 ## that spritesheetbelli writes: [code]{"walk": Array[int]}[/code] of frame indices
@@ -272,6 +274,8 @@ func to_spritesheet(
 			tag_cells.append(cells[i])
 			seconds.append(frames[i].duration / 1000.0)
 		var animation := SheetAnimation.create_timed(tag.name, tag_cells, seconds)
+		# Without a colour of its own, the sheet picks one
+		animation.color = tag.color
 		if tag.direction.begins_with("pingpong"):
 			animation.mode = SheetAnimation.Mode.PING_PONG
 		elif tag.repeat == 1:
@@ -389,9 +393,23 @@ func _add_tag(tag: Dictionary) -> void:
 				"to": to,
 				"direction": str(tag.get("direction", "forward")),
 				"repeat": int(tag.get("repeat", 0)),
+				"color": _read_tag_color(tag.get("color")),
 			}
 		)
 	)
+
+
+## The colour of an Aseprite tag, written like [code]"#rrggbbaa"[/code]. Aseprite's default,
+## black, isn't one chosen for the tag: that and anything unreadable give
+## [constant SheetAnimation.NO_COLOR].
+static func _read_tag_color(value: Variant) -> Color:
+	if not value is String or not Color.html_is_valid(value):
+		return SheetAnimation.NO_COLOR
+	var color := Color.html(value)
+	color.a = 1.0
+	if color == Color.BLACK:
+		return SheetAnimation.NO_COLOR
+	return color
 
 
 static func _read_size(value: Variant) -> Vector2i:

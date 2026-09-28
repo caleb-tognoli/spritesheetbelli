@@ -131,6 +131,15 @@ static func get_palette_color(index: int) -> Color:
 	return Color(Color.from_ok_hsl(hue, SATURATION, LIGHTNESS).to_html(false))
 
 
+## Whether [param value] is one of the palette's colours, as [method pick_color] picks
+## them, and not one chosen by someone, like an Aseprite tag's
+static func is_palette_color(value: Color) -> bool:
+	for i in HUES:
+		if value.is_equal_approx(get_palette_color(i)):
+			return true
+	return false
+
+
 ## How long the cell at [param index] of [member cells] is shown, in frames
 func get_duration(index: int) -> float:
 	return durations[index] if index < durations.size() else 1.0
