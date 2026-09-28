@@ -74,6 +74,36 @@ func test_dropping_a_folder_links_it() -> void:
 	assert_eq(Global.spritesheet.linked_folders, PackedStringArray([dir]))
 
 
+func test_a_folder_without_images_is_linked() -> void:
+	var sheet := Global.spritesheet
+	await add_folder()
+	assert_eq(sheet.linked_folders, PackedStringArray([dir]))
+	assert_true(sheet.frames.is_empty())
+	assert_false(Notify.message_dialog.visible, "no error")
+	assert_eq(Notify.get_toasts()[-1], "Watching linked for new images.")
+	assert_eq(Global.document.get_history()[-1], "Link folder")
+	var panel: SpritesPanel = main.layout_controller.sprites_panel
+	panel.visible = true
+	panel.refresh()
+	assert_true(panel.folders_box.get_parent().visible, "listed")
+	# Images saved there later are added
+	write("a.png", Color.RED)
+	look_twice()
+	assert_true(folders.has_changes())
+	await folders.apply()
+	assert_eq(sheet.frames.size(), 1)
+	Global.document.undo()
+	Global.document.undo()
+	assert_true(sheet.linked_folders.is_empty(), "undone like Add Folder")
+
+
+func test_dropping_a_folder_without_images_links_it() -> void:
+	await main.files.open_dropped_files(PackedStringArray([dir]))
+	assert_eq(Global.spritesheet.linked_folders, PackedStringArray([dir]))
+	assert_false(Notify.message_dialog.visible, "no error")
+	assert_eq(Notify.get_toasts()[-1], "Watching linked for new images.")
+
+
 func test_adding_images_does_not_link() -> void:
 	var path := write("a.png", Color.RED)
 	await main.files.add_sprites_from_paths(PackedStringArray([path]))
@@ -288,3 +318,10 @@ func test_web_build_does_not_link() -> void:
 	await main.files.add_sprites_from_folder(dir)
 	assert_eq(Global.spritesheet.frames.size(), 1, "still added")
 	assert_true(Global.spritesheet.linked_folders.is_empty(), "not linked")
+	# Nor without images
+	Global.document.reset()
+	DirAccess.remove_absolute(dir.path_join("a.png"))
+	await main.files.add_sprites_from_folder(dir)
+	assert_true(Global.spritesheet.linked_folders.is_empty())
+	assert_true(Notify.message_dialog.visible, "there are no images")
+	Notify.message_dialog.hide()

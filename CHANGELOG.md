@@ -172,7 +172,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   with Colour… on its name on the grid. The animation list shows each one's colour.
   Animations made from Aseprite tags take the tag's colour, unless it's Aseprite's default
   black.
-- Add Folder and dropping a folder link it: images added to it later are added as
+- Add Folder and dropping a folder link it, even one with no images yet: images added to
+  it later are added as
   sprites where *New sprites go to* says, as one undo step, with a notice. Deleting images
   from a linked folder asks whether to remove their frames, and renamed images are
   followed: their frames link to the new name without asking. Linked folders are listed

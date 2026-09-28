@@ -242,13 +242,34 @@ func replace_frame_image(coord: Vector2i) -> void:
 
 
 ## Adds every image in [param folder] (not its subfolders), sorted by name, and links the
-## folder so images added to it later are added too
+## folder so images added to it later are added too, also when it has none yet
 func add_sprites_from_folder(folder: String) -> void:
 	var paths := get_images_in_folder(folder)
 	if paths.is_empty():
-		Notify.error(tr("There are no images in %s.") % folder.get_file())
+		if not link_empty_folders([folder]):
+			Notify.error(tr("There are no images in %s.") % folder.get_file())
 		return
 	await add_image_files(paths, "Add sprites", _to_link([folder]))
+
+
+## Links [param folders], which have no images, as one undoable step, so images saved there
+## are added (see [FolderWatcher]), and says so. False when none is linked, as in a browser.
+static func link_empty_folders(folders: PackedStringArray) -> bool:
+	var linked := _to_link(folders)
+	if linked.is_empty():
+		return false
+	var sheet := Global.spritesheet
+	Global.document.perform(
+		"Link folder",
+		func() -> void:
+			for folder in linked:
+				sheet.link_folder(folder)
+	)
+	var names: PackedStringArray = []
+	for folder in linked:
+		names.append(folder.get_file() if folder.get_file() else folder)
+	Notify.toast(TranslationServer.translate("Watching %s for new images.") % ", ".join(names))
+	return true
 
 
 ## [param folders] as linked folders, with the images they have now as the ones they
@@ -279,7 +300,7 @@ static func is_image_path(path: String) -> bool:
 
 ## Files dropped on the window: a project is opened, one image goes through the
 ## Add Spritesheet window, several images or folders are added as sprites, linking the
-## folders like Add Folder.
+## folders like Add Folder, also those without images.
 func open_dropped_files(paths: PackedStringArray) -> void:
 	var images: PackedStringArray = []
 	var folders: PackedStringArray = []
@@ -294,7 +315,8 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 			images.append(path)
 
 	if images.is_empty():
-		Notify.error("Drop images, folders of images, a spritesheet data file or a project.")
+		if not link_empty_folders(folders):
+			Notify.error("Drop images, folders of images, a spritesheet data file or a project.")
 	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
 		await show_add_spritesheet_window(images[0])
 	else:
