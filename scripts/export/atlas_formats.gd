@@ -125,7 +125,9 @@ static func write(
 
 ## A libGDX texture atlas, also read by Spine runtimes. Trimmed frames keep their original
 ## size and offset, which libGDX measures from the bottom. Turned frames are stored turned
-## counter-clockwise, with their size before turning.
+## counter-clockwise, with their size before turning: libGDX's TexturePacker writes
+## "rotate: true" for regions it turned 90° counter-clockwise, and its TextureAtlas and
+## Spine's runtimes read them that way.
 static func libgdx_atlas(frames: Array[Dictionary], pages: Array[Dictionary]) -> String:
 	var lines: PackedStringArray = []
 	for page in pages.size():

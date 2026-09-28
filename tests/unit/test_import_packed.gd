@@ -151,6 +151,48 @@ func test_turned_libgdx_frames_are_turned_back() -> void:
 	assert_eq(cut.get_region(Rect2i(0, 4, 10, 12)).get_data(), frame.get_data())
 
 
+## A region laid out the way libGDX's TexturePacker writes it: "rotate: true" with the
+## bounds' size before turning, and the pixels copied as its writeImages does, turned 90°
+## counter-clockwise ([code]plot(dx + j, dy + w - i - 1, src(i, j))[/code])
+func test_libgdx_packer_layout() -> void:
+	var frame := Image.create_empty(8, 6, false, Image.FORMAT_RGBA8)
+	var trimmed := Rect2i(1, 1, 5, 3)
+	for i in trimmed.size.x:
+		for j in trimmed.size.y:
+			frame.set_pixelv(trimmed.position + Vector2i(i, j), Color8(40 * i, 60 * j, 200))
+	var page := Image.create_empty(32, 16, false, Image.FORMAT_RGBA8)
+	var at := Vector2i(10, 4)
+	for i in trimmed.size.x:
+		for j in trimmed.size.y:
+			var pixel := frame.get_pixelv(trimmed.position + Vector2i(i, j))
+			page.set_pixel(at.x + j, at.y + trimmed.size.x - i - 1, pixel)
+	# Offsets from the left and the bottom: 6 - 1 - 3 = 2
+	var atlas := "page.png\nsize:32,16\narrow\nbounds:10,4,5,3\noffsets:1,2,8,6\nrotate:true\n"
+	var data := LibgdxAtlas.parse(atlas)
+	assert_eq(data.error, "")
+	var cut := SheetData.cut_frame(page, data.frames[0])
+	assert_eq(cut.get_size(), frame.get_size())
+	assert_eq(cut.get_data(), frame.get_data(), "turned back clockwise, where it was")
+
+
+func test_turned_frames_round_trip_pixel_for_pixel() -> void:
+	var sheet := packed_sheet()
+	var originals := {}
+	var turned := 0
+	for coord in sheet.frames:
+		originals[sheet.frames[coord].resource_name] = sheet.frames[coord]
+		turned += int(sheet.placements[coord].rotated)
+	assert_true(turned > 0, "some are turned")
+	for format: String in ["atlas", "json", "phaser"]:
+		var reopened := reopen(sheet, format)
+		assert_eq(reopened.frames.size(), originals.size(), format)
+		for coord in reopened.frames:
+			var img := reopened.frames[coord]
+			var original: Image = originals[img.resource_name.get_basename()]
+			assert_eq(img.get_size(), original.get_size(), format + " " + img.resource_name)
+			assert_eq(img.get_data(), original.get_data(), format + " " + img.resource_name)
+
+
 func test_texture_packer_pivots_and_phaser_pages() -> void:
 	var json := {
 		"textures":

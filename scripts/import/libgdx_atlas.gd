@@ -56,6 +56,8 @@ static func parse(text: String) -> SheetData:
 				frame.source_rect.position = Vector2i(values[0], values[1])
 				frame.source_size = Vector2i(values[2], values[3])
 			"rotate":
+				# Turned 90° counter-clockwise. Newer files can give degrees, of which
+				# libGDX only turns back 90, like true.
 				frame.rotated = value == "true" or value == "90"
 			"index" when values.size() >= 1:
 				index = values[0]
