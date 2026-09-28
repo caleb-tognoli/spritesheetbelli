@@ -76,7 +76,11 @@ const CATEGORIES := [
 const DETAILS := {
 	&"add_mode": "Where added sprites are placed in the grid",
 	&"resize_filter": "How new sheets smooth resized sprites. Nearest keeps pixel art sharp.",
-	&"watch_sources": "Ask to reload sprites when the image files they came from change",
+	&"watch_sources":
+	(
+		"Ask to reload sprites when the image files they came from change, and add the new "
+		+ "images in linked folders"
+	),
 	&"use_pivots":
 	(
 		"Show the pivot tool (E) and the Pivot menu, to set the point engines anchor each "

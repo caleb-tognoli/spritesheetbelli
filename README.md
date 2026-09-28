@@ -36,7 +36,9 @@ A small desktop tool made with Godot.</p>
   When you save it again in your drawing program, spritesheetbelli asks whether to reload
   it, keeping the flips, trims, outlines and moves made here or going back to the file as
   it is; with several changed files, answer once for all of them. Sheets are cut again in
-  the same places (data-file frames by name), GIF frames by number.
+  the same places (data-file frames by name), GIF frames by number. Link a folder with Add
+  Folder or by dropping it on the window: new images you save there are added
+  automatically, deleted ones can be removed, and renamed ones stay linked.
 - **Line frames up.** Move frames inside their cells a pixel at a time with the Move tool,
   or align them to an edge of their cells; trimming keeps every pixel where it was, so
   animations don't jump.

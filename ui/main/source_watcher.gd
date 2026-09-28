@@ -2,7 +2,7 @@ class_name SourceWatcher
 extends Node
 ## Notices when the files linked frames came from change on disk (see [FrameSource]) and
 ## asks whether to reload them. Files that change while the app is in the background are
-## asked about once it's back in front.
+## asked about once it's back in front. Linked folders are followed along, see [FolderWatcher].
 
 ## Seconds between looks at the files
 const INTERVAL := 1.0
@@ -10,6 +10,8 @@ const INTERVAL := 1.0
 const RECENT_SECONDS := 2
 
 var dialog := ReloadDialog.new()
+## Follows the images in linked folders, looking as often
+var folders := FolderWatcher.new()
 var timer := Timer.new()
 ## Changed files waiting to be asked about, in the order they changed
 var changed_paths: PackedStringArray = []
@@ -27,12 +29,15 @@ func _ready() -> void:
 			if not is_enabled():
 				return
 			check()
+			folders.check()
 			if get_window().has_focus():
+				apply_folders()
 				ask_next()
 	)
 	add_child(timer)
 	timer.start()
 	add_child(dialog)
+	add_child(folders)
 	dialog.chosen.connect(_on_chosen)
 
 
@@ -44,7 +49,15 @@ func is_enabled() -> bool:
 func on_focus_in() -> void:
 	if is_enabled():
 		check()
+		folders.check()
+		apply_folders()
 		ask_next()
+
+
+## Applies what changed in the linked folders, unless something is being asked or reloaded
+func apply_folders() -> void:
+	if folders.has_changes() and not dialog.visible and not _reloading and not _is_busy():
+		folders.apply()
 
 
 ## Looks for linked files that changed, adding them to [member changed_paths]. A file
@@ -83,7 +96,7 @@ func check() -> void:
 
 ## Asks about the first changed file, unless something is being asked or reloaded
 func ask_next() -> void:
-	if dialog.visible or _reloading or _is_busy():
+	if dialog.visible or _reloading or folders.working or _is_busy():
 		return
 	# Files no frame comes from anymore, e.g. after deleting the frames, aren't asked about
 	var linked := FrameSource.get_sheet_paths(Global.spritesheet)

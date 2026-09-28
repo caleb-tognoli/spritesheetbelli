@@ -169,6 +169,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Every animation has a colour of its own, picked far from the others' when it's made and
   saved with the project. Change it with the colour button in the animation details, or
   with Colour… on its name on the grid. The animation list shows each one's colour.
+- Add Folder and dropping a folder link it: images added to it later are added as
+  sprites where *New sprites go to* says, as one undo step, with a notice. Deleting images
+  from a linked folder asks whether to remove their frames, and renamed images are
+  followed: their frames link to the new name without asking. Linked folders are listed
+  at the top of the Sprites panel, with *Unlink folder*, saved in the project and followed
+  again when it's opened. *Reload changed files* turns this off too. Not in the web
+  version.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

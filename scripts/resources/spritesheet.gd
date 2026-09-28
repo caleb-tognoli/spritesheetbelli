@@ -73,6 +73,11 @@ var atlas_settings: AtlasSettings:
 		settings.power_of_two = Settings.get_value(&"atlas_power_of_two")
 		settings.square = Settings.get_value(&"atlas_square")
 		return settings
+## Folders whose new and deleted images are followed, see [FolderWatcher]. Read only:
+## changes go through [method link_folder] and [method unlink_folder].
+var linked_folders: PackedStringArray:
+	get:
+		return _folders.duplicate()
 
 var _grid_size := Vector2i.ZERO
 var _locked: Array[Vector2i] = []
@@ -87,6 +92,7 @@ var _cell_origin := Vector2i.ZERO
 var _layout := Layout.GRID
 ## The values of [AtlasSettings] that aren't the defaults
 var _atlas := {}
+var _folders: PackedStringArray = []
 
 
 func is_locked(coord: Vector2i) -> bool:
@@ -220,6 +226,7 @@ func get_state() -> Dictionary:
 		"atlas": _atlas.duplicate(),
 		"sprite_size": _sprite_size,
 		"cell_origin": _cell_origin,
+		"folders": _folders.duplicate(),
 	}
 
 
@@ -240,6 +247,7 @@ func set_state(state: Dictionary) -> void:
 	_atlas = state.get("atlas", {}).duplicate()
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_cell_origin = state.get("cell_origin", Vector2i.ZERO)
+	_folders = PackedStringArray(state.get("folders", []))
 	# The places come with the state, so frames aren't packed again
 	_layout_dirty = false
 	pack_cache.signature = 0
@@ -255,6 +263,25 @@ static func states_equal(a: Dictionary, b: Dictionary) -> bool:
 
 func clear() -> void:
 	set_state({})
+
+
+#endregion
+
+#region Linked folders
+
+
+## Follows the images in [param folder], see [FolderWatcher]
+func link_folder(folder: String) -> void:
+	if folder not in _folders:
+		_folders.append(folder)
+		_changed(false)
+
+
+func unlink_folder(folder: String) -> void:
+	var index := _folders.find(folder)
+	if index >= 0:
+		_folders.remove_at(index)
+		_changed(false)
 
 
 #endregion

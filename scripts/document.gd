@@ -43,6 +43,9 @@ var source_hashes: Dictionary[String, String] = {}
 ## Files that were exported over, so frames that undoing links to them again aren't
 ## reloaded from what spritesheetbelli wrote
 var unwatched_paths: PackedStringArray = []
+## The names of the images each linked folder had when last looked at, to tell new and
+## deleted ones, see [FolderWatcher]. Not part of the undo history.
+var folder_files: Dictionary[String, PackedStringArray] = {}
 var undo_redo := UndoRedo.new()
 var _saved_version := undo_redo.get_version()
 ## The export choices when last saved or opened. They aren't undo steps, so the version of
@@ -137,6 +140,7 @@ func load_state(state: Dictionary, file_path := "", image_path := "", view := {}
 	undo_redo.clear_history()
 	source_hashes.clear()
 	unwatched_paths.clear()
+	folder_files.clear()
 	path = file_path
 	export_path = image_path
 	last_export = ""

@@ -162,6 +162,15 @@ static func main_picked_file(paths: PackedStringArray) -> String:
 
 
 func add_sprites_from_paths(paths: PackedStringArray) -> void:
+	await add_image_files(paths)
+
+
+## Loads the images at [param paths] and adds them as sprites, sorted by name, as one
+## undoable step named [param action_name] that also links [param folders] (see
+## [FolderWatcher]). Returns how many files were added.
+static func add_image_files(
+	paths: PackedStringArray, action_name := "Add sprites", folders: PackedStringArray = []
+) -> int:
 	# The OS dialog doesn't return files in the order they were selected
 	# (Windows puts the last clicked file first), so sort them by name instead.
 	var sorted_paths: Array[String] = []
@@ -198,18 +207,24 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 			sources.append(
 				FrameSource.for_gif(path, frame) if is_gif else FrameSource.for_file(path)
 			)
-	Global.document.perform("Add sprites", _add_sprites.bind(imgs, sources, gifs))
+	Global.document.perform(action_name, _add_sprites.bind(imgs, sources, gifs, folders))
 
 	if not failed_files.is_empty():
-		Notify.error(tr("Could not load: %s.") % ", ".join(failed_files))
+		Notify.error(TranslationServer.translate("Could not load: %s.") % ", ".join(failed_files))
+	return loaded.size() - failed_files.size()
 
 
 ## Adds [param imgs] as sprites, and an animation for each of [param gifs] that plays
-## its frames, see [method add_sprites_from_paths]
+## its frames, and links [param folders], see [method add_image_files]
 static func _add_sprites(
-	imgs: Array[Image], sources: Array[Dictionary], gifs: Array[Dictionary]
+	imgs: Array[Image],
+	sources: Array[Dictionary],
+	gifs: Array[Dictionary],
+	folders: PackedStringArray
 ) -> void:
 	var sheet := Global.spritesheet
+	for folder in folders:
+		sheet.link_folder(folder)
 	var coords := sheet.add_frames(imgs, Settings.get_value(&"add_mode"), sources)
 	# Images that can't be added are skipped, which would shift the GIFs' frames
 	if coords.size() != imgs.size():
@@ -226,13 +241,27 @@ func replace_frame_image(coord: Vector2i) -> void:
 	popup_file_dialog(replace_image_dialog)
 
 
-## Adds every image in [param folder] (not its subfolders), sorted by name
+## Adds every image in [param folder] (not its subfolders), sorted by name, and links the
+## folder so images added to it later are added too
 func add_sprites_from_folder(folder: String) -> void:
 	var paths := get_images_in_folder(folder)
 	if paths.is_empty():
 		Notify.error(tr("There are no images in %s.") % folder.get_file())
 		return
-	await add_sprites_from_paths(paths)
+	await add_image_files(paths, "Add sprites", _to_link([folder]))
+
+
+## [param folders] as linked folders, with the images they have now as the ones they
+## had (see [method FolderWatcher.remember]). None in a browser, which can't follow them.
+static func _to_link(folders: PackedStringArray) -> PackedStringArray:
+	var linked: PackedStringArray = []
+	if FolderWatcher.in_browser:
+		return linked
+	for folder in folders:
+		folder = folder.simplify_path()
+		FolderWatcher.remember(folder)
+		linked.append(folder)
+	return linked
 
 
 static func get_images_in_folder(folder: String) -> PackedStringArray:
@@ -249,15 +278,18 @@ static func is_image_path(path: String) -> bool:
 
 
 ## Files dropped on the window: a project is opened, one image goes through the
-## Add Spritesheet window, several images or folders are added as sprites.
+## Add Spritesheet window, several images or folders are added as sprites, linking the
+## folders like Add Folder.
 func open_dropped_files(paths: PackedStringArray) -> void:
 	var images: PackedStringArray = []
+	var folders: PackedStringArray = []
 	for path in paths:
 		if ProjectFile.is_project_path(path):
 			confirm_unsaved_changes("opening another file", open_project.bind(path))
 			return
 		if DirAccess.dir_exists_absolute(path):
 			images.append_array(get_images_in_folder(path))
+			folders.append(path)
 		elif is_image_path(path) or (SheetData.is_data_path(path) and paths.size() == 1):
 			images.append(path)
 
@@ -266,7 +298,7 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
 		await show_add_spritesheet_window(images[0])
 	else:
-		await add_sprites_from_paths(images)
+		await add_image_files(images, "Add sprites", _to_link(folders))
 
 
 func show_add_spritesheet_window(spritesheet_path: String) -> void:
@@ -448,6 +480,7 @@ func _save_project(path: String) -> bool:
 		"export_path": Global.document.export_path,
 		"last_export": Global.document.last_export,
 		"source_hashes": _hashes_to_json(Global.document.source_hashes, path.get_base_dir()),
+		"folder_files": _folder_files_to_json(path.get_base_dir()),
 		"view": view_to_json(get_view.call()),
 	}
 	var error := ProjectFile.save(Global.spritesheet, path, extra)
@@ -490,6 +523,9 @@ func _open_project(path: String) -> bool:
 	Global.document.last_export = str(result.extra.get("last_export", ""))
 	Global.document.source_hashes = _hashes_from_json(
 		result.extra.get("source_hashes"), path.get_base_dir()
+	)
+	Global.document.folder_files = _folder_files_from_json(
+		result.extra.get("folder_files"), path.get_base_dir()
 	)
 	Settings.set_value(&"last_session", path)
 	Settings.add_recent_file(path)
@@ -757,7 +793,7 @@ func unlink_overwritten(paths: PackedStringArray) -> void:
 
 ## Frames are about to be linked to [param path], so it's watched again even if it was
 ## exported over before
-func _linking(path: String) -> void:
+static func _linking(path: String) -> void:
 	var index := Global.document.unwatched_paths.find(path)
 	if index >= 0:
 		Global.document.unwatched_paths.remove_at(index)
@@ -787,6 +823,31 @@ static func _hashes_from_json(value: Variant, folder: String) -> Dictionary[Stri
 		if entry is Dictionary and entry.get("path") is String and entry.get("md5") is String:
 			hashes[FrameSource.resolve_path(entry.path, entry.get("relative"), folder)] = entry.md5
 	return hashes
+
+
+## The images each linked folder has, see [member Document.folder_files], for a project
+## saved in [param folder]
+static func _folder_files_to_json(folder: String) -> Array:
+	var result := []
+	var files := Global.document.folder_files
+	for linked in Global.spritesheet.linked_folders:
+		if files.has(linked):
+			var relative := FrameSource.relative_folder_path(linked, folder)
+			result.append({"path": linked, "relative": relative, "files": files[linked]})
+	return result
+
+
+static func _folder_files_from_json(
+	value: Variant, folder: String
+) -> Dictionary[String, PackedStringArray]:
+	var files: Dictionary[String, PackedStringArray] = {}
+	if not value is Array:
+		return files
+	for entry: Variant in value:
+		if entry is Dictionary and entry.get("path") is String and entry.get("files") is Array:
+			var linked := FrameSource.resolve_path(entry.path, entry.get("relative"), folder)
+			files[linked] = PackedStringArray(entry.files)
+	return files
 
 
 ## A view from [method SpritesheetPreview.get_view] as JSON

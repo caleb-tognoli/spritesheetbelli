@@ -248,11 +248,11 @@ static func from_json(value: Variant, folder: String) -> Dictionary:
 	return result
 
 
-## The file at [param relative] from [param folder] when it's there, else [param path]
+## The file or folder at [param relative] from [param folder] when it's there, else [param path]
 static func resolve_path(path: String, relative: Variant, folder: String) -> String:
 	if relative is String and relative and folder:
 		var moved := folder.path_join(relative).simplify_path()
-		if FileAccess.file_exists(moved):
+		if FileAccess.file_exists(moved) or DirAccess.dir_exists_absolute(moved):
 			return moved
 	return path
 
@@ -274,5 +274,12 @@ static func relative_path(path: String, folder: String) -> String:
 		result.append("..")
 	result.append_array(parts.slice(same))
 	return "/".join(result)
+
+
+## [param path], a folder, relative to [param folder], like [code]../art[/code], or
+## [code].[/code] when it's the same
+static func relative_folder_path(path: String, folder: String) -> String:
+	var relative := relative_path(path.path_join("-"), folder).get_base_dir()
+	return relative if relative else "."
 
 #endregion

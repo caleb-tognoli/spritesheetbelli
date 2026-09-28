@@ -85,6 +85,12 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"frames": frames,
 		"extra": extra,
 	}
+	if not sheet.linked_folders.is_empty():
+		var folders: Array[Dictionary] = []
+		for folder in sheet.linked_folders:
+			var relative := FrameSource.relative_folder_path(folder, path.get_base_dir())
+			folders.append({"path": folder, "relative": relative})
+		data.folders = folders
 	if packed:
 		data.layout = "packed" if sheet.layout == Spritesheet.Layout.PACKED else "grid"
 		data.atlas = JSON.from_native(sheet.atlas_settings.to_dictionary())
@@ -167,6 +173,10 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 			colors.append(animation.color)
 		animations.append(animation.to_dictionary())
 
+	var folders: PackedStringArray = []
+	for linked: Variant in data.get("folders", []):
+		if linked is Dictionary and linked.get("path") is String:
+			folders.append(FrameSource.resolve_path(linked.path, linked.get("relative"), folder))
 	var layout := Spritesheet.Layout.GRID
 	if data.get("layout") == "packed":
 		layout = Spritesheet.Layout.PACKED
@@ -185,6 +195,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"animations": animations,
 		"label_playing_only": data.get("animation_labels") == "playing",
 		"export": _read_export_settings(data.get("export", {})),
+		"folders": folders,
 	}
 	return {"state": state, "extra": data.get("extra", {})}
 
