@@ -25,6 +25,7 @@ func before_each() -> void:
 func after_each() -> void:
 	Settings.set_value(&"show_sprites", false)
 	Settings.set_value(&"sprites_by_row", false)
+	Settings.set_value(&"index_start", 0)
 	main.queue_free()
 	Global.document.reset()
 
@@ -129,6 +130,16 @@ func test_grouping_by_row() -> void:
 	Settings.set_value(&"sprites_by_row", false)
 	assert_false(panel.by_row_button.button_pressed)
 	assert_eq(groups()[0], ["walk", "2", ["Frame 3", "star"]], "by animation again")
+
+
+func test_rows_are_numbered_like_the_frames() -> void:
+	Global.document.perform("Move", sheet.move_frame.bind(Vector2i(2, 0), Vector2i(0, 1)))
+	Settings.set_value(&"sprites_by_row", true)
+	header_of("Row 0").collapsed = true
+	Settings.set_value(&"index_start", 1)
+	assert_eq(groups(), [["Row 1", "2", ["star", "bean"]], ["Row 2", "1", ["Frame 4"]]])
+	assert_true(header_of("Row 1").collapsed, "the same row still folded")
+	assert_false(header_of("Row 2").collapsed)
 
 
 func test_search_keeps_the_groups() -> void:

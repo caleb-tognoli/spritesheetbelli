@@ -146,15 +146,16 @@ func refresh() -> void:
 ## Every frame of [param sheet] in groups, each a dictionary with a "key" that stays the same
 ## while the sheet changes, a "title" and the frames' "coords". By animation, in the sheet's
 ## order, a frame is in the first one showing it, at its first place in play order; frames in
-## none follow in reading order. With [param by_row], each row is a group. Groups without
-## frames are left out.
+## none follow in reading order. With [param by_row], each row is a group, numbered like the
+## frames, from the "index_start" setting. Groups without frames are left out.
 static func group_frames(sheet: Spritesheet, by_row := false) -> Array[Dictionary]:
 	var groups: Array[Dictionary] = []
 	if by_row:
+		var start: int = Settings.get_value(&"index_start")
 		for coord in sheet.get_sorted_coords():
 			var key := "row:%d" % coord.y
 			if groups.is_empty() or groups[-1].key != key:
-				var title := TranslationServer.translate("Row %d") % coord.y
+				var title := TranslationServer.translate("Row %d") % (coord.y + start)
 				var coords: Array[Vector2i] = []
 				groups.append({"key": key, "title": title, "coords": coords})
 			groups[-1].coords.append(coord)
@@ -454,6 +455,9 @@ func _select_group(header: TreeItem, mouse: InputEventMouseButton) -> void:
 func _on_setting_changed(key: StringName) -> void:
 	if key == &"sprites_by_row":
 		by_row_button.set_pressed_no_signal(Settings.get_value(key))
+		refresh()
+	elif key == &"index_start":
+		# Frames without a name and rows are numbered from it
 		refresh()
 
 

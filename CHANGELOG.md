@@ -37,8 +37,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   exported where the format has them. Frames without one use the atlas's default.
 - View > Sprites lists every frame with a thumbnail, its name and size, under the first
   animation showing it, in play order, and the others under "No animation"; the button
-  next to the search field groups them by row instead. Clicking a group's name selects
-  its frames, and its arrow folds it. Selection follows the preview both ways,
+  next to the search field groups them by row instead, numbered like the frames. Clicking
+  a group's name selects its frames, and its arrow folds it. Selection follows the preview both ways,
   double-click a name or F2 renames a frame, and frames can be searched and pinned.
 - Command line: `--layout grid|packed`, `--max-size`, `--rotate` and `--repack`, and
   `--atlas-data` takes every format above. Packed sheets are written as atlases.
