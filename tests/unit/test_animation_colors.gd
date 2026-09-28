@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 ## Every animation's colour: picked far from the others' when it's added, saved with the
 ## project, undone, changed in the details or from its name on the grid, shown in the list
-## and on labels that overlap
+## and on the labels
 
 const GRID := Vector2i(6, 2)
 const PANEL_SETTINGS: Array[StringName] = [&"animation_panel", &"animation_panel_height"]
@@ -196,7 +196,7 @@ func test_colour_in_the_details_and_the_list() -> void:
 	assert_eq(sheet.animations[0].color, Color("e0c040"))
 
 
-func test_overlapping_labels_use_the_animation_colour() -> void:
+func test_labels_use_the_animation_colour() -> void:
 	await open_main()
 	var preview: SpritesheetPreview = main.preview
 	var controls: AnimationLabelControls = main.preview_area.label_controls
@@ -209,13 +209,8 @@ func test_overlapping_labels_use_the_animation_colour() -> void:
 			sheet.add_animation(SheetAnimation.create("idle", row(1, 0, 5)))
 	)
 	var colors := colors_of(sheet)
-	assert_eq(
-		labels.labels.map(func(label: Dictionary) -> bool: return label.colored),
-		[true, true, false]
-	)
-	assert_eq(labels._get_color(labels.labels[0]), colors[0])
-	assert_eq(labels._get_color(labels.labels[1]), colors[1])
-	assert_ne(labels._get_color(labels.labels[2]), colors[2], "alone, in the interface's colour")
+	# Overlapping or alone, each is in its animation's colour
+	assert_eq(labels.labels.map(func(label: Dictionary) -> Color: return label.color), colors)
 	# Colour… in its name's menu
 	controls.open_menu(1, Vector2.ZERO)
 	controls.menu.id_pressed.emit(AnimationLabelControls.Item.COLOR)
@@ -226,7 +221,7 @@ func test_overlapping_labels_use_the_animation_colour() -> void:
 	controls.color_popup.hide()
 	assert_eq(sheet.animations[1].color, Color("40c0a0"))
 	assert_eq(Global.document.get_history()[-1], "Recolour animation")
-	assert_eq(labels._get_color(labels.labels[1]), Color("40c0a0"))
+	assert_eq(labels.labels[1].color, Color("40c0a0"))
 	# Deleting one doesn't change the colours of the others
 	Global.document.perform("Delete", sheet.remove_animation.bind(0))
 	assert_eq(labels.labels.size(), 2)

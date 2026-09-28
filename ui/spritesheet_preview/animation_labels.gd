@@ -1,11 +1,10 @@
 class_name AnimationLabels
 extends RefCounted
-## Names animations on the grid of a [SpritesheetPreview]: a run along a row or a column
-## in the margin where it starts, with a bracket where it stops short of the edge, and
-## other areas outlined with the name on the edge at their first frame, see
-## [AnimationLabelLayout]. Labels are in the interface's colours, and where they overlap,
-## in their animation's colour. Names keep the same size at any zoom and are never drawn
-## over each other: one that finds no room isn't drawn.
+## Names animations on the grid of a [SpritesheetPreview]: a whole row or column in the
+## margin where it starts, and other areas outlined with the name on the edge at their
+## first frame, see [AnimationLabelLayout]. Each label is in its animation's colour
+## ([member SheetAnimation.color]). Names keep the same size at any zoom and are never
+## drawn over each other: one that finds no room isn't drawn.
 ## Only in the grid layout, and only once [member enabled].
 
 ## A label was clicked, double-clicked, or right-clicked at [param position] in the view
@@ -21,12 +20,9 @@ const PADDING := Vector2(5, 1)
 const GAP := 6.0
 ## Space between stacked names
 const STACK_GAP := 2.0
-## On-screen width of outlines and brackets, how much further inside each overlapping
-## outline is drawn, how far brackets reach along the run and how far past its frames
+## On-screen width of outlines, and how much further inside each overlapping one is drawn
 const LINE_WIDTH := 2.0
 const INSET_STEP := 2.0
-const BRACKET_ARM := 5.0
-const BRACKET_GAP := 3.0
 ## Opacity of the tint over the frames of the label under the mouse
 const HOVER_TINT := 0.25
 
@@ -70,7 +66,7 @@ func update(sheet: Spritesheet, grid: GridView) -> void:
 			if not shown:
 				continue
 			var label := AnimationLabelLayout.classify(
-				animations[i].get_frame_cells(sheet), sheet.grid_size
+				animations[i].get_frame_cells(sheet), sheet.grid_size, sheet.has_frame
 			)
 			if label.shape == AnimationLabelLayout.Shape.NONE:
 				continue
@@ -97,7 +93,9 @@ static func get_labelled(sheet: Spritesheet) -> Array[int]:
 	var animations := sheet.animations
 	for i in animations.size():
 		var cells := animations[i].get_frame_cells(sheet)
-		var shape: int = AnimationLabelLayout.classify(cells, sheet.grid_size).shape
+		var shape: int = (
+			AnimationLabelLayout.classify(cells, sheet.grid_size, sheet.has_frame).shape
+		)
 		if shape != AnimationLabelLayout.Shape.NONE:
 			indices.append(i)
 	return indices
@@ -234,7 +232,7 @@ func place_tags(canvas: SpritesheetPreview) -> Array[Dictionary]:
 	return order
 
 
-## Draws the outlines, brackets and names, over the cells and under the frame numbers
+## Draws the outlines and names, over the cells and under the frame numbers
 func draw(canvas: SpritesheetPreview) -> void:
 	var order := place_tags(canvas)
 	if order.is_empty():
@@ -247,27 +245,18 @@ func draw(canvas: SpritesheetPreview) -> void:
 	for label: Dictionary in order:
 		if label.index == hovered:
 			for cell: Vector2i in label.cells:
-				canvas.draw_rect(_grid.get_cell_rect(cell), Color(_get_color(label), HOVER_TINT))
+				canvas.draw_rect(_grid.get_cell_rect(cell), Color(label.color, HOVER_TINT))
+	var outlined := order.filter(AnimationLabelLayout.is_outlined)
 	# Every line's halo first, so lines where outlines meet stay whole
 	for halo: bool in [true, false]:
-		for label: Dictionary in order:
-			var color: Color = palette.surface if halo else _get_color(label)
+		for label: Dictionary in outlined:
+			var color: Color = palette.surface if halo else label.color
 			var width := (LINE_WIDTH + (2.0 if halo else 0.0)) * pixel
-			if AnimationLabelLayout.is_outlined(label):
-				_draw_outline(canvas, label, color, width, pixel)
-			else:
-				_draw_brackets(canvas, label, color, width, pixel)
+			_draw_outline(canvas, label, color, width, pixel)
 	for label: Dictionary in order:
 		if _tags.has(label.index):
 			_draw_tag(canvas, label, _tags[label.index], font)
 	canvas.draw_set_transform(Vector2.ZERO)
-
-
-## The theme's colours, or the animation's own where its label overlaps another
-func _get_color(label: Dictionary) -> Color:
-	if label.colored:
-		return label.color
-	return _get_palette().text
 
 
 func _get_palette() -> AppTheme.Palette:
@@ -368,59 +357,17 @@ func _draw_outline(
 			canvas.draw_line(ends[0], ends[1], color, width)
 
 
-## Brackets where a run starts and ends short of the edge of the grid, just outside its
-## first and last frames, like [code][ ][/code]
-func _draw_brackets(
-	canvas: SpritesheetPreview, label: Dictionary, color: Color, width: float, pixel: float
-) -> void:
-	var direction: Vector2 = {
-		AnimationLabelLayout.Side.LEFT: Vector2.RIGHT,
-		AnimationLabelLayout.Side.RIGHT: Vector2.LEFT,
-		AnimationLabelLayout.Side.TOP: Vector2.DOWN,
-		AnimationLabelLayout.Side.BOTTOM: Vector2.UP,
-	}[label.side]
-	var cells: Array = label.cells
-	if label.opens:
-		_draw_bracket(canvas, _grid.get_cell_rect(cells[0]), -direction, color, width, pixel)
-	if label.closes:
-		_draw_bracket(canvas, _grid.get_cell_rect(cells[-1]), direction, color, width, pixel)
-
-
-## A bracket across the side of [param cell] facing [param outward], its arms pointing back
-func _draw_bracket(
-	canvas: SpritesheetPreview,
-	cell: Rect2,
-	outward: Vector2,
-	color: Color,
-	width: float,
-	pixel: float
-) -> void:
-	var across := Vector2(absf(outward.y), absf(outward.x))
-	var middle := cell.get_center() + outward * (cell.size / 2 + Vector2.ONE * BRACKET_GAP * pixel)
-	var half := (across * cell.size / 2).length() - 2 * pixel
-	var arm := -outward * BRACKET_ARM * pixel
-	var points: PackedVector2Array = [
-		middle - across * half + arm,
-		middle - across * half,
-		middle + across * half,
-		middle + across * half + arm,
-	]
-	canvas.draw_polyline(points, color, width)
-
-
-## The name in a tag at [param rect] on screen
+## The name in a tag at [param rect] on screen, filled with its animation's colour and
+## written in whichever of the theme's text colours reads best on it
 func _draw_tag(canvas: SpritesheetPreview, label: Dictionary, rect: Rect2, font: Font) -> void:
 	var palette := _get_palette()
 	var pixel := 1.0 / canvas.camera.zoom.x
-	var fill := palette.hover if label.index == hovered else palette.surface
-	var ink := palette.text
-	if label.colored:
-		fill = label.color
-		if label.index == hovered:
-			fill = fill.lightened(0.2)
-		ink = AppTheme.readable_text([fill], palette.text)
+	var fill: Color = label.color
+	if label.index == hovered:
+		fill = fill.lightened(0.2)
+	var ink := AppTheme.readable_text([fill], palette.text)
 	_tag_box.bg_color = fill
-	_tag_box.border_color = _get_color(label) if label.colored else palette.border
+	_tag_box.border_color = label.color
 	# Text is drawn unscaled so it keeps the same size at any zoom
 	canvas.draw_set_transform(
 		canvas.camera.position + rect.position * pixel, 0, Vector2.ONE * pixel

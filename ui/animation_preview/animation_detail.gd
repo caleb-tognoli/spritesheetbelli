@@ -265,7 +265,7 @@ func _build_fields() -> void:
 	color_button.edit_alpha = false
 	color_button.get_picker().presets_visible = false
 	color_button.custom_minimum_size.x = 40
-	color_button.tooltip_text = "Colour: of its label where labels overlap, and in the list"
+	color_button.tooltip_text = "Colour: of its label on the grid, and in the list"
 	_fields.add_child(color_button)
 	frames_text_button.icon = TEXT_ICON
 	frames_text_button.toggle_mode = true

@@ -47,48 +47,78 @@ func shape_of(cells: Array[Vector2i], grid := GRID) -> int:
 	return Layout.classify(cells, grid).shape
 
 
-func assert_run(
-	cells: Array[Vector2i], shape: int, side: int, line: int, opens: bool, closes: bool
+## Asserts the label of [param cells] is a row or a column named in [param side]'s margin
+## of row or column [param line]. [param frames] are the cells holding a frame, or none
+## for every cell of the grid.
+func assert_line(
+	cells: Array[Vector2i], shape: int, side: int, line: int, frames: Array[Vector2i] = []
 ) -> void:
-	var label := Layout.classify(cells, GRID)
+	var label := Layout.classify(cells, GRID, has_frame_in(frames))
 	var text := var_to_str(cells)
 	assert_eq(label.shape, shape, text)
 	assert_eq(label.side, side, text + " side")
 	assert_eq(label.line, line, text + " line")
-	assert_eq(label.opens, opens, text + " opens")
-	assert_eq(label.closes, closes, text + " closes")
+	assert_false(Layout.is_outlined(label), text + " not outlined")
+
+
+## Whether a cell holds a frame when only [param frames] do, or every cell when it's empty
+static func has_frame_in(frames: Array[Vector2i]) -> Callable:
+	if frames.is_empty():
+		return Callable()
+	return func(cell: Vector2i) -> bool: return cell in frames
 
 
 func test_repeats_count_once_where_first_shown() -> void:
 	assert_eq(Layout.distinct_cells(cells_of([0, 0, 1, 0, 1, 0, 2, 0, 1, 0])), row(0, 0, 2))
-	# A ping-pong written out, and a held frame, are still the run 0-5
+	# A ping-pong written out, and a held frame, are still the row 0-5
 	var ping_pong := row(1, 0, 5) + row(1, 4, 1)
-	assert_run(ping_pong, Layout.Shape.ROW, Layout.Side.LEFT, 1, false, false)
-	assert_run(row(1, 0, 3) + row(1, 3, 3), Layout.Shape.ROW, Layout.Side.LEFT, 1, false, true)
+	assert_line(ping_pong, Layout.Shape.ROW, Layout.Side.LEFT, 1)
+	assert_line(row(1, 0, 5) + row(1, 5, 5), Layout.Shape.ROW, Layout.Side.LEFT, 1)
 	assert_eq(Layout.classify(ping_pong, GRID).cells, row(1, 0, 5), "cells without repeats")
 
 
-func test_row_runs() -> void:
-	assert_run(row(0, 0, 5), Layout.Shape.ROW, Layout.Side.LEFT, 0, false, false)
-	assert_run(row(2, 0, 3), Layout.Shape.ROW, Layout.Side.LEFT, 2, false, true)
-	assert_run(row(2, 2, 5), Layout.Shape.ROW, Layout.Side.LEFT, 2, true, false)
-	assert_run(row(3, 1, 4), Layout.Shape.ROW, Layout.Side.LEFT, 3, true, true)
-	# Right to left: named in the right margin, marked where it ends on the left
-	assert_run(row(1, 5, 0), Layout.Shape.ROW, Layout.Side.RIGHT, 1, false, false)
-	assert_run(row(1, 5, 2), Layout.Shape.ROW, Layout.Side.RIGHT, 1, false, true)
-	assert_run(row(1, 3, 0), Layout.Shape.ROW, Layout.Side.RIGHT, 1, true, false)
-	# A single frame is a row of one
-	assert_run(cells_of([3, 2]), Layout.Shape.ROW, Layout.Side.LEFT, 2, true, true)
-	assert_run(cells_of([0, 2]), Layout.Shape.ROW, Layout.Side.LEFT, 2, false, true)
+func test_whole_rows() -> void:
+	assert_line(row(0, 0, 5), Layout.Shape.ROW, Layout.Side.LEFT, 0)
+	assert_line(row(3, 0, 5), Layout.Shape.ROW, Layout.Side.LEFT, 3)
+	# Right to left: named in the right margin
+	assert_line(row(1, 5, 0), Layout.Shape.ROW, Layout.Side.RIGHT, 1)
+	# Empty cells don't count: a row whose last cells, or one in the middle, are empty is
+	# still whole
+	var frames := row(2, 0, 3) + row(3, 0, 5)
+	assert_line(row(2, 0, 3), Layout.Shape.ROW, Layout.Side.LEFT, 2, frames)
+	assert_line(row(2, 3, 0), Layout.Shape.ROW, Layout.Side.RIGHT, 2, frames)
+	frames = cells_of([0, 1, 1, 1, 3, 1, 4, 1])
+	assert_line(frames, Layout.Shape.ROW, Layout.Side.LEFT, 1, frames)
+	# A frame alone in its row
+	assert_line(cells_of([2, 1]), Layout.Shape.ROW, Layout.Side.LEFT, 1, cells_of([2, 1, 2, 2]))
 
 
-func test_column_runs() -> void:
-	assert_run(column(2, 0, 3), Layout.Shape.COLUMN, Layout.Side.TOP, 2, false, false)
-	assert_run(column(2, 0, 1), Layout.Shape.COLUMN, Layout.Side.TOP, 2, false, true)
-	assert_run(column(4, 1, 2), Layout.Shape.COLUMN, Layout.Side.TOP, 4, true, true)
-	assert_run(column(0, 3, 0), Layout.Shape.COLUMN, Layout.Side.BOTTOM, 0, false, false)
-	assert_run(column(5, 3, 2), Layout.Shape.COLUMN, Layout.Side.BOTTOM, 5, false, true)
-	assert_run(column(5, 2, 0), Layout.Shape.COLUMN, Layout.Side.BOTTOM, 5, true, false)
+func test_whole_columns() -> void:
+	assert_line(column(2, 0, 3), Layout.Shape.COLUMN, Layout.Side.TOP, 2)
+	assert_line(column(0, 3, 0), Layout.Shape.COLUMN, Layout.Side.BOTTOM, 0)
+	var frames := row(0, 0, 5) + column(4, 1, 2)
+	assert_line(column(4, 0, 2), Layout.Shape.COLUMN, Layout.Side.TOP, 4, frames)
+	assert_line(column(4, 2, 0), Layout.Shape.COLUMN, Layout.Side.BOTTOM, 4, frames)
+
+
+func test_part_of_a_row_or_column_is_outlined() -> void:
+	for cells: Array[Vector2i] in [
+		row(2, 0, 3), row(2, 2, 5), row(3, 1, 4), row(1, 5, 2), column(2, 0, 1), column(5, 2, 0)
+	]:
+		var part := Layout.classify(cells, GRID)
+		assert_eq(part.shape, Layout.Shape.AREA, var_to_str(cells))
+		assert_eq(part.side, Layout.Side.NONE, var_to_str(cells) + " in no margin")
+		assert_true(Layout.is_outlined(part))
+	assert_eq(shape_of(cells_of([3, 2])), Layout.Shape.AREA, "a single frame")
+	# A whole row and one frame of the next
+	assert_eq(shape_of(row(0, 0, 5) + row(1, 0, 0)), Layout.Shape.AREA, "and one more")
+	# Frames that aren't the whole row
+	var label := Layout.classify(row(0, 0, 3), GRID, has_frame_in(row(0, 0, 4)))
+	assert_eq(label.shape, Layout.Shape.AREA, "one frame short")
+	# The whole row, out of order
+	var frames := row(0, 0, 2)
+	label = Layout.classify(cells_of([1, 0, 0, 0, 2, 0]), GRID, has_frame_in(frames))
+	assert_eq(label.shape, Layout.Shape.NONE, "out of order")
 
 
 func test_blocks() -> void:
@@ -149,37 +179,32 @@ static func labels_of(animations: Array) -> Array[Dictionary]:
 	return labels
 
 
-func test_labels_apart_keep_the_interface_colours() -> void:
+func test_labels_apart_are_not_stacked_or_inset() -> void:
 	var arranged := Layout.arrange(
 		labels_of([row(0, 0, 5), row(1, 0, 5), column(3, 2, 3), row(2, 0, 2) + row(3, 0, 2)])
 	)
 	for i in arranged.size():
-		assert_false(arranged[i].colored, "label %d isn't coloured" % i)
 		assert_eq(arranged[i].stack, 0)
 		assert_eq(arranged[i].stack_size, 1)
 		assert_eq(arranged[i].inset, 0)
 
 
 func test_labels_in_the_same_margin_stack() -> void:
-	# Two runs in the first row, both named in its left margin, and one in the right
+	# The first row twice, once as a ping-pong written out, both named in its left margin,
+	# and once right to left, in the right one
 	var arranged := Layout.arrange(
-		labels_of([row(0, 0, 2), row(0, 3, 5), row(1, 0, 5), row(0, 5, 3), column(1, 2, 3)])
+		labels_of([row(0, 0, 5), row(0, 0, 5) + row(0, 4, 1), row(1, 0, 5), row(0, 5, 0)])
 	)
 	assert_eq([arranged[0].stack, arranged[0].stack_size], [0, 2], "first above")
 	assert_eq([arranged[1].stack, arranged[1].stack_size], [1, 2], "second below")
-	assert_true(arranged[0].colored and arranged[1].colored, "both coloured")
-	assert_false(arranged[2].colored, "another row")
-	# The right-to-left run shares cells with the second run, not its margin
-	assert_eq([arranged[3].stack, arranged[3].stack_size], [0, 1])
-	assert_true(arranged[3].colored, "shares cells")
-	assert_false(arranged[4].colored, "a column elsewhere")
+	assert_eq([arranged[2].stack, arranged[2].stack_size], [0, 1], "another row")
+	assert_eq([arranged[3].stack, arranged[3].stack_size], [0, 1], "the other margin")
 	# Columns named above the same column stack too
-	arranged = Layout.arrange(labels_of([column(2, 0, 1), column(2, 2, 3)]))
+	arranged = Layout.arrange(labels_of([column(2, 0, 3), column(2, 0, 3)]))
 	assert_eq([arranged[0].stack, arranged[1].stack], [0, 1])
-	assert_true(arranged[0].colored and arranged[1].colored)
-	# Runs the other way are named in the other margin
-	arranged = Layout.arrange(labels_of([column(2, 0, 1), column(2, 3, 2)]))
-	assert_false(arranged[0].colored or arranged[1].colored)
+	# Columns the other way are named in the other margin
+	arranged = Layout.arrange(labels_of([column(2, 0, 3), column(2, 3, 0)]))
+	assert_eq([arranged[0].stack_size, arranged[1].stack_size], [1, 1])
 
 
 func test_outlines_around_the_same_cells_are_inset() -> void:
@@ -193,8 +218,6 @@ func test_outlines_around_the_same_cells_are_inset() -> void:
 	assert_eq(arranged[2].inset, 2, "inside both")
 	assert_eq(arranged[3].inset, 0, "shares none with the others")
 	assert_eq(arranged[4].inset, 3, "the same cells again")
-	assert_true(arranged[0].colored and arranged[1].colored and arranged[2].colored)
-	assert_false(arranged[3].colored)
 	# Outlines named at the same frame stack their names
 	assert_eq([arranged[0].stack, arranged[4].stack, arranged[4].stack_size], [0, 1, 2])
 	# An outline that shares no cells with an earlier one takes the first step free
@@ -202,10 +225,9 @@ func test_outlines_around_the_same_cells_are_inset() -> void:
 	assert_eq([arranged[0].inset, arranged[1].inset, arranged[2].inset], [0, 0, 1])
 
 
-func test_runs_and_outlines_sharing_cells_are_coloured() -> void:
+func test_outlines_sharing_cells_with_a_row() -> void:
 	var arranged := Layout.arrange(labels_of([row(0, 0, 5), row(0, 0, 2) + row(1, 0, 2)]))
-	assert_true(arranged[0].colored and arranged[1].colored)
-	assert_eq(arranged[1].inset, 0, "runs aren't outlined, so the outline isn't inset")
+	assert_eq(arranged[1].inset, 0, "rows aren't outlined, so the outline isn't inset")
 
 
 func test_text_is_never_drawn_over_text() -> void:
@@ -246,8 +268,9 @@ func test_tooltip() -> void:
 	assert_eq(AnimationLabels.describe(tooltip_sheet, 1), "1 frame · 7.5 fps · ping-pong")
 
 
-## The main window with a 6×4 sheet: walk in the first row, jump down the fourth column,
-## hurt in the corner and a scattered one, which can't be named
+## The main window with a 6×4 sheet whose first row ends in two empty cells: walk the
+## whole first row, jump down the whole fifth column, hurt in the corner and a scattered
+## one, which can't be named
 func open_main() -> void:
 	Global.document.reset()
 	main = load("res://ui/main/main.tscn").instantiate()
@@ -262,10 +285,11 @@ func open_main() -> void:
 			sheet.set_grid_size(GRID)
 			for y in GRID.y:
 				for x in GRID.x:
-					sheet.set_frame(Vector2i(x, y), make_image(Color.RED))
+					if y > 0 or x < 4:
+						sheet.set_frame(Vector2i(x, y), make_image(Color.RED))
 			sheet.add_animation(SheetAnimation.create("walk", row(0, 0, 3)))
 			sheet.add_animation(SheetAnimation.create("jump", column(4, 1, 3)))
-			sheet.add_animation(SheetAnimation.create("hurt", cells_of([5, 3, 5, 2, 4, 0])))
+			sheet.add_animation(SheetAnimation.create("hurt", cells_of([5, 3, 5, 1])))
 			sheet.add_animation(SheetAnimation.create("scattered", cells_of([0, 3, 2, 1])))
 	)
 	# After the view fits the new frames, the grid starts 100 px from the view's corner
@@ -282,6 +306,10 @@ func test_choices_of_labels() -> void:
 	await open_main()
 	assert_eq(labelled_names(), ["walk", "jump"], "the scattered ones aren't named")
 	assert_eq(AnimationLabels.get_labelled(sheet), [0, 1] as Array[int])
+	var shapes := preview.animation_labels.labels.map(
+		func(label: Dictionary) -> int: return label.shape
+	)
+	assert_eq(shapes, [Layout.Shape.ROW, Layout.Shape.COLUMN], "the empty cells don't count")
 	controls.set_label_shown(0, false)
 	assert_false(sheet.animations[0].show_label)
 	assert_eq(labelled_names(), ["jump"], "hidden")
@@ -300,7 +328,8 @@ func test_choices_of_labels() -> void:
 	eye.pressed.emit()
 	assert_eq(labelled_names(), ["walk", "jump"], "shown again")
 	assert_true(controls.left_out.visible, "says two can't be named")
-	assert_true(controls.left_out.text.begins_with("2 "))
+	assert_eq(controls.left_out.text, "2 more")
+	assert_ne(controls.left_out.tooltip_text, "", "and why")
 	controls.flyover.hide()
 	controls.show_all(false)
 	assert_eq(labelled_names(), [], "all hidden")

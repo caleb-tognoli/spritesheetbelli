@@ -136,8 +136,8 @@ func _build_flyover() -> void:
 	list.add_theme_constant_override("separation", 0)
 	box.add_child(scroll)
 	left_out.theme_type_variation = &"StatusLabel"
-	left_out.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	left_out.custom_minimum_size.x = 220
+	left_out.tooltip_text = "Can't be named: their frames are out of order or not one area"
+	left_out.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(left_out)
 	area.add_child(flyover)
 
@@ -180,9 +180,7 @@ func _fill_flyover() -> void:
 	playing_only_check.set_pressed_no_signal(sheet.label_playing_only)
 	var missing := animations.size() - labelled.size()
 	left_out.visible = missing > 0
-	left_out.text = (
-		tr("%d more can't be named: their frames aren't in a row, a column or one area.") % missing
-	)
+	left_out.text = tr("%d more") % missing
 	# At most as tall as a dozen names, scrolling past them
 	var scroll := list.get_parent() as ScrollContainer
 	scroll.custom_minimum_size.y = minf(list.get_combined_minimum_size().y, 12 * 28)

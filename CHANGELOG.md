@@ -141,20 +141,20 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   first selected frame's, in the grid layout.
 - An Animation menu with these, Edit, Mirror Animation and Delete Animation (of the
   animation chosen in the animation panel), Animation Panel (P) and Onion Skin.
-- The grid names animations: a run along a row in the left margin (the right one when it
-  runs right to left), a run down a column above it (below when it runs upwards), with a
-  bracket where it stops short of the edge; whole rows or columns of a rectangle, and any
-  other connected area such as 8 frames in 6 columns or an L-shape, are outlined with the
-  name on the edge at their first frame. Frames shown twice count once; scattered or
-  out-of-order animations aren't named. Names use the interface's colours; where they
-  overlap, they're shown in their animation's colour, names stack in their margin and
-  outlines around the same frames are drawn further inside, with the playing one on top.
+- The grid names animations: an animation that is exactly one row is named in the left
+  margin (the right one when it runs right to left), one that is exactly one column above
+  it (below when it runs upwards); empty cells don't count. Any other connected run or
+  area, such as part of a row, a rectangle, 8 frames in 6 columns or an L-shape, is
+  outlined with the name on the edge at its first frame. Frames shown twice count once;
+  scattered or out-of-order animations aren't named. Names and outlines are drawn in
+  their animation's colour; where they overlap, names stack in their margin and outlines
+  around the same frames are drawn further inside, with the playing one on top.
   Names are never drawn over each other or over frame numbers, and Fit to View leaves
   room for them.
 - A toolbar button next to the view toggles, and Animation > Animation Labels…, choose
   which animations are named: an eye for each, Show all, Hide all and Only the playing
-  animation. The choices are saved in the project and can be undone. Not in the packed
-  layout.
+  animation, and how many more can't be named. The choices are saved in the project and
+  can be undone. Not in the packed layout.
 - Clicking an animation's name on the grid selects its frames and plays it,
   double-clicking renames it, right-clicking offers Rename, Edit, Speed, Type, Mirror,
   Hide Label and Delete, and hovering highlights its frames and tells its length, speed

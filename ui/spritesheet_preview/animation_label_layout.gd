@@ -4,22 +4,24 @@ extends RefCounted
 ## their cells alone so it can be tested without drawing.
 ##
 ## Frames shown more than once count once, where they're first shown: a ping-pong written
-## out as 0-5, 4-1 or a frame held with 3, 3 is still the run 0-5. An animation gets a
+## out as 0-5, 4-1 or a frame held with 3, 3 is still the row 0-5. An animation gets a
 ## label when those cells, in that order, are:
-## [br]- a run along a row or a column, either way, named in the margin where it starts;
+## [br]- every frame of one row and nothing else, either way along it, named in the margin
+## where it starts; the same for a column, named above or below it. Empty cells don't
+## count, so a row with frames missing is still whole;
 ## [br]- a rectangle of whole rows, or whole columns, in reading order, outlined;
 ## [br]- any area whose every frame touches the one before it or follows it in reading
-## order, such as frames wrapping onto the next row or an L-shape, outlined.
+## order, such as part of a row, frames wrapping onto the next row or an L-shape, outlined.
 ## [br]Other animations are scattered or out of order, and get none.
 
 enum Shape {
 	NONE,  ## Scattered or out of order: no label
-	ROW,  ## A run along a row, named in the margin where it starts
-	COLUMN,  ## A run along a column, named above or below it
-	BLOCK,  ## Whole rows or columns of a rectangle, outlined and named on its edge
+	ROW,  ## A whole row, named in the margin where it starts
+	COLUMN,  ## A whole column, named above or below it
+	BLOCK,  ## Whole rows or columns of a rectangle, outlined and named at its first frame
 	AREA,  ## Any other area, outlined and named at its first frame
 }
-## The margin of the grid a run's label goes in
+## The margin of the grid a row or column's label goes in
 enum Side { NONE, LEFT, RIGHT, TOP, BOTTOM }
 
 
@@ -34,44 +36,33 @@ static func distinct_cells(cells: Array[Vector2i]) -> Array[Vector2i]:
 	return result
 
 
-## What shape the animation of [param cells] makes in a grid of [param grid_size]. Returns
-## [code]{"shape": Shape, "cells": Array[Vector2i], "side": Side, "line": int,
-## "opens": bool, "closes": bool}[/code]: the cells without repeats, and for runs the
-## margin the label goes in, the row or column, and whether a mark shows where the run
-## starts and ends because it doesn't reach the edge of the grid there.
-static func classify(cells: Array[Vector2i], grid_size: Vector2i) -> Dictionary:
+## What shape the animation of [param cells] makes in a grid of [param grid_size], where
+## [param has_frame] tells which cells hold a frame (every one when it isn't given).
+## Returns [code]{"shape": Shape, "cells": Array[Vector2i], "side": Side, "line": int}
+## [/code]: the cells without repeats, and for a row or a column the margin the label goes
+## in and which row or column it is. A frame alone in its row is that whole row.
+static func classify(
+	cells: Array[Vector2i], grid_size: Vector2i, has_frame := Callable()
+) -> Dictionary:
 	var distinct := distinct_cells(cells)
-	var result := {
-		"shape": Shape.NONE,
-		"cells": distinct,
-		"side": Side.NONE,
-		"line": -1,
-		"opens": false,
-		"closes": false,
-	}
+	var result := {"shape": Shape.NONE, "cells": distinct, "side": Side.NONE, "line": -1}
 	var grid := Rect2i(Vector2i.ZERO, grid_size)
 	var inside := func(cell: Vector2i) -> bool: return grid.has_point(cell)
 	if distinct.is_empty() or not distinct.all(inside):
 		return result
+	if not has_frame.is_valid():
+		has_frame = func(_cell: Vector2i) -> bool: return true
 	var first := distinct[0]
-	var last := distinct[-1]
-	var step := _run_step(distinct)
-	if step.y == 0 and step.x != 0:
-		var forward := step.x > 0
-		var near := 0 if forward else grid_size.x - 1
+	var row := _frames_along(Vector2i(0, first.y), Vector2i.RIGHT, grid_size.x, has_frame)
+	var column := _frames_along(Vector2i(first.x, 0), Vector2i.DOWN, grid_size.y, has_frame)
+	if _is_whole(distinct, row):
 		result.shape = Shape.ROW
-		result.side = Side.LEFT if forward else Side.RIGHT
+		result.side = Side.LEFT if distinct == row else Side.RIGHT
 		result.line = first.y
-		result.opens = first.x != near
-		result.closes = last.x != grid_size.x - 1 - near
-	elif step.x == 0 and step.y != 0:
-		var forward := step.y > 0
-		var near := 0 if forward else grid_size.y - 1
+	elif _is_whole(distinct, column):
 		result.shape = Shape.COLUMN
-		result.side = Side.TOP if forward else Side.BOTTOM
+		result.side = Side.TOP if distinct == column else Side.BOTTOM
 		result.line = first.x
-		result.opens = first.y != near
-		result.closes = last.y != grid_size.y - 1 - near
 	elif _is_block(distinct):
 		result.shape = Shape.BLOCK
 	elif _is_area(distinct, grid_size):
@@ -79,18 +70,26 @@ static func classify(cells: Array[Vector2i], grid_size: Vector2i) -> Dictionary:
 	return result
 
 
-## How each cell of a run follows the one before, or zero when they aren't a run. A single
-## cell is a run along its row.
-static func _run_step(cells: Array[Vector2i]) -> Vector2i:
-	if cells.size() == 1:
-		return Vector2i.RIGHT
-	var step := cells[1] - cells[0]
-	if absi(step.x) + absi(step.y) != 1:
-		return Vector2i.ZERO
-	for i in range(2, cells.size()):
-		if cells[i] - cells[i - 1] != step:
-			return Vector2i.ZERO
-	return step
+## The cells holding a frame among the [param count] from [param start] on by [param step]
+static func _frames_along(
+	start: Vector2i, step: Vector2i, count: int, has_frame: Callable
+) -> Array[Vector2i]:
+	var frames: Array[Vector2i] = []
+	for i in count:
+		var cell := start + step * i
+		if has_frame.call(cell):
+			frames.append(cell)
+	return frames
+
+
+## Whether [param cells] are all of [param line] and nothing else, in its order or the
+## other way
+static func _is_whole(cells: Array[Vector2i], line: Array[Vector2i]) -> bool:
+	if cells == line:
+		return true
+	var backwards := line.duplicate()
+	backwards.reverse()
+	return cells == backwards
 
 
 ## Whether [param cells] fill a rectangle of at least two rows and two columns, row after
@@ -125,20 +124,18 @@ static func _is_area(cells: Array[Vector2i], grid_size: Vector2i) -> bool:
 ## How labels that overlap are told apart. [param labels] are results of [method classify]
 ## in the order of their animations. Labels overlap when their animations share cells, or
 ## when they go in the same margin of the same row or column. Returns for each label
-## [code]{"stack": int, "stack_size": int, "inset": int, "colored": bool}[/code]:
+## [code]{"stack": int, "stack_size": int, "inset": int}[/code]:
 ## [br]- its place among the labels in the same margin of its row or column, or among the
 ## outlines named at the same cell, first to last, and how many there are;
 ## [br]- for outlines, how many steps inside the cells it's drawn, so outlines around the
 ## same cells don't hide each other: each takes the first step no earlier outline around
-## any of its cells takes;
-## [br]- whether it overlaps another label, so it's shown in its animation's colour
-## ([member SheetAnimation.color]).
+## any of its cells takes.
 static func arrange(labels: Array[Dictionary]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var cell_sets: Array[Dictionary] = []
 	var slots := {}
 	for i in labels.size():
-		result.append({"stack": 0, "stack_size": 1, "inset": 0, "colored": false})
+		result.append({"stack": 0, "stack_size": 1, "inset": 0})
 		var cells: Dictionary[Vector2i, bool] = {}
 		for cell: Vector2i in labels[i].cells:
 			cells[cell] = true
@@ -152,21 +149,17 @@ static func arrange(labels: Array[Dictionary]) -> Array[Dictionary]:
 		for k in members.size():
 			result[members[k]].stack = k
 			result[members[k]].stack_size = members.size()
-			result[members[k]].colored = members.size() > 1
 	for i in labels.size():
+		if not is_outlined(labels[i]):
+			continue
 		var used: Array[int] = []
 		for j in i:
-			if not _shares_cells(cell_sets[i], cell_sets[j]):
-				continue
-			result[i].colored = true
-			result[j].colored = true
-			if is_outlined(labels[i]) and is_outlined(labels[j]):
+			if is_outlined(labels[j]) and _shares_cells(cell_sets[i], cell_sets[j]):
 				used.append(result[j].inset)
-		if is_outlined(labels[i]):
-			var inset := 0
-			while inset in used:
-				inset += 1
-			result[i].inset = inset
+		var inset := 0
+		while inset in used:
+			inset += 1
+		result[i].inset = inset
 	return result
 
 

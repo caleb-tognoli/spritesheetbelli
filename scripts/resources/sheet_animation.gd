@@ -25,7 +25,7 @@ var fps := 12.0
 var mode := Mode.LOOP
 ## Whether its name is shown on the grid, see [AnimationLabels]
 var show_label := true
-## Its colour on the grid, where its label overlaps another, and in the lists. Until it's
+## Its colour on the grid, where its label is drawn in it, and in the lists. Until it's
 ## added to a [Spritesheet], which picks one far from the other animations', it has
 ## [constant NO_COLOR].
 var color := NO_COLOR
