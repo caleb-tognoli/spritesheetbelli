@@ -57,6 +57,8 @@ const DEFAULTS := {
 	# Whether the animation panel is "open" or "closed". "auto" keeps it closed until the
 	# sheet has animations, then opens it once.
 	&"animation_panel": "auto",
+	# Whether the chosen animation's frames are also shown as text, see AnimationDetail
+	&"animation_frames_text": false,
 	&"show_history": false,
 	&"show_sprites": false,
 	# The Sprites panel lists frames under their row rather than their animation
@@ -84,6 +86,7 @@ const REMEMBERED: Array[StringName] = [
 	&"animation_preview_width",
 	&"animation_list_width",
 	&"animation_panel",
+	&"animation_frames_text",
 	&"show_history",
 	&"show_sprites",
 	&"sprites_by_row",

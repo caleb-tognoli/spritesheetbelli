@@ -103,6 +103,8 @@ func _ready() -> void:
 	tree.gui_input.connect(_on_tree_input)
 	tree.focus_entered.connect(_highlight_all)
 	tree.focus_exited.connect(_highlight_all)
+	# The selected frames are dragged, in the listed order, e.g. into an animation
+	tree.set_drag_forwarding(_get_drag_data_of_tree, Callable(), Callable())
 	Global.spritesheet.updated.connect(refresh)
 	visibility_changed.connect(refresh)
 	if preview:
@@ -247,6 +249,15 @@ func get_selected_coords() -> Array[Vector2i]:
 			coords.append(item.get_metadata(0))
 		item = tree.get_next_selected(item)
 	return coords
+
+
+## The selected frames as dragged, see [method AnimationTimeline.frames_drag_data]
+func _get_drag_data_of_tree(_at: Vector2) -> Variant:
+	var coords := get_selected_coords()
+	if coords.is_empty():
+		return null
+	tree.set_drag_preview(AnimationTimeline.drag_preview(Global.spritesheet, coords))
+	return AnimationTimeline.frames_drag_data(coords)
 
 
 ## The frame shrunk to fit a square, in the middle of it, so names line up

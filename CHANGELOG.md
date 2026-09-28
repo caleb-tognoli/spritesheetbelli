@@ -159,6 +159,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   double-clicking renames it, right-clicking offers Rename, Edit, Speed, Type, Mirror,
   Hide Label and Delete, and hovering highlights its frames and tells its length, speed
   and type.
+- The animation panel's details show the chosen animation's frames on a timeline: each
+  frame with its picture, its place, the part of its name that differs from the others
+  and how long it's shown (×1.0). Frames are dragged into another order, taken out with ×
+  or Delete, picked with Ctrl, Shift or a box, and added by dragging them from the sheet
+  or the Sprites panel, several at once, or with Add selected. Every change is a step to
+  undo. The name, speed and type share one line above it; the typed frames (`0-3, 4*2`)
+  are one button away.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -187,13 +194,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The right-click menu groups flipping and rotating under Transform, and has Align in
   Cell and Rows submenus.
 - The animation player has back to start, previous frame, play/pause and next frame.
-- Animation frames are typed as sprite numbers and ranges, such as 0-3, 5, 9-7, or by
-  name: idle, walk_0-walk_3, "jump up"*2. Frames with a name of their own are shown by
-  it. Edit… next to them opens Edit Animation: sprites are dragged (or double-clicked)
-  into a timeline, where frames are dragged or moved with their arrows, removed, and each
-  gets how long it's shown, with a preview. A line shows where a dragged frame will go,
-  and closing with changes (Cancel, the close button or Escape) asks before discarding
-  them, keeping the window open while it asks.
+- Animation frames can also be typed as sprite numbers and ranges, such as 0-3, 5, 9-7,
+  or by name: idle, walk_0-walk_3, "jump up"*2. Frames with a name of their own are
+  shown by it.
 - Tooltips of linked frames show the file's path.
 - Clicking a setting's label opens, toggles or focuses its control.
 - Locked cells show a lock instead of diagonal lines.

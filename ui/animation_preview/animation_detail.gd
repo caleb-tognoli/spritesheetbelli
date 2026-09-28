@@ -1,15 +1,19 @@
 class_name AnimationDetail
 extends ScrollContainer
-## Where the animation chosen in the animation panel is edited: its name, which frames
-## (sprite numbers, names and ranges such as "0-3, 5, idle", or put together in
-## [AnimationFramesEditor]), how fast and how it repeats. It's also mirrored or deleted
-## here. Every change can be undone.
+## Where the animation chosen in the animation panel is edited: its name, speed and type
+## on one line, and its frames below on an [AnimationTimeline], where they're dragged into
+## place, taken out and timed. Frames of the sheet are added by dragging them there, or
+## with Add selected. Frames as text shows them typed instead: sprite numbers, names and
+## ranges such as "0-3, 5, idle". It's also mirrored or deleted here. Every change can be
+## undone.
 
 ## A mirrored copy was added at [param index]
 signal animation_added(index: int)
 
 const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
 const MIRROR_ICON := preload("res://assets/icons/MirrorX.svg")
+const ADD_ICON := preload("res://assets/icons/Add.svg")
+const TEXT_ICON := preload("res://assets/icons/FrameNumbers.svg")
 const MODE_ICONS := {
 	SheetAnimation.Mode.ONCE: preload("res://assets/icons/PlayStart.svg"),
 	SheetAnimation.Mode.LOOP: preload("res://assets/icons/Loop.svg"),
@@ -19,23 +23,33 @@ const MODE_ICONS := {
 const MODES: Array[SheetAnimation.Mode] = [
 	SheetAnimation.Mode.ONCE, SheetAnimation.Mode.LOOP, SheetAnimation.Mode.PING_PONG
 ]
+const SEPARATION := 6
 
+## Where the frames Add selected adds are selected
+var preview: SpritesheetPreview:
+	set = set_preview
 var delete_button := Button.new()
 var mirror_button := Button.new()
 var name_edit := LineEdit.new()
-var frames_edit := LineEdit.new()
-## Opens [member frames_editor] to put the frames together by dragging them
-var edit_frames_button := Button.new()
-var frames_editor := AnimationFramesEditor.new()
-var frames_info := Label.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
+var timeline := AnimationTimeline.new()
+## Adds the frames selected in the sheet after the last frame
+var add_button := Button.new()
+## Shows or hides the frames as text, remembered in the animation_frames_text setting
+var frames_text_button := Button.new()
+var frames_edit := LineEdit.new()
+var frames_info := Label.new()
 ## Says what to do while no animation is chosen
 var empty_hint := Label.new()
 
 ## The animation edited, or -1
 var _index := -1
-var _properties := GridContainer.new()
+var _margin := MarginContainer.new()
+var _content := VBoxContainer.new()
+var _fields := HBoxContainer.new()
+## The frames as text, and what they come to
+var _frames_text := HBoxContainer.new()
 var _updating := false
 ## The name and frames last shown, to tell them from what's typed
 var _shown_name := ""
@@ -45,15 +59,14 @@ var _shown_frames := ""
 func _init() -> void:
 	# Never so wide that the panel makes the sidebars narrower: it scrolls instead
 	horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	var margin := MarginContainer.new()
-	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	for side: String in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + side, 8)
-	margin.add_theme_constant_override("margin_bottom", 6)
-	add_child(margin)
+		_margin.add_theme_constant_override("margin_" + side, 8)
+	_margin.add_theme_constant_override("margin_bottom", 6)
+	add_child(_margin)
 	var box := VBoxContainer.new()
-	margin.add_child(box)
+	_margin.add_child(box)
 
 	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -61,44 +74,27 @@ func _init() -> void:
 	empty_hint.theme_type_variation = &"StatusLabel"
 	box.add_child(empty_hint)
 
-	_properties.columns = 2
-	_properties.add_theme_constant_override("h_separation", 12)
-	_properties.add_theme_constant_override("v_separation", 6)
-	box.add_child(_properties)
-	name_edit.placeholder_text = "walk"
-	var name_row := HBoxContainer.new()
-	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_row.add_child(name_edit)
-	mirror_button.icon = MIRROR_ICON
-	mirror_button.tooltip_text = "Mirrored copy: the frames flipped into a new row"
-	name_row.add_child(mirror_button)
-	delete_button.icon = REMOVE_ICON
-	delete_button.tooltip_text = "Delete the animation"
-	name_row.add_child(delete_button)
-	_add_property("Name", name_row)
+	_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content.add_theme_constant_override("separation", SEPARATION)
+	box.add_child(_content)
+	_build_fields()
+	_content.add_child(_fields)
 
-	# Speed and type share a row
-	var timing := HBoxContainer.new()
-	timing.add_theme_constant_override("separation", 12)
-	fps_spin.min_value = 0.5
-	fps_spin.max_value = 120
-	fps_spin.step = 0.5
-	fps_spin.suffix = "fps"
-	fps_spin.tooltip_text = "Frames per second"
-	fps_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	timing.add_child(fps_spin)
-	var type_label := Label.new()
-	type_label.text = "Type"
-	timing.add_child(type_label)
-	for each_mode in MODES:
-		mode_option.add_icon_item(
-			MODE_ICONS[each_mode], SheetAnimation.MODE_NAMES[each_mode], each_mode
-		)
-	mode_option.tooltip_text = "Once plays to the end, Loop starts over, Ping-pong plays back"
-	mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	LabelLink.link(type_label, mode_option)
-	timing.add_child(mode_option)
-	_add_property("Speed", timing)
+	var frames_row := HBoxContainer.new()
+	frames_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	frames_row.add_theme_constant_override("separation", SEPARATION)
+	timeline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frames_row.add_child(timeline)
+	add_button.text = "Add selected"
+	add_button.icon = ADD_ICON
+	add_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	add_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_button.custom_minimum_size.x = 76
+	add_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	add_button.tooltip_text = "Add the frames selected in the sheet after the last frame"
+	frames_row.add_child(add_button)
+	_content.add_child(frames_row)
 
 	frames_edit.placeholder_text = "0-7"
 	frames_edit.tooltip_text = (
@@ -107,44 +103,54 @@ func _init() -> void:
 		+ 'Names with spaces go in quotes: "jump up", walk_0-walk_3\n'
 		+ "Add *2 to show a frame twice as long: 0-3, 4*2, 5*0.5"
 	)
-	edit_frames_button.text = "Edit…"
-	edit_frames_button.tooltip_text = "Drag sprites into place and set how long each is shown"
-	var frames_row := HBoxContainer.new()
 	frames_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frames_row.add_child(frames_edit)
-	frames_row.add_child(edit_frames_button)
-	_add_property("Frames", frames_row)
+	frames_edit.size_flags_stretch_ratio = 2
+	_frames_text.add_theme_constant_override("separation", 12)
+	_frames_text.add_child(frames_edit)
 	frames_info.theme_type_variation = &"StatusLabel"
 	frames_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	frames_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	frames_info.custom_minimum_size.x = 120
-	_add_property("", frames_info)
+	_frames_text.add_child(frames_info)
+	_content.add_child(_frames_text)
 
 	delete_button.pressed.connect(remove_animation)
 	mirror_button.pressed.connect(mirror_animation)
+	add_button.pressed.connect(add_selected)
+	frames_text_button.toggled.connect(show_frames_text)
 	name_edit.text_submitted.connect(func(_text: String) -> void: _apply())
 	name_edit.focus_exited.connect(_apply)
 	frames_edit.text_submitted.connect(func(_text: String) -> void: _apply_frames())
 	frames_edit.focus_exited.connect(_apply_frames)
-	edit_frames_button.pressed.connect(edit_frames)
-	frames_editor.frames_chosen.connect(
-		func(text: String) -> void:
-			frames_edit.text = text
-			_apply_frames()
-	)
-	add_child(frames_editor)
 	fps_spin.value_changed.connect(func(_value: float) -> void: _apply())
 	mode_option.item_selected.connect(func(_item: int) -> void: _apply())
+	timeline.frames_edited.connect(_on_frames_edited)
+	resized.connect(_fit_timeline)
+	_fields.resized.connect(_fit_timeline)
 
 
 func _ready() -> void:
 	fps_spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	SpinScroll.enable(fps_spin)
+	frames_text_button.set_pressed_no_signal(Settings.get_value(&"animation_frames_text"))
+	_frames_text.visible = frames_text_button.button_pressed
+	_update_add_button()
 	show_animation(_index)
+
+
+func set_preview(value: SpritesheetPreview) -> void:
+	preview = value
+	if preview:
+		preview.selection_changed.connect(_update_add_button)
+	_update_add_button()
 
 
 ## Shows the animation at [param index] to edit, or a hint with -1
 func show_animation(index: int) -> void:
-	_index = index if index < Global.spritesheet.animations.size() else -1
+	index = index if index < Global.spritesheet.animations.size() else -1
+	if index != _index:
+		timeline.select([])
+	_index = index
 	refresh()
 
 
@@ -160,13 +166,22 @@ func focus_name() -> void:
 		name_edit.select_all()
 
 
+## Shows the frames as text under the timeline, or hides them, and remembers it
+func show_frames_text(shown: bool) -> void:
+	frames_text_button.set_pressed_no_signal(shown)
+	_frames_text.visible = shown
+	if Settings.get_value(&"animation_frames_text") != shown:
+		Settings.set_value(&"animation_frames_text", shown)
+	_fit_timeline()
+
+
 ## Shows the animation's current name, frames, speed and type
 func refresh() -> void:
 	var sheet := Global.spritesheet
 	if _index >= sheet.animations.size():
 		_index = -1
 	var has_animation := _index >= 0
-	_properties.visible = has_animation
+	_content.visible = has_animation
 	empty_hint.visible = not has_animation
 	if not has_animation:
 		empty_hint.text = (
@@ -188,7 +203,14 @@ func refresh() -> void:
 	_show_frames_info(animation, sheet)
 	fps_spin.set_value_no_signal(animation.fps)
 	mode_option.select(mode_option.get_item_index(animation.mode))
+	timeline.show_frames(sheet, animation.cells, animation.durations)
 	_updating = false
+
+
+## Adds the frames selected in the sheet, in reading order, after the last frame
+func add_selected() -> void:
+	if _index >= 0 and preview:
+		timeline.insert_cells(preview.get_selected_coords())
 
 
 ## Adds a mirrored copy of the animation
@@ -202,30 +224,76 @@ func mirror_animation() -> void:
 		animation_added.emit(added)
 
 
-## Opens the animation's frames in [member frames_editor]
-func edit_frames() -> void:
-	if _index < 0:
-		return
-	var animation := Global.spritesheet.animations[_index]
-	var durations: Array[float] = []
-	for i in animation.cells.size():
-		durations.append(animation.get_duration(i))
-	frames_editor.open(
-		Global.spritesheet,
-		animation.cells,
-		durations,
-		animation.fps,
-		animation.mode,
-		_labels(),
-		animation.name
-	)
-
-
 func remove_animation() -> void:
 	if _index >= 0:
 		Global.document.perform(
 			"Delete animation", Global.spritesheet.remove_animation.bind(_index)
 		)
+
+
+## The name, speed and type on one line, then the buttons
+func _build_fields() -> void:
+	_fields.add_theme_constant_override("separation", SEPARATION)
+	name_edit.placeholder_text = "walk"
+	name_edit.tooltip_text = "Name"
+	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_edit.custom_minimum_size.x = 80
+	_fields.add_child(name_edit)
+	fps_spin.min_value = 0.5
+	fps_spin.max_value = 120
+	fps_spin.step = 0.5
+	fps_spin.suffix = "fps"
+	fps_spin.tooltip_text = "Speed, in frames per second"
+	_fields.add_child(fps_spin)
+	for each_mode in MODES:
+		mode_option.add_icon_item(
+			MODE_ICONS[each_mode], SheetAnimation.MODE_NAMES[each_mode], each_mode
+		)
+	mode_option.tooltip_text = "Once plays to the end, Loop starts over, Ping-pong plays back"
+	_fields.add_child(mode_option)
+	frames_text_button.icon = TEXT_ICON
+	frames_text_button.toggle_mode = true
+	frames_text_button.tooltip_text = "Frames as text: numbers, names and ranges like 0-3, 5*2"
+	mirror_button.icon = MIRROR_ICON
+	mirror_button.tooltip_text = "Mirrored copy: the frames flipped into a new row"
+	delete_button.icon = REMOVE_ICON
+	delete_button.tooltip_text = "Delete the animation"
+	for button: Button in [frames_text_button, mirror_button, delete_button]:
+		button.theme_type_variation = &"ToolbarButton"
+		button.focus_mode = Control.FOCUS_NONE
+		_fields.add_child(button)
+
+
+func _update_add_button() -> void:
+	add_button.disabled = preview == null or preview.get_selected_coords().is_empty()
+
+
+## Gives the timeline the height the other rows leave, so its tiles fit a short panel
+func _fit_timeline() -> void:
+	var used := (
+		_margin.get_theme_constant(&"margin_top")
+		+ _margin.get_theme_constant(&"margin_bottom")
+		+ _fields.get_combined_minimum_size().y
+		+ SEPARATION
+	)
+	if _frames_text.visible:
+		used += _frames_text.get_combined_minimum_size().y + SEPARATION
+	if get_h_scroll_bar().visible:
+		used += get_h_scroll_bar().size.y
+	timeline.fit_height(size.y - used)
+
+
+func _on_frames_edited(
+	action_name: String, cells: Array[Vector2i], durations: Array[float]
+) -> void:
+	if _index < 0:
+		return
+	_edit(
+		func(animation: SheetAnimation) -> void:
+			animation.cells = cells
+			animation.durations = durations,
+		action_name
+	)
 
 
 func _apply() -> void:
@@ -330,18 +398,10 @@ func _frame_names() -> Dictionary:
 	return names
 
 
-## Changes the animation with [param change] as one undoable step
-func _edit(change: Callable) -> void:
+## Changes the animation with [param change] as one undoable step called
+## [param action_name]
+func _edit(change: Callable, action_name := "Edit animation") -> void:
 	var sheet := Global.spritesheet
 	var animation := sheet.animations[_index]
 	change.call(animation)
-	Global.document.perform("Edit animation", sheet.set_animation.bind(_index, animation))
-
-
-func _add_property(text: String, control: Control) -> void:
-	var label := Label.new()
-	label.text = text
-	_properties.add_child(label)
-	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	LabelLink.link(label, control)
-	_properties.add_child(control)
+	Global.document.perform(action_name, sheet.set_animation.bind(_index, animation))

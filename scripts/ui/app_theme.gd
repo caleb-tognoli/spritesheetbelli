@@ -257,6 +257,13 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("clear_button_color", "LineEdit", p.text)
 	theme.set_color("clear_button_color_pressed", "LineEdit", p.accent)
 	theme.set_color("selection_color", "LineEdit", Color(p.accent, 0.35))
+	# Compact, and as narrow as its place, for how long each frame of a timeline is shown
+	var compact := Vector4(4, 1, 4, 1)
+	theme.set_type_variation(&"TimelineDurationEdit", "LineEdit")
+	theme.set_stylebox("normal", &"TimelineDurationEdit", _box(p.raised, 4, compact, p.border, 1))
+	theme.set_stylebox("focus", &"TimelineDurationEdit", _box(p.raised, 4, compact, p.accent, 1))
+	theme.set_font_size("font_size", &"TimelineDurationEdit", 12)
+	theme.set_constant("minimum_character_width", &"TimelineDurationEdit", 0)
 	for color: StringName in [&"up_icon_modulate", &"down_icon_modulate"]:
 		theme.set_color(color, "SpinBox", p.text)
 	for color: StringName in [&"up_hover_icon_modulate", &"down_hover_icon_modulate"]:
@@ -285,16 +292,31 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		"panel", &"PreviewOverlay", _box(Color(p.surface, 0.9), 6, Vector4(4, 3, 4, 3), p.border, 1)
 	)
 	theme.set_type_variation(&"PreviewOverlay", "PanelContainer")
-	# The frame editor: the sheet's sprites, and the timeline of frames with cards that
-	# light up when hovered
+	# An animation's timeline of frames, with tiles that light up when hovered or selected
 	for entry: Array in [
-		[&"EditorSection", _box(p.background, 6, Vector4(8, 8, 8, 8))],
-		[&"TimelinePanel", _box(p.background, 6, Vector4(8, 8, 8, 8), Color(p.accent, 0.45), 1)],
-		[&"TimelineFrame", _box(p.raised, 6, Vector4(4, 2, 4, 6), p.border, 1)],
-		[&"TimelineFrameHover", _box(p.raised, 6, Vector4(4, 2, 4, 6), p.accent, 1)],
+		[&"TimelinePanel", _box(p.background, 6, Vector4(3, 3, 3, 3), p.border, 1)],
+		[&"TimelineFrame", _box(p.raised, 6, Vector4(2, 2, 2, 2), p.border, 1)],
+		[&"TimelineFrameHover", _box(p.raised, 6, Vector4(2, 2, 2, 2), p.accent, 1)],
+		[&"TimelineFrameSelected", _box(p.selected_focus, 6, Vector4(2, 2, 2, 2), p.accent, 1)],
 	]:
 		theme.set_stylebox("panel", entry[0], entry[1])
 		theme.set_type_variation(entry[0], "PanelContainer")
+	# Over a frame's picture: its place in the animation and the button to take it out
+	theme.set_type_variation(&"TimelineBadge", "Label")
+	theme.set_stylebox(
+		"normal", &"TimelineBadge", _box(Color(p.surface, 0.85), 3, Vector4(3, 0, 3, 0))
+	)
+	theme.set_font_size("font_size", &"TimelineBadge", 11)
+	theme.set_color("font_color", &"TimelineBadge", p.text)
+	theme.set_type_variation(&"TimelineRemoveButton", "Button")
+	var remove_margins := Vector4(1, 1, 1, 1)
+	for state: String in ["normal", "focus", "disabled"]:
+		theme.set_stylebox(
+			state, &"TimelineRemoveButton", _box(Color(p.surface, 0.85), 3, remove_margins)
+		)
+	for state: String in ["hover", "pressed", "hover_pressed"]:
+		theme.set_stylebox(state, &"TimelineRemoveButton", _box(p.hover, 3, remove_margins))
+	theme.set_constant("icon_max_width", &"TimelineRemoveButton", 12)
 	# Floating panels of fields look like menus, with room around the fields
 	theme.set_stylebox(
 		"panel", "PopupPanel", _box(p.surface, 6, Vector4(12, 10, 12, 10), p.border, 1)

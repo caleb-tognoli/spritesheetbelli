@@ -110,6 +110,15 @@ func _init() -> void:
 func setup(sheet_preview: SpritesheetPreview) -> void:
 	preview = sheet_preview
 	animation_preview.preview = preview
+	detail.preview = preview
+	# Frames dragged out of the sheet go to the timeline of the animation edited
+	preview.frames_dragged_out.connect(
+		func(coords: Array[Vector2i]) -> void:
+			force_drag(
+				AnimationTimeline.frames_drag_data(coords),
+				AnimationTimeline.drag_preview(Global.spritesheet, coords)
+			)
+	)
 	_split = get_parent() as SplitContainer
 	_split.drag_ended.connect(_on_height_dragged)
 	_split.dragged.connect(func(_offset: int) -> void: _clamp_height())
@@ -149,6 +158,7 @@ func set_expanded(expanded: bool, remember := true) -> void:
 	animation_preview.player.play_hidden = not expanded
 	apply_height()
 	_update_header()
+	_update_drag_out()
 	Actions.refresh()
 
 
@@ -176,6 +186,7 @@ func select_animation(index: int) -> void:
 	list.ensure_current_is_visible()
 	animation_preview.select_animation(index)
 	detail.show_animation(index)
+	_update_drag_out()
 
 
 ## Index of the chosen animation, or -1 for the selected frames
@@ -211,6 +222,7 @@ func refresh() -> void:
 	animation_preview.select_animation(_selected)
 	detail.show_animation(_selected)
 	_open_when_animated()
+	_update_drag_out()
 
 
 ## The height the panel gets: the remembered one, within its limits
@@ -240,6 +252,12 @@ func _open_when_animated() -> void:
 		and not Global.spritesheet.animations.is_empty()
 	):
 		set_expanded(true)
+
+
+## Frames are dragged out of the sheet while there's a timeline to drop them on
+func _update_drag_out() -> void:
+	if preview:
+		preview.drag_frames_out = _expanded and detail.get_animation_index() >= 0
 
 
 func _refresh_selection_title() -> void:

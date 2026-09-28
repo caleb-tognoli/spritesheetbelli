@@ -31,6 +31,9 @@ signal hover_changed(coord: Vector2i)
 signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vector2i)
 ## The user dragged the pivot of frames to [param pivot], in unscaled pixels of the frame
 signal pivot_requested(coords: Array[Vector2i], pivot: Vector2)
+## The user dragged frames out of the preview, to drop them elsewhere, see
+## [member drag_frames_out]
+signal frames_dragged_out(coords: Array[Vector2i])
 
 const HOVER_COLOR := Color(1, 1, 1, 0.08)
 const CHECKER_COLORS: Array[Color] = [Color(0.36, 0.36, 0.36), Color(0.42, 0.42, 0.42)]
@@ -63,6 +66,10 @@ enum Tool {
 		able_to_move_frames = value
 		if not value:
 			tool = Tool.SELECT
+## When on, the selected frames dragged out of the preview, moved or from a box started on
+## one of them, stop there and go with [signal frames_dragged_out] instead, e.g. into an
+## animation's timeline
+var drag_frames_out := false
 var tool := Tool.SELECT:
 	set(value):
 		if not able_to_move_frames:
@@ -567,6 +574,8 @@ func _click(cell: Vector2i, event: InputEventMouseButton) -> void:
 
 
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
+	if _drag_out(event.position):
+		return
 	_set_hovered_cell(get_cell_at_screen_position(event.position))
 	if _drag_copy != event.alt_pressed and _drag in [Drag.PENDING, Drag.MOVE]:
 		_drag_copy = event.alt_pressed
@@ -599,6 +608,22 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 			if offset != _move_offset:
 				_move_offset = offset
 				queue_redraw()
+
+
+## Hands the selected frames over with [signal frames_dragged_out] when they're dragged
+## out of the preview, see [member drag_frames_out]. Whether they were.
+func _drag_out(screen_position: Vector2) -> bool:
+	if not drag_frames_out or get_viewport_rect().has_point(screen_position):
+		return false
+	var carried := _drag == Drag.MOVE
+	if _drag == Drag.BOX:
+		carried = not _drag_additive and is_selected(_drag_start_cell)
+	if not carried or _selected.is_empty():
+		return false
+	_move_offset = Vector2i.ZERO
+	_end_drag()
+	frames_dragged_out.emit(get_selected_coords())
+	return true
 
 
 ## Turns a pending press into a box selection, a move or moving a pivot

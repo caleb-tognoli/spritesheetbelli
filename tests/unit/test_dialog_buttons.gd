@@ -49,10 +49,9 @@ func test_every_dialog_has_its_buttons_at_the_right() -> void:
 	dialogs.append_array(Notify.find_children("*", "AcceptDialog", true, false))
 	var checked := 0
 	for dialog: AcceptDialog in dialogs:
-		# The system's own file dialogs, the ones inside Godot's controls, and Edit
-		# Animation's, which is going away
+		# The system's own file dialogs, and the ones inside Godot's controls
 		var internal := not dialog in dialog.get_parent().get_children()
-		if dialog is FileDialog or internal or dialog.get_parent() is AnimationFramesEditor:
+		if dialog is FileDialog or internal:
 			continue
 		checked += 1
 		var row := dialog.get_ok_button().get_parent() as HBoxContainer

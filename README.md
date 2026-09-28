@@ -45,20 +45,20 @@ A small desktop tool made with Godot.</p>
   screen.
 - **Animations:** make named animations from a row, a column or the selected frames in a
   keystroke (F2, Shift+F2, Ctrl+F2), named after what their frames' names share, or from a
-  range of cells, each with its own speed and loop, ping-pong or play-once, and frames that are held
-  longer (`0-3, 4*2`), typed by number or name or put together in Edit Animation, where
-  sprites are dragged into place and each gets how long it's shown; mirror walk_right
-  into walk_left; play them in the animation panel under the sheet, with onion skin,
-  zoom, a scrub bar and a choice of background, and export them; only animations are
-  exported as animations. Animations are named on the grid, next to or around their
-  frames; the tag button in the toolbar chooses which. Click a name to play it,
-  double-click to rename it, right-click for more.
-- **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names like
-  `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or its
-  pages as images; or an animation as an animated GIF. The Export button sits at the top of the sidebar with the size of what it
-  writes, and the Export dialog shows only the settings that matter for what you export.
-  Padding, spacing and edge extrusion are set in the sidebar, where the preview shows
-  them, for the grid and the atlas.
+  range of cells, each with its own speed and loop, ping-pong or play-once. Put their
+  frames together on a timeline by dragging them from the sheet or the Sprites panel,
+  reordering them and setting how long each is shown, or type them by number or name
+  (`0-3, 4*2`); mirror walk_right into walk_left; play them in the animation panel under
+  the sheet, with onion skin, zoom, a scrub bar and a choice of background, and export
+  them; only animations are exported as animations. Animations are named on the grid, next
+  to or around their frames; the tag button in the toolbar chooses which. Click a name to
+  play it, double-click to rename it, right-click for more.
+- **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names
+  like `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or
+  its pages as images; or an animation as an animated GIF. The Export button sits at the
+  top of the sidebar with the size of what it writes, and the Export dialog shows only the
+  settings that matter for what you export. Padding, spacing and edge extrusion are set in
+  the sidebar, where the preview shows them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
   Godot `SpriteFrames` resource with the sheet's animations (or every frame in one
   "default" animation when there are none). Packed atlases can come with TexturePacker

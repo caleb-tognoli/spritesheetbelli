@@ -8,6 +8,7 @@ const PANEL_SETTINGS: Array[StringName] = [
 	&"animation_panel_height",
 	&"animation_preview_width",
 	&"animation_list_width",
+	&"animation_frames_text",
 	&"animation_background",
 	&"animation_background_color",
 	&"pixel_perfect_zoom",
@@ -421,106 +422,3 @@ func test_frames_are_shown_by_name_when_they_have_one() -> void:
 		"names and numbers both read"
 	)
 	assert_false("names_button" in window)
-
-
-func test_frames_editor() -> void:
-	var sheet := Global.spritesheet
-	var window: AnimationDetail = panel.detail
-	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
-	panel.new_button.pressed.emit()
-	window.edit_frames_button.pressed.emit()
-	var editor := window.frames_editor
-	assert_true(editor.visible)
-	assert_eq(editor.title, "Edit Animation - animation")
-	assert_ne(editor.get_ok_button().icon, null, "Apply has an icon")
-	assert_false("clear_button" in editor)
-	assert_eq(editor.palette.get_child_count(), 3, "every sprite to pick from")
-	assert_eq(editor.timeline.get_child_count(), 2, "the animation's frames")
-	await get_tree().process_frame
-	# A sprite dropped before the first frame, then the last frame moved to the front
-	var first := editor.timeline.get_child(0) as Control
-	editor._drop_at(Vector2(1, 1), {"cell": Vector2i(2, 0)}, first)
-	assert_eq(editor.get_frames_text(), "2, 0, 1")
-	editor.move_frame(2, 0)
-	assert_eq(editor.get_frames_text(), "1, 2, 0")
-	editor.set_duration(0, 2.0)
-	editor.remove_frame(2)
-	assert_eq(editor.get_frames_text(), "1*2, 2")
-	editor.get_ok_button().pressed.emit()
-	assert_eq(window.frames_edit.text, "1*2, 2", "written in the frames field")
-	assert_eq(sheet.animations[0].cells, [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
-	assert_eq(sheet.animations[0].durations, [2.0, 1.0] as Array[float])
-	Global.document.undo()
-	assert_eq(sheet.animations[0].cells.size(), 2, "one undoable step")
-	assert_eq(sheet.animations[0].cells[0], Vector2i(0, 0))
-
-
-func test_frames_editor_cards() -> void:
-	var window: AnimationDetail = panel.detail
-	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
-	panel.new_button.pressed.emit()
-	window.edit_frames_button.pressed.emit()
-	var editor := window.frames_editor
-	await get_tree().process_frame
-	var card := editor.timeline.get_child(0) as PanelContainer
-	var buttons := card.get_child(0).get_child(0) as HBoxContainer
-	var left := buttons.get_child(0) as Button
-	var right := buttons.get_child(1) as Button
-	var remove := buttons.get_child(buttons.get_child_count() - 1) as Button
-	assert_true(left.disabled, "the first can't go further left")
-	right.pressed.emit()
-	assert_eq(editor.get_frames_text(), "1, 0", "moved right")
-	card = editor.timeline.get_child(1) as PanelContainer
-	card.mouse_entered.emit()
-	assert_eq(card.theme_type_variation, &"TimelineFrameHover", "lit up when hovered")
-	card.mouse_exited.emit()
-	assert_eq(card.theme_type_variation, &"TimelineFrame")
-	assert_true(editor._can_drop_at(Vector2(1, 1), {"cell": Vector2i(2, 0)}, card))
-	assert_true(editor._marker.visible, "shows where it would go")
-	var ghost := editor._drag_preview(Vector2i(2, 0))
-	assert_true(ghost.get_child(0).get_combined_minimum_size().x > 0, "a picture to drag")
-	ghost.free()
-	remove = (
-		(editor.timeline.get_child(0) as Control).get_child(0).get_child(0).get_child(3) as Button
-	)
-	remove.pressed.emit()
-	assert_eq(editor.get_frames_text(), "0")
-
-	# Cancelling or closing with changes asks first, without closing in between
-	var chosen := [false]
-	var hidden := [0]
-	editor.frames_chosen.connect(func(_text: String) -> void: chosen[0] = true)
-	editor.visibility_changed.connect(
-		func() -> void:
-			if not editor.visible:
-				hidden[0] += 1
-	)
-	editor.get_cancel_button().pressed.emit()
-	await get_tree().process_frame
-	assert_true(editor.discard_dialog.visible, "asks first")
-	editor.discard_dialog.get_cancel_button().pressed.emit()
-	await get_tree().process_frame
-	editor.close_requested.emit()
-	await get_tree().process_frame
-	assert_true(editor.discard_dialog.visible, "the close button asks too")
-	editor.discard_dialog.get_cancel_button().pressed.emit()
-	await get_tree().process_frame
-	assert_eq(hidden[0], 0, "never closed while asking")
-	assert_true(editor.visible)
-	assert_eq(editor.get_frames_text(), "0", "the changes are kept")
-	editor.get_cancel_button().pressed.emit()
-	await get_tree().process_frame
-	editor.discard_dialog.get_ok_button().pressed.emit()
-	assert_false(editor.visible, "discarded")
-	assert_false(chosen[0], "nothing applied")
-	assert_eq(Global.spritesheet.animations[0].cells.size(), 2)
-
-
-func test_frames_editor_closes_without_asking_when_unchanged() -> void:
-	var window: AnimationDetail = panel.detail
-	panel.new_button.pressed.emit()
-	window.edit_frames_button.pressed.emit()
-	var editor := window.frames_editor
-	editor.close_requested.emit()
-	assert_false(editor.visible)
-	assert_false(editor.discard_dialog.visible)
