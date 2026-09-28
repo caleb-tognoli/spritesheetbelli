@@ -40,11 +40,12 @@ func test_parts_inside_a_sprite_belong_to_it() -> void:
 	assert_eq(rows, [[Rect2i(2, 2, 20, 20)]])
 
 
-func test_opaque_background_is_removed() -> void:
+func test_finds_sprites_on_a_removed_background() -> void:
 	var img := packed_sheet()
-	var keyed := Image.create_empty(64, 48, false, Image.FORMAT_RGBA8)
-	keyed.fill(Color.MAGENTA)
-	keyed.blend_rect(img, Rect2i(0, 0, 64, 48), Vector2i.ZERO)
+	var opaque := Image.create_empty(64, 48, false, Image.FORMAT_RGBA8)
+	opaque.fill(Color.MAGENTA)
+	opaque.blend_rect(img, Rect2i(0, 0, 64, 48), Vector2i.ZERO)
+	var keyed := SheetBackground.remove(opaque, SheetBackground.detect(opaque))
 	var rows := SpriteDetector.detect(keyed)
 	assert_eq(rows.size(), 2)
 	var sheet := SpriteDetector.to_spritesheet(keyed, rows)

@@ -18,7 +18,10 @@ A small desktop tool made with Godot.</p>
   aren't packed edge to edge, and pixels left over are pointed out. The window starts in
   Grid or Find sprites to match the sheet's layout, unless a data file comes with the
   image. The empty cells of an added sheet are locked so added sprites skip them, unless
-  "Lock empty cells" is unticked.
+  "Lock empty cells" is unticked. Sheets drawn on a solid colour, like magenta, have it
+  made transparent before they're cut, so the grid is guessed from the gaps and frames
+  come in clean; pick another colour, or click the preview with the eyedropper, and set
+  how close a colour must be.
 - **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
   `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
   frames are restored and tags become animations. Without one, the sprites are found by

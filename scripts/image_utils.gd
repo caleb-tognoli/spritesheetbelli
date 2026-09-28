@@ -5,6 +5,8 @@ class_name ImageUtils
 const MAX_PIXELS := 1 << 28
 ## Largest texture side, so bigger frames couldn't be shown in the preview
 const MAX_TEXTURE_SIZE := 16384
+## Images with at least this many pixels are colour keyed on worker threads
+const THREADED_PIXELS := 1 << 18
 
 
 ## Why an image of [param size] can't be made or saved with [param extension], or an
@@ -33,23 +35,51 @@ static func size_problem(size: Vector2i, extension := "png") -> String:
 	return ""
 
 
-## Makes pixels close to [param color] transparent. [param tolerance] is 0 to 1.
+## Makes pixels close to [param color] transparent. [param tolerance] is 0 to 1. Big
+## images are keyed in parts on worker threads, so trying tolerances on a whole sheet
+## stays quick.
 static func color_key(img: Image, color: Color, tolerance := 0.1) -> void:
 	if img.get_format() != Image.FORMAT_RGBA8:
 		img.convert(Image.FORMAT_RGBA8)
 	# Working on the raw bytes is much faster than get_pixel and set_pixel
 	var data := img.get_data()
+	var max_distance := (tolerance * 255.0) ** 2 * 3.0
+	var pixels := data.size() / 4
+	# Only the main thread waits for others, so work already on a worker thread stays there
+	var on_main := OS.get_thread_caller_id() == OS.get_main_thread_id()
+	if pixels < THREADED_PIXELS or not OS.has_feature("threads") or not on_main:
+		_key_bytes(data, color, max_distance)
+	else:
+		var count := OS.get_processor_count() * 2
+		var parts := []
+		parts.resize(count)
+		var mutex := Mutex.new()
+		var key_part := func(i: int) -> void:
+			var part := data.slice(pixels * i / count * 4, pixels * (i + 1) / count * 4)
+			_key_bytes(part, color, max_distance)
+			mutex.lock()
+			parts[i] = part
+			mutex.unlock()
+		var task := WorkerThreadPool.add_group_task(key_part, count)
+		WorkerThreadPool.wait_for_group_task_completion(task)
+		data = PackedByteArray()
+		for part: PackedByteArray in parts:
+			data.append_array(part)
+	img.set_data(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8, data)
+
+
+## Clears the alpha of the RGBA pixels in [param data] within [param max_distance] (squared)
+## of [param color]
+static func _key_bytes(data: PackedByteArray, color: Color, max_distance: float) -> void:
 	var r := color.r8
 	var g := color.g8
 	var b := color.b8
-	var max_distance := (tolerance * 255.0) ** 2 * 3.0
 	for i in range(0, data.size(), 4):
 		var dr := data[i] - r
 		var dg := data[i + 1] - g
 		var db := data[i + 2] - b
 		if dr * dr + dg * dg + db * db <= max_distance:
 			data[i + 3] = 0
-	img.set_data(img.get_width(), img.get_height(), false, Image.FORMAT_RGBA8, data)
 
 
 ## [param img] with an outline of [param thickness] pixels in [param color] around its

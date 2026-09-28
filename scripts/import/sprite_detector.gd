@@ -1,12 +1,11 @@
 class_name SpriteDetector
 ## Finds the sprites in a packed spritesheet that has no data file: every group of pixels
-## surrounded by transparency (or by the background colour) is one sprite. Sprites are
-## returned in rows, the way they're laid out in the image.
+## surrounded by transparency is one sprite. Sprites are returned in rows, the way they're
+## laid out in the image. A sheet on a solid colour has it made transparent first, see
+## [SheetBackground].
 
 ## Sprites with fewer pixels than this in their rectangle are dust, not sprites
 const MIN_AREA := 4
-## Colour distance up to which a sheet's background is removed
-const BACKGROUND_TOLERANCE := 0.02
 
 
 ## The rectangles of the sprites in [param img], in rows from top to bottom, each from left
@@ -14,10 +13,9 @@ const BACKGROUND_TOLERANCE := 0.02
 ## hand holding it, count as one sprite. Parts inside another sprite's rectangle belong to
 ## that sprite.
 static func detect(img: Image, merge_distance := 0) -> Array[Array]:
-	var pixels := without_background(img)
-	var bounds := Rect2i(Vector2i.ZERO, pixels.get_size())
+	var bounds := Rect2i(Vector2i.ZERO, img.get_size())
 	var mask := BitMap.new()
-	mask.create_from_image_alpha(pixels, 0.01)
+	mask.create_from_image_alpha(img, 0.01)
 	if merge_distance > 0:
 		# Growing each part by half the distance joins parts that close
 		mask.grow_mask(ceili(merge_distance / 2.0), bounds)
@@ -30,28 +28,11 @@ static func detect(img: Image, merge_distance := 0) -> Array[Array]:
 		var area := Rect2i(outline.position.floor(), outline.size.ceil()).intersection(bounds)
 		if merge_distance > 0:
 			# Back to the pixels themselves
-			var used := pixels.get_region(area).get_used_rect()
+			var used := img.get_region(area).get_used_rect()
 			area = Rect2i(area.position + used.position, used.size)
 		if area.get_area() >= MIN_AREA:
 			rects.append(area)
 	return group_in_rows(_drop_enclosed(rects))
-
-
-## [param img] with its background made transparent, when it has one: an opaque colour
-## in every corner. Otherwise [param img] itself.
-static func without_background(img: Image) -> Image:
-	var last := img.get_size() - Vector2i.ONE
-	var corner := img.get_pixel(0, 0)
-	if corner.a < 1.0 or last.x < 1 or last.y < 1:
-		return img
-	for point: Vector2i in [Vector2i(last.x, 0), Vector2i(0, last.y), last]:
-		if not img.get_pixelv(point).is_equal_approx(corner):
-			return img
-	var copy := img.duplicate() as Image
-	if copy.get_format() != Image.FORMAT_RGBA8:
-		copy.convert(Image.FORMAT_RGBA8)
-	ImageUtils.color_key(copy, corner, BACKGROUND_TOLERANCE)
-	return copy
 
 
 ## Puts rectangles that share most of their height in one row, rows from top to bottom
@@ -85,13 +66,12 @@ static func to_spritesheet(
 	path := "",
 	keep_layout := false
 ) -> Spritesheet:
-	var pixels := without_background(img)
 	var sheet := Spritesheet.new()
 	sheet.begin_batch()
 	for row in rows.size():
 		for column: int in rows[row].size():
 			var rect: Rect2i = rows[row][column]
-			sheet.set_frame(Vector2i(column, row), pixels.get_region(rect))
+			sheet.set_frame(Vector2i(column, row), img.get_region(rect))
 	FrameEdits.align(sheet, sheet.get_sorted_coords(), alignment)
 	# Linked once aligned, so going back to the file keeps the alignment
 	if path:
@@ -99,7 +79,7 @@ static func to_spritesheet(
 			for column: int in rows[row].size():
 				var coord := Vector2i(column, row)
 				var origin: Variant = FrameSource.get_origin(sheet, coord)
-				var source := FrameSource.for_region(path, rows[row][column], pixels != img)
+				var source := FrameSource.for_region(path, rows[row][column])
 				source = FrameSource.with_origin(source, origin)
 				sheet.set_frame(coord, sheet.frames[coord], source, origin)
 	if keep_layout:

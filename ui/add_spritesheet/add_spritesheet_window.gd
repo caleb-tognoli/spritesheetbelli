@@ -21,6 +21,8 @@ signal frames_added
 ## Locks the added sheet's empty cells, so added sprites skip them
 @onready var lock_empty_cells: CheckBox = %LockEmptyCells
 
+## The image that's cut: the one opened, with its background made transparent when
+## [member background] is on
 @export var spritesheet_image: Image
 
 ## How the image is cut into frames
@@ -45,8 +47,20 @@ var align_option := OptionButton.new()
 var more_options_btn := OptionsDropdown.new("Offset & Spacing")
 ## Keeps the sprites where they are in the image, in the packed layout
 var keep_layout := CheckBox.new()
-## The other pages of a packed sheet with a data file, by page
+## Makes a colour transparent before cutting, on for sheets drawn on a solid colour
+var background := ColorKeyControl.new()
+## The image as opened
+var source_image: Image
+## The other pages of a packed sheet with a data file, by page, as cut
 var _other_pages: Array[Image] = []
+## The other pages as opened
+var _source_pages: Array[Image] = []
+## Whether the grid is still the guessed one, which is guessed again when the background
+## changes, as that changes where the sprites are
+var _grid_guessed := true
+## Whether the image is cut again at the end of the frame, once for many changes to the
+## background, see [method _on_background_changed]
+var _background_queued := false
 ## Whether the cell size was set last, rather than the grid: the one set last is kept when
 ## the offset or spacing change, and the other follows
 var _by_cell_size := false
@@ -67,7 +81,12 @@ func _ready() -> void:
 	window_input.connect(
 		func(event: InputEvent) -> void:
 			if event.is_action_pressed(&"ui_cancel") and not event.is_echo():
-				close_requested.emit()
+				# Escape puts the eyedropper away first
+				if background.is_picking():
+					background.set_picking(false)
+					set_input_as_handled()
+				else:
+					close_requested.emit()
 	)
 	lock_empty_cells.toggled.connect(
 		func(on: bool) -> void: Settings.set_value(&"lock_empty_cells", on)
@@ -92,6 +111,7 @@ func _ready() -> void:
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.value_changed.connect(
 			func(_value: float) -> void:
+				_grid_guessed = false
 				_cut_grid()
 				_update_options_label()
 		)
@@ -124,6 +144,11 @@ func _ready() -> void:
 	_update_options_label()
 
 	_build_cut_controls()
+	background.changed.connect(_on_background_changed)
+	background.watch_preview(preview_area.spritesheet_preview)
+	# Before the number of frames, which ends the toolbar
+	slice_info.add_sibling(background)
+	slice_info.get_parent().move_child(slice_info, background.get_index())
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 	preview_area.spritesheet_preview.able_to_move_frames = false
@@ -139,13 +164,19 @@ func _ready() -> void:
 ## Shows [param img] cut where [param data] says the frames are, or else the way that suits
 ## the open sheet's layout (see [method get_default_cut]). The Grid cut starts from a
 ## guessed grid; the name of the image at [param path] can hold a size hint. The frames
-## are linked to [param path] and [param data_file] when they're given.
+## are linked to [param path] and [param data_file] when they're given. A colour the image
+## is drawn on instead of transparency is made transparent first, see [SheetBackground].
 func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> void:
-	spritesheet_image = img
+	source_image = img
 	sheet_data = data
 	image_path = path
 	data_path = data_file
-	_other_pages = _load_other_pages()
+	_source_pages = _load_other_pages()
+	var found: Variant = SheetBackground.detect(img)
+	# Without one, the swatch starts at the top-left pixel, most often the background
+	background.set_key(found != null, found if found != null else img.get_pixel(0, 0))
+	background.set_picking(false)
+	_remove_background()
 	# Packed sheets stay packed when opened, or added to a packed sheet
 	var target := Global.spritesheet
 	keep_layout.set_pressed_no_signal(
@@ -161,21 +192,77 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	_set_max(offset_y, image_size.y - 1)
 	_set_max(cell_width, image_size.x)
 	_set_max(cell_height, image_size.y)
-
-	# A sprite size in the name is kept when the offset or spacing change
-	var cell_size := GridGuesser.guess_cell_size_from_file_name(path, image_size)
-	_by_cell_size = cell_size != Vector2i.ZERO
-	var guessed_size := GridGuesser.guess(img, path)
-	grid_columns.set_value_no_signal(guessed_size.x)
-	grid_rows.set_value_no_signal(guessed_size.y)
-	cell_width.set_value_no_signal(cell_size.x)
-	cell_height.set_value_no_signal(cell_size.y)
+	_guess_grid()
 	cut_option.clear()
 	cut_option.add_item("Grid", Cut.GRID)
 	cut_option.add_item("Find sprites", Cut.DETECT)
 	if data:
 		cut_option.add_item(tr("Data: %s") % data_file.get_file(), Cut.DATA)
 	set_cut(get_default_cut(data != null, target.layout))
+
+
+## Fills in the grid guessed from the name of the image and from the gaps between its
+## sprites, once its background is transparent. With [param or_keep], a guess of a single
+## cell, which finds nothing, keeps the grid there is.
+func _guess_grid(or_keep := false) -> void:
+	_grid_guessed = true
+	# A sprite size in the name is kept when the offset or spacing change
+	var image_size := spritesheet_image.get_size()
+	var cell_size := GridGuesser.guess_cell_size_from_file_name(image_path, image_size)
+	var guessed_size := GridGuesser.guess(spritesheet_image, image_path)
+	if or_keep and guessed_size == Vector2i.ONE:
+		return
+	_by_cell_size = cell_size != Vector2i.ZERO
+	grid_columns.set_value_no_signal(guessed_size.x)
+	grid_rows.set_value_no_signal(guessed_size.y)
+	cell_width.set_value_no_signal(cell_size.x)
+	cell_height.set_value_no_signal(cell_size.y)
+
+
+## Makes the background colour transparent in the images that are cut, when it's on
+func _remove_background() -> void:
+	spritesheet_image = source_image
+	_other_pages = _source_pages
+	if not background.is_on():
+		return
+	var color := background.get_color()
+	var tolerance := background.get_tolerance()
+	spritesheet_image = SheetBackground.remove(source_image, color, tolerance)
+	_other_pages = []
+	for page in _source_pages:
+		_other_pages.append(SheetBackground.remove(page, color, tolerance) if page else null)
+
+
+## Cuts the image again with the new background at the end of the frame, once for all the
+## changes made until then, like dragging in the colour picker
+func _on_background_changed() -> void:
+	if not _background_queued:
+		_background_queued = true
+		_cut_with_background.call_deferred()
+
+
+func _cut_with_background() -> void:
+	_background_queued = false
+	_remove_background()
+	if _grid_guessed:
+		_guess_grid(true)
+	_slice()
+
+
+## Remembers with the sources of the frames of [param sheet] that the background was made
+## transparent, so reloading them from their files does it again
+func _link_background(sheet: Spritesheet) -> void:
+	if not background.is_on():
+		return
+	var color := background.get_color()
+	var tolerance := background.get_tolerance()
+	sheet.batch(
+		func() -> void:
+			for coord: Vector2i in sheet.frame_sources.keys():
+				var source := FrameSource.with_key(sheet.frame_sources[coord], color, tolerance)
+				var origin: Variant = FrameSource.get_origin(sheet, coord)
+				sheet.set_frame(coord, sheet.frames[coord], source, origin)
+	)
 
 
 ## How an image is cut when it's opened: where its data file says, or else the way that
@@ -246,6 +333,7 @@ func _load_other_pages() -> Array[Image]:
 
 ## Shows frames that were cut without a grid
 func _show_cut(sheet: Spritesheet) -> void:
+	_link_background(sheet)
 	spritesheet = sheet
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
@@ -315,6 +403,7 @@ func on_preview_update() -> void:
 ## Cuts the image into [param columns] × [param rows] cells, as big as fit
 func update_grid_size(columns: int, rows: int) -> void:
 	_by_cell_size = false
+	_grid_guessed = false
 	grid_columns.set_value_no_signal(columns)
 	grid_rows.set_value_no_signal(rows)
 	_cut_grid()
@@ -323,6 +412,7 @@ func update_grid_size(columns: int, rows: int) -> void:
 ## Cuts the image into cells of [param width] × [param height] pixels, as many as fit
 func update_cell_size(width: int, height: int) -> void:
 	_by_cell_size = true
+	_grid_guessed = false
 	cell_width.set_value_no_signal(width)
 	cell_height.set_value_no_signal(height)
 	_cut_grid()
@@ -351,6 +441,7 @@ func _cut_grid() -> void:
 		var source := FrameSource.for_region(image_path, result.rects[coord]) if image_path else {}
 		spritesheet.set_frame(coord, result.frames[coord], source)
 	spritesheet.end_batch()
+	_link_background(spritesheet)
 	_show_slice_info(result.unused)
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()

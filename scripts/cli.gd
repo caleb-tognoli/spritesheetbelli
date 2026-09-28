@@ -264,6 +264,9 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		var align: String = options.get("--align", "center")
 		if not alignments.has(align):
 			return {"error": "--align must be center or bottom.", "code": 2}
+		var found: Variant = SheetBackground.detect(img)
+		if found != null:
+			img = SheetBackground.remove(img, found)
 		var rows := SpriteDetector.detect(img, int(options.get("--join", "0")))
 		var detected := SpriteDetector.to_spritesheet(
 			img, rows, alignments[align], "", options.get("--layout") == "packed"
@@ -283,7 +286,10 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		var keep: bool = options.get("--layout") == "packed"
 		return {"sheet": data.to_spritesheet(img, "", "", keep, others)}
 
-	var grid := GridGuesser.guess(img, path)
+	# A sheet on a solid colour has gaps of that colour between its sprites
+	var background: Variant = SheetBackground.detect(img)
+	var keyed := SheetBackground.remove(img, background) if background != null else img
+	var grid := GridGuesser.guess(keyed, path)
 	if options.has("--grid"):
 		grid = _parse_size(options["--grid"])
 		if grid.x <= 0 or grid.y <= 0:

@@ -8,7 +8,9 @@ class_name FrameSource
 ## {
 ##     "path": String,         # the image file
 ##     "rect": [x, y, w, h],   # where the frame is in a spritesheet (optional)
-##     "keyed": true,          # the sheet's background colour was removed (optional)
+##     "key": {"color": String, "tolerance": float},
+##                             # a colour made transparent before cutting, like the
+##                             # sheet's background (optional)
 ##     "gif_frame": int,       # which frame of a GIF (optional)
 ##     "data": String,         # the data file that says where the frame is (optional)
 ##     "name": String,         # the frame's name in that data file
@@ -23,15 +25,9 @@ static func for_file(path: String) -> Dictionary:
 	return {"path": path}
 
 
-## The part of the image at [param path] inside [param rect]. With [param keyed], the
-## image's background colour is removed first, see [method SpriteDetector.without_background].
-static func for_region(path: String, rect: Rect2i, keyed := false) -> Dictionary:
-	var source := {
-		"path": path, "rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]
-	}
-	if keyed:
-		source.keyed = true
-	return source
+## The part of the image at [param path] inside [param rect]
+static func for_region(path: String, rect: Rect2i) -> Dictionary:
+	return {"path": path, "rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]}
 
 
 ## Frame [param index] of the GIF at [param path]
@@ -51,6 +47,15 @@ static func with_origin(source: Dictionary, origin: Variant) -> Dictionary:
 	result.erase("origin")
 	if origin is Vector2i:
 		result.origin = [origin.x, origin.y]
+	return result
+
+
+## [param source] cut after making the pixels of its file close to [param color]
+## transparent, with [param tolerance] from 0 to 1 (see [method ImageUtils.color_key]),
+## like the background of a sheet
+static func with_key(source: Dictionary, color: Color, tolerance: float) -> Dictionary:
+	var result := source.duplicate(true)
+	result.key = {"color": color.to_html(false), "tolerance": tolerance}
 	return result
 
 
@@ -140,21 +145,39 @@ static func unlink(sheet: Spritesheet, path: String) -> int:
 ## What has to be read from disk to cut the frame. Frames that share a key share the
 ## loaded file, see [method load_key].
 static func get_load_key(source: Dictionary) -> String:
+	var key := "image:" + str(source.path)
 	if source.has("data"):
-		return "data:%s|%s" % [source.data, source.path]
-	if source.has("gif_frame"):
-		return "gif:" + str(source.path)
-	if source.get("keyed"):
-		return "keyed:" + str(source.path)
-	return "image:" + str(source.path)
+		key = "data:%s|%s" % [source.data, source.path]
+	elif source.has("gif_frame"):
+		key = "gif:" + str(source.path)
+	var color_key: Variant = source.get("key")
+	if color_key is Dictionary:
+		# The colour and tolerance before the paths, which can hold anything
+		key = "key:%s,%s|%s" % [color_key.get("color"), color_key.get("tolerance"), key]
+	return key
 
 
 ## Reads the files behind a key from [method get_load_key]: an image, the frames of a
-## GIF, or a data file with its image. Null when they can't be read.
+## GIF, or a data file with its image, with the key's colour made transparent when it
+## has one. Null when they can't be read.
 static func load_key(key: String) -> Variant:
 	var kind := key.get_slice(":", 0)
 	var path := key.trim_prefix(kind + ":")
 	match kind:
+		"key":
+			var spec := path.get_slice("|", 0)
+			var file: Variant = load_key(path.trim_prefix(spec + "|"))
+			var images: Array = []
+			if file is Image:
+				images = [file]
+			elif file is Dictionary:
+				images = [file.image]
+			elif file is Array:
+				images = file
+			var color := Color.html(spec.get_slice(",", 0))
+			for img: Image in images:
+				ImageUtils.color_key(img, color, float(spec.get_slice(",", 1)))
+			return file
 		"gif":
 			var gif := GifDecoder.load_file(path)
 			return null if gif.has("error") else gif.frames
@@ -164,9 +187,6 @@ static func load_key(key: String) -> Variant:
 			if data.error or img == null:
 				return null
 			return {"data": data, "image": img}
-		"keyed":
-			var img := Image.load_from_file(path)
-			return SpriteDetector.without_background(img) if img else null
 		_:
 			return Image.load_from_file(path)
 
@@ -245,6 +265,8 @@ static func from_json(value: Variant, folder: String) -> Dictionary:
 		result.gif_frame = int(result.gif_frame)
 	if not result.get("ops") is Array:
 		result.erase("ops")
+	if not result.get("key") is Dictionary:
+		result.erase("key")
 	return result
 
 

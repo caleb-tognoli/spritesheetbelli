@@ -10,7 +10,8 @@ extends Node2D
 ## Mouse: click to select, Ctrl+click to toggle, Shift+click for a range, click an empty
 ## cell to lock it. Dragging depends on [member tool]: the select tool draws a selection
 ## box, the move tool moves frames (Alt+drag copies), showing them where they'd land from
-## the press on. Middle drag or Space+drag pans, the wheel zooms.
+## the press on. Middle drag or Space+drag pans, the wheel zooms. With [member picking]
+## on, a click picks the colour under the mouse instead.
 
 ## Emitted when the spritesheet or the selection changed
 signal preview_updated
@@ -28,6 +29,8 @@ signal tool_changed(tool: Tool)
 signal hover_changed(coord: Vector2i)
 ## The pixel under the mouse changed, see [member hovered_pixel]
 signal pixel_hovered
+## With [member picking] on, the user clicked a pixel of a frame shown in [param color]
+signal color_picked(color: Color)
 ## The user dragged packed frames, or moved them with arrow keys, by [param offset] onto
 ## [param page]
 signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vector2i)
@@ -80,6 +83,12 @@ var tool := Tool.SELECT:
 			tool = value
 			tool_changed.emit(tool)
 			_update_cursor()
+## When on, clicking picks the colour under the mouse, see [signal color_picked], instead
+## of selecting
+var picking := false:
+	set(value):
+		picking = value
+		_update_cursor()
 
 # Set from Settings
 var show_indices := true
@@ -473,6 +482,12 @@ func _on_left_press(event: InputEventMouseButton) -> void:
 	if _pan_key_held:
 		_start_drag(Drag.PAN, event.position)
 		return
+	if picking:
+		var pixel := Vector2i(screen_to_world(event.position).floor())
+		var info := PixelGrid.probe(self, get_cell_at_screen_position(event.position), pixel)
+		if info.has("color"):
+			color_picked.emit(info.color)
+		return
 	_drag_start_world = screen_to_world(event.position)
 	_drag_start_cell = get_cell_at_screen_position(event.position)
 	_drag_start_unclamped = grid_view.get_cell_unclamped(screen_to_world(event.position))
@@ -748,6 +763,8 @@ func _update_cursor() -> void:
 func _get_cursor_shape() -> Input.CursorShape:
 	if _drag == Drag.PAN or _pan_key_held:
 		return Input.CURSOR_DRAG
+	if picking:
+		return Input.CURSOR_CROSS
 	if _drag == Drag.MOVE or not _get_lifted_coords().is_empty():
 		return Input.CURSOR_MOVE
 	if _drag == Drag.NONE and _drag_moves(hovered_cell, false):

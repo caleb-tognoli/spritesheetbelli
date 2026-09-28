@@ -192,6 +192,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   sprite size in the file name, like `hero_24x24.png`, fills in the cell size. The
   toolbar wraps onto a second line in a narrow window, and shows the number of frames
   for the Grid cut.
+- Add Spritesheet notices when a sheet is drawn on a solid colour instead of
+  transparency, like magenta, and makes it transparent: the grid is guessed and sprites
+  are found as if it were, and frames come in without it. "Make [colour] transparent" is
+  on for such sheets, with a tolerance. The colour can be chosen by hand for any sheet,
+  with the colour picker or by clicking the preview with the eyedropper, and the preview
+  updates as you go. Reloading a linked sheet makes its background transparent again.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
