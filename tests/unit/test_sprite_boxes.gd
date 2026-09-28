@@ -230,6 +230,7 @@ func test_dragging_moves_and_resizes_whole_pixels() -> void:
 
 func test_drawing_a_new_box() -> void:
 	open()
+	assert_eq(window.box_editor.info_label.text, "", "no hint while nothing is selected")
 	drag(Vector2(40.5, 20.5), Vector2(44.5, 23.5))
 	var boxes := window.box_editor.get_boxes()
 	assert_eq(boxes.size(), 6)
@@ -304,12 +305,13 @@ func test_finding_again_replaces_edits_until_undone() -> void:
 	assert_false(window.box_editor.notice.visible)
 	assert_eq(window.spritesheet.frames.size(), 4)
 
-	# Find Again goes back to the boxes the settings find
+	# Reset goes back to the boxes the settings find
+	assert_eq(window.box_editor.find_btn.text, "Reset")
 	window.box_editor.find_btn.pressed.emit()
 	var rows := SpriteDetector.detect(Detector.packed_sheet(), 13)
 	assert_eq(window.box_editor.get_boxes(), SpriteBoxes.from_rows(rows))
 	assert_false(window.box_editor.is_edited())
-	assert_true(window.box_editor.find_btn.disabled, "nothing to find again")
+	assert_true(window.box_editor.find_btn.disabled, "nothing to reset")
 
 
 func test_the_key_colour_finds_the_sprites_again() -> void:

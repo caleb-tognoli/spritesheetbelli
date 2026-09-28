@@ -212,7 +212,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Ctrl+Z undoes box edits in the window. The boxes are what's added, aligned and kept in
   the packed layout as before, and reloading the file cuts the same boxes again. Changing
   Join parts within or the colour made transparent finds the sprites again; Undo brings
-  back boxes edited by hand, and Find Again starts over.
+  back boxes edited by hand, and Reset starts over.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

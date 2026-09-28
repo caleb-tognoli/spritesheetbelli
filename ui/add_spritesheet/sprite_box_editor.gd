@@ -1,14 +1,14 @@
 class_name SpriteBoxEditor
 extends VBoxContainer
 ## The boxes around the sprites found in a sheet, over the image, to edit by hand before
-## they're added (see [SpriteBoxView]). A toolbar undoes, merges, deletes and finds the
-## sprites again, and the zoom floats over the top-right corner, like the spritesheet
-## preview's. Edits are undone here, apart from the open document's history.
+## they're added (see [SpriteBoxView]). A toolbar undoes, merges, deletes and resets the
+## boxes to the sprites as found, and the zoom floats over the top-right corner, like the
+## spritesheet preview's. Edits are undone here, apart from the open document's history.
 
 ## The boxes were edited by hand, or an edit was undone or redone
 signal boxes_edited
 signal selection_changed
-## Find Again was pressed
+## Reset was pressed
 signal find_requested
 
 const MERGE_ICON := preload("res://assets/icons/Group.svg")
@@ -23,7 +23,7 @@ var redo_btn := _tool_button(REDO_ICON)
 var merge_btn := _tool_button(MERGE_ICON)
 var delete_btn := _tool_button(DELETE_ICON)
 var find_btn := _tool_button(FIND_ICON)
-## The selected box, or how to draw and merge boxes when none is
+## The box being dragged or the selected boxes
 var info_label := Label.new()
 var zoom_label_btn := _tool_button(null)
 ## Says the sprites were found again over hand edits, which undo brings back
@@ -81,7 +81,7 @@ func _build_toolbar() -> void:
 	delete_btn.text = "Delete"
 	delete_btn.tooltip_text = Actions.get_tooltip(&"delete_frames", "Delete the selected boxes")
 	delete_btn.pressed.connect(view.remove_selected)
-	find_btn.text = "Find Again"
+	find_btn.text = "Reset"
 	find_btn.tooltip_text = "Finds the sprites again, without the changes made by hand"
 	find_btn.pressed.connect(find_requested.emit)
 	for control: Control in [undo_btn, redo_btn, VSeparator.new(), merge_btn, delete_btn]:
@@ -248,8 +248,7 @@ func _update_ui() -> void:
 	_update_info()
 
 
-## Where the box being dragged or the selected box is, how many are selected, or how to
-## draw and merge boxes
+## Where the box being dragged or the selected box is, or how many are selected
 func _update_info() -> void:
 	var dragged := view.get_dragged_box()
 	var selected := view.selected
@@ -267,7 +266,7 @@ func _update_info() -> void:
 	elif selected.size() > 1:
 		info_label.text = tr("%d selected") % selected.size()
 	else:
-		info_label.text = tr("Drag on empty space to draw a box, Ctrl+drag to merge boxes")
+		info_label.text = ""
 
 
 static func _tool_button(icon: Texture2D) -> Button:
