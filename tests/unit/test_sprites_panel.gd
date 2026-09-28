@@ -102,7 +102,7 @@ func test_frames_are_listed() -> void:
 
 
 func test_frames_are_grouped_by_animation() -> void:
-	assert_eq(groups(), [["No animation", "3", ["star", "bean", "Frame 2"]]], "none yet")
+	assert_eq(groups(), [["No animation", "3", ["star", "bean", "Frame 2"]]], "a group with none")
 	# In play order, once, without empty cells; the first animation showing a frame wins
 	add_animation(
 		"walk", [Vector2i(2, 0), Vector2i(0, 0), Vector2i(2, 0), Vector2i(4, 4)] as Array[Vector2i]
@@ -130,6 +130,39 @@ func test_grouping_by_row() -> void:
 	Settings.set_value(&"sprites_by_row", false)
 	assert_false(panel.by_row_button.button_pressed)
 	assert_eq(groups()[0], ["walk", "2", ["Frame 3", "star"]], "by animation again")
+
+
+func test_animation_groups_show_their_colour() -> void:
+	add_animation("walk", [Vector2i(2, 0)] as Array[Vector2i])
+	var walk := sheet.animations[0]
+	assert_eq(header_of("walk").get_icon(0), AppTheme.swatch(walk.color), "a dot of its colour")
+	assert_true(header_of("No animation").get_icon(0) == null, "not on frames in none")
+	walk.color = Color.ORANGE
+	Global.document.perform("Recolour animation", sheet.set_animation.bind(0, walk))
+	assert_eq(header_of("walk").get_icon(0), AppTheme.swatch(Color.ORANGE), "recoloured")
+	Settings.set_value(&"sprites_by_row", true)
+	assert_true(header_of("Row 0").get_icon(0) == null, "not on rows")
+	assert_true(
+		panel.tree.get_theme_constant("inner_item_margin_left") > 0, "room after the arrows"
+	)
+
+
+func test_no_rows_in_the_packed_layout() -> void:
+	add_animation("walk", [Vector2i(2, 0)] as Array[Vector2i])
+	Settings.set_value(&"sprites_by_row", true)
+	assert_true(panel.by_row_button.visible)
+	Actions.run(&"layout_packed")
+	assert_false(panel.by_row_button.visible, "no toggle")
+	assert_eq(
+		groups(),
+		[["walk", "1", ["Frame 2"]], ["No animation", "2", ["star", "bean"]]],
+		"by animation"
+	)
+	assert_true(Settings.get_value(&"sprites_by_row"), "the setting kept")
+	Actions.run(&"layout_grid")
+	assert_true(panel.by_row_button.visible)
+	assert_true(panel.by_row_button.button_pressed)
+	assert_eq(groups()[0][0], "Row 0", "by row again")
 
 
 func test_rows_are_numbered_like_the_frames() -> void:

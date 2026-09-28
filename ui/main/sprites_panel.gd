@@ -1,8 +1,8 @@
 class_name SpritesPanel
 extends PanelContainer
 ## Lists every frame with a thumbnail, its name and size, under the first animation showing
-## it, or under its row. Selecting frames here selects them in the preview and the other way
-## round; clicking a group's name selects its frames, and its arrow folds it.
+## it, or under its row in the grid layout. Selecting frames here selects them in the preview
+## and the other way round; clicking a group's name selects its frames, and its arrow folds it.
 ## Frames are renamed by double-clicking their name or F2, found by typing in the search field, and
 ## pinned with the button on each frame in the packed layout. Right-clicking them offers
 ## the actions given to [method set_context_actions].
@@ -12,6 +12,10 @@ const PIN_ICON := preload("res://assets/icons/Pin.svg")
 const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
 const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
 const PIN_BUTTON := 0
+## Room left of the text in each cell, such as between a group's arrow and its name
+const TEXT_MARGIN := 5
+## How wide an animation's colour dot is drawn before its name
+const DOT_SIZE := 12
 ## Where frames in no animation are listed, see [method group_frames]
 const NO_ANIMATION := "none"
 
@@ -88,6 +92,8 @@ func _init() -> void:
 	box.add_child(search_margin)
 
 	tree.hide_root = true
+	# Room between a group's arrow and its name, the frames' kept lined up under it
+	tree.add_theme_constant_override("inner_item_margin_left", TEXT_MARGIN)
 	tree.select_mode = Tree.SELECT_MULTI
 	tree.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tree.add_theme_font_size_override("font_size", 13)
@@ -135,7 +141,11 @@ func refresh() -> void:
 	var root := tree.create_item()
 	var filter := search.text.strip_edges().to_lower()
 	var alive := {}
-	for group in group_frames(sheet, Settings.get_value(&"sprites_by_row")):
+	# There are no rows in the packed layout
+	var packed := sheet.layout == Spritesheet.Layout.PACKED
+	by_row_button.visible = not packed
+	var by_row: bool = Settings.get_value(&"sprites_by_row") and not packed
+	for group in group_frames(sheet, by_row):
 		# Only groups with frames found are listed
 		var header: TreeItem = null
 		for coord: Vector2i in group.coords:
@@ -213,8 +223,9 @@ func _show_folders() -> void:
 
 ## Every frame of [param sheet] in groups, each a dictionary with a "key" that stays the same
 ## while the sheet changes, a "title" and the frames' "coords". By animation, in the sheet's
-## order, a frame is in the first one showing it, at its first place in play order; frames in
-## none follow in reading order. With [param by_row], each row is a group, numbered like the
+## order, a frame is in the first one showing it, at its first place in play order, and the
+## group has the animation's "color"; frames in none follow in reading order, also when there
+## are no animations. With [param by_row], each row is a group, numbered like the
 ## frames, from the "index_start" setting. Groups without frames are left out.
 static func group_frames(sheet: Spritesheet, by_row := false) -> Array[Dictionary]:
 	var groups: Array[Dictionary] = []
@@ -236,8 +247,16 @@ static func group_frames(sheet: Spritesheet, by_row := false) -> Array[Dictionar
 				listed[cell] = true
 				coords.append(cell)
 		if coords:
-			groups.append(
-				{"key": "animation:" + animation.name, "title": animation.name, "coords": coords}
+			(
+				groups
+				. append(
+					{
+						"key": "animation:" + animation.name,
+						"title": animation.name,
+						"coords": coords,
+						"color": animation.color,
+					}
+				)
 			)
 	var rest: Array[Vector2i] = []
 	for coord in sheet.get_sorted_coords():
@@ -250,10 +269,14 @@ static func group_frames(sheet: Spritesheet, by_row := false) -> Array[Dictionar
 
 
 ## Adds the name of [param group], from [method group_frames], with the number of frames
-## listed under it. It isn't a frame: clicking it selects its frames instead.
+## listed under it, and an animation's colour. It isn't a frame: clicking it selects its
+## frames instead.
 func _add_header(root: TreeItem, group: Dictionary) -> TreeItem:
 	var header := tree.create_item(root)
 	header.set_text(0, group.title)
+	if group.has("color"):
+		header.set_icon(0, AppTheme.swatch(group.color))
+		header.set_icon_max_width(0, DOT_SIZE)
 	header.set_metadata(0, group.key)
 	header.set_tooltip_text(0, tr("Click to select these frames"))
 	header.set_text_alignment(1, HORIZONTAL_ALIGNMENT_RIGHT)
