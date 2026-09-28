@@ -11,6 +11,8 @@ signal frames_added
 @onready var cancel_btn: Button = %Cancel
 @onready var grid_columns: SpinBox = %GridColumns
 @onready var grid_rows: SpinBox = %GridRows
+@onready var cell_width: SpinBox = %CellWidth
+@onready var cell_height: SpinBox = %CellHeight
 @onready var offset_x: SpinBox = %OffsetX
 @onready var offset_y: SpinBox = %OffsetY
 @onready var spacing_x: SpinBox = %SpacingX
@@ -45,6 +47,9 @@ var more_options_btn := OptionsDropdown.new("Offset & Spacing")
 var keep_layout := CheckBox.new()
 ## The other pages of a packed sheet with a data file, by page
 var _other_pages: Array[Image] = []
+## Whether the cell size was set last, rather than the grid: the one set last is kept when
+## the offset or spacing change, and the other follows
+var _by_cell_size := false
 
 
 func _ready() -> void:
@@ -68,19 +73,26 @@ func _ready() -> void:
 		func(on: bool) -> void: Settings.set_value(&"lock_empty_cells", on)
 	)
 	preview_area.spritesheet_preview.selection_changed.connect(on_preview_update)
-	grid_columns.value_changed.connect(
-		func(columns: float) -> void: update_grid_size(int(columns), spritesheet.grid_size.y)
-	)
-	grid_rows.value_changed.connect(
-		func(rows: float) -> void: update_grid_size(spritesheet.grid_size.x, int(rows))
-	)
+	for field: SpinBox in [grid_columns, grid_rows]:
+		field.max_value = Slicer.MAX_GRID
+		field.value_changed.connect(
+			func(_value: float) -> void:
+				update_grid_size(int(grid_columns.value), int(grid_rows.value))
+		)
+	for field: SpinBox in [cell_width, cell_height]:
+		field.value_changed.connect(
+			func(_value: float) -> void:
+				update_cell_size(int(cell_width.value), int(cell_height.value))
+		)
 
-	for field: SpinBox in [grid_columns, grid_rows, offset_x, offset_y, spacing_x, spacing_y]:
+	var fields: Array[SpinBox] = [grid_columns, grid_rows, cell_width, cell_height]
+	fields.append_array([offset_x, offset_y, spacing_x, spacing_y])
+	for field in fields:
 		SpinScroll.enable(field)
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.value_changed.connect(
 			func(_value: float) -> void:
-				update_grid_size(spritesheet.grid_size.x, spritesheet.grid_size.y)
+				_cut_grid()
 				_update_options_label()
 		)
 
@@ -142,10 +154,21 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	for field: SpinBox in [offset_x, offset_y, spacing_x, spacing_y]:
 		field.set_value_no_signal(0)
 	_update_options_label()
+	# The offset leaves at least a pixel, and a cell is at most the image
+	var image_size := img.get_size()
+	_set_max(offset_x, image_size.x - 1)
+	_set_max(offset_y, image_size.y - 1)
+	_set_max(cell_width, image_size.x)
+	_set_max(cell_height, image_size.y)
 
-	var guessed_size := GridGuesser.guess(img, path.get_file())
+	# A sprite size in the name is kept when the offset or spacing change
+	var cell_size := GridGuesser.guess_cell_size_from_file_name(path, image_size)
+	_by_cell_size = cell_size != Vector2i.ZERO
+	var guessed_size := GridGuesser.guess(img, path)
 	grid_columns.set_value_no_signal(guessed_size.x)
 	grid_rows.set_value_no_signal(guessed_size.y)
+	cell_width.set_value_no_signal(cell_size.x)
+	cell_height.set_value_no_signal(cell_size.y)
 	cut_option.clear()
 	cut_option.add_item("Grid", Cut.GRID)
 	cut_option.add_item("Find sprites", Cut.DETECT)
@@ -169,14 +192,17 @@ func set_cut(cut: Cut) -> void:
 
 func _slice() -> void:
 	var cut := get_cut()
-	for control: Control in [grid_columns.get_parent().get_parent(), more_options_btn]:
+	var grid_controls: Array[Control] = [more_options_btn]
+	for field: SpinBox in [grid_columns, cell_width]:
+		grid_controls.append(field.get_parent().get_parent())
+	for control in grid_controls:
 		control.visible = cut == Cut.GRID
 	detect_box.visible = cut == Cut.DETECT
 	keep_layout.visible = cut != Cut.GRID
 	var keep := keep_layout.button_pressed
 	match cut:
 		Cut.GRID:
-			update_grid_size(int(grid_columns.value), int(grid_rows.value))
+			_cut_grid()
 		Cut.DATA:
 			_show_cut(
 				sheet_data.to_spritesheet(
@@ -276,27 +302,53 @@ func on_preview_update() -> void:
 	lock_empty_cells.visible = spritesheet != null and spritesheet.frames.size() < grid.x * grid.y
 
 
+## Cuts the image into [param columns] × [param rows] cells, as big as fit
 func update_grid_size(columns: int, rows: int) -> void:
-	rows = max(1, rows)
-	columns = max(1, columns)
-	spritesheet = Spritesheet.new()
-	var grid_size := Vector2i(columns, rows)
+	_by_cell_size = false
+	grid_columns.set_value_no_signal(columns)
+	grid_rows.set_value_no_signal(rows)
+	_cut_grid()
+
+
+## Cuts the image into cells of [param width] × [param height] pixels, as many as fit
+func update_cell_size(width: int, height: int) -> void:
+	_by_cell_size = true
+	cell_width.set_value_no_signal(width)
+	cell_height.set_value_no_signal(height)
+	_cut_grid()
+
+
+## Cuts the image into a grid, keeping the grid or the cell size, whichever was set last
+func _cut_grid() -> void:
 	var offset := Vector2i(int(offset_x.value), int(offset_y.value))
 	var spacing := Vector2i(int(spacing_x.value), int(spacing_y.value))
-	var result := Slicer.slice(spritesheet_image, grid_size, offset, spacing)
+	var fitted := Slicer.fit(
+		spritesheet_image.get_size(),
+		Vector2i(int(grid_columns.value), int(grid_rows.value)),
+		Vector2i(int(cell_width.value), int(cell_height.value)),
+		offset,
+		spacing,
+		_by_cell_size
+	)
+	var grid_size: Vector2i = fitted.grid
+	var cell_size: Vector2i = fitted.cell_size
+	var result := Slicer.slice(spritesheet_image, grid_size, offset, spacing, cell_size)
 
+	spritesheet = Spritesheet.new()
 	spritesheet.begin_batch()
 	spritesheet.set_grid_size(grid_size)
 	for coord: Vector2i in result.frames:
 		var source := FrameSource.for_region(image_path, result.rects[coord]) if image_path else {}
 		spritesheet.set_frame(coord, result.frames[coord], source)
 	spritesheet.end_batch()
-	_show_slice_info(result.cell_size, result.unused)
+	_show_slice_info(result.unused)
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
 
-	grid_columns.set_value_no_signal(columns)
-	grid_rows.set_value_no_signal(rows)
+	grid_columns.set_value_no_signal(grid_size.x)
+	grid_rows.set_value_no_signal(grid_size.y)
+	cell_width.set_value_no_signal(cell_size.x)
+	cell_height.set_value_no_signal(cell_size.y)
 
 
 func add_spritesheet_to_global() -> void:
@@ -358,8 +410,8 @@ func add_selected_frames_to_global() -> void:
 	close_requested.emit()
 
 
-func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
-	slice_info.text = tr("Cell size: %d×%d px") % [cell_size.x, cell_size.y]
+func _show_slice_info(unused: Vector2i) -> void:
+	slice_info.text = tr("%d frames") % spritesheet.frames.size()
 	# Over the preview, so the bar above doesn't change width
 	var parts: PackedStringArray = []
 	if unused.x > 0:
@@ -370,6 +422,13 @@ func _show_slice_info(cell_size: Vector2i, unused: Vector2i) -> void:
 		tr("%s not used") % " and ".join(parts) if parts else "",
 		"The image doesn't divide evenly into this grid"
 	)
+
+
+## Sets the most [param field] takes without cutting the image again
+static func _set_max(field: Range, value: float) -> void:
+	field.set_block_signals(true)
+	field.max_value = value
+	field.set_block_signals(false)
 
 
 ## Shows the offset and spacing on the button when they're set

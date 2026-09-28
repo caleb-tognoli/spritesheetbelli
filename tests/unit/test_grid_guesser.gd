@@ -51,3 +51,15 @@ func test_single_image_is_one_cell() -> void:
 	var img := Image.create_empty(37, 23, false, Image.FORMAT_RGBA8)
 	img.fill(Color.RED)
 	assert_eq(GridGuesser.guess(img), Vector2i.ONE)
+
+
+func test_file_name_cell_size() -> void:
+	var size := Vector2i(134, 56)
+	assert_eq(GridGuesser.guess_cell_size_from_file_name("hero_24x24.png", size), Vector2i(24, 24))
+	assert_eq(
+		GridGuesser.guess_cell_size_from_file_name("walk_8x2.png", size), Vector2i.ZERO, "counts"
+	)
+	assert_eq(
+		GridGuesser.guess_cell_size_from_file_name("hero_80x80.png", size), Vector2i.ZERO, "too big"
+	)
+	assert_eq(GridGuesser.guess_cell_size_from_file_name("hero.png", size), Vector2i.ZERO)

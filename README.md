@@ -12,10 +12,13 @@ A small desktop tool made with Godot.</p>
 - **Build sheets from sprites.** Add image files (PNG, JPG, WebP, animated GIF), whole
   folders or dropped files. They're
   sorted by name and placed in the first free cell, after the last frame or on a new row.
-- **Cut sheets into frames.** The grid size is guessed from the file name
-  (`hero_32x32.png`, `walk_8x2.png`) or from the gaps between sprites; offset and spacing
-  handle sheets that aren't packed edge to edge. The empty cells of an added sheet are
-  locked so added sprites skip them, unless "Lock empty cells" is unticked.
+- **Cut sheets into frames.** The grid is set by columns × rows or by cell size in pixels,
+  each following the other, and guessed from the file name (`hero_32x32.png`,
+  `walk_8x2.png`) or from the gaps between sprites; offset and spacing handle sheets that
+  aren't packed edge to edge, and pixels left over are pointed out. The window starts in
+  Grid or Find sprites to match the sheet's layout, unless a data file comes with the
+  image. The empty cells of an added sheet are locked so added sprites skip them, unless
+  "Lock empty cells" is unticked.
 - **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
   `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
   frames are restored and tags become animations. Without one, the sprites are found by

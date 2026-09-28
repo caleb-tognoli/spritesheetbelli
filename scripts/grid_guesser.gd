@@ -34,19 +34,16 @@ static func guess(img: Image, file_name := "") -> Vector2i:
 ## Returns ZERO when there is nothing usable.
 static func guess_from_file_name(file_name: String, size: Vector2i) -> Vector2i:
 	var name := file_name.get_file().get_basename().to_lower()
-	var regex := RegEx.create_from_string("(\\d+)\\s*[x×]\\s*(\\d+)")
-	var found := regex.search(name)
-	if found:
-		var a := int(found.get_string(1))
-		var b := int(found.get_string(2))
-		if a <= 0 or b <= 0:
+	var pair := _pair_in_name(name)
+	if pair != Vector2i.ZERO:
+		if pair.x <= 0 or pair.y <= 0:
 			return Vector2i.ZERO
 		# Leftover pixels are fine: slicing reports them
-		if a >= MIN_SIZE_IN_NAME and b >= MIN_SIZE_IN_NAME:
-			if size.x >= a and size.y >= b:
-				return Vector2i(size.x / a, size.y / b)
-		elif size.x >= a and size.y >= b:
-			return Vector2i(a, b)
+		if pair.x >= MIN_SIZE_IN_NAME and pair.y >= MIN_SIZE_IN_NAME:
+			if size.x >= pair.x and size.y >= pair.y:
+				return size / pair
+		elif size.x >= pair.x and size.y >= pair.y:
+			return pair
 		return Vector2i.ZERO
 
 	var strip := RegEx.create_from_string("strip\\s*(\\d+)").search(name)
@@ -55,6 +52,23 @@ static func guess_from_file_name(file_name: String, size: Vector2i) -> Vector2i:
 		if count > 0 and size.x >= count:
 			return Vector2i(count, 1)
 	return Vector2i.ZERO
+
+
+## The sprite size in a file name like "hero_32x32.png", when it fits in [param size].
+## Returns ZERO when the name has no sprite size.
+static func guess_cell_size_from_file_name(file_name: String, size: Vector2i) -> Vector2i:
+	var pair := _pair_in_name(file_name.get_file().get_basename().to_lower())
+	if pair.x < MIN_SIZE_IN_NAME or pair.y < MIN_SIZE_IN_NAME:
+		return Vector2i.ZERO
+	return pair if size.x >= pair.x and size.y >= pair.y else Vector2i.ZERO
+
+
+## The numbers of "32x32" or "8x2" in [param name], or ZERO when there are none
+static func _pair_in_name(name: String) -> Vector2i:
+	var found := RegEx.create_from_string("(\\d+)\\s*[x×]\\s*(\\d+)").search(name)
+	if found == null:
+		return Vector2i.ZERO
+	return Vector2i(int(found.get_string(1)), int(found.get_string(2)))
 
 
 ## Finds sprites separated by fully transparent columns and rows. Returns ZERO if the

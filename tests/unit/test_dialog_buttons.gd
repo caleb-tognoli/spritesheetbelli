@@ -90,6 +90,9 @@ func test_add_spritesheet_buttons_stay_put_without_the_option() -> void:
 	window.setup(Image.create_empty(32, 16, false, Image.FORMAT_RGBA8))
 	window.update_grid_size(2, 1)
 	window.popup_centered(Vector2i(900, 600))
+	# Headless windows have no size, and the toolbar wraps rather than widening the window,
+	# so the contents are given the window's width
+	(window.get_node(^"VBoxContainer") as Control).custom_minimum_size.x = 900
 	await get_tree().process_frame
 	var row := window.add_spritesheet_btn.get_parent() as Control
 	var rects := {}

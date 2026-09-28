@@ -27,3 +27,137 @@ func test_uneven_size_reports_unused_pixels() -> void:
 	var result := Slicer.slice(img, Vector2i(3, 2))
 	assert_eq(result.cell_size, Vector2i(16, 16))
 	assert_eq(result.unused, Vector2i(2, 1))
+
+
+## 24 px sprites with a 4 px border and 2 px gaps, and 2 px of spacing after the last
+## column and row too, on a grey background: 134×56
+func trailing_spacing_sheet() -> Image:
+	var img := Image.create_empty(134, 56, false, Image.FORMAT_RGBA8)
+	img.fill(Color.GRAY)
+	for row in 2:
+		for column in 5:
+			img.fill_rect(
+				Rect2i(Vector2i(4, 4) + Vector2i(column, row) * 26, Vector2i(24, 24)), Color.RED
+			)
+	return img
+
+
+func test_cell_size_from_grid() -> void:
+	assert_eq(Slicer.get_cell_size(Vector2i(64, 32), Vector2i(4, 2)), Vector2i(16, 16))
+	assert_eq(
+		Slicer.get_cell_size(Vector2i(50, 33), Vector2i(3, 2)), Vector2i(16, 16), "rounded down"
+	)
+	# 2 + 16 + 4 + 16 = 38
+	assert_eq(
+		Slicer.get_cell_size(Vector2i(38, 18), Vector2i(2, 1), Vector2i(2, 2), Vector2i(4, 0)),
+		Vector2i(16, 16)
+	)
+	assert_eq(Slicer.get_cell_size(Vector2i(8, 8), Vector2i(16, 1)), Vector2i(0, 8), "no room")
+
+
+func test_grid_from_cell_size() -> void:
+	assert_eq(Slicer.get_grid_size(Vector2i(64, 32), Vector2i(16, 16)), Vector2i(4, 2))
+	assert_eq(
+		Slicer.get_grid_size(Vector2i(50, 33), Vector2i(16, 16)), Vector2i(3, 2), "rounded down"
+	)
+	assert_eq(
+		Slicer.get_grid_size(Vector2i(38, 18), Vector2i(16, 16), Vector2i(2, 2), Vector2i(4, 0)),
+		Vector2i(2, 1)
+	)
+	assert_eq(Slicer.get_grid_size(Vector2i(8, 8), Vector2i(16, 16)), Vector2i.ONE, "at least one")
+
+
+func test_grid_and_cell_size_are_as_big_as_fit() -> void:
+	var size := Vector2i(134, 56)
+	var offset := Vector2i(4, 4)
+	var spacing := Vector2i(2, 2)
+	for columns in range(1, 40):
+		var grid := Vector2i(columns, 1 + columns % 5)
+		var cell := Slicer.get_cell_size(size, grid, offset, spacing)
+		var unused := Slicer.get_unused(size, grid, cell, offset, spacing)
+		assert_true(unused.x < grid.x and unused.y < grid.y, "cells as big as fit %s" % grid)
+	for width in range(1, 100):
+		var cell := Vector2i(width, 1 + width % 40)
+		var grid := Slicer.get_grid_size(size, cell, offset, spacing)
+		var unused := Slicer.get_unused(size, grid, cell, offset, spacing)
+		assert_true(
+			unused.x < cell.x + spacing.x and unused.y < cell.y + spacing.y,
+			"as many cells as fit %s" % cell
+		)
+
+
+func test_unused_pixels() -> void:
+	assert_eq(Slicer.get_unused(Vector2i(64, 32), Vector2i(4, 2), Vector2i(16, 16)), Vector2i.ZERO)
+	assert_eq(Slicer.get_unused(Vector2i(50, 33), Vector2i(3, 2), Vector2i(16, 16)), Vector2i(2, 1))
+	assert_eq(
+		Slicer.get_unused(
+			Vector2i(134, 56), Vector2i(5, 2), Vector2i(24, 24), Vector2i(4, 4), Vector2i(2, 2)
+		),
+		Vector2i(2, 2),
+		"spacing after the last cell"
+	)
+
+
+func test_trailing_spacing_is_left_over() -> void:
+	var img := trailing_spacing_sheet()
+	var offset := Vector2i(4, 4)
+	var spacing := Vector2i(2, 2)
+	var fitted := Slicer.fit(img.get_size(), Vector2i.ONE, Vector2i(24, 24), offset, spacing, true)
+	assert_eq(fitted.grid, Vector2i(5, 2), "floor((134 - 4 + 2) / 26), floor((56 - 4 + 2) / 26)")
+	assert_eq(fitted.cell_size, Vector2i(24, 24))
+	assert_eq(fitted.unused, Vector2i(2, 2))
+	var result := Slicer.slice(img, fitted.grid, offset, spacing, fitted.cell_size)
+	assert_eq(result.frames.size(), 10)
+	assert_eq(result.unused, Vector2i(2, 2))
+	assert_eq(result.rects[Vector2i(4, 1)], Rect2i(108, 30, 24, 24))
+	for coord: Vector2i in result.frames:
+		var frame: Image = result.frames[coord]
+		assert_eq(frame.get_size(), Vector2i(24, 24))
+		assert_color(frame, Vector2i(23, 23), Color.RED, "no background in %s" % coord)
+
+
+func test_fit_keeps_the_cell_size() -> void:
+	var size := Vector2i(134, 56)
+	var cell := Vector2i(24, 24)
+	var fitted := Slicer.fit(size, Vector2i(9, 9), cell, Vector2i.ZERO, Vector2i.ZERO, true)
+	assert_eq(fitted.grid, Vector2i(5, 2), "the grid follows")
+	assert_eq(fitted.cell_size, cell)
+	assert_eq(fitted.unused, Vector2i(14, 8))
+	fitted = Slicer.fit(size, fitted.grid, cell, Vector2i(4, 4), Vector2i(2, 2), true)
+	assert_eq(fitted.cell_size, cell, "kept when the offset and spacing change")
+	assert_eq(fitted.grid, Vector2i(5, 2))
+	fitted = Slicer.fit(size, fitted.grid, cell, Vector2i(4, 4), Vector2i(8, 8), true)
+	assert_eq(fitted.cell_size, cell)
+	assert_eq(fitted.grid, Vector2i(4, 1), "fewer cells fit")
+	assert_eq(fitted.unused, Vector2i(10, 28))
+
+
+func test_fit_keeps_the_grid() -> void:
+	var size := Vector2i(134, 56)
+	var grid := Vector2i(5, 2)
+	var fitted := Slicer.fit(size, grid, Vector2i(24, 24), Vector2i.ZERO, Vector2i.ZERO, false)
+	assert_eq(fitted.grid, grid)
+	assert_eq(fitted.cell_size, Vector2i(26, 28), "the cell size follows")
+	assert_eq(fitted.unused, Vector2i(4, 0))
+	fitted = Slicer.fit(size, grid, fitted.cell_size, Vector2i(4, 4), Vector2i(2, 2), false)
+	assert_eq(fitted.grid, grid, "kept when the offset and spacing change")
+	assert_eq(fitted.cell_size, Vector2i(24, 25), "the trailing spacing can't be told apart")
+	assert_eq(fitted.unused, Vector2i(2, 0))
+
+
+func test_fit_keeps_cells_in_the_image() -> void:
+	var size := Vector2i(40, 20)
+	var fitted := Slicer.fit(
+		size, Vector2i.ONE, Vector2i(100, 100), Vector2i(4, 2), Vector2i.ZERO, true
+	)
+	assert_eq(fitted.cell_size, Vector2i(36, 18), "at most what's left after the offset")
+	assert_eq(fitted.grid, Vector2i.ONE)
+	fitted = Slicer.fit(
+		size, Vector2i(100, 100), Vector2i.ONE, Vector2i.ZERO, Vector2i(1, 1), false
+	)
+	assert_eq(fitted.grid, Vector2i(20, 10), "cells of at least a pixel")
+	assert_eq(fitted.cell_size, Vector2i.ONE)
+	fitted = Slicer.fit(
+		Vector2i(4096, 8), Vector2i.ONE, Vector2i.ONE, Vector2i.ZERO, Vector2i.ZERO, true
+	)
+	assert_eq(fitted.grid, Vector2i(Slicer.MAX_GRID, 8), "at most as many as the fields take")

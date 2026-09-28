@@ -1,0 +1,110 @@
+extends "res://tests/test_case.gd"
+
+var window: AddSpritesheetWindow
+
+
+func before_each() -> void:
+	Global.document.reset()
+	window = load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
+	add_child(window)
+
+
+func after_each() -> void:
+	window.queue_free()
+	Global.document.reset()
+
+
+## 24 px sprites with a 4 px border and 2 px gaps, and 2 px of spacing after the last
+## column and row too, on a grey background: 134×56
+func trailing_spacing_sheet() -> Image:
+	var img := Image.create_empty(134, 56, false, Image.FORMAT_RGBA8)
+	img.fill(Color.GRAY)
+	for row in 2:
+		for column in 5:
+			var cell := Rect2i(Vector2i(4, 4) + Vector2i(column, row) * 26, Vector2i(24, 24))
+			img.fill_rect(cell, Color.RED)
+	return img
+
+
+func get_grid() -> Vector2i:
+	return Vector2i(int(window.grid_columns.value), int(window.grid_rows.value))
+
+
+func get_cell_size() -> Vector2i:
+	return Vector2i(int(window.cell_width.value), int(window.cell_height.value))
+
+
+func set_offset_and_spacing(offset: int, spacing: int) -> void:
+	for field: SpinBox in [window.offset_x, window.offset_y]:
+		field.value = offset
+	for field: SpinBox in [window.spacing_x, window.spacing_y]:
+		field.value = spacing
+
+
+func test_the_cell_size_sets_the_grid() -> void:
+	window.setup(trailing_spacing_sheet())
+	set_offset_and_spacing(4, 2)
+	window.cell_width.value = 24
+	window.cell_height.value = 24
+	assert_eq(get_grid(), Vector2i(5, 2))
+	assert_eq(window.spritesheet.grid_size, Vector2i(5, 2))
+	assert_eq(window.spritesheet.frames.size(), 10)
+	for coord: Vector2i in window.spritesheet.frames:
+		var frame: Image = window.spritesheet.frames[coord]
+		assert_eq(frame.get_size(), Vector2i(24, 24))
+		assert_color(frame, Vector2i(23, 23), Color.RED, "no background in %s" % coord)
+	assert_eq(
+		window.preview_area.notice_label.text,
+		"2 px on the right and 2 px at the bottom not used",
+		"the spacing after the last cells"
+	)
+	assert_eq(window.slice_info.text, "10 frames")
+
+
+func test_the_grid_sets_the_cell_size() -> void:
+	window.setup(trailing_spacing_sheet())
+	window.grid_columns.value = 5
+	window.grid_rows.value = 2
+	assert_eq(get_cell_size(), Vector2i(26, 28))
+	assert_eq(window.preview_area.notice_label.text, "4 px on the right not used")
+
+
+func test_the_last_pair_set_is_kept() -> void:
+	window.setup(trailing_spacing_sheet())
+	window.update_cell_size(24, 24)
+	set_offset_and_spacing(4, 2)
+	assert_eq(get_cell_size(), Vector2i(24, 24), "cell size kept")
+	assert_eq(get_grid(), Vector2i(5, 2))
+	window.spacing_x.value = 8
+	assert_eq(get_cell_size(), Vector2i(24, 24), "cell size kept")
+	assert_eq(get_grid(), Vector2i(4, 2), "fewer columns fit")
+
+	window.grid_columns.value = 2
+	assert_eq(get_cell_size(), Vector2i(61, 25), "floor((134 - 4 + 8) / 2) - 8")
+	window.offset_x.value = 0
+	assert_eq(get_grid(), Vector2i(2, 2), "grid kept")
+	assert_eq(get_cell_size(), Vector2i(63, 25))
+
+	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
+	window.set_cut(AddSpritesheetWindow.Cut.GRID)
+	assert_eq(get_grid(), Vector2i(2, 2), "the same grid after cutting another way")
+
+
+func test_a_sprite_size_in_the_name_is_kept() -> void:
+	window.setup(trailing_spacing_sheet(), "hero_24x24.png")
+	assert_eq(get_cell_size(), Vector2i(24, 24))
+	assert_eq(get_grid(), Vector2i(5, 2))
+	set_offset_and_spacing(4, 2)
+	assert_eq(get_cell_size(), Vector2i(24, 24))
+	assert_eq(get_grid(), Vector2i(5, 2))
+	assert_eq(window.spritesheet.frames.size(), 10)
+
+
+func test_cells_stay_in_the_image() -> void:
+	window.setup(trailing_spacing_sheet())
+	assert_eq(window.cell_width.max_value, 134.0)
+	assert_eq(window.offset_y.max_value, 55.0, "leaves a pixel")
+	window.offset_x.value = 34
+	window.cell_width.value = 134
+	assert_eq(get_cell_size().x, 100, "what's left after the offset")
+	assert_eq(get_grid().x, 1)

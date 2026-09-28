@@ -39,26 +39,27 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer"]
+[node name="Toolbar" type="HFlowContainer" parent="VBoxContainer/PanelContainer/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 10
 alignment = 1
 
-[node name="GridSize" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="GridSize" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar"]
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize"]
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/GridSize"]
 layout_mode = 2
 text = "Grid"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/GridSize"]
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 10
 
-[node name="GridColumns" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="GridColumns" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/GridSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 4
@@ -69,11 +70,11 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/GridSize/HBoxContainer"]
 layout_mode = 2
 text = "×"
 
-[node name="GridRows" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/GridSize/HBoxContainer"]
+[node name="GridRows" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/GridSize/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 4
@@ -84,20 +85,62 @@ value = 1.0
 alignment = 2
 select_all_on_focus = true
 
-[node name="Offset" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="CellSize" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/CellSize"]
+layout_mode = 2
+text = "Cell"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/CellSize"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 10
+
+[node name="CellWidth" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/CellSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Cell width"
+min_value = 1.0
+max_value = 4096.0
+value = 1.0
+alignment = 2
+suffix = "px"
+select_all_on_focus = true
+
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/CellSize/HBoxContainer"]
+layout_mode = 2
+text = "×"
+
+[node name="CellHeight" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/CellSize/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Cell height"
+min_value = 1.0
+max_value = 4096.0
+value = 1.0
+alignment = 2
+suffix = "px"
+select_all_on_focus = true
+
+[node name="Offset" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset"]
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Offset"]
 layout_mode = 2
 custom_minimum_size = Vector2(70, 0)
 text = "Offset"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Offset"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="OffsetX" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset/HBoxContainer"]
+[node name="OffsetX" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Offset/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Pixels to skip at the top-left (horizontal)"
@@ -106,11 +149,11 @@ alignment = 2
 suffix = "px"
 select_all_on_focus = true
 
-[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset/HBoxContainer"]
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Offset/HBoxContainer"]
 layout_mode = 2
 text = "×"
 
-[node name="OffsetY" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Offset/HBoxContainer"]
+[node name="OffsetY" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Offset/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Pixels to skip at the top-left (vertical)"
@@ -119,20 +162,20 @@ alignment = 2
 suffix = "px"
 select_all_on_focus = true
 
-[node name="Spacing" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="Spacing" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing"]
+[node name="Label" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Spacing"]
 layout_mode = 2
 custom_minimum_size = Vector2(70, 0)
 text = "Spacing"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Spacing"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="SpacingX" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing/HBoxContainer"]
+[node name="SpacingX" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Spacing/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Pixels between cells (horizontal)"
@@ -141,11 +184,11 @@ alignment = 2
 suffix = "px"
 select_all_on_focus = true
 
-[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing/HBoxContainer"]
+[node name="X" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Spacing/HBoxContainer"]
 layout_mode = 2
 text = "×"
 
-[node name="SpacingY" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/Spacing/HBoxContainer"]
+[node name="SpacingY" type="SpinBox" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar/Spacing/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 tooltip_text = "Pixels between cells (vertical)"
@@ -154,11 +197,11 @@ alignment = 2
 suffix = "px"
 select_all_on_focus = true
 
-[node name="SliceInfo" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+[node name="SliceInfo" type="Label" parent="VBoxContainer/PanelContainer/MarginContainer/Toolbar"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 4
-text = "Cell size: 0×0 px"
+text = "0 frames"
 
 [node name="PreviewArea" parent="VBoxContainer" instance=ExtResource("1_625nm")]
 unique_name_in_owner = true

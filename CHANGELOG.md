@@ -184,6 +184,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   and on the exported sheet (or on its page, when packed on several), with its colour,
   like "3, 5 in the frame (35, 5 on the sheet) · #41d88f, alpha 255". Scaled, flipped,
   trimmed and turned frames give their own pixels.
+- Add Spritesheet sets the Grid cut by cell size as well as by columns and rows. Editing
+  one sets the other, and whichever was edited last is kept when the offset or spacing
+  change. Pixels that don't divide evenly, including spacing after the last cell, show
+  as "N px on the right not used" instead of making the cells bigger, so a 24×24 grid
+  with an offset and spacing no longer cuts 24×25 frames with a strip of background. A
+  sprite size in the file name, like `hero_24x24.png`, fills in the cell size. The
+  toolbar wraps onto a second line in a narrow window, and shows the number of frames
+  for the Grid cut.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
