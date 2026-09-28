@@ -49,6 +49,9 @@ var more_options_btn := OptionsDropdown.new("Offset & Spacing")
 var keep_layout := CheckBox.new()
 ## Makes a colour transparent before cutting, on for sheets drawn on a solid colour
 var background := ColorKeyControl.new()
+## The image with a box over each sprite, shown instead of the preview when finding
+## sprites: the boxes, edited or not, are what's cut
+var box_editor := SpriteBoxEditor.new()
 ## The image as opened
 var source_image: Image
 ## The other pages of a packed sheet with a data file, by page, as cut
@@ -64,6 +67,10 @@ var _background_queued := false
 ## Whether the cell size was set last, rather than the grid: the one set last is kept when
 ## the offset or spacing change, and the other follows
 var _by_cell_size := false
+## Whether the sprites were found in the image since it was opened, and whether they're to
+## be found again, as the settings for finding them changed. They're found once shown.
+var _boxes_found := false
+var _boxes_stale := true
 
 
 func _ready() -> void:
@@ -146,18 +153,34 @@ func _ready() -> void:
 	_build_cut_controls()
 	background.changed.connect(_on_background_changed)
 	background.watch_preview(preview_area.spritesheet_preview)
+	# The eyedropper picks from the image under the boxes too
+	background.picking_changed.connect(func(on: bool) -> void: box_editor.view.picking = on)
+	box_editor.view.color_picked.connect(background.pick)
 	# Before the number of frames, which ends the toolbar
 	slice_info.add_sibling(background)
 	slice_info.get_parent().move_child(slice_info, background.get_index())
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 	preview_area.spritesheet_preview.able_to_move_frames = false
+	# In the preview's place
+	box_editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box_editor.theme = preview_area.theme
+	box_editor.visible = false
+	preview_area.add_sibling(box_editor)
+	box_editor.boxes_edited.connect(_slice)
+	box_editor.selection_changed.connect(on_preview_update)
+	box_editor.find_requested.connect(
+		func() -> void:
+			_boxes_stale = true
+			_slice()
+	)
 	# Show the whole sheet once the window has its size
 	visibility_changed.connect(
 		func() -> void:
 			if visible:
 				await get_tree().process_frame
 				preview_area.spritesheet_preview.fit_to_view()
+				box_editor.fit_to_view()
 	)
 
 
@@ -176,6 +199,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	# Without one, the swatch starts at the top-left pixel, most often the background
 	background.set_key(found != null, found if found != null else img.get_pixel(0, 0))
 	background.set_picking(false)
+	_boxes_found = false
 	_remove_background()
 	# Packed sheets stay packed when opened, or added to a packed sheet
 	var target := Global.spritesheet
@@ -219,18 +243,20 @@ func _guess_grid(or_keep := false) -> void:
 	cell_height.set_value_no_signal(cell_size.y)
 
 
-## Makes the background colour transparent in the images that are cut, when it's on
+## Makes the background colour transparent in the images that are cut, when it's on. The
+## sprites are to be found again, as that changes where they are.
 func _remove_background() -> void:
 	spritesheet_image = source_image
 	_other_pages = _source_pages
-	if not background.is_on():
-		return
-	var color := background.get_color()
-	var tolerance := background.get_tolerance()
-	spritesheet_image = SheetBackground.remove(source_image, color, tolerance)
-	_other_pages = []
-	for page in _source_pages:
-		_other_pages.append(SheetBackground.remove(page, color, tolerance) if page else null)
+	_boxes_stale = true
+	if background.is_on():
+		var color := background.get_color()
+		var tolerance := background.get_tolerance()
+		spritesheet_image = SheetBackground.remove(source_image, color, tolerance)
+		_other_pages = []
+		for page in _source_pages:
+			_other_pages.append(SheetBackground.remove(page, color, tolerance) if page else null)
+	box_editor.set_image(spritesheet_image)
 
 
 ## Cuts the image again with the new background at the end of the frame, once for all the
@@ -285,6 +311,7 @@ func set_cut(cut: Cut) -> void:
 		cut_option.select(index)
 	_slice()
 	preview_area.spritesheet_preview.fit_to_view()
+	box_editor.fit_to_view()
 
 
 func _slice() -> void:
@@ -296,6 +323,9 @@ func _slice() -> void:
 		control.visible = cut == Cut.GRID
 	detect_box.visible = cut == Cut.DETECT
 	keep_layout.visible = cut != Cut.GRID
+	# Found sprites are shown where they are in the image, to edit their boxes
+	preview_area.visible = cut != Cut.DETECT
+	box_editor.visible = cut == Cut.DETECT
 	var keep := keep_layout.button_pressed
 	match cut:
 		Cut.GRID:
@@ -307,11 +337,26 @@ func _slice() -> void:
 				)
 			)
 		Cut.DETECT:
-			var rows := SpriteDetector.detect(spritesheet_image, int(merge_distance.value))
+			if _boxes_stale:
+				_find_sprites()
+			var rows := SpriteBoxes.to_rows(box_editor.get_boxes())
 			var alignment := align_option.get_selected_id() as Spritesheet.Alignment
 			_show_cut(
 				SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment, image_path, keep)
 			)
+
+
+## Finds the sprites in the image as it's cut. Boxes edited by hand are replaced, as a
+## step that can be undone in the box editor, see [method SpriteBoxEditor.find_again].
+func _find_sprites() -> void:
+	var rows := SpriteDetector.detect(spritesheet_image, int(merge_distance.value))
+	var boxes := SpriteBoxes.from_rows(rows)
+	if _boxes_found:
+		box_editor.find_again(boxes)
+	else:
+		box_editor.start(boxes)
+	_boxes_found = true
+	_boxes_stale = false
 
 
 ## The pages after the first of a packed sheet with a data file, missing ones as empty
@@ -351,7 +396,8 @@ func _build_cut_controls() -> void:
 	cut_box.add_child(cut_label)
 	cut_box.add_child(cut_option)
 	cut_option.tooltip_text = (
-		"Grid: equal cells. Find sprites: every group of pixels surrounded by transparency."
+		"Grid: equal cells. Find sprites: every group of pixels surrounded by transparency,"
+		+ " in a box that can be moved, resized, merged or deleted."
 		+ " Data: where the data file exported with the image says."
 	)
 	cut_option.item_selected.connect(func(_index: int) -> void: set_cut(get_cut()))
@@ -364,7 +410,11 @@ func _build_cut_controls() -> void:
 	merge_distance.max_value = 64
 	merge_distance.suffix = "px"
 	merge_distance.tooltip_text = "Parts of a sprite closer than this, like a spark, stay together"
-	merge_distance.value_changed.connect(func(_value: float) -> void: _slice())
+	merge_distance.value_changed.connect(
+		func(_value: float) -> void:
+			_boxes_stale = true
+			_slice()
+	)
 	SpinScroll.enable(merge_distance)
 	var align_label := Label.new()
 	align_label.text = "Align"
@@ -391,7 +441,7 @@ func _build_cut_controls() -> void:
 
 
 func on_preview_update() -> void:
-	var selection_size := preview_area.spritesheet_preview.get_selected_coords().size()
+	var selection_size := get_selected_coords().size()
 	add_selected_frames_btn.disabled = selection_size == 0
 	add_selected_frames_btn.text = tr("Add selected frames (%d)") % selection_size
 	# Only shown when some cells have no sprite. The buttons are at the end of the row, so
@@ -499,9 +549,24 @@ static func add_sheet(target: Spritesheet, sheet: Spritesheet, lock_empty: bool)
 		target.lock_free_cells(Rect2i(offset, sheet.grid_size))
 
 
+## The cells of the selected frames: in the preview, or of the selected boxes when finding
+## sprites, in reading order
+func get_selected_coords() -> Array[Vector2i]:
+	if get_cut() != Cut.DETECT:
+		return preview_area.spritesheet_preview.get_selected_coords()
+	var coords: Array[Vector2i] = []
+	var box_coords := SpriteBoxes.get_coords(box_editor.get_boxes())
+	for index in box_editor.get_selected():
+		coords.append(box_coords[index])
+	coords.sort_custom(
+		func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x)
+	)
+	return coords
+
+
 func add_selected_frames_to_global() -> void:
 	var cells: Array[Dictionary] = []
-	for coord in preview_area.spritesheet_preview.get_selected_coords():
+	for coord in get_selected_coords():
 		cells.append(spritesheet.get_cell_data(coord))
 	var target := Global.spritesheet
 	Global.document.perform(

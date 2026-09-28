@@ -91,18 +91,28 @@ func test_add_spritesheet_window_fits_when_the_cut_changes() -> void:
 	# Headless windows have no size, so the preview is given one
 	window.preview_area.container.stretch = false
 	(preview.get_viewport() as SubViewport).size = Vector2i(600, 400)
+	var view := window.box_editor.view
+	view.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	view.size = Vector2(600, 400)
 	preview.set_zoom(20)
 	preview.camera.position = Vector2(500, 500)
+	view.set_zoom(20)
+	# Found sprites are shown on the image, whole
 	window.cut_option.select(window.cut_option.get_item_index(AddSpritesheetWindow.Cut.DETECT))
 	window.cut_option.item_selected.emit(window.cut_option.selected)
+	assert_true(window.box_editor.visible and not window.preview_area.visible, "boxes shown")
+	var image_rect := Rect2(view.world_to_screen(Vector2.ZERO), Vector2(64, 48) * view.zoom)
+	assert_true(Rect2(Vector2.ZERO, view.size).encloses(image_rect), "the image is shown whole")
+	view.set_zoom(3)
+	window.merge_distance.value = 2
+	assert_eq(view.zoom, 3.0, "detection settings keep the zoom")
+
+	window.set_cut(AddSpritesheetWindow.Cut.GRID)
+	assert_true(window.preview_area.visible and not window.box_editor.visible, "frames shown")
 	var shown := Rect2(preview.screen_to_world(Vector2.ZERO), preview.get_viewport_rect().size)
 	shown.size /= preview.camera.zoom
 	for coord in window.spritesheet.frames:
 		assert_true(shown.encloses(preview.get_frame_world_rect(coord)), "%s shown" % coord)
-	preview.set_zoom(3)
-	window.merge_distance.value = 2
-	assert_eq(preview.camera.zoom.x, 3.0, "detection settings keep the zoom")
-	window.set_cut(AddSpritesheetWindow.Cut.GRID)
 	preview.set_zoom(3)
 	window.grid_columns.value = 2
 	assert_eq(preview.camera.zoom.x, 3.0, "grid sizes keep the zoom")

@@ -38,20 +38,40 @@ static func detect(img: Image, merge_distance := 0) -> Array[Array]:
 ## Puts rectangles that share most of their height in one row, rows from top to bottom
 ## and each row from left to right
 static func group_in_rows(rects: Array[Rect2i]) -> Array[Array]:
-	var sorted := rects.duplicate()
-	sorted.sort_custom(func(a: Rect2i, b: Rect2i) -> bool: return a.position.y < b.position.y)
+	var rows: Array[Array] = []
+	for row in order_in_rows(rects):
+		rows.append(row.map(func(index: int) -> Rect2i: return rects[index]))
+	return rows
+
+
+## The indices of [param rects] the way [method group_in_rows] puts them in rows. Rectangles
+## at the same place keep their order.
+static func order_in_rows(rects: Array[Rect2i]) -> Array[Array]:
+	var sorted := range(rects.size())
+	sorted.sort_custom(
+		func(a: int, b: int) -> bool:
+			var y_a := rects[a].position.y
+			var y_b := rects[b].position.y
+			return y_a < y_b or (y_a == y_b and a < b)
+	)
 	var rows: Array[Array] = []
 	var row_span := Vector2i.ZERO  # Top and bottom of the current row
-	for rect: Rect2i in sorted:
+	for index: int in sorted:
+		var rect := rects[index]
 		var overlap := mini(row_span.y, rect.end.y) - maxi(row_span.x, rect.position.y)
 		var smaller := mini(row_span.y - row_span.x, rect.size.y)
 		if rows.is_empty() or overlap * 2 < smaller:
 			rows.append([])
 			row_span = Vector2i(rect.position.y, rect.end.y)
-		rows[-1].append(rect)
+		rows[-1].append(index)
 		row_span = Vector2i(mini(row_span.x, rect.position.y), maxi(row_span.y, rect.end.y))
 	for row in rows:
-		row.sort_custom(func(a: Rect2i, b: Rect2i) -> bool: return a.position.x < b.position.x)
+		row.sort_custom(
+			func(a: int, b: int) -> bool:
+				var x_a := rects[a].position.x
+				var x_b := rects[b].position.x
+				return x_a < x_b or (x_a == x_b and a < b)
+		)
 	return rows
 
 

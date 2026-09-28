@@ -198,6 +198,15 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   on for such sheets, with a tolerance. The colour can be chosen by hand for any sheet,
   with the colour picker or by clicking the preview with the eyedropper, and the preview
   updates as you go. Reloading a linked sheet makes its background transparent again.
+- Add Spritesheet's Find sprites shows the image with a numbered box over each sprite,
+  numbered in the order the frames are added, and the boxes can be edited: click to
+  select (Shift or Ctrl for several), drag inside to move, drag an edge or corner to
+  resize, drag on empty space to draw a new box, Delete to remove, and Merge (or
+  Ctrl+drag across boxes) to join them. Boxes snap to whole pixels and stay in the image.
+  Ctrl+Z undoes box edits in the window. The boxes are what's added, aligned and kept in
+  the packed layout as before, and reloading the file cuts the same boxes again. Changing
+  Join parts within or the colour made transparent finds the sprites again; Undo brings
+  back boxes edited by hand, and Find Again starts over.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

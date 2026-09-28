@@ -25,7 +25,8 @@ A small desktop tool made with Godot.</p>
 - **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
   `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
   frames are restored and tags become animations. Without one, the sprites are found by
-  the transparent space around them.
+  the transparent space around them, in boxes on the image you can move, resize, merge,
+  delete or draw before adding them.
 - **Packed layout.** Instead of a grid, frames can be laid out packed tightly on pages,
   like a texture atlas, and edited right there: drag frames anywhere (or onto a new page),
   pin them, pack again. An opened atlas keeps every frame where it is, so exporting it
