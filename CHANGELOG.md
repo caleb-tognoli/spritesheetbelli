@@ -309,6 +309,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Add Spritesheet opens in Grid when the sheet is in the Grid layout and in Find sprites
   when it's in the Packed layout. A data file next to the image still opens it cut where
   the data file says.
+- Remove Background Colour opens a small panel over the preview instead of a dialog, with
+  the same colour, eyedropper and tolerance as Add Spritesheet. While it's open, the
+  selected frames are shown with the colour removed, and frames can still be selected and
+  the view moved. Nothing changes until Remove, which is one step to undo; Cancel or
+  Escape leaves the frames as they were. The eyedropper picks the colour by clicking a
+  frame, as the frame is, not as previewed.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

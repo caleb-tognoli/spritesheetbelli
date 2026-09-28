@@ -3,7 +3,7 @@ extends HBoxContainer
 ## "Make [swatch] transparent", with an eyedropper and a tolerance: a colour to make
 ## transparent, like a sheet's background. The colour comes from the swatch's picker, or
 ## from clicking a preview with the eyedropper, see [method watch_preview]. Choosing a
-## colour turns it on.
+## colour turns it on. With [method set_always_on], there's no turning it off.
 
 ## It was turned on or off, or its colour or tolerance changed. Changes can come many at
 ## once, e.g. while dragging in the picker.
@@ -15,6 +15,8 @@ const EYEDROPPER_ICON := preload("res://assets/icons/ColorPick.svg")
 
 ## Makes the colour transparent when pressed
 var enabled_check := CheckBox.new()
+## Shown instead of [member enabled_check] once [method set_always_on]
+var _make_label := Label.new()
 var swatch := ColorPickerButton.new()
 var eyedropper := Button.new()
 ## How different a pixel can be from the colour, in percent
@@ -26,6 +28,9 @@ func _init() -> void:
 	enabled_check.text = "Make"
 	enabled_check.tooltip_text = "Makes this colour transparent before cutting"
 	add_child(enabled_check)
+	_make_label.text = "Make"
+	_make_label.visible = false
+	add_child(_make_label)
 	swatch.custom_minimum_size = Vector2(32, 0)
 	swatch.edit_alpha = false
 	swatch.tooltip_text = "The colour to make transparent"
@@ -113,6 +118,14 @@ func pick(color: Color) -> void:
 	set_key(true, color, get_tolerance())
 	set_picking(false)
 	changed.emit()
+
+
+## Always makes the colour transparent, for places where that's the point, like removing
+## a background colour from frames: a plain "Make" takes the checkbox's place
+func set_always_on() -> void:
+	enabled_check.visible = false
+	_make_label.visible = true
+	set_key(true, get_color(), get_tolerance())
 
 
 ## Lets the eyedropper pick colours by clicking [param preview]

@@ -229,14 +229,13 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
 	add_child(settings_window)
-	add_child(color_key_dialog)
+	color_key_dialog.setup(preview_area, remove_background)
 	add_child(outline_dialog)
 	add_child(export_dialog)
 	export_dialog.export_requested.connect(files.choose_export_path)
 	add_child(about_dialog)
 	add_child(source_watcher)
 	animation_panel.setup(preview)
-	color_key_dialog.color_chosen.connect(remove_background)
 	outline_dialog.outline_chosen.connect(add_outline)
 	files.restore_session.call_deferred()
 	files.get_selected_coords = preview.get_selected_coords
@@ -451,12 +450,7 @@ func _register_actions() -> void:
 			edit_targets.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
 			has_frames
 		)
-	add.call(
-		&"color_key",
-		"Remove Background Colour…",
-		func() -> void: color_key_dialog.open(sheet.frames[preview.get_selected_coords()[0]]),
-		has_selection
-	)
+	add.call(&"color_key", "Remove Background Colour…", color_key_dialog.open, has_selection)
 	add.call(
 		&"add_outline",
 		"Add Outline…",

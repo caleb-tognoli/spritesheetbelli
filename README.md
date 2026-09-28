@@ -35,7 +35,8 @@ A small desktop tool made with Godot.</p>
 - **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
   the pivot tool or presets and exported where the format has them.
 - **Edit frames.** The Select tool clicks and box-selects frames; the Move tool drags
-  them, or copies them with Alt. Flip, rotate, trim, remove a background colour, add an
+  them, or copies them with Alt. Flip, rotate, trim, remove a background colour (picked
+  with the eyedropper and previewed on the selected frames until you click Remove), add an
   outline, replace, cut/copy/paste (also images copied in other apps), duplicate, insert
   or remove cells, insert, remove or reorder rows. Everything can be undone.
 - **Stay linked to your art files.** Sprites and sheets remember the file they came from.

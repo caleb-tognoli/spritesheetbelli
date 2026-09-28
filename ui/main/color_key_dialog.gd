@@ -1,45 +1,195 @@
 class_name ColorKeyDialog
-extends ConfirmationDialog
-## Asks which colour to make transparent, and how close a pixel must be to it.
+extends PanelContainer
+## Remove Background Colour: a small panel over the preview, under the zoom, with the
+## colour to make transparent in the selected frames and how close a pixel must be to it,
+## see [ColorKeyControl]. It isn't modal: frames can be selected and the view moved while
+## it's open, and its eyedropper picks the colour by clicking a frame, as the frame is,
+## not as previewed.
+##
+## While it's open, the preview shows the selected frames with the colour removed, see
+## [method SpritesheetPreview.show_instead], without changing the sheet. Only Remove
+## does, as one step to undo. Cancel or Escape closes it and shows the frames as they are.
 
-## Emitted with the chosen colour and tolerance (0 to 1)
-signal color_chosen(color: Color, tolerance: float)
+var key := ColorKeyControl.new()
+## Says which frames the colour is removed from
+var targets_label := Label.new()
+var remove_button := Button.new()
+var cancel_button := Button.new()
+var preview: SpritesheetPreview
 
-var picker := ColorPickerButton.new()
-var tolerance := SpinBox.new()
+## Removes the colour from the selected frames, called with the colour and the tolerance,
+## see [method setup]
+var _remove := Callable()
+## Whether the preview is updated at the end of the frame, once for many changes
+var _update_queued := false
+## Whether frames are being made transparent on worker threads, and whether something
+## changed in the meantime, so it's done again after
+var _keying := false
+var _stale := false
+## Frame images with the colour removed, at the sheet's scale, by the frame image, for
+## [member _keyed_with]
+var _keyed: Dictionary[Image, Image] = {}
+## The colour, tolerance, scale and filter [member _keyed] was made with
+var _keyed_with := []
 
 
 func _init() -> void:
-	title = "Remove Background Colour"
-	ok_button_text = "Remove"
-	DialogButtons.apply(self)
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 16)
-	add_child(grid)
+	visible = false
+	theme_type_variation = &"PreviewOverlay"
+	size_flags_horizontal = Control.SIZE_SHRINK_END
+	# More room than the zoom's panel, for a panel with a title and buttons
+	var margins := MarginContainer.new()
+	for side: String in ["left", "right", "top", "bottom"]:
+		margins.add_theme_constant_override("margin_" + side, 6)
+	add_child(margins)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	margins.add_child(column)
+	var title := Label.new()
+	title.text = "Remove Background Colour"
+	title.theme_type_variation = &"HeaderSmall"
+	column.add_child(title)
+	key.set_always_on()
+	column.add_child(key)
 
-	var color_label := Label.new()
-	color_label.text = "Colour to make transparent"
-	grid.add_child(color_label)
-	picker.custom_minimum_size = Vector2(80, 0)
-	picker.edit_alpha = false
-	grid.add_child(picker)
-
-	var tolerance_label := Label.new()
-	tolerance_label.text = "Tolerance"
-	grid.add_child(tolerance_label)
-	tolerance.min_value = 0
-	tolerance.max_value = 100
-	tolerance.value = 10
-	tolerance.suffix = "%"
-	tolerance.tooltip_text = "How different a pixel can be from the colour and still be removed"
-	grid.add_child(tolerance)
-
-	confirmed.connect(func() -> void: color_chosen.emit(picker.color, tolerance.value / 100.0))
+	var row := HBoxContainer.new()
+	column.add_child(row)
+	targets_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	targets_label.theme_type_variation = &"StatusLabel"
+	row.add_child(targets_label)
+	remove_button.text = "Remove"
+	cancel_button.text = "Cancel"
+	for button: Button in [remove_button, cancel_button]:
+		# Space pans the preview, rather than pressing the button clicked last
+		button.focus_mode = Control.FOCUS_NONE
+		row.add_child(button)
+	DialogButtons.arrange(row, remove_button, cancel_button, [])
+	remove_button.pressed.connect(remove)
+	cancel_button.pressed.connect(close)
+	key.changed.connect(_queue_update)
 
 
-## Opens the dialog suggesting the top-left pixel of [param sample], usually the background
-func open(sample: Image) -> void:
-	if sample and not sample.is_empty():
-		picker.color = Color(sample.get_pixel(0, 0), 1.0)
-	popup_centered()
+## Puts the panel in [param area]'s overlay, previewing on its preview and picking colours
+## from it. [param remove_background] removes the colour from the selected frames, called
+## with the colour and the tolerance; it can take a while.
+func setup(area: PreviewArea, remove_background: Callable) -> void:
+	preview = area.spritesheet_preview
+	_remove = remove_background
+	area.overlay.add_child(self)
+	key.watch_preview(preview)
+	# The selection or the frames changed
+	preview.preview_updated.connect(_queue_update)
+	# Another document has other frames
+	Global.document.loaded.connect(func(_view: Dictionary) -> void: close())
+
+
+## Opens the panel suggesting the top-left pixel of the first selected frame, usually the
+## background
+func open() -> void:
+	var coords := preview.get_selected_coords()
+	if not visible and not coords.is_empty():
+		var sample := preview.spritesheet.frames[coords[0]]
+		if not sample.is_empty():
+			key.set_key(true, sample.get_pixel(0, 0), key.get_tolerance())
+	visible = true
+	_queue_update()
+
+
+## Closes the panel without removing anything, showing the frames as they are
+func close() -> void:
+	_close()
+	preview.show_instead({})
+
+
+## Removes the colour from the selected frames as one step to undo, and closes the panel.
+## The frames are previewed with it removed until then.
+func remove() -> void:
+	if preview.get_selected_coords().is_empty():
+		return
+	_close()
+	await _remove.call(key.get_color(), key.get_tolerance())
+	if not visible:
+		preview.show_instead({})
+
+
+func _close() -> void:
+	visible = false
+	key.set_picking(false)
+	_keyed.clear()
+
+
+func _input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed(&"ui_cancel") and not event.is_echo():
+		# Escape puts the eyedropper away first
+		if key.is_picking():
+			key.set_picking(false)
+		else:
+			close()
+		get_viewport().set_input_as_handled()
+
+
+## Updates the preview at the end of the frame, once for all changes made until then, like
+## dragging in the colour picker
+func _queue_update() -> void:
+	if visible and not _update_queued:
+		_update_queued = true
+		_update_preview.call_deferred()
+
+
+## Shows the selected frames with the colour removed. Only frames not shown that way yet
+## are worked on, on worker threads.
+func _update_preview() -> void:
+	_update_queued = false
+	if not visible:
+		return
+	if _keying:
+		_stale = true
+		return
+	var sheet := preview.spritesheet
+	var coords := preview.get_selected_coords()
+	remove_button.disabled = coords.is_empty()
+	targets_label.text = (
+		tr("In %d selected frames") % coords.size()
+		if coords
+		else tr("Select the frames to remove it from")
+	)
+	var color := key.get_color()
+	var tolerance := key.get_tolerance()
+	var filter := sheet.scale_filter
+	var made_with := [color, tolerance, sheet.frame_scale, filter]
+	if made_with != _keyed_with:
+		_keyed.clear()
+		_keyed_with = made_with
+	var sources: Array[Image] = []
+	for coord in coords:
+		var img := sheet.frames[coord]
+		if not _keyed.has(img) and img not in sources:
+			sources.append(img)
+	var sizes: Array[Vector2i] = []
+	for img in sources:
+		sizes.append(sheet.scaled_frames.scaled_size(img.get_size()))
+	_keying = true
+	var results := await Parallel.map(
+		sources.size(),
+		func(i: int) -> Image:
+			var img := sources[i].duplicate() as Image
+			ImageUtils.color_key(img, color, tolerance)
+			if img.get_size() != sizes[i]:
+				img.resize(sizes[i].x, sizes[i].y, filter)
+			return img
+	)
+	_keying = false
+	if not visible:
+		return
+	for i in sources.size():
+		_keyed[sources[i]] = results[i]
+	if _stale:
+		_stale = false
+		_queue_update()
+		return
+	# Only the selected frames, as they are now
+	var shown: Dictionary[Image, Image] = {}
+	for coord in coords:
+		if sheet.frames.get(coord) in _keyed:
+			shown[sheet.frames[coord]] = _keyed[sheet.frames[coord]]
+	preview.show_instead(shown)

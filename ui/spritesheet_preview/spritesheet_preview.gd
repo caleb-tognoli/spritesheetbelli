@@ -5,7 +5,8 @@ extends Node2D
 ## [PackedView]: frames are dragged to any place on a page, and there are no cells to lock.
 ##
 ## Everything is drawn by this node, so large sheets need no node per cell.
-## Frame textures are cached per image and only created for new images.
+## Frame textures are cached per image and only created for new images. Other images can
+## be shown in place of frames' own, see [method show_instead].
 ##
 ## Mouse: click to select, Ctrl+click to toggle, Shift+click for a range, click an empty
 ## cell to lock it. Dragging depends on [member tool]: the select tool draws a selection
@@ -120,6 +121,8 @@ var _selected: Dictionary[Vector2i, bool] = {}
 ## Selection range start for Shift+click
 var _anchor := NO_CELL
 var _textures: Dictionary[Image, ImageTexture] = {}
+## Images shown in place of frame images, by the frame image, see [method show_instead]
+var _shown_instead: Dictionary[Image, Image] = {}
 var _checker := _make_checker_texture()
 ## Wheel notches not zoomed by yet: touchpads scroll by parts of a notch, which add up to
 ## a whole zoom step with pixel-perfect zoom
@@ -188,6 +191,8 @@ func _on_spritesheet_updated() -> void:
 	var alive := spritesheet.scaled_frames.get_cached_images()
 	for coord in spritesheet.frames:
 		alive[spritesheet.frames[coord]] = true
+	for img: Image in _shown_instead.values():
+		alive[img] = true
 	for img: Image in _textures.keys():
 		if not alive.has(img):
 			_textures.erase(img)
@@ -876,12 +881,26 @@ func draw_checkerboard(rect: Rect2, pixel: float) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 
+## Shows each image of [param images] in place of the frame image it's keyed by, already
+## at the sheet's scale, without changing the sheet, e.g. to preview an edit. Frames whose
+## image changed show their own again. Empty shows every frame's own image.
+func show_instead(images: Dictionary[Image, Image]) -> void:
+	for img: Image in _shown_instead.values():
+		_textures.erase(img)
+	_shown_instead = images
+	queue_redraw()
+
+
 ## The texture to draw a frame with, and how many of its pixels make a scaled pixel.
 ## While frames are scaled in the background, the original is stretched instead.
 func get_frame_texture(coord: Vector2i) -> Dictionary:
 	var img := spritesheet.frames[coord]
 	var shown_scale := spritesheet.frame_scale
-	if spritesheet.scaled_frames.is_ready(coord) or not spritesheet.scaled_frames.is_preparing():
+	var instead: Image = _shown_instead.get(img)
+	if instead and instead.get_size() == spritesheet.scaled_frames.scaled_size(img.get_size()):
+		img = instead
+		shown_scale = Vector2.ONE
+	elif spritesheet.scaled_frames.is_ready(coord) or not spritesheet.scaled_frames.is_preparing():
 		img = spritesheet.get_frame_image(coord)
 		shown_scale = Vector2.ONE
 	if not _textures.has(img):

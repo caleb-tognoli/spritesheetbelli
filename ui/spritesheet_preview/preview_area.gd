@@ -2,8 +2,9 @@ class_name PreviewArea
 extends Control
 ## The spritesheet preview with its toolbar: the select, move and pivot tools and the
 ## actions given to [method set_toolbar_actions], like the toolbar above Godot's 2D editor.
-## Zoom and centring the view float over the top-right corner, and notices over the
-## bottom-right one, see [method show_notice].
+## Zoom and centring the view float over the top-right corner, with panels added to
+## [member overlay] under them, and notices over the bottom-right one, see
+## [method show_notice].
 
 const SELECT_ICON := preload("res://assets/icons/ToolSelect.svg")
 const MOVE_ICON := preload("res://assets/icons/ToolMove.svg")
@@ -28,6 +29,8 @@ var center_view_btn := _tool_button(CENTER_VIEW_ICON)
 var zoom_out_btn := _tool_button(ZOOM_OUT_ICON)
 var zoom_label_btn := _tool_button(null)
 var zoom_in_btn := _tool_button(ZOOM_IN_ICON)
+## Floats over the top-right corner: the zoom, then panels added to it, right-aligned
+var overlay := VBoxContainer.new()
 ## Something to know about what's shown, with a warning icon, in the bottom-right corner
 var notice := PanelContainer.new()
 var notice_label := Label.new()
@@ -104,7 +107,6 @@ func _build_toolbar() -> void:
 ## Zoom and centring over the top-right corner of the preview, like Godot's 2D editor,
 ## and the notice over the bottom-right one
 func _build_overlay() -> void:
-	var overlay := VBoxContainer.new()
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_theme_constant_override("separation", 6)
 	var zoom := PanelContainer.new()
