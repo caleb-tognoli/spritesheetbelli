@@ -54,6 +54,9 @@ var background := ColorKeyControl.new()
 var box_editor := SpriteBoxEditor.new()
 ## The image as opened
 var source_image: Image
+## The colour the image is drawn on instead of transparency, or null, see [SheetBackground].
+## Spacing of it after the last cells isn't part of them, even when it's not made transparent.
+var _detected_background: Variant = null
 ## The other pages of a packed sheet with a data file, by page, as cut
 var _other_pages: Array[Image] = []
 ## The other pages as opened
@@ -196,6 +199,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	data_path = data_file
 	_source_pages = _load_other_pages()
 	var found: Variant = SheetBackground.detect(img)
+	_detected_background = found
 	# Without one, the swatch starts at the top-left pixel, most often the background
 	background.set_key(found != null, found if found != null else img.get_pixel(0, 0))
 	background.set_picking(false)
@@ -468,7 +472,8 @@ func update_cell_size(width: int, height: int) -> void:
 	_cut_grid()
 
 
-## Cuts the image into a grid, keeping the grid or the cell size, whichever was set last
+## Cuts the image into a grid, keeping the grid or the cell size, whichever was set last. A
+## grid leaves background spacing after the last cells over, see [method Slicer.fit].
 func _cut_grid() -> void:
 	var offset := Vector2i(int(offset_x.value), int(offset_y.value))
 	var spacing := Vector2i(int(spacing_x.value), int(spacing_y.value))
@@ -478,7 +483,9 @@ func _cut_grid() -> void:
 		Vector2i(int(cell_width.value), int(cell_height.value)),
 		offset,
 		spacing,
-		_by_cell_size
+		_by_cell_size,
+		spritesheet_image,
+		_detected_background
 	)
 	var grid_size: Vector2i = fitted.grid
 	var cell_size: Vector2i = fitted.cell_size

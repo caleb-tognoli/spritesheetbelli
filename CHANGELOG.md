@@ -192,7 +192,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   one sets the other, and whichever was edited last is kept when the offset or spacing
   change. Pixels that don't divide evenly, including spacing after the last cell, show
   as "N px on the right not used" instead of making the cells bigger, so a 24×24 grid
-  with an offset and spacing no longer cuts 24×25 frames with a strip of background. A
+  with an offset and spacing no longer cuts 24×25 frames with a strip of background. Set
+  by columns and rows, spacing after the last column or row is left over too when
+  there's only background in it. A
   sprite size in the file name, like `hero_24x24.png`, fills in the cell size. The
   toolbar wraps onto a second line in a narrow window, and shows the number of frames
   for the Grid cut.

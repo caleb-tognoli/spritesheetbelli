@@ -143,6 +143,105 @@ func test_fit_keeps_the_grid() -> void:
 	assert_eq(fitted.grid, grid, "kept when the offset and spacing change")
 	assert_eq(fitted.cell_size, Vector2i(24, 25), "the trailing spacing can't be told apart")
 	assert_eq(fitted.unused, Vector2i(2, 0))
+	var img := trailing_spacing_sheet()
+	fitted = Slicer.fit(size, grid, Vector2i.ONE, Vector2i(4, 4), Vector2i(2, 2), false, img)
+	assert_eq(fitted.cell_size, Vector2i(24, 25), "grey is art without being told")
+	fitted = Slicer.fit(
+		size, grid, Vector2i.ONE, Vector2i(4, 4), Vector2i(2, 2), false, img, Color.GRAY
+	)
+	assert_eq(fitted.cell_size, Vector2i(24, 24), "but the image tells it apart")
+	assert_eq(fitted.unused, Vector2i(2, 2))
+
+
+## [param grid] sprites filling 24 px cells, with a 4 px border and 2 px gaps, and 2 px of
+## spacing after the last column and row too, on [param background]: 134×56 for 5 × 2
+func spacing_sheet(grid: Vector2i, background := Color.TRANSPARENT) -> Image:
+	var size := Vector2i(4, 4) + grid * 26
+	var img := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	img.fill(background)
+	for row in grid.y:
+		for column in grid.x:
+			img.fill_rect(
+				Rect2i(Vector2i(4, 4) + Vector2i(column, row) * 26, Vector2i(24, 24)), Color.RED
+			)
+	return img
+
+
+func test_spacing_after_the_last_cell_is_left_over_when_its_background() -> void:
+	var offset := Vector2i(4, 4)
+	var spacing := Vector2i(2, 2)
+	var grid := Vector2i(5, 2)
+	var img := spacing_sheet(grid)
+	assert_eq(img.get_size(), Vector2i(134, 56))
+	assert_eq(Slicer.get_cell_size(img.get_size(), grid, offset, spacing), Vector2i(24, 25))
+	assert_eq(Slicer.get_cell_size_in(img, grid, offset, spacing), Vector2i(24, 24))
+	var fitted := Slicer.fit(img.get_size(), grid, Vector2i.ONE, offset, spacing, false, img)
+	assert_eq(fitted.grid, grid)
+	assert_eq(fitted.cell_size, Vector2i(24, 24))
+	assert_eq(fitted.unused, Vector2i(2, 2), "the spacing after the last cells")
+	var result := Slicer.slice(img, grid, offset, spacing, fitted.cell_size)
+	assert_eq(result.frames.size(), 10)
+	for coord: Vector2i in result.frames:
+		var frame: Image = result.frames[coord]
+		assert_color(frame, Vector2i(23, 23), Color.RED, "no background in %s" % coord)
+
+	img = spacing_sheet(Vector2i(2, 2))
+	assert_eq(
+		Slicer.get_cell_size(img.get_size(), Vector2i(2, 2), offset, spacing), Vector2i(25, 25)
+	)
+	assert_eq(
+		Slicer.get_cell_size_in(img, Vector2i(2, 2), offset, spacing),
+		Vector2i(24, 24),
+		"across too"
+	)
+
+
+func test_spacing_of_the_background_colour_is_left_over() -> void:
+	var offset := Vector2i(4, 4)
+	var spacing := Vector2i(2, 2)
+	var grid := Vector2i(5, 2)
+	var img := spacing_sheet(grid, Color.MAGENTA)
+	var fitted := Slicer.fit(
+		img.get_size(), grid, Vector2i.ONE, offset, spacing, false, img, Color.MAGENTA
+	)
+	assert_eq(fitted.cell_size, Vector2i(24, 24))
+	assert_eq(fitted.unused, Vector2i(2, 2))
+	assert_eq(
+		Slicer.get_cell_size_in(img, grid, offset, spacing),
+		Vector2i(24, 25),
+		"magenta is art without being told"
+	)
+	img.set_pixel(130, 55, Color(1, 0.05, 1))
+	assert_eq(
+		Slicer.get_cell_size_in(img, grid, offset, spacing, Color.MAGENTA),
+		Vector2i(24, 24),
+		"close to it"
+	)
+
+
+func test_spacing_with_sprite_pixels_is_divided() -> void:
+	var offset := Vector2i(4, 4)
+	var spacing := Vector2i(2, 2)
+	var img := spacing_sheet(Vector2i(5, 2))
+	img.set_pixel(60, 55, Color.RED)
+	assert_eq(
+		Slicer.get_cell_size_in(img, Vector2i(5, 2), offset, spacing),
+		Vector2i(24, 25),
+		"as without the image"
+	)
+	img = spacing_sheet(Vector2i(2, 2), Color.MAGENTA)
+	img.set_pixel(55, 10, Color.RED)
+	assert_eq(
+		Slicer.get_cell_size_in(img, Vector2i(2, 2), offset, spacing, Color.MAGENTA),
+		Vector2i(25, 24),
+		"only across"
+	)
+	img = spacing_sheet(Vector2i(2, 2))
+	assert_eq(
+		Slicer.get_cell_size_in(img, Vector2i(2, 2), offset, Vector2i.ZERO),
+		Vector2i(26, 26),
+		"no spacing"
+	)
 
 
 func test_fit_keeps_cells_in_the_image() -> void:

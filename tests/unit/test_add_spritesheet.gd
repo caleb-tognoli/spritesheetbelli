@@ -69,6 +69,37 @@ func test_the_grid_sets_the_cell_size() -> void:
 	assert_eq(window.preview_area.notice_label.text, "4 px on the right not used")
 
 
+func test_the_grid_leaves_background_spacing_after_the_last_cells_over() -> void:
+	window.setup(trailing_spacing_sheet())
+	set_offset_and_spacing(4, 2)
+	window.update_grid_size(5, 2)
+	assert_eq(get_cell_size(), Vector2i(24, 24), "not 24×25")
+	assert_eq(window.spritesheet.frames.size(), 10)
+	for coord: Vector2i in window.spritesheet.frames:
+		var frame: Image = window.spritesheet.frames[coord]
+		assert_eq(frame.get_size(), Vector2i(24, 24))
+		assert_color(frame, Vector2i(23, 23), Color.RED, "no background in %s" % coord)
+	assert_eq(
+		window.preview_area.notice_label.text,
+		"2 px on the right and 2 px at the bottom not used",
+		"the spacing after the last cells"
+	)
+
+	# The background is still told apart when it's not made transparent
+	window.background.set_key(false, Color.GRAY)
+	window._cut_with_background()
+	window.update_grid_size(5, 2)
+	assert_eq(get_cell_size(), Vector2i(24, 24))
+
+	var img := trailing_spacing_sheet()
+	img.fill_rect(Rect2i(10, 50, 8, 6), Color.BLUE)
+	window.setup(img)
+	assert_true(window.background.is_on(), "grey made transparent")
+	set_offset_and_spacing(4, 2)
+	window.update_grid_size(5, 2)
+	assert_eq(get_cell_size(), Vector2i(24, 25), "a strip with sprites in it is part of them")
+
+
 func test_the_last_pair_set_is_kept() -> void:
 	window.setup(trailing_spacing_sheet())
 	window.update_cell_size(24, 24)
@@ -80,10 +111,10 @@ func test_the_last_pair_set_is_kept() -> void:
 	assert_eq(get_grid(), Vector2i(4, 2), "fewer columns fit")
 
 	window.grid_columns.value = 2
-	assert_eq(get_cell_size(), Vector2i(61, 25), "floor((134 - 4 + 8) / 2) - 8")
+	assert_eq(get_cell_size(), Vector2i(61, 24), "floor((134 - 4 + 8) / 2) - 8")
 	window.offset_x.value = 0
 	assert_eq(get_grid(), Vector2i(2, 2), "grid kept")
-	assert_eq(get_cell_size(), Vector2i(63, 25))
+	assert_eq(get_cell_size(), Vector2i(63, 24))
 
 	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
 	window.set_cut(AddSpritesheetWindow.Cut.GRID)
