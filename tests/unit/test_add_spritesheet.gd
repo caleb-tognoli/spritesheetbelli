@@ -108,3 +108,56 @@ func test_cells_stay_in_the_image() -> void:
 	window.cell_width.value = 134
 	assert_eq(get_cell_size().x, 100, "what's left after the offset")
 	assert_eq(get_grid().x, 1)
+
+
+## 4 × 2 sprites of 12 px in 16 px cells, on transparency
+func gaps_sheet() -> Image:
+	var img := Image.create_empty(64, 32, false, Image.FORMAT_RGBA8)
+	for row in 2:
+		for column in 4:
+			var sprite := Rect2i(Vector2i(column, row) * 16 + Vector2i(2, 2), Vector2i(12, 12))
+			img.fill_rect(sprite, Color.RED)
+	return img
+
+
+## Where the sprites of [method gaps_sheet] are
+func data_for_gaps_sheet() -> SheetData:
+	var frames := {}
+	for i in 8:
+		var place := Vector2i(i % 4, i / 4) * 16 + Vector2i(2, 2)
+		frames[str(i)] = {"frame": {"x": place.x, "y": place.y, "w": 12, "h": 12}}
+	return SheetData.parse_json(JSON.stringify({"frames": frames}))
+
+
+func test_the_default_cut_follows_the_layout() -> void:
+	var grid := Spritesheet.Layout.GRID
+	var packed := Spritesheet.Layout.PACKED
+	assert_eq(AddSpritesheetWindow.get_default_cut(false, grid), AddSpritesheetWindow.Cut.GRID)
+	assert_eq(AddSpritesheetWindow.get_default_cut(false, packed), AddSpritesheetWindow.Cut.DETECT)
+	assert_eq(AddSpritesheetWindow.get_default_cut(true, grid), AddSpritesheetWindow.Cut.DATA)
+	assert_eq(AddSpritesheetWindow.get_default_cut(true, packed), AddSpritesheetWindow.Cut.DATA)
+
+
+func test_opens_in_a_grid_in_the_grid_layout() -> void:
+	window.setup(gaps_sheet())
+	assert_eq(window.get_cut(), AddSpritesheetWindow.Cut.GRID)
+	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2), "the guessed grid")
+	assert_true((window.grid_columns.get_parent().get_parent() as Control).visible)
+
+
+func test_opens_finding_sprites_in_the_packed_layout() -> void:
+	Global.spritesheet.set_layout(Spritesheet.Layout.PACKED)
+	window.setup(gaps_sheet())
+	assert_eq(window.get_cut(), AddSpritesheetWindow.Cut.DETECT)
+	assert_eq(window.spritesheet.frames.size(), 8)
+	assert_false((window.grid_columns.get_parent().get_parent() as Control).visible)
+	window.set_cut(AddSpritesheetWindow.Cut.GRID)
+	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2), "the guessed grid is ready")
+
+
+func test_a_data_file_wins_over_the_layout() -> void:
+	for layout: Spritesheet.Layout in [Spritesheet.Layout.GRID, Spritesheet.Layout.PACKED]:
+		Global.spritesheet.set_layout(layout)
+		window.setup(gaps_sheet(), "", data_for_gaps_sheet(), "sheet.json")
+		assert_eq(window.get_cut(), AddSpritesheetWindow.Cut.DATA, str(layout))
+		assert_eq(window.spritesheet.frames.size(), 8)

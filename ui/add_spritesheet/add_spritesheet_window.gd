@@ -136,8 +136,9 @@ func _ready() -> void:
 	)
 
 
-## Shows [param img] cut where [param data] says the frames are, or else sliced into a
-## guessed grid. The name of the image at [param path] can hold a size hint. The frames
+## Shows [param img] cut where [param data] says the frames are, or else the way that suits
+## the open sheet's layout (see [method get_default_cut]). The Grid cut starts from a
+## guessed grid; the name of the image at [param path] can hold a size hint. The frames
 ## are linked to [param path] and [param data_file] when they're given.
 func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> void:
 	spritesheet_image = img
@@ -174,7 +175,16 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	cut_option.add_item("Find sprites", Cut.DETECT)
 	if data:
 		cut_option.add_item(tr("Data: %s") % data_file.get_file(), Cut.DATA)
-	set_cut(Cut.DATA if data else Cut.GRID)
+	set_cut(get_default_cut(data != null, target.layout))
+
+
+## How an image is cut when it's opened: where its data file says, or else the way that
+## suits the open sheet's [param layout], in a grid for the grid layout and by finding the
+## sprites for the packed one
+static func get_default_cut(has_data: bool, layout: Spritesheet.Layout) -> Cut:
+	if has_data:
+		return Cut.DATA
+	return Cut.DETECT if layout == Spritesheet.Layout.PACKED else Cut.GRID
 
 
 func get_cut() -> Cut:

@@ -300,6 +300,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Animations given a free name (New, Mirror, GIFs and Add Spritesheet) are numbered like
   the names Animation from Row suggests: walk_2, walk_3, not walk2. A name that already
   ends in a number counts on from it, so walk_2 gives walk_3.
+- Add Spritesheet opens in Grid when the sheet is in the Grid layout and in Find sprites
+  when it's in the Packed layout. A data file next to the image still opens it cut where
+  the data file says.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names
