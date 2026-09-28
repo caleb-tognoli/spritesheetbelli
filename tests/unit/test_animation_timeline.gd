@@ -3,7 +3,11 @@ extends "res://tests/test_case.gd"
 ## and timing frames, each one step to undo, picking them, and their labels
 
 const PANEL_SETTINGS: Array[StringName] = [
-	&"animation_panel", &"animation_panel_height", &"animation_frames_text", &"show_sprites"
+	&"animation_panel",
+	&"animation_panel_height",
+	&"animation_frames_text",
+	&"show_sprites",
+	&"index_start",
 ]
 
 var main: Control
@@ -371,3 +375,14 @@ func test_frames_are_dragged_out_of_the_sheet() -> void:
 	panel.set_expanded(true)
 	panel.select_animation(-1)
 	assert_false(preview.drag_frames_out, "no animation")
+
+
+func test_numbers_follow_the_first_frame_number() -> void:
+	await get_tree().process_frame
+	assert_eq(timeline.get_tile(1).get_label_text(), "1")
+	assert_eq(detail.frames_edit.text, "0-2")
+	Settings.set_value(&"index_start", 1)
+	await get_tree().process_frame
+	assert_eq(timeline.get_tile(1).get_label_text(), "2", "numbered from 1")
+	assert_true(timeline.get_tile(1).tooltip_text.begins_with("Frame 2"), "its tooltip too")
+	assert_eq(detail.frames_edit.text, "1-3", "and as text")

@@ -2,13 +2,13 @@ class_name AnimationPanel
 extends PanelContainer
 ## The animation panel under the sheet's preview, in three columns: the preview
 ## ([AnimationPreview]), the list of animations with the selected frames at the top,
-## and the chosen animation's details ([AnimationDetail]). Choosing in the list plays it.
+## and the chosen animation's details ([AnimationDetail]). Choosing in the list plays it;
+## each animation is listed with a swatch of its colour.
 ## The handle on its top edge makes it taller, up to half the window; it remembers its
 ## height. Collapsed, it's a bar with the name of what plays, a thumbnail and play/pause.
 ## It starts collapsed until the sheet has animations, then opens once; after that it
 ## stays as it was left, see the animation_panel setting.
 
-const ANIMATION_ICON := preload("res://assets/icons/Animation.svg")
 const FRAMES_ICON := preload("res://assets/icons/FileList.svg")
 const ADD_ICON := preload("res://assets/icons/Add.svg")
 const EXPANDED_ICON := preload("res://assets/icons/GuiTreeArrowDown.svg")
@@ -215,7 +215,7 @@ func refresh() -> void:
 	list.add_item(animation_preview.get_selection_title(), FRAMES_ICON)
 	list.set_item_tooltip(0, tr("Plays the selected frames, or every frame"))
 	for animation in animations:
-		list.add_item(animation.name, ANIMATION_ICON)
+		list.add_item(animation.name, AppTheme.swatch(animation.color))
 	# After deleting the last animation, the one before it
 	_selected = mini(_selected, animations.size() - 1)
 	list.select(_selected + 1)

@@ -16,7 +16,7 @@ signal edit_requested(index: int)
 signal mirror_requested(index: int)
 signal delete_requested(index: int)
 
-enum Item { RENAME, EDIT, MIRROR, HIDE, DELETE }
+enum Item { RENAME, EDIT, COLOR, MIRROR, HIDE, DELETE }
 
 const ICON := preload("res://assets/icons/AnimationLabels.svg")
 const SHOWN_ICON := preload("res://assets/icons/GuiVisibilityVisible.svg")
@@ -42,9 +42,14 @@ var speed_menu := PopupMenu.new()
 var type_menu := PopupMenu.new()
 ## Renames an animation over its name
 var rename_edit := LineEdit.new()
-## The animation right-clicked, and the one being renamed, or -1
+## Picks an animation's colour, changed as one step when it closes
+var color_popup := PopupPanel.new()
+var color_picker := ColorPicker.new()
+## The animation right-clicked, the one being renamed and the one whose colour is picked,
+## or -1
 var _menu_index := -1
 var _renaming := -1
+var _coloring := -1
 
 
 ## Makes [param preview_area]'s grid show names, and [param toolbar_button] open the flyover
@@ -270,6 +275,7 @@ func _build_menu() -> void:
 	menu.add_submenu_node_item("Speed", speed_menu)
 	menu.add_child(type_menu)
 	menu.add_submenu_node_item("Type", type_menu)
+	menu.add_item("Colour…", Item.COLOR)
 	menu.add_item("Mirror", Item.MIRROR)
 	menu.add_item("Hide Label", Item.HIDE)
 	menu.add_separator()
@@ -293,6 +299,11 @@ func _build_menu() -> void:
 			)
 	)
 	area.add_child(menu)
+	color_picker.edit_alpha = false
+	color_picker.presets_visible = false
+	color_popup.add_child(color_picker)
+	color_popup.popup_hide.connect(_apply_color)
+	area.add_child(color_popup)
 
 
 ## Opens the right-click menu of the animation at [param index], at [param position] in
@@ -320,12 +331,40 @@ func _on_menu_item(id: int) -> void:
 			start_rename(index)
 		Item.EDIT:
 			edit_requested.emit(index)
+		Item.COLOR:
+			pick_color(index)
 		Item.MIRROR:
 			mirror_requested.emit(index)
 		Item.HIDE:
 			set_label_shown(index, false)
 		Item.DELETE:
 			delete_requested.emit(index)
+
+
+## Picks the colour of the animation at [param index] beside its name
+func pick_color(index: int) -> void:
+	var rect := labels.get_tag_rect(index)
+	if index >= Global.spritesheet.animations.size():
+		return
+	_coloring = index
+	color_picker.color = Global.spritesheet.animations[index].color
+	var below := area.container.get_screen_transform() * Vector2(rect.position.x, rect.end.y + 4)
+	color_popup.popup(Rect2i(Vector2i(below), Vector2i.ZERO))
+	# Kept inside the window, like the flyover
+	var window := area.get_window()
+	var past := color_popup.position + color_popup.size - (window.position + window.size)
+	color_popup.position -= past.max(Vector2i.ZERO)
+
+
+func _apply_color() -> void:
+	var sheet := Global.spritesheet
+	var index := _coloring
+	_coloring = -1
+	if index < 0 or index >= sheet.animations.size():
+		return
+	var animation := sheet.animations[index]
+	animation.color = color_picker.color
+	Global.document.perform("Recolour animation", sheet.set_animation.bind(index, animation))
 
 
 ## Changes the right-clicked animation with [param change] as one undoable step

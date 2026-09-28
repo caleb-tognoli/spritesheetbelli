@@ -338,6 +338,8 @@ static func add_sheet(target: Spritesheet, sheet: Spritesheet, lock_empty: bool)
 		for cell in animation.cells:
 			cells.append(cell + offset)
 		animation.cells = cells
+		# A colour far from the open sheet's animations, not only from its own sheet's
+		animation.color = SheetAnimation.NO_COLOR
 		target.add_animation(animation)
 	if lock_empty:
 		# Only the added sheet's cells, not free cells elsewhere

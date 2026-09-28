@@ -6,6 +6,14 @@ extends RefCounted
 enum Mode { LOOP, PING_PONG, ONCE }
 
 const MODE_NAMES := {Mode.ONCE: "Once", Mode.LOOP: "Loop", Mode.PING_PONG: "Ping-pong"}
+## The colour of an animation that has none yet, see [member color]
+const NO_COLOR := Color(0, 0, 0, 0)
+## Colours new animations get, see [method pick_color]: hues evenly around the wheel, all
+## as light and saturated, which read on both themes and over sprites. The first is blue.
+const HUES := 12
+const FIRST_HUE := 0.6
+const SATURATION := 0.85
+const LIGHTNESS := 0.62
 
 var name := "animation"
 ## Cells in playing order. Cells without a frame are skipped.
@@ -17,6 +25,10 @@ var fps := 12.0
 var mode := Mode.LOOP
 ## Whether its name is shown on the grid, see [AnimationLabels]
 var show_label := true
+## Its colour on the grid, where its label overlaps another, and in the lists. Until it's
+## added to a [Spritesheet], which picks one far from the other animations', it has
+## [constant NO_COLOR].
+var color := NO_COLOR
 
 
 static func create(
@@ -63,6 +75,10 @@ static func from_dictionary(data: Dictionary) -> SheetAnimation:
 	var saved_mode := int(data.get("mode", Mode.LOOP))
 	animation.mode = saved_mode as Mode if saved_mode in Mode.values() else Mode.LOOP
 	animation.show_label = bool(data.get("label", true))
+	var saved_color := str(data.get("color", ""))
+	if Color.html_is_valid(saved_color):
+		animation.color = Color.html(saved_color)
+		animation.color.a = 1.0
 	return animation
 
 
@@ -72,7 +88,47 @@ func to_dictionary() -> Dictionary:
 		data.durations = durations.slice(0, cells.size())
 	if not show_label:
 		data.label = false
+	if color.a > 0:
+		data.color = color.to_html(false)
 	return data
+
+
+## The colour of the palette farthest in hue from [param taken]: the one whose nearest
+## taken hue is farthest, then the one fewest are that near, then the first. Once every
+## colour is taken, they're taken again evenly. Greys have no hue and are left out.
+static func pick_color(taken: Array[Color]) -> Color:
+	# Hues apart are counted in quarters of the palette's steps, as hues read back from
+	# saved colours are a little off
+	var quarters := HUES * 4
+	var best := 0
+	var best_nearest := -1
+	var best_near := 0
+	for i in HUES:
+		var hue := get_palette_color(i).ok_hsl_h
+		var nearest := HUES * 2
+		var near := 0
+		for other in taken:
+			if other.ok_hsl_s < 0.1:
+				continue
+			var apart := absf(hue - other.ok_hsl_h)
+			var steps := roundi(minf(apart, 1.0 - apart) * quarters)
+			if steps < nearest:
+				nearest = steps
+				near = 0
+			if steps == nearest:
+				near += 1
+		if nearest > best_nearest or (nearest == best_nearest and near < best_near):
+			best = i
+			best_nearest = nearest
+			best_near = near
+	return get_palette_color(best)
+
+
+## The colour at [param index] of the palette [method pick_color] picks from, as it's
+## saved
+static func get_palette_color(index: int) -> Color:
+	var hue := fposmod(FIRST_HUE + float(index) / HUES, 1.0)
+	return Color(Color.from_ok_hsl(hue, SATURATION, LIGHTNESS).to_html(false))
 
 
 ## How long the cell at [param index] of [member cells] is shown, in frames
@@ -147,6 +203,8 @@ static func mirror(sheet: Spritesheet, index: int) -> int:
 	var mirrored := SheetAnimation.from_dictionary(source.to_dictionary())
 	mirrored.name = sheet.get_unique_animation_name(mirrored_name(source.name))
 	mirrored.show_label = true
+	# The sheet picks it a colour of its own
+	mirrored.color = NO_COLOR
 	mirrored.cells.clear()
 	mirrored.durations.clear()
 	for i in source.cells.size():

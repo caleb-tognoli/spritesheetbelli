@@ -4,7 +4,7 @@ extends RefCounted
 ## in the margin where it starts, with a bracket where it stops short of the edge, and
 ## other areas outlined with the name on the edge at their first frame, see
 ## [AnimationLabelLayout]. Labels are in the interface's colours, and where they overlap,
-## in a colour for each animation. Names keep the same size at any zoom and are never drawn
+## in their animation's colour. Names keep the same size at any zoom and are never drawn
 ## over each other: one that finds no room isn't drawn.
 ## Only in the grid layout, and only once [member enabled].
 
@@ -34,7 +34,7 @@ var enabled := false
 ## Returns the index of the animation playing in the animation panel, or -1
 var get_playing := func() -> int: return -1
 ## The labels shown: results of [method AnimationLabelLayout.classify], with their
-## animation's [code]index[/code] and [code]name[/code] and what
+## animation's [code]index[/code], [code]name[/code] and [code]color[/code] and what
 ## [method AnimationLabelLayout.arrange] says of them
 var labels: Array[Dictionary] = []
 ## The animation whose label is under the mouse, or -1
@@ -76,6 +76,7 @@ func update(sheet: Spritesheet, grid: GridView) -> void:
 				continue
 			label.index = i
 			label.name = animations[i].name
+			label.color = animations[i].color
 			labels.append(label)
 		var arranged := AnimationLabelLayout.arrange(labels)
 		for i in labels.size():
@@ -265,7 +266,7 @@ func draw(canvas: SpritesheetPreview) -> void:
 ## The theme's colours, or the animation's own where its label overlaps another
 func _get_color(label: Dictionary) -> Color:
 	if label.colored:
-		return AnimationLabelLayout.color_of(label.index)
+		return label.color
 	return _get_palette().text
 
 
@@ -414,7 +415,7 @@ func _draw_tag(canvas: SpritesheetPreview, label: Dictionary, rect: Rect2, font:
 	var fill := palette.hover if label.index == hovered else palette.surface
 	var ink := palette.text
 	if label.colored:
-		fill = AnimationLabelLayout.color_of(label.index)
+		fill = label.color
 		if label.index == hovered:
 			fill = fill.lightened(0.2)
 		ink = AppTheme.readable_text([fill], palette.text)

@@ -152,10 +152,20 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	for coord: Array in data.get("locked", []):
 		locked.append(_to_vector2i(coord))
 	var frame_scale: Array = data.get("frame_scale", [1, 1])
-	var animations: Array[Dictionary] = []
+	var loaded: Array[SheetAnimation] = []
+	var colors: Array[Color] = []
 	for animation: Variant in data.get("animations", []):
 		if animation is Dictionary:
-			animations.append(SheetAnimation.from_dictionary(animation).to_dictionary())
+			loaded.append(SheetAnimation.from_dictionary(animation))
+			if loaded[-1].color != SheetAnimation.NO_COLOR:
+				colors.append(loaded[-1].color)
+	# Animations saved without a colour get one, in order, as if they were added now
+	var animations: Array[Dictionary] = []
+	for animation in loaded:
+		if animation.color == SheetAnimation.NO_COLOR:
+			animation.color = SheetAnimation.pick_color(colors)
+			colors.append(animation.color)
+		animations.append(animation.to_dictionary())
 
 	var layout := Spritesheet.Layout.GRID
 	if data.get("layout") == "packed":

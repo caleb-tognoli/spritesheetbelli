@@ -86,6 +86,7 @@ func _init() -> void:
 	for target: Control in [self, scroll, row]:
 		target.set_drag_forwarding(Callable(), _can_drop.bind(target), _drop.bind(target))
 	resized.connect(_apply_picture_size)
+	Settings.changed.connect(_on_setting_changed)
 	set_process(false)
 
 
@@ -565,6 +566,12 @@ func _update_tiles() -> void:
 	for img: Image in _textures.keys():
 		if not shown.has(img):
 			_textures.erase(img)
+
+
+## Frames without a name are numbered from the index_start setting
+func _on_setting_changed(key: StringName) -> void:
+	if key == &"index_start" and sheet:
+		_update_tiles()
 
 
 func _new_tile() -> TimelineTile:

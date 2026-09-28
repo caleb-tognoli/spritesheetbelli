@@ -147,7 +147,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   other connected area such as 8 frames in 6 columns or an L-shape, are outlined with the
   name on the edge at their first frame. Frames shown twice count once; scattered or
   out-of-order animations aren't named. Names use the interface's colours; where they
-  overlap, each animation gets a colour of its own, names stack in their margin and
+  overlap, they're shown in their animation's colour, names stack in their margin and
   outlines around the same frames are drawn further inside, with the playing one on top.
   Names are never drawn over each other or over frame numbers, and Fit to View leaves
   room for them.
@@ -166,6 +166,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   or the Sprites panel, several at once, or with Add selected. Every change is a step to
   undo. The name, speed and type share one line above it; the typed frames (`0-3, 4*2`)
   are one button away.
+- Every animation has a colour of its own, picked far from the others' when it's made and
+  saved with the project. Change it with the colour button in the animation details, or
+  with Colour… on its name on the grid. The animation list shows each one's colour.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

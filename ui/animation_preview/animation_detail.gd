@@ -1,11 +1,11 @@
 class_name AnimationDetail
 extends ScrollContainer
-## Where the animation chosen in the animation panel is edited: its name, speed and type
-## on one line, and its frames below on an [AnimationTimeline], where they're dragged into
-## place, taken out and timed. Frames of the sheet are added by dragging them there, or
-## with Add selected. Frames as text shows them typed instead: sprite numbers, names and
-## ranges such as "0-3, 5, idle". It's also mirrored or deleted here. Every change can be
-## undone.
+## Where the animation chosen in the animation panel is edited: its name, speed, type and
+## colour on one line, and its frames below on an [AnimationTimeline], where they're
+## dragged into place, taken out and timed. Frames of the sheet are added by dragging them
+## there, or with Add selected. Frames as text shows them typed instead: sprite numbers,
+## names and ranges such as "0-3, 5, idle". It's also mirrored or deleted here. Every
+## change can be undone.
 
 ## A mirrored copy was added at [param index]
 signal animation_added(index: int)
@@ -33,6 +33,8 @@ var mirror_button := Button.new()
 var name_edit := LineEdit.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
+## Its colour, changed as one step when the picker closes
+var color_button := ColorPickerButton.new()
 var timeline := AnimationTimeline.new()
 ## Adds the frames selected in the sheet after the last frame
 var add_button := Button.new()
@@ -124,6 +126,7 @@ func _init() -> void:
 	frames_edit.focus_exited.connect(_apply_frames)
 	fps_spin.value_changed.connect(func(_value: float) -> void: _apply())
 	mode_option.item_selected.connect(func(_item: int) -> void: _apply())
+	color_button.popup_closed.connect(_apply_color)
 	timeline.frames_edited.connect(_on_frames_edited)
 	resized.connect(_fit_timeline)
 	_fields.resized.connect(_fit_timeline)
@@ -132,6 +135,12 @@ func _init() -> void:
 func _ready() -> void:
 	fps_spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	SpinScroll.enable(fps_spin)
+	# Frame numbers start from the index_start setting
+	Settings.changed.connect(
+		func(key: StringName) -> void:
+			if key == &"index_start":
+				refresh()
+	)
 	frames_text_button.set_pressed_no_signal(Settings.get_value(&"animation_frames_text"))
 	_frames_text.visible = frames_text_button.button_pressed
 	_update_add_button()
@@ -203,6 +212,8 @@ func refresh() -> void:
 	_show_frames_info(animation, sheet)
 	fps_spin.set_value_no_signal(animation.fps)
 	mode_option.select(mode_option.get_item_index(animation.mode))
+	if not color_button.get_popup().visible:
+		color_button.color = animation.color
 	timeline.show_frames(sheet, animation.cells, animation.durations)
 	_updating = false
 
@@ -231,7 +242,7 @@ func remove_animation() -> void:
 		)
 
 
-## The name, speed and type on one line, then the buttons
+## The name, speed, type and colour on one line, then the buttons
 func _build_fields() -> void:
 	_fields.add_theme_constant_override("separation", SEPARATION)
 	name_edit.placeholder_text = "walk"
@@ -251,6 +262,11 @@ func _build_fields() -> void:
 		)
 	mode_option.tooltip_text = "Once plays to the end, Loop starts over, Ping-pong plays back"
 	_fields.add_child(mode_option)
+	color_button.edit_alpha = false
+	color_button.get_picker().presets_visible = false
+	color_button.custom_minimum_size.x = 40
+	color_button.tooltip_text = "Colour: of its label where labels overlap, and in the list"
+	_fields.add_child(color_button)
 	frames_text_button.icon = TEXT_ICON
 	frames_text_button.toggle_mode = true
 	frames_text_button.tooltip_text = "Frames as text: numbers, names and ranges like 0-3, 5*2"
@@ -307,6 +323,15 @@ func _apply() -> void:
 			animation.fps = fps_spin.value
 			animation.mode = mode_option.get_selected_id() as SheetAnimation.Mode
 	)
+
+
+## Gives the animation the colour picked, once the picker closes
+func _apply_color() -> void:
+	if _index >= 0 and _index < Global.spritesheet.animations.size():
+		var color := color_button.color
+		_edit(
+			func(animation: SheetAnimation) -> void: animation.color = color, "Recolour animation"
+		)
 
 
 ## Plays the sprites whose numbers are typed in the frames field

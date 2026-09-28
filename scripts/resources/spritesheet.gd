@@ -588,17 +588,24 @@ func _remap_cells(map: Callable) -> void:
 #region Animations
 
 
-## Adds an animation and returns its index
+## Adds an animation and returns its index. One without a colour gets one far from the
+## other animations', see [method get_new_animation_color].
 func add_animation(animation: SheetAnimation) -> int:
-	_animations.append(animation.to_dictionary())
+	var data := animation.to_dictionary()
+	if not data.has("color"):
+		data.color = get_new_animation_color().to_html(false)
+	_animations.append(data)
 	_changed()
 	return _animations.size() - 1
 
 
+## Replaces the animation at [param index]. Without a colour, it keeps the one it had.
 func set_animation(index: int, animation: SheetAnimation) -> void:
 	if index < 0 or index >= _animations.size():
 		return
 	var data := animation.to_dictionary()
+	if not data.has("color") and _animations[index].has("color"):
+		data.color = _animations[index].color
 	if data == _animations[index]:
 		return
 	_animations[index] = data
@@ -623,6 +630,15 @@ func set_label_playing_only(value: bool) -> void:
 ## [method SheetAnimation.unique_name])
 func get_unique_animation_name(base := "animation") -> String:
 	return SheetAnimation.unique_name(base, get_animation_names())
+
+
+## A colour far from every animation's, see [method SheetAnimation.pick_color]
+func get_new_animation_color() -> Color:
+	var colors: Array[Color] = []
+	for animation in animations:
+		if animation.color != SheetAnimation.NO_COLOR:
+			colors.append(animation.color)
+	return SheetAnimation.pick_color(colors)
 
 
 ## The names of the animations, in order

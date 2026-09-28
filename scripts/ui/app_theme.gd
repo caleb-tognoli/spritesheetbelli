@@ -38,6 +38,8 @@ const TITLE_HEIGHT := 32
 
 ## The icons recoloured so far, kept loaded so that they stay recoloured
 static var _icons: Dictionary[String, DPITexture] = {}
+## The swatches made so far, by colour, see [method swatch]
+static var _swatches: Dictionary[Color, DPITexture] = {}
 
 
 class Palette:
@@ -461,6 +463,19 @@ static func recolor_icons(light: bool) -> void:
 			_icons[file] = icon
 		if _icons[file].color_map != colors:
 			_icons[file].color_map = colors
+
+
+## A dot of [param color] the size of an icon, such as an animation's colour in a list.
+## Its rim is a little darker, so it shows on a background of about its colour.
+static func swatch(color: Color) -> Texture2D:
+	if not _swatches.has(color):
+		var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">'
+		svg += (
+			'<circle cx="8" cy="8" r="4.5" fill="#%s" stroke="#%s"/></svg>'
+			% [color.to_html(false), color.darkened(0.25).to_html(false)]
+		)
+		_swatches[color] = DPITexture.create_from_string(svg)
+	return _swatches[color]
 
 
 ## A copy of [param icon] in its own colours, for drawing over sprites rather than on the

@@ -22,9 +22,6 @@ enum Shape {
 ## The margin of the grid a run's label goes in
 enum Side { NONE, LEFT, RIGHT, TOP, BOTTOM }
 
-## Hues far apart for animations next to each other in the list, see [method color_of]
-const GOLDEN_RATIO := 0.618034
-
 
 ## The cells of [param cells] without repeats, in the order they're first shown
 static func distinct_cells(cells: Array[Vector2i]) -> Array[Vector2i]:
@@ -134,7 +131,8 @@ static func _is_area(cells: Array[Vector2i], grid_size: Vector2i) -> bool:
 ## [br]- for outlines, how many steps inside the cells it's drawn, so outlines around the
 ## same cells don't hide each other: each takes the first step no earlier outline around
 ## any of its cells takes;
-## [br]- whether it overlaps another label, so it's shown in a colour of its own.
+## [br]- whether it overlaps another label, so it's shown in its animation's colour
+## ([member SheetAnimation.color]).
 static func arrange(labels: Array[Dictionary]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var cell_sets: Array[Dictionary] = []
@@ -193,12 +191,6 @@ static func _shares_cells(a: Dictionary[Vector2i, bool], b: Dictionary[Vector2i,
 		if larger.has(cell):
 			return true
 	return false
-
-
-## The colour of the animation at [param index] when its label overlaps another: the same
-## for as long as it's there, and far from the colours of the animations around it
-static func color_of(index: int) -> Color:
-	return Color.from_ok_hsl(fposmod(0.6 + index * GOLDEN_RATIO, 1.0), 0.85, 0.62)
 
 
 ## Moves text so none of it is drawn over other text. [param wanted] are where each text

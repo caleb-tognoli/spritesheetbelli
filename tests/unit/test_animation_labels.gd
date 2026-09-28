@@ -208,16 +208,6 @@ func test_runs_and_outlines_sharing_cells_are_coloured() -> void:
 	assert_eq(arranged[1].inset, 0, "runs aren't outlined, so the outline isn't inset")
 
 
-func test_colours_are_stable_and_apart() -> void:
-	assert_eq(Layout.color_of(3), Layout.color_of(3), "the same for the same animation")
-	for i in 8:
-		for j in range(i + 1, 8):
-			var a := Layout.color_of(i)
-			var b := Layout.color_of(j)
-			var distance := Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
-			assert_true(distance > 0.1, "animations %d and %d look different" % [i, j])
-
-
 func test_text_is_never_drawn_over_text() -> void:
 	var wanted: Array[Rect2] = [
 		Rect2(0, 0, 40, 16), Rect2(10, 4, 40, 16), Rect2(100, 0, 20, 16), Rect2(0, 0, 40, 16)
