@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 
 var main: Control
-var dir := OS.get_user_data_dir().path_join("tests")
+var dir := temp_path()
 
 
 func before_each() -> void:

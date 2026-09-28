@@ -133,7 +133,7 @@ func test_trim_and_color_key() -> void:
 
 
 func test_exported_sprites_are_named_by_grid_index() -> void:
-	var dir := OS.get_user_data_dir().path_join("tests/export_order")
+	var dir := temp_path("export_order")
 	DirAccess.make_dir_recursive_absolute(dir)
 	for f in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir.path_join(f))
@@ -147,7 +147,7 @@ func test_exported_sprites_are_named_by_grid_index() -> void:
 
 
 func test_jpg_export_fills_transparency() -> void:
-	var path := OS.get_user_data_dir().path_join("tests/transparent.jpg")
+	var path := temp_path("transparent.jpg")
 	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
 	img.fill_rect(Rect2i(0, 0, 8, 16), Color.BLUE)
 	assert_eq(SpritesheetExporter.save_image(img, path), OK)
@@ -165,7 +165,7 @@ func test_frame_names_survive_edits_and_projects() -> void:
 	FrameEdits.flip(sheet, coords, true)
 	FrameEdits.trim(sheet, coords)
 	assert_eq(sheet.frames[Vector2i.ZERO].resource_name, "walk_01.png")
-	var path := OS.get_user_data_dir().path_join("tests/names.sbelli")
+	var path := temp_path("names.sbelli")
 	assert_eq(ProjectFile.save(sheet, path), OK)
 	var loaded: Dictionary = ProjectFile.load(path)
 	assert_eq(loaded.state.frames[Vector2i.ZERO].resource_name, "walk_01.png")

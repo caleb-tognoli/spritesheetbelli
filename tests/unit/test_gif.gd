@@ -77,7 +77,7 @@ func test_export_writes_a_gif() -> void:
 	options.gif_animation = "walk"
 	sheet.set_export_settings(options.to_dictionary())
 	assert_true(FileController.suggested_export_path(options).ends_with("_walk.gif"))
-	var path := OS.get_user_data_dir().path_join("tests/walk.gif")
+	var path := temp_path("walk.gif")
 	DirAccess.remove_absolute(path)
 	assert_true(await main.files.export_to(path))
 	assert_true(FileAccess.file_exists(path))
@@ -182,7 +182,7 @@ func test_add_sprites_gives_each_gif_an_animation() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	assert_true("*.gif" in main.files.open_sprites_dialog.filters[0])
-	var dir := OS.get_user_data_dir().path_join("tests")
+	var dir := temp_path()
 	DirAccess.make_dir_recursive_absolute(dir)
 	var fixture := ProjectSettings.globalize_path("res://tests/fixtures/pillow.gif")
 	for file_name: String in ["a.gif", "b.gif"]:

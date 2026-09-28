@@ -164,7 +164,7 @@ func test_packed_atlas_round_trip() -> void:
 
 
 func test_finds_data_next_to_image() -> void:
-	var dir := OS.get_user_data_dir().path_join("tests/sheet_data")
+	var dir := temp_path("sheet_data")
 	DirAccess.make_dir_recursive_absolute(dir)
 	var image_path := dir.path_join("hero.png")
 	quarters().save_png(image_path)

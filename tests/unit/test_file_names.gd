@@ -118,7 +118,7 @@ func test_dialogs_get_a_name_and_keep_their_folder() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	var files: FileController = main.files
-	var folder := OS.get_user_data_dir().path_join("tests")
+	var folder := temp_path()
 	files.save_project_dialog.current_dir = folder
 	files.save_project_dialog.current_file = ""
 	files.save_as()

@@ -4,7 +4,7 @@ const FIRST := Vector2i(0, 0)
 
 var main: Control
 var watcher: SourceWatcher
-var dir := OS.get_user_data_dir().path_join("tests/watched")
+var dir := temp_path("watched")
 
 
 func before_each() -> void:

@@ -52,6 +52,23 @@ func fail(message: String) -> void:
 	failures.append("%s: %s" % [current_test, message])
 
 
+## Where tests write their files: [param relative] in a folder of this run's own, since
+## user:// is shared by every checkout of the project and runs can happen at the same time.
+## The test runner empties it before and after the run.
+static func temp_path(relative := "") -> String:
+	var run_dir := OS.get_user_data_dir().path_join("tests/%d" % OS.get_process_id())
+	return run_dir.path_join(relative) if relative else run_dir
+
+
+## Deletes a folder and everything in it
+static func remove_dir(path: String) -> void:
+	for dir in DirAccess.get_directories_at(path):
+		remove_dir(path.path_join(dir))
+	for file in DirAccess.get_files_at(path):
+		DirAccess.remove_absolute(path.path_join(file))
+	DirAccess.remove_absolute(path)
+
+
 ## Returns a solid-colour image
 static func make_image(color: Color, size := Vector2i(16, 16)) -> Image:
 	var img := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)

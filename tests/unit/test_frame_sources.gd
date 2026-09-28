@@ -4,7 +4,7 @@ const FIRST := Vector2i(0, 0)
 const SECOND := Vector2i(1, 0)
 
 var sheet: Spritesheet
-var dir := OS.get_user_data_dir().path_join("tests/sources")
+var dir := temp_path("sources")
 
 
 func before_each() -> void:

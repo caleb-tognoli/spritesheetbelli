@@ -100,7 +100,7 @@ func test_libgdx_atlas() -> void:
 	var options := ExportOptions.new()
 	options.sprite_name_pattern = "{animation}_{animation_frame}"
 	options.atlas_data = "atlas"
-	var path := OS.get_user_data_dir().path_join("tests/gdx.png")
+	var path := temp_path("gdx.png")
 	var result := AtlasPacker.write(sheet, options, path)
 	assert_eq(result.error, OK)
 	assert_true(result.json_path.ends_with("gdx.atlas"))

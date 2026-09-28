@@ -66,7 +66,7 @@ func test_window_edits_settings() -> void:
 func test_index_start_used_in_export() -> void:
 	var sheet := Spritesheet.new()
 	sheet.add_frames([make_image(Color.RED)] as Array[Image])
-	var dir := OS.get_user_data_dir().path_join("tests/index_start")
+	var dir := temp_path("index_start")
 	DirAccess.make_dir_recursive_absolute(dir)
 	for f in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir.path_join(f))
@@ -102,7 +102,7 @@ func test_recent_files_menu() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var path := OS.get_user_data_dir().path_join("tests/recent.sbelli")
+	var path := temp_path("recent.sbelli")
 	var sheet := Spritesheet.new()
 	sheet.add_frames([make_image(Color.RED)] as Array[Image])
 	ProjectFile.save(sheet, path)

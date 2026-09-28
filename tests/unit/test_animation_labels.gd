@@ -345,7 +345,7 @@ func test_choices_are_saved_with_the_project() -> void:
 	saved.add_animation(shown)
 	saved.add_animation(hidden)
 	saved.set_label_playing_only(true)
-	var path := "user://tests/labels.sbelli"
+	var path := temp_path("labels.sbelli")
 	assert_eq(ProjectFile.save(saved, path), OK)
 	var loaded := Spritesheet.new()
 	loaded.set_state(ProjectFile.load(path).state)
@@ -356,7 +356,7 @@ func test_choices_are_saved_with_the_project() -> void:
 	assert_eq(ProjectFile.save(saved, path), OK)
 	loaded.set_state(ProjectFile.load(path).state)
 	assert_false(loaded.label_playing_only)
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	DirAccess.remove_absolute(path)
 	# Mirrored copies show their name
 	assert_true(sheet_with_mirror(hidden).animations[1].show_label)
 

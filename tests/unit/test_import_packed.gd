@@ -44,7 +44,7 @@ offsets:1,2,14,16
 rotate:90
 """
 
-var dir := OS.get_user_data_dir().path_join("tests/import_packed")
+var dir := temp_path("import_packed")
 
 
 func before_each() -> void:

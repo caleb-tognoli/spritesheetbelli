@@ -2,7 +2,7 @@ extends "res://tests/test_case.gd"
 
 
 func test_loads_in_order_with_failures() -> void:
-	var dir := OS.get_user_data_dir().path_join("tests/loader")
+	var dir := temp_path("loader")
 	DirAccess.make_dir_recursive_absolute(dir)
 	var paths: PackedStringArray = []
 	for i in 30:

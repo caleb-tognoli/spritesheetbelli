@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 
 var sheet: Spritesheet
-var dir := OS.get_user_data_dir().path_join("tests/export")
+var dir := temp_path("export")
 
 
 func before_each() -> void:

@@ -100,7 +100,7 @@ func test_durations_are_saved() -> void:
 	var animation := SheetAnimation.create("walk", sheet.get_sorted_coords())
 	animation.durations = [1.0, 1.0, 2.0, 0.5] as Array[float]
 	sheet.add_animation(animation)
-	var path := OS.get_user_data_dir().path_join("tests/durations.sbelli")
+	var path := temp_path("durations.sbelli")
 	assert_eq(ProjectFile.save(sheet, path), OK)
 	var loaded := Spritesheet.new()
 	loaded.set_state(ProjectFile.load(path).state)

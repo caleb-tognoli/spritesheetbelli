@@ -107,7 +107,7 @@ func test_origins_are_undone_and_saved() -> void:
 		"Nudge", sheet.nudge_frames.bind([Vector2i(1, 0)] as Array[Vector2i], Vector2i(-3, 2))
 	)
 	var origin := sheet.get_frame_origin(Vector2i(1, 0))
-	var path := OS.get_user_data_dir().path_join("tests/origins.sbelli")
+	var path := temp_path("origins.sbelli")
 	assert_eq(ProjectFile.save(sheet, path), OK)
 	document.undo()
 	assert_false(sheet.has_frame_origin(Vector2i(1, 0)))
