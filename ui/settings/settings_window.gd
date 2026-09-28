@@ -32,6 +32,7 @@ const CATEGORIES := [
 		[
 			[&"index_start", "Number frames from", "option", ["0", "1"]],
 			[&"show_grid", "Show grid", "check"],
+			[&"show_pixel_grid", "Show pixel grid", "check"],
 			[&"show_indices", "Show frame numbers", "check"],
 			[&"show_checkerboard", "Show checkerboard", "check"],
 			[&"grid_color", "Grid colour", "color"],

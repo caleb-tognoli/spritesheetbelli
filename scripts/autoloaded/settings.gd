@@ -18,6 +18,8 @@ const DEFAULTS := {
 	# Preview
 	&"index_start": 0,
 	&"show_grid": true,
+	# Lines between pixels once zoomed in far enough, see PixelGrid
+	&"show_pixel_grid": true,
 	&"show_indices": true,
 	&"show_checkerboard": true,
 	&"grid_color": Color(0.85, 0.85, 0.85, 0.5),

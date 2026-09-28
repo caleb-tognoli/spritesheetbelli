@@ -32,7 +32,8 @@ func update(value: Spritesheet) -> void:
 	var biggest := Vector2i.ONE * 64
 	for size in page_sizes:
 		biggest = biggest.max(size)
-	var gap := maxf(24.0, maxf(biggest.x, biggest.y) * 0.06)
+	# Whole, so the pixels of every page are whole pixels of the preview, see [PixelGrid]
+	var gap := ceilf(maxf(24.0, maxf(biggest.x, biggest.y) * 0.06))
 	for size in page_sizes:
 		page_origins.append(Vector2(x, 0))
 		x += size.x + gap
@@ -158,14 +159,22 @@ func draw(
 		var new_page := get_new_page_rect()
 		canvas.draw_rect(new_page, NEW_PAGE_COLOR)
 		_draw_label(canvas, new_page.position, tr("New page"), pixel)
+	# Lines between pixels go over the frames, and outlines and marks over them
+	var shown: Array[Vector2i] = []
+	var drawn: Array[Vector2i] = []
 	for coord in _order:
-		var rect := get_frame_rect(coord)
-		if rect.intersects(visible_rect):
+		if get_frame_rect(coord).intersects(visible_rect):
+			shown.append(coord)
 			if not lifted.has(coord):
-				draw_frame(canvas, coord, rect)
-			if canvas.show_grid:
-				canvas.draw_rect(rect, OUTLINE_COLOR, false, pixel)
-			_draw_marks(canvas, coord, rect, pixel)
+				draw_frame(canvas, coord, get_frame_rect(coord))
+				drawn.append(coord)
+	if PixelGrid.is_shown(canvas.show_pixel_grid, 1 / pixel):
+		PixelGrid.draw(canvas, drawn, visible_rect)
+	for coord in shown:
+		var rect := get_frame_rect(coord)
+		if canvas.show_grid:
+			canvas.draw_rect(rect, OUTLINE_COLOR, false, pixel)
+		_draw_marks(canvas, coord, rect, pixel)
 
 
 ## The frame's packed pixels in [param rect], turned like they're stored

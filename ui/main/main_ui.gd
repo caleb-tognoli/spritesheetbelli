@@ -192,6 +192,7 @@ func _ready() -> void:
 				Actions.refresh()
 	)
 	preview.hover_changed.connect(update_cell_info)
+	preview.pixel_hovered.connect(func() -> void: update_cell_info(preview.hovered_cell))
 	grid_rows.value_changed.connect(
 		func(rows: float) -> void:
 			set_spritesheet_grid_size(Global.spritesheet.grid_size.x, int(rows))
@@ -581,6 +582,7 @@ func _register_actions() -> void:
 	)
 	for toggle: Array in [
 		[&"toggle_grid", "Grid Lines", &"show_grid"],
+		[&"toggle_pixel_grid", "Pixel Grid", &"show_pixel_grid"],
 		[&"toggle_indices", "Frame Numbers", &"show_indices"],
 	]:
 		Actions.add(
@@ -588,7 +590,7 @@ func _register_actions() -> void:
 			toggle[1],
 			func() -> void: Settings.set_value(toggle[2], not Settings.get_value(toggle[2])),
 			Callable(),
-			ICONS[toggle[0]],
+			ICONS.get(toggle[0]),
 			func() -> bool: return Settings.get_value(toggle[2])
 		)
 
@@ -863,10 +865,14 @@ func update_sheet_info() -> void:
 
 ## Describes the cell under the mouse in the status bar, with only the folder and name of
 ## the file its frame comes from: the preview's tooltip has the whole path. Being last, the
-## path is cut first when the status bar is full.
+## path is cut first when the status bar is full. The pixel under the mouse comes after
+## the cell's name, see [method PixelGrid.describe].
 func update_cell_info(coord: Vector2i) -> void:
-	var text := PreviewArea.describe_cell(Global.spritesheet, coord, true)
-	cell_info.text = text.replace("\n", " · ")
+	var lines := PreviewArea.describe_cell(Global.spritesheet, coord, true).split("\n")
+	var pixel := PixelGrid.describe(PixelGrid.probe(preview, coord, preview.hovered_pixel))
+	if pixel:
+		lines.insert(1, pixel)
+	cell_info.text = " · ".join(lines)
 
 
 func disable_if_empty() -> void:

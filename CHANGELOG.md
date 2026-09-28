@@ -176,6 +176,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   at the top of the Sprites panel, with *Unlink folder*, saved in the project and followed
   again when it's opened. *Reload changed files* turns this off too. Not in the web
   version.
+- View > Pixel Grid (Shift+G) draws faint lines between pixels once you zoom in to 600%
+  or more. The lines follow each frame's own pixels, so a frame scaled 2× gets a line
+  every two pixels of the sheet. It's on by default and can also be turned off in
+  Settings > Preview.
+- While you hover a frame, the status bar shows the pixel under the mouse in the frame
+  and on the exported sheet (or on its page, when packed on several), with its colour,
+  like "3, 5 in the frame (35, 5 on the sheet) · #41d88f, alpha 255". Scaled, flipped,
+  trimmed and turned frames give their own pixels.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

@@ -61,9 +61,10 @@ func get_visible_cells(visible_rect: Rect2) -> Rect2i:
 	return Rect2i(start, (end - start).max(Vector2i.ZERO))
 
 
-## The checkerboard, the cells and the lines between them, under the selection. Frames in
-## [param lifted] are picked up to move, so the canvas draws them where they'd land
-## instead. [param hovered] is the cell to highlight, or NO_CELL.
+## The checkerboard, the cells and the lines between them and between the frames' pixels
+## (see [PixelGrid]), under the selection. Frames in [param lifted] are picked up to move,
+## so the canvas draws them where they'd land instead. [param hovered] is the cell to
+## highlight, or NO_CELL.
 func draw(
 	canvas: SpritesheetPreview,
 	visible_rect: Rect2,
@@ -74,6 +75,7 @@ func draw(
 	if canvas.show_checkerboard:
 		canvas.draw_checkerboard(Rect2(Vector2.ZERO, content_size), pixel)
 	var visible_cells := get_visible_cells(visible_rect)
+	var drawn: Array[Vector2i] = []
 	for y in range(visible_cells.position.y, visible_cells.end.y):
 		for x in range(visible_cells.position.x, visible_cells.end.x):
 			var coord := Vector2i(x, y)
@@ -81,12 +83,15 @@ func draw(
 			if sheet.has_frame(coord):
 				if not lifted.has(coord):
 					draw_frame(canvas, coord, rect)
+					drawn.append(coord)
 					if extrude > 0:
 						_draw_extrusion(canvas, coord, rect)
 			elif sheet.is_locked(coord):
 				_draw_lock(canvas, rect, pixel)
 			if coord == hovered:
 				canvas.draw_rect(rect, SpritesheetPreview.HOVER_COLOR)
+	if PixelGrid.is_shown(canvas.show_pixel_grid, 1 / pixel):
+		PixelGrid.draw(canvas, drawn, visible_rect)
 	if canvas.show_grid:
 		_draw_lines(canvas, visible_cells, pixel)
 

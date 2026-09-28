@@ -134,6 +134,7 @@ const MENUS := {
 		&"zoom_fit",
 		&"",
 		&"toggle_grid",
+		&"toggle_pixel_grid",
 		&"toggle_indices",
 		&"toggle_sprites",
 		&"toggle_history",

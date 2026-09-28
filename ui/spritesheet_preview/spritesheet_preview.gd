@@ -26,6 +26,8 @@ signal tool_changed(tool: Tool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid or the preview. Also
 ## emitted when the sheet changes, since what's in the cell may have.
 signal hover_changed(coord: Vector2i)
+## The pixel under the mouse changed, see [member hovered_pixel]
+signal pixel_hovered
 ## The user dragged packed frames, or moved them with arrow keys, by [param offset] onto
 ## [param page]
 signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vector2i)
@@ -82,6 +84,7 @@ var tool := Tool.SELECT:
 # Set from Settings
 var show_indices := true
 var show_grid := true
+var show_pixel_grid := true
 var show_checkerboard := true
 var grid_color := Color.WHITE
 var background_color := Color.BLACK
@@ -95,6 +98,8 @@ var selection_tint := 0.25
 var spritesheet: Spritesheet = Spritesheet.new():
 	set = set_spritesheet
 var hovered_cell := NO_CELL
+## The whole pixel of the preview last under the mouse, see [method PixelGrid.probe]
+var hovered_pixel := Vector2i.ZERO
 ## Where the cells are when the sheet is a grid
 var grid_view := GridView.new()
 ## Where things are when the sheet is packed
@@ -143,6 +148,7 @@ func _ready() -> void:
 
 func apply_settings() -> void:
 	show_grid = Settings.get_value(&"show_grid")
+	show_pixel_grid = Settings.get_value(&"show_pixel_grid")
 	show_indices = Settings.get_value(&"show_indices")
 	show_checkerboard = Settings.get_value(&"show_checkerboard")
 	grid_color = Settings.get_value(&"grid_color")
@@ -576,6 +582,10 @@ func _click(cell: Vector2i, event: InputEventMouseButton) -> void:
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	if _drag_out(event.position):
 		return
+	var pixel := Vector2i(screen_to_world(event.position).floor())
+	if pixel != hovered_pixel:
+		hovered_pixel = pixel
+		pixel_hovered.emit()
 	_set_hovered_cell(get_cell_at_screen_position(event.position))
 	if _drag_copy != event.alt_pressed and _drag in [Drag.PENDING, Drag.MOVE]:
 		_drag_copy = event.alt_pressed
