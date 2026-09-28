@@ -180,10 +180,7 @@ func name_frames(cells: Array[Vector2i]) -> void:
 	var frame_names := PackedStringArray()
 	for cell in cells:
 		frame_names.append(sheet.frames[cell].resource_name)
-	var taken := PackedStringArray()
-	for animation in sheet.animations:
-		taken.append(animation.name)
-	dialog.open(SheetAnimation.default_name(frame_names, taken))
+	dialog.open(SheetAnimation.default_name(frame_names, sheet.get_animation_names()))
 
 
 ## Makes the animation, or renames it, as one undoable step, and chooses it in the

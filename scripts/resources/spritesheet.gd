@@ -619,17 +619,18 @@ func set_label_playing_only(value: bool) -> void:
 		_changed()
 
 
-## A name not used by any animation, based on [param base]
+## A name not used by any animation, based on [param base] (see
+## [method SheetAnimation.unique_name])
 func get_unique_animation_name(base := "animation") -> String:
-	var used := {}
+	return SheetAnimation.unique_name(base, get_animation_names())
+
+
+## The names of the animations, in order
+func get_animation_names() -> PackedStringArray:
+	var names := PackedStringArray()
 	for data in _animations:
-		used[data.name] = true
-	if not used.has(base):
-		return base
-	var number := 2
-	while used.has("%s%d" % [base, number]):
-		number += 1
-	return "%s%d" % [base, number]
+		names.append(data.name)
+	return names
 
 
 ## Changes the cells of every animation with [param map], which returns a new cell or

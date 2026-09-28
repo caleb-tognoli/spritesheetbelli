@@ -271,6 +271,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   line's --out, whose extension picks the image format.
 - Animations… becomes Animation > Edit: it opens the animation panel at the chosen
   animation's details. The panel's toggle (P) moved from View to the Animation menu too.
+- Animations given a free name (New, Mirror, GIFs and Add Spritesheet) are numbered like
+  the names Animation from Row suggests: walk_2, walk_3, not walk2. A name that already
+  ends in a number counts on from it, so walk_2 gives walk_3.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

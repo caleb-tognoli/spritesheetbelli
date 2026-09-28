@@ -154,7 +154,7 @@ func test_opening_and_adding_gifs() -> void:
 
 	await main.files.show_add_spritesheet_window(path)
 	assert_eq(sheet.frames.size(), 6, "added below")
-	assert_eq(sheet.animations[1].name, "pillow2")
+	assert_eq(sheet.animations[1].name, "pillow_2")
 	assert_eq(sheet.animations[1].cells[0], Vector2i(0, 1))
 	Global.document.undo()
 	assert_eq(sheet.frames.size(), 3)
@@ -162,7 +162,7 @@ func test_opening_and_adding_gifs() -> void:
 	await main.files.add_sprites_from_paths(PackedStringArray([path]))
 	assert_eq(sheet.frames.size(), 6, "as sprites, every frame")
 	assert_eq(sheet.animations.size(), 2, "and its animation")
-	assert_eq(sheet.animations[1].name, "pillow2")
+	assert_eq(sheet.animations[1].name, "pillow_2")
 	assert_eq(sheet.animations[1].durations, [2.0, 4.0, 1.0] as Array[float])
 	var cells := sheet.animations[1].cells
 	assert_eq(cells.size(), 3)

@@ -130,6 +130,8 @@ func test_mirror_animation() -> void:
 	assert_eq(
 		sheet.get_frame_origin(Vector2i(1, 1)).x, -sheet.get_frame_origin(Vector2i(1, 0)).x - 16
 	)
+	SheetAnimation.mirror(sheet, 0)
+	assert_eq(sheet.animations[2].name, "walk_left_2", "a number when the name is taken")
 	assert_eq(SheetAnimation.mirrored_name("run"), "run_flipped")
 	assert_eq(SheetAnimation.mirrored_name("Left punch"), "Right punch")
 

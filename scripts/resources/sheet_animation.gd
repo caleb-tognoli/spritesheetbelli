@@ -179,8 +179,8 @@ static func mirrored_name(animation_name: String) -> String:
 ## The name suggested for an animation of frames named [param frame_names]: the start
 ## the names have in common, without the digits and [code]_ - .[/code] it ends with, so
 ## slime_walk_00 to slime_walk_05 make slime_walk. Frames without a name are left out,
-## and "animation" is used when nothing is left. A name in [param taken] gets a number:
-## slime_walk_2.
+## and "animation" is used when nothing is left. A name in [param taken] is made unique
+## with [method unique_name]: slime_walk_2.
 static func default_name(frame_names: PackedStringArray, taken: PackedStringArray) -> String:
 	var prefix := ""
 	var first := true
@@ -199,13 +199,25 @@ static func default_name(frame_names: PackedStringArray, taken: PackedStringArra
 	var end := prefix.length()
 	while end > 0 and (prefix[end - 1] in "_-. " or prefix[end - 1].is_valid_int()):
 		end -= 1
-	var suggested := prefix.left(end) if end > 0 else "animation"
-	if suggested not in taken:
-		return suggested
+	return unique_name(prefix.left(end) if end > 0 else "animation", taken)
+
+
+## [param base], or when it's in [param taken], the first free name with a number after
+## an underscore: walk_2, walk_3… A name that already ends in one counts on from it, so
+## walk_2 gives walk_3 rather than walk_2_2.
+static func unique_name(base: String, taken: PackedStringArray) -> String:
+	if base not in taken:
+		return base
+	var stem := base
 	var number := 2
-	while "%s_%d" % [suggested, number] in taken:
+	var underscore := base.rfind("_")
+	var digits := base.substr(underscore + 1)
+	if underscore > 0 and digits == str(digits.to_int()) and digits.to_int() >= 0:
+		stem = base.left(underscore)
+		number = digits.to_int() + 1
+	while "%s_%d" % [stem, number] in taken:
 		number += 1
-	return "%s_%d" % [suggested, number]
+	return "%s_%d" % [stem, number]
 
 
 ## Reads frame numbers such as "0-3, 5*2, 9-7": single numbers and ranges, which count

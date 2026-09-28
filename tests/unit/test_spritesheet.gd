@@ -222,7 +222,28 @@ func test_animations_follow_their_frames() -> void:
 	assert_true(sheet.animations.is_empty())
 	sheet.set_state(state)
 	assert_eq(sheet.animations.size(), 1, "undoable")
-	assert_eq(sheet.get_unique_animation_name("walk"), "walk2")
+	assert_eq(sheet.get_unique_animation_name("walk"), "walk_2")
+	assert_eq(sheet.get_unique_animation_name(), "animation")
+
+
+func test_unique_animation_names() -> void:
+	var name_of := func(base: String, taken: Array) -> String:
+		return SheetAnimation.unique_name(base, PackedStringArray(taken))
+	assert_eq(name_of.call("walk", []), "walk", "free as it is")
+	assert_eq(name_of.call("walk", ["walk"]), "walk_2")
+	assert_eq(name_of.call("walk", ["walk", "walk_2"]), "walk_3", "the first free number")
+	assert_eq(name_of.call("walk", ["walk", "walk_3"]), "walk_2")
+	assert_eq(name_of.call("walk_2", ["walk_2"]), "walk_3", "counts on, not walk_2_2")
+	assert_eq(name_of.call("walk_2", ["walk_2", "walk_3"]), "walk_4")
+	assert_eq(name_of.call("walk_2", ["walk", "walk_2"]), "walk_3")
+	assert_eq(name_of.call("slime_walk_1", ["slime_walk_1"]), "slime_walk_2")
+	assert_eq(name_of.call("walk_01", ["walk_01"]), "walk_01_2", "zero-padded numbers are kept")
+	assert_eq(name_of.call("walk_", ["walk_"]), "walk__2")
+	assert_eq(name_of.call("_2", ["_2"]), "_2_2", "not just a number")
+	assert_eq(name_of.call("hit-2", ["hit-2"]), "hit-2_2", "only a number after _")
+	sheet.add_animation(SheetAnimation.create("walk", [] as Array[Vector2i]))
+	sheet.add_animation(SheetAnimation.create("walk_2", [] as Array[Vector2i]))
+	assert_eq(sheet.get_unique_animation_name("walk"), "walk_3", "the sheet's names are taken")
 
 
 func test_ping_pong_playback() -> void:
