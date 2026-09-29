@@ -44,6 +44,8 @@ var atlas_frame_size := FrameSize.CELL
 
 ## File name for exported sprites. See [method SpritesheetExporter.format_sprite_name].
 var sprite_name_pattern := "{index}"
+## The pattern used when none is set, which isn't stored: see [method use_defaults_of]
+var default_name_pattern := "{index}"
 var only_selected := false
 var existing_files := Existing.ADD_NUMBER
 
@@ -89,12 +91,24 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"gif_scale",
 ]
 
+## Whether the settings applied had a pattern, which is then kept even when it's the default
+var _name_pattern_set := false
+
 
 ## Options from a sheet's export settings and the user's settings
 static func from_sheet(sheet: Spritesheet) -> ExportOptions:
 	var options := from_settings()
+	options.use_defaults_of(sheet)
 	options.apply(sheet.export_settings)
 	return options
+
+
+## Takes the defaults that depend on [param sheet]: frames are named by animation when it
+## has animations, else by number. A pattern that's set is applied after, over it.
+func use_defaults_of(sheet: Spritesheet) -> void:
+	var by_animation := not sheet.animations.is_empty()
+	default_name_pattern = "{animation}_{animation_frame}" if by_animation else "{index}"
+	sprite_name_pattern = default_name_pattern
 
 
 ## Options from the user's settings only
@@ -109,6 +123,7 @@ func apply(settings: Dictionary) -> void:
 	# Projects from before export targets stored which metadata to write
 	if settings.get("metadata") is int and not settings.has("target"):
 		metadata = settings.metadata
+	_name_pattern_set = _name_pattern_set or settings.get("sprite_name_pattern") is String
 	for key in _SHEET_KEYS:
 		if not settings.has(key):
 			continue
@@ -153,7 +168,8 @@ func get_gif_animation(sheet: Spritesheet) -> SheetAnimation:
 func to_dictionary() -> Dictionary:
 	var result := {}
 	var defaults := ExportOptions.new()
+	defaults.sprite_name_pattern = default_name_pattern
 	for key in _SHEET_KEYS:
-		if get(key) != defaults.get(key):
+		if get(key) != defaults.get(key) or key == &"sprite_name_pattern" and _name_pattern_set:
 			result[key] = get(key)
 	return result

@@ -118,6 +118,7 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		return 2
 
 	var export := ExportOptions.new()
+	export.use_defaults_of(sheet)
 	export.apply(sheet.export_settings)
 	for key: String in ["padding", "spacing", "extrude"]:
 		if options.has("--" + key):

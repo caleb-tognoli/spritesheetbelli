@@ -62,10 +62,6 @@ const TARGETS := [
 		),
 	},
 ]
-const PATTERN_HELP := (
-	"Tokens: {index} {row} {column} {frame} {animation} {animation_frame} {name}\n"
-	+ "Add :3 to pad numbers, e.g. {index:3} gives 007"
-)
 ## What a sheet in the packed layout can be exported as
 const PACKED_TARGETS: Array[ExportOptions.Target] = [
 	ExportOptions.Target.IMAGE,
@@ -74,14 +70,20 @@ const PACKED_TARGETS: Array[ExportOptions.Target] = [
 	ExportOptions.Target.GIF,
 ]
 const LABEL_WIDTH := 170
+## Files named in the list of what an export writes, before "… 3 more"
+const FILES_SHOWN := 5
 
+## The frames selected in the preview, for exporting only those
+var get_selected_coords := func() -> Array[Vector2i]: return []
 var targets := ItemList.new()
 var about := Label.new()
 var image_format := OptionButton.new()
 var jpg_quality := SpinBox.new()
 var jpg_background := ColorPickerButton.new()
 var background_picker := ColorPickerButton.new()
-var pattern := LineEdit.new()
+## Says "Transparent" on [member background_picker] when it's fully transparent
+var transparent_label := Label.new()
+var pattern := NamePatternField.new()
 var pattern_example := Label.new()
 var only_selected := CheckBox.new()
 var existing := OptionButton.new()
@@ -90,6 +92,8 @@ var frame_size := OptionButton.new()
 var atlas_data := OptionButton.new()
 var gif_animation := OptionButton.new()
 var gif_scale := SpinBox.new()
+## The files an export writes, when it writes more than one
+var files_info := Label.new()
 var output_info := Label.new()
 
 var _settings := _grid()
@@ -98,6 +102,8 @@ var _rows: Array[Dictionary] = []
 var _pattern_label: Label
 var _fps_label: Label
 var _updating := false
+## Pages of an atlas of the grid, by whether frames may be turned, found by packing it
+var _atlas_pages := {}
 
 
 func _init() -> void:
@@ -145,6 +151,15 @@ func _init() -> void:
 		+ "background transparent."
 	)
 	background_picker.custom_minimum_size = Vector2(60, 0)
+	transparent_label.text = "Transparent"
+	transparent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	transparent_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	transparent_label.add_theme_color_override("font_color", Color.WHITE)
+	transparent_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	transparent_label.add_theme_constant_override("outline_size", 4)
+	transparent_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	transparent_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background_picker.add_child(transparent_label)
 	_add_row(_settings, "Background", background_picker, [T.IMAGE, T.GODOT, T.JSON, T.GIF])
 	gif_animation.tooltip_text = "Which animation the GIF plays"
 	_add_row(_settings, "Animation", gif_animation, [T.GIF])
@@ -175,12 +190,15 @@ func _init() -> void:
 	animation_fps.tooltip_text = "Frames per second of the animations"
 	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.GODOT, T.JSON, T.GIF])
 
-	pattern.custom_minimum_size = Vector2(200, 0)
-	pattern.placeholder_text = "{index}"
-	pattern.tooltip_text = PATTERN_HELP
+	pattern.line_edit.custom_minimum_size = Vector2(120, 0)
+	pattern.tooltip_text = "How each frame is named, with tokens such as {index} filled in"
+	pattern.line_edit.tooltip_text = pattern.tooltip_text
 	_pattern_label = _add_row(_settings, "File names", pattern, [T.SPRITES, T.JSON, T.ATLAS])
 	pattern_example.theme_type_variation = &"StatusLabel"
-	_add_row(_settings, "", pattern_example, [T.SPRITES, T.JSON, T.ATLAS])
+	pattern_example.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pattern_example.custom_minimum_size = Vector2(200, 0)
+	# Sprites have the list of files instead
+	_add_row(_settings, "", pattern_example, [T.JSON, T.ATLAS])
 	only_selected.text = "Only selected frames"
 	_add_row(_settings, "", only_selected, [T.SPRITES])
 	for label: String in ["Add a number", "Overwrite it", "Skip the sprite"]:
@@ -190,6 +208,10 @@ func _init() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(spacer)
+	files_info.theme_type_variation = &"StatusLabel"
+	files_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	files_info.custom_minimum_size = Vector2(380, 0)
+	right.add_child(files_info)
 	output_info.theme_type_variation = &"StatusLabel"
 	right.add_child(output_info)
 
@@ -210,6 +232,10 @@ func _init() -> void:
 
 func _ready() -> void:
 	about_to_popup.connect(refresh)
+	# The label stays next to the field when a warning shows under it
+	_pattern_label.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_pattern_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pattern_label.custom_minimum_size.y = pattern.field_row.get_combined_minimum_size().y
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		SpinScroll.enable(spin)
@@ -218,6 +244,7 @@ func _ready() -> void:
 ## Shows the sheet's export settings
 func refresh() -> void:
 	_updating = true
+	_atlas_pages.clear()
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	# A packed sheet is exported as it's packed, not as a grid
 	var packed := _is_packed()
@@ -236,6 +263,7 @@ func refresh() -> void:
 	jpg_background.color = options.opaque_background
 	background_picker.color = options.background
 	pattern.text = options.sprite_name_pattern
+	pattern.line_edit.placeholder_text = options.default_name_pattern
 	only_selected.button_pressed = options.only_selected
 	existing.select(options.existing_files)
 	animation_fps.set_value_no_signal(options.animation_fps)
@@ -277,7 +305,9 @@ func _options() -> ExportOptions:
 	options.jpg_quality = jpg_quality.value / 100.0
 	options.opaque_background = jpg_background.color
 	options.background = background_picker.color
-	options.sprite_name_pattern = pattern.text if pattern.text.strip_edges() else "{index}"
+	options.sprite_name_pattern = (
+		pattern.text if pattern.text.strip_edges() else options.default_name_pattern
+	)
 	options.only_selected = only_selected.button_pressed
 	options.existing_files = existing.selected as ExportOptions.Existing
 	options.animation_fps = animation_fps.value
@@ -300,6 +330,9 @@ func _on_confirmed() -> void:
 	var settings := options.to_dictionary()
 	# Kept even when it's the default, so the choice is remembered
 	settings.target = options.target
+	# No pattern: the default, which follows the sheet
+	if not pattern.text.strip_edges():
+		settings.erase("sprite_name_pattern")
 	if settings != sheet.export_settings:
 		Global.document.perform("Export settings", sheet.set_export_settings.bind(settings))
 	export_requested.emit()
@@ -310,22 +343,25 @@ func _update_labels(options: ExportOptions) -> void:
 	_update_visibility(options)
 
 	var sheet := Global.spritesheet
-	var coords := sheet.get_sorted_coords()
-	pattern_example.text = ""
-	if not coords.is_empty():
+	var index_start: int = Settings.get_value(&"index_start")
+	var examples := PackedStringArray()
+	for coord in SpritesheetExporter.get_example_coords(sheet):
 		var example := SpritesheetExporter.format_sprite_name(
-			options.sprite_name_pattern,
-			sheet,
-			coords[mini(1, coords.size() - 1)],
-			Settings.get_value(&"index_start")
+			options.sprite_name_pattern, sheet, coord, index_start
 		)
-		pattern_example.text = tr("For example: %s.png") % example
+		if example + ".png" not in examples:
+			examples.append(example + ".png")
+	pattern_example.text = tr("For example: %s") % ", ".join(examples) if examples else ""
+	transparent_label.visible = is_zero_approx(options.background.a)
+	var files := _files(options)
+	files_info.visible = files.size() > 1
+	files_info.text = tr("Files: %s") % _list_files(files)
 
 	match options.target:
 		T.SPRITES:
 			output_info.text = (
 				tr("%d images of %d×%d px")
-				% [sheet.frames.size(), sheet.sprite_size.x, sheet.sprite_size.y]
+				% [_sprite_coords(options).size(), sheet.sprite_size.x, sheet.sprite_size.y]
 			)
 		T.ATLAS:
 			output_info.text = _atlas_info(options)
@@ -391,6 +427,43 @@ func _add_row(
 		)
 	)
 	return label
+
+
+## The files the export writes, as named when exporting where it's suggested, see
+## [method FileController.suggested_export_path]
+func _files(options: ExportOptions) -> PackedStringArray:
+	var sheet := Global.spritesheet
+	var coords := _sprite_coords(options)
+	if sheet.is_empty() or options.target == T.SPRITES and coords.is_empty():
+		return []
+	var pages := -1
+	if options.target == T.ATLAS and not _is_packed():
+		# Packing the grid can take a while, so it's done once
+		var turned := AtlasFormats.can_rotate(options.atlas_data)
+		if not _atlas_pages.has(turned):
+			_atlas_pages[turned] = ExportFiles.get_page_count(sheet, options)
+		pages = _atlas_pages[turned]
+	var path := FileController.suggested_export_path(options)
+	var index_start: int = Settings.get_value(&"index_start")
+	return ExportFiles.get_paths(sheet, options, path, coords, index_start, false, pages)
+
+
+## The frames a sprites export writes: the selected ones or every one
+func _sprite_coords(options: ExportOptions) -> Array[Vector2i]:
+	if options.only_selected:
+		return get_selected_coords.call()
+	return Global.spritesheet.get_sorted_coords()
+
+
+## The names of [param paths]: the first few and how many more when there are many
+func _list_files(paths: PackedStringArray) -> String:
+	var names := PackedStringArray()
+	for path in paths:
+		names.append(path.get_file())
+	if names.size() <= FILES_SHOWN:
+		return ", ".join(names)
+	var shown := names.slice(0, FILES_SHOWN - 1)
+	return ", ".join(shown) + " " + tr("… %d more") % (names.size() - shown.size())
 
 
 ## What a packed atlas export will write, or why it can't

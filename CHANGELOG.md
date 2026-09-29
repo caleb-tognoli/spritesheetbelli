@@ -275,8 +275,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
   Packed Atlas and Export Settings. It asks what to export (spritesheet image, sprites,
   Godot SpriteFrames, Aseprite/TexturePacker JSON or a packed atlas) and shows only the
-  settings that matter. Exports
-  always ask where to save, so only projects are overwritten without asking.
+  settings that matter. A Tokens… button next to the file names lists every token with
+  what it gives for a frame of the sheet, and inserts one at the caret; unknown tokens get
+  a warning. The example shows real names from the sheet, and exports that write more
+  than one file list them (the first few and how many more). The background says
+  "Transparent" when it is, frames are named `{animation}_{animation_frame}` by default
+  when the sheet has animations, and the dialog opens on the export last used in the
+  project. Exports always ask where to save, so only projects are overwritten without
+  asking.
 - Changing the export settings is no longer a step in the History, so Ctrl+Z after
   exporting undoes the last edit. They still count as unsaved changes. Spacing, padding
   and extruded edges set in the sidebar are still undone like the rest of the layout.

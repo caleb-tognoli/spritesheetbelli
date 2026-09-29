@@ -69,8 +69,9 @@ A small desktop tool made with Godot.</p>
   like `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or
   its pages as images; or an animation as an animated GIF. The Export button sits at the
   top of the sidebar with the size of what it writes, and the Export dialog shows only the
-  settings that matter for what you export. Padding, spacing and edge extrusion are set in
-  the sidebar, where the preview shows them, for the grid and the atlas.
+  settings that matter for what you export, with a Tokens… list for file names and the
+  files an export will write. Padding, spacing and edge extrusion are set in the sidebar,
+  where the preview shows them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (with Aseprite-style tags) or a
   Godot `SpriteFrames` resource with the sheet's animations (or every frame in one
   "default" animation when there are none). Packed atlases can come with TexturePacker

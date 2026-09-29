@@ -3,6 +3,16 @@ class_name SpritesheetExporter
 
 ## File extensions that can be exported, lowercase
 const IMAGE_EXTENSIONS: PackedStringArray = ["png", "webp", "jpg", "jpeg", "jpe"]
+## The tokens of sprite name patterns, see [method format_sprite_name], with what they give
+const SPRITE_NAME_TOKENS := {
+	"index": "The frame's number, as in the preview",
+	"row": "Its row, from 0",
+	"column": "Its column, from 0",
+	"frame": "Its place in its row",
+	"animation": 'The first animation it\'s in, or "frame"',
+	"animation_frame": "Its place in that animation, or else its number",
+	"name": "The name of the file it came from",
+}
 
 
 ## Size of the exported image
@@ -147,14 +157,38 @@ static func save_image(img: Image, path: String, options := ExportOptions.new())
 	return img.save_png(path)
 
 
-## Fills a sprite file name pattern. Tokens: {index} (as numbered in the preview),
-## {row}, {column}, {frame} (position in its row), {animation} (the first animation
-## showing it, or "frame"), {animation_frame} (position in that animation, or else its
-## index) and {name} (original file name). A width pads numbers with zeros: {index:3}
-## gives 007.
+## Fills a sprite file name pattern with what [method get_sprite_name_values] gives for
+## the frame at [param coord]: {index} (as numbered in the preview), {row}, {column},
+## {frame} (position in its row), {animation} (the first animation showing it, or
+## "frame"), {animation_frame} (position in that animation, or else its index) and
+## {name} (original file name). A width pads numbers with zeros: {index:3} gives 007.
+## Other tokens are kept as they are (see [method get_unknown_tokens]).
 static func format_sprite_name(
 	pattern: String, sheet: Spritesheet, coord: Vector2i, index_start := 0
 ) -> String:
+	# Only looked up when asked for, as it goes through every animation
+	var values := get_sprite_name_values(sheet, coord, index_start, "{animation" in pattern)
+	# The extension is added when saving: "{index}.png" names "0.png", not "0.png.png"
+	var result := without_extension(pattern, "png")
+	for found in _token_regex().search_all(result):
+		var key := found.get_string(1)
+		if not values.has(key):
+			continue
+		var value: Variant = values[key]
+		var text := str(value)
+		if value is int and found.get_string(2):
+			text = text.pad_zeros(int(found.get_string(2)))
+		result = result.replace(found.get_string(), text)
+	# Keep the name usable as a file name
+	return result.validate_filename() if result.strip_edges() else str(values.index)
+
+
+## What each token of [constant SPRITE_NAME_TOKENS] gives for the frame at [param coord].
+## Without [param with_animation], {animation} is "frame" and {animation_frame} its index,
+## as for a frame in no animation.
+static func get_sprite_name_values(
+	sheet: Spritesheet, coord: Vector2i, index_start := 0, with_animation := true
+) -> Dictionary:
 	var frame_in_row := 0
 	for c in sheet.frames:
 		if c.y == coord.y and c.x < coord.x:
@@ -168,32 +202,49 @@ static func format_sprite_name(
 		"animation_frame": sheet.index_of(coord) + index_start,
 		"name": sheet.frames[coord].resource_name.get_basename(),
 	}
-	# Only looked up when asked for, as it goes through every animation
-	if "{animation" in pattern:
+	if with_animation:
 		for animation in sheet.animations:
 			var position := animation.get_frame_cells(sheet).find(coord)
 			if position >= 0:
 				values.animation = animation.name
 				values.animation_frame = position + index_start
 				break
-	var regex := RegEx.create_from_string("\\{(\\w+)(?::(\\d+))?\\}")
-	# The extension is added when saving: "{index}.png" names "0.png", not "0.png.png"
-	var result := without_extension(pattern, "png")
-	for found in regex.search_all(result):
-		var key := found.get_string(1)
-		if not values.has(key):
-			continue
-		var value: Variant = values[key]
-		var text := str(value)
-		if value is int and found.get_string(2):
-			text = text.pad_zeros(int(found.get_string(2)))
-		result = result.replace(found.get_string(), text)
-	# Keep the name usable as a file name
-	return result.validate_filename() if result.strip_edges() else str(values.index)
+	return values
 
 
-## Saves frames as their own PNGs, named with the options' pattern.
-## Returns the paths written; problems are added to [param errors].
+## The tokens of [param pattern] that aren't in [constant SPRITE_NAME_TOKENS] or are
+## written wrong, like {anim} or {index:}, each once. Names keep them as they are.
+static func get_unknown_tokens(pattern: String) -> PackedStringArray:
+	var unknown := PackedStringArray()
+	for found in RegEx.create_from_string("\\{[^{}]*\\}").search_all(pattern):
+		var text := found.get_string()
+		var token := _token_regex().search(text)
+		var known := (
+			token != null
+			and token.get_string() == text
+			and SPRITE_NAME_TOKENS.has(token.get_string(1))
+		)
+		if not known and text not in unknown:
+			unknown.append(text)
+	return unknown
+
+
+## Frames whose names show what a pattern gives: the first ones, those in an animation
+## first
+static func get_example_coords(sheet: Spritesheet, count := 3) -> Array[Vector2i]:
+	var animated := {}
+	for animation in sheet.animations:
+		for coord in animation.get_frame_cells(sheet):
+			animated[coord] = true
+	var coords := sheet.get_sorted_coords()
+	var examples: Array[Vector2i] = coords.filter(func(c: Vector2i) -> bool: return c in animated)
+	examples.append_array(coords.filter(func(c: Vector2i) -> bool: return c not in animated))
+	return examples.slice(0, count)
+
+
+## Saves frames as their own PNGs, named with the options' pattern, where
+## [method get_sprite_paths] says. Returns the paths written; problems are added to
+## [param errors].
 static func export_sprites(
 	sheet: Spritesheet,
 	folder: String,
@@ -202,22 +253,11 @@ static func export_sprites(
 	options := ExportOptions.new(),
 	coords: Array[Vector2i] = [],
 ) -> PackedStringArray:
-	if coords.is_empty():
-		coords = sheet.get_sorted_coords()
 	DirAccess.make_dir_recursive_absolute(folder)
 	var written: PackedStringArray = []
-	for coord in coords:
-		var base := folder.path_join(
-			format_sprite_name(options.sprite_name_pattern, sheet, coord, index_start)
-		)
-		var path := base + ".png"
-		if FileAccess.file_exists(path):
-			match options.existing_files:
-				ExportOptions.Existing.SKIP:
-					continue
-				ExportOptions.Existing.ADD_NUMBER:
-					path = _unique_path(base, ".png")
-		var error := sheet.get_cell_image(coord).save_png(path)
+	for sprite in get_sprite_paths(sheet, folder, options, coords, index_start):
+		var path: String = sprite.path
+		var error := sheet.get_cell_image(sprite.coord).save_png(path)
 		if error != OK:
 			errors.append("%s (%s)" % [path.get_file(), error_string(error)])
 		else:
@@ -225,11 +265,51 @@ static func export_sprites(
 	return written
 
 
-## Adds (1), (2)... before the extension when a file already exists
-static func _unique_path(base: String, extension: String) -> String:
-	if not FileAccess.file_exists(base + extension):
+## Where [method export_sprites] saves the frames of [param coords] (every frame when
+## empty) in [param folder], in order, as [code]{"coord": Vector2i, "path": String}[/code].
+## A name that's taken, by a file in the folder or a frame before, is numbered, skipped or
+## written over as the options say. Without [param on_disk] the folder is taken as empty.
+static func get_sprite_paths(
+	sheet: Spritesheet,
+	folder: String,
+	options: ExportOptions,
+	coords: Array[Vector2i] = [],
+	index_start := 0,
+	on_disk := true,
+) -> Array[Dictionary]:
+	if coords.is_empty():
+		coords = sheet.get_sorted_coords()
+	var sprites: Array[Dictionary] = []
+	# Lowercase, as Windows and macOS see "Walk.png" and "walk.png" as one file
+	var used := {}
+	var taken := func(path: String) -> bool:
+		return used.has(path.to_lower()) or on_disk and FileAccess.file_exists(path)
+	for coord in coords:
+		var base := folder.path_join(
+			format_sprite_name(options.sprite_name_pattern, sheet, coord, index_start)
+		)
+		var path := base + ".png"
+		if taken.call(path):
+			match options.existing_files:
+				ExportOptions.Existing.SKIP:
+					continue
+				ExportOptions.Existing.ADD_NUMBER:
+					path = _unique_path(base, ".png", taken)
+		used[path.to_lower()] = true
+		sprites.append({"coord": coord, "path": path})
+	return sprites
+
+
+## Adds (1), (2)... before the extension while the path is [param taken]
+static func _unique_path(base: String, extension: String, taken: Callable) -> String:
+	if not taken.call(base + extension):
 		return base + extension
 	var i := 1
-	while FileAccess.file_exists("%s(%d)%s" % [base, i, extension]):
+	while taken.call("%s(%d)%s" % [base, i, extension]):
 		i += 1
 	return "%s(%d)%s" % [base, i, extension]
+
+
+## A token: its name, and a width after a colon
+static func _token_regex() -> RegEx:
+	return RegEx.create_from_string("\\{(\\w+)(?::(\\d+))?\\}")
