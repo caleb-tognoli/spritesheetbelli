@@ -388,9 +388,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   canvas toolbar (also Frame > Remove Background Colour…) instead of a dialog, with the
   same colour, eyedropper and tolerance as Add Spritesheet. While it's open, the frames
   are shown with the colour removed. Nothing changes until Confirm, which is one step to
-  undo; Cancel, Escape or clicking away leaves the frames as they were. The eyedropper
-  picks the colour by clicking a frame, as the frame is, not as previewed. Dragging in
-  the colour picker no longer makes the app lag on big sheets.
+  undo; While it's open, clicking the canvas selects frames as usual and the preview
+  follows the selection; Cancel, Escape or clicking anywhere else leaves the frames as
+  they were. The eyedropper picks the colour by clicking a frame, as the frame is, not as
+  previewed. Dragging in the colour picker no longer makes the app lag on big sheets.
 - Remove Background Colour works on every frame when none are selected, like Align and
   Trim, and is available whenever the sheet has frames.
 - Every data file (TexturePacker JSON hash and array, Phaser 3 multi-atlas, libGDX /

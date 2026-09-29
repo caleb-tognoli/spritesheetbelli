@@ -8,8 +8,8 @@ extends OptionsDropdown
 ## Changes are told with [signal changed] as they're made, to preview them. Confirm keeps
 ## them and remembers the tolerance; Cancel, Escape or clicking away puts back what was set
 ## when it opened. The panel isn't a popup that closes on any click outside: that would
-## eat the click that picks a colour. Clicking away is handled here instead, see
-## [method _input].
+## eat the click that picks a colour, or one let through to a preview, see
+## [method let_clicks_through]. Clicking away is handled here instead, see [method _input].
 
 ## It was turned on or off, or its colour or tolerance changed. Changes can come many at
 ## once, e.g. while dragging in the picker.
@@ -45,6 +45,8 @@ var shows_color := false
 
 ## Where clicks pick a colour while picking, rather than close the panel
 var _pick_areas: Array[Control] = []
+## Where clicks go through to what's under them, rather than close the panel
+var _open_areas: Array[Control] = []
 ## What was set when it opened: on, colour and tolerance
 var _opened_with := []
 ## Whether it's being closed here, rather than by the panel going away
@@ -193,6 +195,13 @@ func add_picker(view: CanvasItem, area: Control) -> void:
 	_pick_areas.append(area)
 
 
+## Lets clicks in [param area], in this button's window, through to what's under it while
+## the panel is open, like selecting frames in a preview, rather than closing the panel.
+## Right-clicks still close it: they open menus.
+func let_clicks_through(area: Control) -> void:
+	_open_areas.append(area)
+
+
 ## Opens the panel below the button, or closes it as Cancel does when it's open
 func open() -> void:
 	if is_open():
@@ -233,15 +242,17 @@ func _on_popup_hide() -> void:
 
 
 ## Clicks outside the panel close it, as Cancel does, and are kept from what's under them,
-## like a popup's. While picking, clicks on a preview pick instead. Escape puts the
-## eyedropper away, or cancels.
+## like a popup's, unless let through, see [method let_clicks_through]. While picking,
+## clicks on a preview pick instead. Escape puts the eyedropper away, or cancels.
 func _input(event: InputEvent) -> void:
 	if not is_open():
 		return
 	var click := event as InputEventMouseButton
 	# The wheel scrolls and zooms what's under the mouse, as with popups
 	if click and click.pressed and click.button_index in CLICKS:
-		if is_picking() and _is_pick_area(click.position):
+		if is_picking() and _is_in(_pick_areas, click.position):
+			return
+		if click.button_index != MOUSE_BUTTON_RIGHT and _is_in(_open_areas, click.position):
 			return
 		cancel()
 		get_viewport().set_input_as_handled()
@@ -250,9 +261,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Whether a click at [param point] picks a colour, see [method add_picker]
-func _is_pick_area(point: Vector2) -> bool:
-	for area in _pick_areas:
+## Whether [param point] is in one of [param areas], shown
+static func _is_in(areas: Array[Control], point: Vector2) -> bool:
+	for area in areas:
 		if area.is_visible_in_tree() and area.get_global_rect().has_point(point):
 			return true
 	return false

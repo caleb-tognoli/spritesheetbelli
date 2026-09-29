@@ -1,7 +1,8 @@
 extends "res://tests/test_case.gd"
 ## Remove Background Colour, in a panel dropped down from the canvas toolbar: previewed on
 ## the canvas without changing the sheet, removed as one step on Confirm, closed without a
-## trace by Cancel, Escape or clicking away, and picked from a frame with the eyedropper
+## trace by Cancel, Escape or clicking away, and picked from a frame with the eyedropper.
+## Clicks on the canvas select frames while it's open.
 
 var main: Control
 var preview: SpritesheetPreview
@@ -185,12 +186,25 @@ func test_cancel_escape_and_clicking_away_leave_the_frames() -> void:
 
 	Actions.run(&"color_key")
 	await settle()
-	var away: Vector2 = main.preview_area.container.get_global_rect().get_center()
-	dropdown._input(press(MOUSE_BUTTON_WHEEL_UP, away))
-	assert_true(dropdown.is_open(), "the wheel zooms")
-	dropdown._input(press(MOUSE_BUTTON_LEFT, away))
-	assert_false(dropdown.is_open(), "clicking away closes it")
-	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "restored")
+	dropdown._input(escape())
+	assert_false(dropdown.is_open(), "Escape closes it")
+
+	# Clicking the toolbar, the sidebar, or right-clicking the canvas for its
+	# menu closes it
+	var canvas: Vector2 = main.preview_area.stage.get_global_rect().get_center()
+	var toolbar: Vector2 = main.preview_area.toolbar.get_global_rect().get_center()
+	var sidebar: Vector2 = main.export_btn.get_global_rect().get_center()
+	for away: Array in [
+		[MOUSE_BUTTON_LEFT, toolbar], [MOUSE_BUTTON_LEFT, sidebar], [MOUSE_BUTTON_RIGHT, canvas]
+	]:
+		Actions.run(&"color_key")
+		await settle()
+		assert_true(dropdown.is_open())
+		dropdown._input(press(MOUSE_BUTTON_WHEEL_UP, away[1]))
+		assert_true(dropdown.is_open(), "the wheel zooms")
+		dropdown._input(press(away[0], away[1]))
+		assert_false(dropdown.is_open(), "clicking away closes it: %s" % [away])
+		assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "restored")
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_pixel(0, 0), Color.MAGENTA)
 	assert_eq(Global.document.get_history().size(), steps, "nothing to undo")
 
@@ -236,6 +250,80 @@ func test_the_eyedropper_picks_from_a_frame_as_it_is() -> void:
 	await settle()
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(3, 3).a, 0.0, "previews the picked colour")
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0), Color.MAGENTA)
+
+
+func test_clicks_on_the_canvas_select_and_the_preview_follows() -> void:
+	select([Vector2i(0, 0)] as Array[Vector2i])
+	Actions.run(&"color_key")
+	await settle()
+	# Headless windows have no size, so the preview is given one
+	main.preview_area.container.stretch = false
+	(preview.get_viewport() as SubViewport).size = Vector2i(600, 400)
+	preview.fit_to_view()
+	var canvas: Vector2 = main.preview_area.stage.get_global_rect().get_center()
+	# Middle-dragging pans
+	dropdown._input(press(MOUSE_BUTTON_MIDDLE, canvas))
+	assert_true(dropdown.is_open(), "stays open")
+
+	var at := func(coord: Vector2i) -> Vector2:
+		var world := preview.get_frame_world_rect(coord).get_center()
+		return (world - preview.camera.position) * preview.camera.zoom
+	# A press at [param point] in the preview, which goes past the panel first, in the window
+	var press_on := func(point: Vector2, ctrl := false) -> InputEventMouseButton:
+		var down := press(MOUSE_BUTTON_LEFT, main.preview_area.stage.global_position + point)
+		down.ctrl_pressed = ctrl
+		dropdown._input(down)
+		assert_true(dropdown.is_open(), "stays open")
+		down.position = point
+		preview._unhandled_input(down)
+		return down
+	var click := func(point: Vector2, ctrl := false) -> void:
+		var release := press_on.call(point, ctrl).duplicate() as InputEventMouseButton
+		release.pressed = false
+		preview._unhandled_input(release)
+
+	click.call(at.call(Vector2i(2, 0)))
+	assert_eq(preview.get_selected_coords(), [Vector2i(2, 0)] as Array[Vector2i], "selects")
+	await settle()
+	assert_eq(color_key.get_target_coords(), [Vector2i(2, 0)] as Array[Vector2i])
+	assert_eq(shown(Vector2i(2, 0)).get_pixel(0, 0).a, 0.0, "previewed")
+	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "no longer selected")
+	assert_eq(dropdown.note.text, "In 1 selected frames")
+
+	click.call(at.call(Vector2i(1, 0)), true)
+	await settle()
+	assert_eq(
+		color_key.get_target_coords(), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i], "Ctrl"
+	)
+	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0).a, 0.0)
+
+	# A box from before the first frame to the middle of the second
+	var start: Vector2 = at.call(Vector2i(0, 0)) - Vector2(30, 30)
+	press_on.call(start)
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	for point: Vector2 in [start + Vector2(10, 10), at.call(Vector2i(1, 0))]:
+		motion.position = point
+		preview._unhandled_input(motion)
+	var up := press(MOUSE_BUTTON_LEFT, at.call(Vector2i(1, 0)))
+	up.pressed = false
+	preview._unhandled_input(up)
+	await settle()
+	assert_eq(
+		color_key.get_target_coords(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "box"
+	)
+	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0).a, 0.0)
+	assert_eq(shown(Vector2i(2, 0)).get_pixel(0, 0), Color.MAGENTA)
+
+	# With none selected, every frame is worked on
+	preview.select_all(false)
+	await settle()
+	assert_eq(dropdown.note.text, "In all 3 frames")
+	for x in 3:
+		assert_eq(shown(Vector2i(x, 0)).get_pixel(0, 0).a, 0.0, "previewed in %d" % x)
+	assert_true(dropdown.is_open())
+	assert_eq(sheet.frames[Vector2i(0, 0)].get_pixel(0, 0), Color.MAGENTA, "only previewed")
+	dropdown.cancel()
 
 
 func test_the_tolerance_is_remembered() -> void:

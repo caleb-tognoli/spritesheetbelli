@@ -5,8 +5,10 @@ extends Node
 ## the colour by clicking a frame, as the frame is, not as previewed.
 ##
 ## While it's open, the preview shows those frames with the colour removed, see
-## [method SpritesheetPreview.show_instead], without changing the sheet. Only Confirm
-## does, as one step to undo. Cancel, Escape or clicking away shows the frames as they are.
+## [method SpritesheetPreview.show_instead], without changing the sheet. Clicks on the
+## canvas select frames as usual, and the preview follows the selection. Only Confirm
+## changes the sheet, as one step to undo. Cancel, Escape or clicking elsewhere shows the
+## frames as they are.
 
 var dropdown := ColorKeyDropdown.new()
 var preview: SpritesheetPreview
@@ -35,6 +37,7 @@ func setup(area: PreviewArea, edit_in_background: Callable) -> void:
 	preview = area.spritesheet_preview
 	_edit_in_background = edit_in_background
 	dropdown.add_picker(preview, area.container)
+	dropdown.let_clicks_through(area.stage)
 	dropdown.opening.connect(_on_opening)
 	dropdown.changed.connect(_queue_update)
 	dropdown.confirmed.connect(_on_confirmed)
