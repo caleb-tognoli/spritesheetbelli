@@ -3,6 +3,7 @@ name: TexturePacker JSON (array)
 extension: json
 per_page: true
 rotation: clockwise
+layouts: grid, packed
 }}
 {
 	"frames": [{{#frames}}

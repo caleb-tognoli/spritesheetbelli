@@ -34,7 +34,7 @@ var image_file := ""
 var pages: PackedStringArray = []
 ## Size of each page, when the data file gives it
 var page_sizes: Array[Vector2i] = []
-## Which [constant AtlasFormats.FORMATS] the data file is in
+## Which format of [AtlasFormats] the data file is in, by id
 var format := "json"
 ## Data files of the other pages of a TexturePacker multipack, relative to this one
 var related_files: PackedStringArray = []

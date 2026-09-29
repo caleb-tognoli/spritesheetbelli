@@ -35,7 +35,7 @@ static func get_packed(sheet: Spritesheet, options: ExportOptions) -> Spriteshee
 	# Grid sheets used to be packed on one page as big as possible
 	if not sheet.atlas_settings.to_dictionary().has("max_size"):
 		settings.max_size = MAX_SIZE
-	if not AtlasFormats.can_rotate(options.atlas_data):
+	if not AtlasFormats.can_rotate(options.get_atlas_data()):
 		settings.allow_rotation = false
 	var state := sheet.get_state()
 	state.placements = {}
@@ -101,12 +101,14 @@ static func pack(sheet: Spritesheet, spacing := 0, extrude := 0) -> Dictionary:
 ## Returns [code]{"error": Error, "message": String, "path": String, "json_path": String,
 ## "paths": PackedStringArray, "frames": int, "size": Vector2i, "pages": int}[/code] with
 ## the first page and data file and every file written. The error is ERR_OUT_OF_MEMORY
-## when a page would be too big, and ERR_UNAVAILABLE when the format can't describe how
-## the frames are packed, with a message saying why.
+## when a page would be too big, and ERR_UNAVAILABLE when the format's template can't be
+## used or can't describe how the frames are packed, with a message saying why.
 static func write(
 	sheet: Spritesheet, options: ExportOptions, path: String, index_start := 0
 ) -> Dictionary:
-	var format := options.atlas_data
+	var format := options.get_atlas_data()
+	if AtlasFormats.get_error(format):
+		return {"error": ERR_UNAVAILABLE, "message": AtlasFormats.get_error(format)}
 	var packed := get_packed(sheet, options)
 	var regions := get_regions(packed, options.atlas_frame_size)
 	var sizes := PackedLayout.get_page_sizes(packed)
@@ -132,7 +134,7 @@ static func write(
 				result.error = ERR_UNAVAILABLE
 				result.message = (
 					"%s can't describe turned frames. Pack without turning them."
-					% (AtlasFormats.FORMATS[format].name)
+					% AtlasFormats.get_format_name(format)
 				)
 				return result
 	var images := PackedLayout.render_pages(packed, AtlasFormats.is_counter_clockwise(format))

@@ -3,6 +3,7 @@ name: libGDX / Spine .atlas
 extension: atlas
 per_page: false
 rotation: counter-clockwise
+layouts: grid, packed
 
 Trimmed frames keep their size with borders ("orig") and where the packed pixels are in
 it ("offset"), which libGDX measures from the bottom. A turned frame has its size before

@@ -21,6 +21,10 @@ static func get_paths(
 	var extension := options.get_file_extension()
 	if extension:
 		path = SpritesheetExporter.with_extension(path, extension)
+	if options.packs(sheet):
+		if page_count < 0:
+			page_count = get_page_count(sheet, options)
+		return get_atlas_paths(path, options.get_atlas_data(), page_count)
 	match options.target:
 		ExportOptions.Target.SPRITES:
 			var sprites := PackedStringArray()
@@ -35,15 +39,11 @@ static func get_paths(
 			return sprites
 		ExportOptions.Target.GIF:
 			return PackedStringArray([path])
-		ExportOptions.Target.ATLAS:
-			if page_count < 0:
-				page_count = get_page_count(sheet, options)
-			return get_atlas_paths(path, options.atlas_data, page_count)
 	# A packed sheet is written as its pages
 	if sheet.layout == Spritesheet.Layout.PACKED:
 		return SpritesheetExporter.get_page_paths(path, PackedLayout.get_page_sizes(sheet).size())
 	var paths := PackedStringArray([path])
-	if options.metadata != ExportOptions.MetadataFormat.NONE:
+	if options.get_image_data():
 		paths.append(Metadata.get_path_for_image(path, options))
 	return paths
 

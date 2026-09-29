@@ -198,17 +198,80 @@ func test_array_json() -> void:
 	assert_eq(SheetData.parse_json(JSON.stringify(json)).frames.size(), 1, "readable")
 
 
-## Every format has its template, whose header agrees with the list
+## Every bundled template is a format, whose header says everything about it
 func test_bundled_templates() -> void:
-	var files := DirAccess.get_files_at("res://templates")
-	for format: String in AtlasFormats.FORMATS:
-		var path: String = AtlasFormats.FORMATS[format].template
-		assert_true(path.get_file() in files, path)
-		var template := AtlasFormats.get_template(format)
-		assert_eq(template.error, "", path)
-		assert_eq(template.header.get("name"), AtlasFormats.FORMATS[format].name, path)
-		assert_true(template.header.get("extension", "") != "", path)
-		assert_true(template.header.get("per_page") is bool, path)
-		assert_true(
-			template.header.get("rotation") in ["clockwise", "counter-clockwise", "none"], path
-		)
+	AtlasFormats.refresh()
+	var files := DirAccess.get_files_at(AtlasFormats.BUNDLED_DIR)
+	var formats := AtlasFormats.get_formats()
+	# Project files and command lines name formats by these ids
+	for id: String in ["json", "json-array", "phaser", "atlas", "sparrow", "godot"]:
+		assert_true(AtlasFormats.is_bundled(id), id)
+	for file in files:
+		var format := file.get_basename()
+		assert_true(format in formats, file)
+		assert_eq(AtlasFormats.get_error(format), "", file)
+		var header := AtlasFormats.get_header(format)
+		assert_true(header.get("name", "") != "", file)
+		assert_true(header.get("extension", "") != "", file)
+		assert_true(header.get("per_page") is bool, file)
+		assert_true(header.get("rotation") in ["clockwise", "counter-clockwise", "none"], file)
+		assert_true(header.get("layouts") is String, file)
+	var names := Array(formats).map(AtlasFormats.get_format_name)
+	assert_eq(names[0], "Godot SpriteFrames", "by name")
+	assert_eq(names[-1], "TexturePacker JSON (hash)")
+
+
+## Templates in the user's folder are listed after the bundled ones, where they fit
+func test_user_templates() -> void:
+	var user_dir := AtlasFormats.user_dir
+	AtlasFormats.user_dir = dir.path_join("templates")
+	DirAccess.make_dir_recursive_absolute(AtlasFormats.user_dir)
+	write_text(
+		AtlasFormats.user_dir.path_join("tiles.template"),
+		"{{! name: A tile set\nextension: tiles\nlayouts: grid\n}}\n{{#frames}}{{name}}\n{{/frames}}"
+	)
+	write_text(AtlasFormats.user_dir.path_join("list.csv.template"), "{{#frames}}{{x}}{{/frames}}")
+	write_text(AtlasFormats.user_dir.path_join("json.template"), "not the bundled one")
+	write_text(AtlasFormats.user_dir.path_join("notes.txt"), "not a template")
+	AtlasFormats.refresh()
+	var formats := AtlasFormats.get_formats()
+	assert_eq(Array(formats.slice(-2)), ["tiles", "list.csv"], "after the bundled ones")
+	assert_false(AtlasFormats.is_bundled("tiles"))
+	assert_eq(AtlasFormats.get_error("json"), "", "the bundled one is kept")
+	assert_true(AtlasFormats.has_format("tiles", "grid"))
+	assert_false(AtlasFormats.has_format("tiles", "packed"), "grid only")
+	# Without a header: named after its file, both layouts, no turned frames
+	assert_eq(AtlasFormats.get_format_name("list.csv"), "list.csv")
+	assert_eq(AtlasFormats.get_extension("list.csv"), "csv", "from the file name")
+	assert_true(AtlasFormats.has_format("list.csv", "packed"))
+	assert_false(AtlasFormats.can_rotate("list.csv"))
+	assert_false(AtlasFormats.has_file_per_page("list.csv"))
+
+	# The folder gets a README and copies of the bundled templates to start from
+	AtlasFormats.prepare_user_dir()
+	assert_true(FileAccess.file_exists(AtlasFormats.user_dir.path_join("README.txt")))
+	var copies := DirAccess.get_files_at(AtlasFormats.user_dir.path_join("bundled"))
+	assert_eq(copies, DirAccess.get_files_at(AtlasFormats.BUNDLED_DIR))
+	AtlasFormats.refresh()
+	assert_eq(AtlasFormats.get_formats().size(), formats.size(), "copies aren't listed")
+	AtlasFormats.user_dir = user_dir
+	AtlasFormats.refresh()
+	assert_false(AtlasFormats.has_format("tiles"))
+
+
+## A template file given by its path, and what's wrong with one
+func test_template_files() -> void:
+	var path := dir.path_join("broken.template")
+	write_text(path, "{{#frames}}\n{{name}}")
+	assert_eq(AtlasFormats.get_error(path), "broken.template: line 1: {{#frames}} is never closed")
+	write_text(path, "{{! extension: txt\n}}\n{{#frames}}{{name}},{{/frames}}")
+	assert_eq(AtlasFormats.get_error(path), "", "read again when it changes")
+	assert_eq(AtlasFormats.get_extension(path), "txt")
+	var missing := dir.path_join("missing.template")
+	assert_eq(AtlasFormats.get_error(missing), "Could not find %s." % missing)
+
+
+static func write_text(path: String, text: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(text)
+	file.close()

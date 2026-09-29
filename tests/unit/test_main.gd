@@ -636,11 +636,17 @@ func test_export_dialog() -> void:
 	assert_eq(dialog.background_picker.color.a, 0.0, "transparent by default")
 	dialog.background_picker.color = Color.RED
 	dialog.background_picker.color_changed.emit(Color.RED)
-	dialog.select_target(ExportOptions.Target.GODOT)
+	dialog.select_target(ExportOptions.Target.DATA)
 	assert_true(dialog.animation_fps.visible)
+	var formats := dialog.grid_data
+	var godot := range(formats.item_count).find_custom(
+		func(i: int) -> bool: return formats.get_item_metadata(i) == "godot"
+	)
+	formats.select(godot)
+	formats.item_selected.emit(godot)
 	dialog.get_ok_button().pressed.emit()
 	var options := ExportOptions.from_sheet(Global.spritesheet)
-	assert_eq(options.target, ExportOptions.Target.GODOT, "saved with the sheet")
+	assert_eq(options.target, ExportOptions.Target.DATA, "saved with the sheet")
 	assert_eq(options.background, Color.RED)
 	assert_true(main.files.export_file_dialog in main.files.open_file_dialogs, "asks where")
 	assert_eq(main.files.export_file_dialog.current_file, "spritesheet.png")
@@ -666,7 +672,7 @@ func test_export_dialog_for_a_packed_sheet() -> void:
 	)
 	assert_eq(dialog.targets.get_selected_items(), PackedInt32Array([atlas]), "atlas first")
 	assert_false(dialog.targets.is_item_disabled(0), "pages as images")
-	assert_true(dialog.targets.is_item_disabled(2), "no SpriteFrames of a grid")
+	assert_true(dialog.targets.is_item_disabled(2), "no data file of a grid")
 	assert_true(dialog.atlas_data.visible)
 	assert_true("Atlas size" in dialog.output_info.text, dialog.output_info.text)
 	dialog.select_target(ExportOptions.Target.IMAGE)

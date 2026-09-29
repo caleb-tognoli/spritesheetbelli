@@ -3,6 +3,7 @@ name: Godot SpriteFrames
 extension: tres
 per_page: false
 rotation: none
+layouts: grid, packed
 
 A frame's margin puts back the transparent borders it was packed without. SpriteFrames
 can't ping-pong, so the way back is written out. Without animations, every frame goes in

@@ -620,9 +620,13 @@ func export_to(path: String) -> bool:
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	if options.get_file_extension():
 		path = SpritesheetExporter.with_extension(path, options.get_file_extension())
+	# The template may have changed since it was picked
+	if options.get_template_error():
+		Notify.error(options.get_template_error())
+		return false
 	var exported := false
 	match options.target:
-		ExportOptions.Target.ATLAS:
+		_ when options.packs(Global.spritesheet):
 			exported = await export_atlas(path)
 		ExportOptions.Target.GIF:
 			exported = await export_gif(path)
@@ -706,7 +710,7 @@ func _export_image_to(path: String) -> bool:
 		Notify.error(tr("Could not write the metadata (%s).") % error_string(metadata_error))
 		return false
 	WebFiles.download(path)
-	if options.metadata != ExportOptions.MetadataFormat.NONE:
+	if options.get_image_data():
 		unlink_overwritten([Metadata.get_path_for_image(path, options)])
 		message += tr("\nAlso wrote %s.") % Metadata.get_path_for_image(path, options).get_file()
 		WebFiles.download(Metadata.get_path_for_image(path, options))

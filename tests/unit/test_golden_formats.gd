@@ -2,16 +2,21 @@ extends "res://tests/test_case.gd"
 ## Exports representative sheets in every data format and compares the files byte for byte
 ## with the ones in tests/golden. After a deliberate change to a format, run the tests with
 ## the environment variable UPDATE_GOLDEN=1 to write them again, and check the difference.
+## A bundled format added to templates/ is tested here too, once its golden files are
+## written.
 
 const GOLDEN_DIR := "res://tests/golden"
-## Formats of the data file next to a grid sheet's image
-const GRID_TARGETS := {"json": ExportOptions.Target.JSON, "godot": ExportOptions.Target.GODOT}
 
 var dir := temp_path("golden")
 
 
 func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
+
+
+## The bundled formats that can describe [param layout]
+static func bundled_formats(layout: String) -> Array:
+	return Array(AtlasFormats.get_formats(layout)).filter(AtlasFormats.is_bundled)
 
 
 ## A frame with a block and a corner pixel of another colour, with transparent borders
@@ -81,9 +86,10 @@ static func atlas_sheet(settings: Dictionary) -> Spritesheet:
 ## Writes the data files of every grid format for [param sheet] into [param case]
 func export_grid(sheet: Spritesheet, case: String) -> PackedStringArray:
 	var written := PackedStringArray()
-	for format: String in GRID_TARGETS:
+	for format: String in bundled_formats("grid"):
 		var options := ExportOptions.new()
-		options.target = GRID_TARGETS[format]
+		options.target = ExportOptions.Target.DATA
+		options.grid_data = format
 		options.sprite_name_pattern = "{name}"
 		options.padding = 1
 		options.spacing = 2
@@ -101,7 +107,7 @@ func export_atlas(
 	sheet: Spritesheet, case: String, frame_size: ExportOptions.FrameSize, skipped := []
 ) -> PackedStringArray:
 	var written := PackedStringArray()
-	for format: String in AtlasFormats.FORMATS:
+	for format: String in bundled_formats("packed"):
 		if format in skipped:
 			continue
 		var options := ExportOptions.new()

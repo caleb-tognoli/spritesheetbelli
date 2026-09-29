@@ -3,6 +3,7 @@ name: Phaser 3 multi-atlas JSON
 extension: json
 per_page: false
 rotation: clockwise
+layouts: grid, packed
 }}
 {
 	"textures": [{{#pages}}

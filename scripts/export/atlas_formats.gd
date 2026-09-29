@@ -1,73 +1,166 @@
 class_name AtlasFormats
-## The data files written next to the pages of a packed atlas, telling game engines where
-## each frame is, each written from a template (see [Template] and [TemplateData]).
-## Frames are described by [method get_frames]; pages are
-## [code]{"file": String, "size": Vector2i}[/code].
+## The data files written next to exported images, telling game engines where each frame
+## is, each written from a template (see [Template] and [TemplateData]). Every
+## [code].template[/code] file in [constant BUNDLED_DIR] or [member user_dir] is a format,
+## whose id is its file name without the extension and whose header says the rest, see
+## [method get_header]. Frames are described by [method get_frames] or
+## [method Metadata.grid_frames]; pages are [code]{"file": String, "size": Vector2i}[/code].
+##
+## Where a format is asked for, the path of a template file can be given instead of an id,
+## for a template of the user's own that isn't in the list.
 
-## Every format by id: its name and the template that writes it, whose header says the
-## extension of its file, whether it has a file per page and which way turned frames are
-## stored
-const FORMATS := {
-	"json":
-	{
-		"name": "TexturePacker JSON (hash)",
-		"template": "res://templates/texture_packer_hash.template",
-	},
-	"json-array":
-	{
-		"name": "TexturePacker JSON (array)",
-		"template": "res://templates/texture_packer_array.template",
-	},
-	"phaser":
-	{
-		"name": "Phaser 3 multi-atlas JSON",
-		"template": "res://templates/phaser_multi_atlas.template",
-	},
-	"atlas":
-	{
-		"name": "libGDX / Spine .atlas",
-		"template": "res://templates/libgdx_atlas.template",
-	},
-	"sparrow":
-	{
-		"name": "Sparrow / Starling XML",
-		"template": "res://templates/sparrow_xml.template",
-	},
-	"godot":
-	{
-		"name": "Godot SpriteFrames",
-		"template": "res://templates/godot_sprite_frames.template",
-	},
-}
+const BUNDLED_DIR := "res://templates"
+const EXTENSION := "template"
+## The layouts a format can describe: a grid sheet, and a packed atlas
+const LAYOUTS: Array[String] = ["grid", "packed"]
+## Written in [member user_dir] when it's first opened, see [method prepare_user_dir]
+const USER_README := """Data file templates for spritesheetbelli
 
-## Templates by format, read when first used
+Every .template file in this folder is a data file format. The Export dialog lists it
+after the bundled ones, under the name its header gives. On the command line its id is
+its file name without ".template": --metadata <id> or --atlas-data <id>.
+
+The "bundled" folder has a copy of every bundled template to start from. It's written
+again each time this folder is opened from the Export dialog, so copy a template out of
+it, with a name of its own, before changing it.
+
+A template is plain text with Mustache-like tags, filled with the frames, animations and
+pages of the export. The comment at its top says the format's name, the extension of its
+file, whether an atlas gets a file per page, which way turned frames are stored and which
+layouts it can describe. How to write one:
+%s#data-file-templates
+"""
+
+## The folder of the user's own templates, listed after the bundled ones
+static var user_dir := "user://templates"
+
+## Formats by id, in the order they're listed, found by [method refresh]:
+## [code]{"name": String, "path": String, "layouts": PackedStringArray, "bundled": bool}[/code]
+static var _formats := {}
+## Templates by path, parsed when first used and again when the file has changed:
+## [code]{"template": Template, "text": String}[/code]
 static var _templates := {}
 
 
-## The template of [param format], one of [constant FORMATS], or else of "json"
+## Looks for templates again, to list the ones added to [member user_dir] or taken out.
+## A user template with the id of a bundled one is left out.
+static func refresh() -> void:
+	_formats.clear()
+	for bundled: bool in [true, false]:
+		var found: Array[Dictionary] = []
+		var dir := BUNDLED_DIR if bundled else user_dir
+		var listed := bundled or DirAccess.dir_exists_absolute(dir)
+		var files := DirAccess.get_files_at(dir) if listed else PackedStringArray()
+		for file: String in files:
+			if file.get_extension() != EXTENSION or _formats.has(file.get_basename()):
+				continue
+			var path := dir.path_join(file)
+			var header := _load(path).header
+			(
+				found
+				. append(
+					{
+						"id": file.get_basename(),
+						"name": str(header.get("name", file.get_basename())),
+						"path": path,
+						"layouts": _layouts_of(header),
+						"bundled": bundled,
+					}
+				)
+			)
+		found.sort_custom(
+			func(a: Dictionary, b: Dictionary) -> bool:
+				return a.name.naturalnocasecmp_to(b.name) < 0
+		)
+		for format in found:
+			_formats[format.id] = format
+
+
+## The ids of the formats that can describe [param layout] (see [constant LAYOUTS]), or of
+## every format, the bundled ones first, each by name
+static func get_formats(layout := "") -> PackedStringArray:
+	if _formats.is_empty():
+		refresh()
+	var ids := PackedStringArray()
+	for id: String in _formats:
+		if not layout or layout in _formats[id].layouts:
+			ids.append(id)
+	return ids
+
+
+## Whether [param format] is the id of a format that can describe [param layout], or of
+## any format
+static func has_format(format: String, layout := "") -> bool:
+	return format in get_formats(layout)
+
+
+static func is_bundled(format: String) -> bool:
+	return has_format(format) and _formats[format].bundled
+
+
+## The file of the template of [param format]: a format's id, or else the path of a
+## template file
+static func get_template_path(format: String) -> String:
+	return _formats[format].path if has_format(format) else format
+
+
+## The template of [param format], read again when its file has changed since
 static func get_template(format: String) -> Template:
-	if not FORMATS.has(format):
-		format = "json"
-	if not _templates.has(format):
-		_templates[format] = Template.load_file(FORMATS[format].template)
-	return _templates[format]
+	return _load(get_template_path(format))
 
 
+## What's wrong with the template of [param format], after its file name, or empty when
+## it can be used
+static func get_error(format: String) -> String:
+	var path := get_template_path(format)
+	if not FileAccess.file_exists(path):
+		return "Could not find %s." % path
+	var error := get_template(format).error
+	return "%s: %s" % [path.get_file(), error] if error else ""
+
+
+## The [code]key: value[/code] settings the template of [param format] starts with (see
+## [member Template.header]): "name", "extension" of the file, "per_page" (true for a file
+## for each page of an atlas), "rotation" (which way turned frames are stored:
+## "clockwise", "counter-clockwise" or "none" when the format can't say) and "layouts"
+## (the ones it can describe, see [constant LAYOUTS]). The methods below read them, with
+## defaults for the ones it doesn't give.
+static func get_header(format: String) -> Dictionary:
+	return get_template(format).header
+
+
+## The format's name, or else its file name
+static func get_format_name(format: String) -> String:
+	var fallback := get_template_path(format).get_file().trim_suffix("." + EXTENSION)
+	return str(get_header(format).get("name", fallback))
+
+
+## The extension of the format's file, or else the one in its template's file name, like
+## "hero.json.template", or else "txt"
 static func get_extension(format: String) -> String:
-	return get_template(format).header.get("extension", "json")
+	var fallback := get_template_path(format).get_file().get_basename().get_extension()
+	return str(get_header(format).get("extension", fallback if fallback else "txt"))
 
 
+## Whether an atlas gets a data file for each page; not unless the header says so
 static func has_file_per_page(format: String) -> bool:
-	return get_template(format).header.get("per_page", false)
+	return get_header(format).get("per_page") is bool and get_header(format).per_page
 
 
+## Whether the format can describe turned frames; not unless the header says which way
 static func can_rotate(format: String) -> bool:
-	return get_template(format).header.get("rotation", "clockwise") != "none"
+	return get_header(format).get("rotation") in ["clockwise", "counter-clockwise"]
 
 
 ## Whether engines reading [param format] expect turned frames turned counter-clockwise
 static func is_counter_clockwise(format: String) -> bool:
-	return get_template(format).header.get("rotation", "clockwise") == "counter-clockwise"
+	return get_header(format).get("rotation") == "counter-clockwise"
+
+
+## Whether [param format] can describe [param layout], one of [constant LAYOUTS]; both
+## unless the header says otherwise
+static func can_describe(format: String, layout: String) -> bool:
+	return layout in _layouts_of(get_header(format))
 
 
 ## The data file of [param format] filled with [param data] from [TemplateData]. A
@@ -76,8 +169,22 @@ static func render(format: String, data: Dictionary) -> String:
 	var template := get_template(format)
 	var text := template.render(data)
 	if template.error:
-		push_error("%s: %s" % [FORMATS.get(format, FORMATS.json).template, template.error])
+		push_error("%s: %s" % [get_template_path(format), template.error])
 	return text
+
+
+## Makes [member user_dir] with a README.txt saying what it's for, and a copy of every
+## bundled template to start from in its "bundled" folder, written again each time
+static func prepare_user_dir() -> void:
+	var copies := user_dir.path_join("bundled")
+	DirAccess.make_dir_recursive_absolute(copies)
+	var readme := user_dir.path_join("README.txt")
+	if not FileAccess.file_exists(readme):
+		_write_text(readme, USER_README % AboutDialog.REPOSITORY)
+	for file in DirAccess.get_files_at(BUNDLED_DIR):
+		if file.get_extension() == EXTENSION:
+			var text := FileAccess.get_file_as_string(BUNDLED_DIR.path_join(file))
+			_write_text(copies.path_join(file), text)
 
 
 ## The frames of a packed atlas in reading order, from its regions (see
@@ -93,14 +200,8 @@ static func get_frames(
 		var name := SpritesheetExporter.format_sprite_name(
 			options.sprite_name_pattern, sheet, region.coord, index_start
 		)
-		var unique := name
-		var number := 2
-		while used.has(unique):
-			unique = "%s_%d" % [name, number]
-			number += 1
-		used[unique] = true
 		var frame := {
-			"name": unique + ".png",
+			"name": Metadata.unique_name(name, used) + ".png",
 			"coord": region.coord,
 			"page": region.page,
 			"rect": region.rect,
@@ -129,8 +230,8 @@ static func write(
 	fps: float
 ) -> Dictionary:
 	var result := {"error": OK, "paths": PackedStringArray()}
-	if get_template(format).error:
-		push_error("%s: %s" % [FORMATS[format].template, get_template(format).error])
+	if get_error(format):
+		push_error(get_error(format))
 		result.error = ERR_PARSE_ERROR
 		return result
 	var extension := get_extension(format)
@@ -159,3 +260,29 @@ static func write(
 		file.close()
 		result.paths.append(path)
 	return result
+
+
+## The template in the file at [param path], read again when the file has changed
+static func _load(path: String) -> Template:
+	var exists := FileAccess.file_exists(path)
+	var text := FileAccess.get_file_as_string(path) if exists else ""
+	if not _templates.has(path) or _templates[path].text != text:
+		var template := Template.parse(text) if exists else Template.load_file(path)
+		_templates[path] = {"template": template, "text": text}
+	return _templates[path].template
+
+
+## The layouts [param header] says a template can describe, both when it doesn't say
+static func _layouts_of(header: Dictionary) -> PackedStringArray:
+	var layouts := PackedStringArray()
+	for layout in str(header.get("layouts", "")).split(",", false):
+		if layout.strip_edges() in LAYOUTS:
+			layouts.append(layout.strip_edges())
+	return layouts if layouts else PackedStringArray(LAYOUTS)
+
+
+static func _write_text(path: String, text: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file:
+		file.store_string(text)
+		file.close()

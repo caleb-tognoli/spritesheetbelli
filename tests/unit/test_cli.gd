@@ -302,3 +302,64 @@ func test_packed_layout_usage_errors() -> void:
 	var frames := dir.path_join("frames")
 	assert_eq((await run(["--pack", frames, "--layout", "tight", "--out", out]))[0], "2")
 	assert_eq((await run(["--pack", frames, "--max-size", "4", "--out", out]))[0], "2")
+
+
+func write_text(path: String, text: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(text)
+	file.close()
+
+
+func test_data_formats_from_templates() -> void:
+	var frames := dir.path_join("frames")
+	# The user's templates by id, where they fit
+	DirAccess.make_dir_recursive_absolute(AtlasFormats.user_dir)
+	var tiles := AtlasFormats.user_dir.path_join("tiles.template")
+	write_text(tiles, "{{! extension: tiles\nlayouts: grid\n}}\n{{frame_count}} {{image}}")
+	AtlasFormats.refresh()
+	var out := dir.path_join("tiles.png")
+	var result := await run(["--pack", frames, "--out", out, "--metadata", "tiles"])
+	assert_eq(result[0], "0", str(result))
+	assert_eq(FileAccess.get_file_as_string(dir.path_join("tiles.tiles")), "5 tiles.png")
+	result = await run(["--pack", frames, "--out", out, "--atlas", "--atlas-data", "tiles"])
+	assert_eq(result[0], "2", "not for atlases")
+	assert_true(result[1].contains("--atlas-data must be one of"), result[1])
+	assert_false(result[1].contains("tiles,"), result[1])
+	DirAccess.remove_absolute(tiles)
+	AtlasFormats.refresh()
+
+	# A template file of its own
+	var template := dir.path_join("names.txt.template")
+	write_text(template, "{{#frames}}{{name}};{{/frames}}")
+	out = dir.path_join("custom.png")
+	result = await run(["--pack", frames, "--out", out, "--template", template])
+	assert_eq(result[0], "0", str(result))
+	assert_true(FileAccess.file_exists(out))
+	assert_eq(FileAccess.get_file_as_string(dir.path_join("custom.txt")), "0;1;2;3;4;")
+	result = await run(["--pack", frames, "--out", out, "--atlas", "--template", template])
+	assert_eq(result[0], "0", str(result))
+	assert_true(result[1].contains("custom.png and custom.txt"), result[1])
+
+	# One only for atlases packs the frames
+	var packed := dir.path_join("packed.template")
+	write_text(packed, "{{! extension: pk\nlayouts: packed\n}}\n{{image_w}}x{{image_h}}")
+	out = dir.path_join("packed.png")
+	result = await run(["--pack", frames, "--out", out, "--template", packed])
+	assert_eq(result[0], "0", str(result))
+	var image := Image.load_from_file(out)
+	var size := "%dx%d" % [image.get_width(), image.get_height()]
+	assert_eq(FileAccess.get_file_as_string(dir.path_join("packed.pk")), size)
+	assert_true(result[1].contains("packed.png and packed.pk"), result[1])
+
+	# A template that doesn't parse writes nothing
+	var broken := dir.path_join("broken.template")
+	write_text(broken, "{{#frames}}")
+	out = dir.path_join("broken.png")
+	result = await run(["--pack", frames, "--out", out, "--template", broken])
+	assert_eq(result[0], "1")
+	assert_eq(result[1], "Error: broken.template: line 1: {{#frames}} is never closed")
+	assert_false(FileAccess.file_exists(out))
+	result = await run(
+		["--pack", frames, "--out", out, "--template", template, "--metadata", "json"]
+	)
+	assert_eq(result[0], "2", "one or the other")

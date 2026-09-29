@@ -1,0 +1,140 @@
+{
+	"textures": [
+		{
+			"image": "phaser.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 42,
+				"h": 32
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"frame": {
+						"x": 2,
+						"y": 2,
+						"w": 10,
+						"h": 12
+					},
+					"rotated": false,
+					"trimmed": false,
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 10,
+						"h": 12
+					},
+					"sourceSize": {
+						"w": 10,
+						"h": 12
+					},
+					"filename": "idle"
+				},
+				{
+					"frame": {
+						"x": 16,
+						"y": 2,
+						"w": 10,
+						"h": 12
+					},
+					"rotated": false,
+					"trimmed": false,
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 10,
+						"h": 12
+					},
+					"sourceSize": {
+						"w": 10,
+						"h": 12
+					},
+					"filename": "a&b"
+				},
+				{
+					"frame": {
+						"x": 30,
+						"y": 2,
+						"w": 10,
+						"h": 12
+					},
+					"rotated": false,
+					"trimmed": false,
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 10,
+						"h": 12
+					},
+					"sourceSize": {
+						"w": 10,
+						"h": 12
+					},
+					"filename": "it's"
+				},
+				{
+					"frame": {
+						"x": 2,
+						"y": 18,
+						"w": 10,
+						"h": 12
+					},
+					"rotated": false,
+					"trimmed": false,
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 10,
+						"h": 12
+					},
+					"sourceSize": {
+						"w": 10,
+						"h": 12
+					},
+					"filename": "_up_"
+				},
+				{
+					"frame": {
+						"x": 30,
+						"y": 18,
+						"w": 10,
+						"h": 12
+					},
+					"rotated": false,
+					"trimmed": false,
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 10,
+						"h": 12
+					},
+					"sourceSize": {
+						"w": 10,
+						"h": 12
+					},
+					"filename": "dot"
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "spritesheetbelli",
+		"version": "{version}",
+		"animations": {
+			"walk": [
+				"idle",
+				"a&b",
+				"it's"
+			],
+			"jump & \"fall\"": [
+				"_up_",
+				"a&b"
+			],
+			"bob": [
+				"idle",
+				"_up_",
+				"dot"
+			]
+		}
+	}
+}

@@ -29,14 +29,20 @@ Options:
   --padding <px>                 Empty pixels around the sheet (or each atlas page)
   --spacing <px>                 Empty pixels between cells (or packed frames)
   --extrude <px>                 Repeat frame edges outward
-  --metadata <json|godot>        Also write a TexturePacker JSON or Godot SpriteFrames file,
-                                 with the project's animations
-  --fps <n>                      Animation speed in the metadata and GIFs (default 12)
+  --metadata <format>            Also write a data file with the project's animations:
+                                 json (TexturePacker hash), json-array, phaser,
+                                 atlas (libGDX / Spine), sparrow (Starling XML),
+                                 godot (SpriteFrames) or the id of a template in the
+                                 user templates folder (its file name without
+                                 .template)
+  --fps <n>                      Animation speed in the data file and GIFs (default 12)
   --atlas                        Write --out as a packed atlas with a data file. Packed
                                  sheets are always written as atlases.
-  --atlas-data <format>          The atlas's data file: json (TexturePacker hash),
-                                 json-array, phaser, atlas (libGDX / Spine),
-                                 sparrow (Starling XML) or godot (SpriteFrames)
+  --atlas-data <format>          The atlas's data file, one of the --metadata formats
+                                 (default json)
+  --template <file>              Write the data file (of the image or the atlas) from
+                                 this template file. Sheets are packed when it only
+                                 describes packed atlases.
   --animation <name>             The animation a GIF plays (default: the first one, or
                                  every frame when there are none)
   --scale <n>                    Make a GIF n times bigger
@@ -123,14 +129,10 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 	for key: String in ["padding", "spacing", "extrude"]:
 		if options.has("--" + key):
 			export.set(key, int(options["--" + key]))
-	if options.has("--metadata"):
-		var formats := {
-			"json": ExportOptions.MetadataFormat.JSON, "godot": ExportOptions.MetadataFormat.GODOT
-		}
-		if not formats.has(options["--metadata"]):
-			say.call("Error: --metadata must be json or godot.")
-			return 2
-		export.metadata = formats[options["--metadata"]]
+	problem = _set_data_format(export, options)
+	if problem:
+		say.call("Error: " + problem)
+		return 2
 	if options.has("--fps"):
 		export.animation_fps = float(options["--fps"])
 	if options.has("--animation"):
@@ -140,13 +142,6 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 			return 2
 	elif export.gif_animation.is_empty() and not sheet.animations.is_empty():
 		export.gif_animation = sheet.animations[0].name
-	if options.has("--atlas-data"):
-		if not AtlasFormats.FORMATS.has(options["--atlas-data"]):
-			say.call(
-				"Error: --atlas-data must be one of %s." % ", ".join(AtlasFormats.FORMATS.keys())
-			)
-			return 2
-		export.atlas_data = options["--atlas-data"]
 	if options.has("--scale"):
 		export.gif_scale = clampi(int(options["--scale"]), 1, 16)
 	sheet.set_export_settings(export.to_dictionary())
@@ -163,7 +158,11 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 		var packed := sheet.layout == Spritesheet.Layout.PACKED
 		var image := not ProjectFile.is_project_path(out) and not GifDecoder.is_gif_path(out)
-		if options.has("--atlas") or (packed and image):
+		var custom := export.target == ExportOptions.Target.CUSTOM
+		if image and export.get_template_error():
+			say.call("Error: " + export.get_template_error())
+			return 1
+		if options.has("--atlas") or image and (packed or custom and export.packs(sheet)):
 			code = _write_atlas(sheet, out, export, say)
 		elif GifDecoder.is_gif_path(out):
 			code = await _write_gif(sheet, out, export, say)
@@ -179,6 +178,27 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		say.call("Wrote %d sprites to %s" % [written.size(), folder])
 		code = 1 if errors else code
 	return code
+
+
+## Sets the data files of [param export] from --metadata, --atlas-data and --template in
+## [param options]. Returns what's wrong with them, or an empty string.
+static func _set_data_format(export: ExportOptions, options: Dictionary) -> String:
+	if options.has("--metadata") and options.has("--template"):
+		return "use --metadata or --template, not both."
+	for key: String in ["--metadata", "--atlas-data"]:
+		var layout := "grid" if key == "--metadata" else "packed"
+		if options.has(key) and not AtlasFormats.has_format(options[key], layout):
+			var formats := AtlasFormats.get_formats(layout)
+			return "%s must be one of %s." % [key, ", ".join(formats)]
+	if options.has("--metadata"):
+		export.target = ExportOptions.Target.DATA
+		export.grid_data = options["--metadata"]
+	if options.has("--atlas-data"):
+		export.atlas_data = options["--atlas-data"]
+	if options.has("--template"):
+		export.target = ExportOptions.Target.CUSTOM
+		export.custom_template = options["--template"]
+	return ""
 
 
 static func _parse(args: PackedStringArray) -> Dictionary:

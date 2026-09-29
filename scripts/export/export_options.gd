@@ -7,10 +7,12 @@ extends RefCounted
 enum Target {
 	IMAGE,  ## The spritesheet as one image
 	SPRITES,  ## Every frame as its own image, in a folder
-	GODOT,  ## The spritesheet image and a Godot SpriteFrames resource
-	JSON,  ## The spritesheet image and a JSON file (Aseprite and TexturePacker style)
-	ATLAS,  ## Trimmed frames packed tightly, with a JSON file
+	DATA,  ## The spritesheet image and a data file in [member grid_data]'s format
+	ATLAS,  ## Trimmed frames packed tightly, with a data file in [member atlas_data]'s format
 	GIF,  ## One animation as an animated GIF
+	## A data file from [member custom_template], next to the spritesheet image or the pages
+	## of a packed atlas, see [method packs]
+	CUSTOM,
 }
 enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
 ## The size a packed atlas's data file gives each frame, which engines line frames up by
@@ -18,7 +20,6 @@ enum FrameSize {
 	CELL,  ## Its cell, so the frames of an animation line up like in the grid
 	FRAME,  ## Its own, for sprites that have nothing to do with each other
 }
-enum MetadataFormat { NONE, JSON, GODOT }
 
 const IMAGE_FORMATS: Array[String] = ["png", "jpg", "webp"]
 
@@ -38,9 +39,15 @@ var padding := 0
 var spacing := 0
 ## Pixels by which each frame's edges are repeated outward, against texture bleeding
 var extrude := 0
-## The data file written next to a packed atlas, one of [constant AtlasFormats.FORMATS]
+## The data file written next to the image of a grid sheet, a format of [AtlasFormats]
+## that can describe grids
+var grid_data := "json"
+## The data file written next to a packed atlas, a format of [AtlasFormats] that can
+## describe packed atlases
 var atlas_data := "json"
 var atlas_frame_size := FrameSize.CELL
+## The template file of a custom template export
+var custom_template := ""
 
 ## File name for exported sprites. See [method SpritesheetExporter.format_sprite_name].
 var sprite_name_pattern := "{index}"
@@ -49,25 +56,7 @@ var default_name_pattern := "{index}"
 var only_selected := false
 var existing_files := Existing.ADD_NUMBER
 
-## The file written next to the image for game engines, following [member target]
-var metadata: MetadataFormat:
-	get:
-		match target:
-			Target.GODOT:
-				return MetadataFormat.GODOT
-			Target.JSON:
-				return MetadataFormat.JSON
-		return MetadataFormat.NONE
-	set(value):
-		match value:
-			MetadataFormat.GODOT:
-				target = Target.GODOT
-			MetadataFormat.JSON:
-				target = Target.JSON
-			_:
-				if target in [Target.GODOT, Target.JSON]:
-					target = Target.IMAGE
-## Frames per second of animations in metadata
+## Frames per second of animations in data files
 var animation_fps := 12.0
 ## The animation exported as a GIF, by name. Empty: every frame.
 var gif_animation := ""
@@ -81,8 +70,10 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"padding",
 	&"spacing",
 	&"extrude",
+	&"grid_data",
 	&"atlas_data",
 	&"atlas_frame_size",
+	&"custom_template",
 	&"sprite_name_pattern",
 	&"only_selected",
 	&"existing_files",
@@ -120,9 +111,6 @@ static func from_settings() -> ExportOptions:
 
 
 func apply(settings: Dictionary) -> void:
-	# Projects from before export targets stored which metadata to write
-	if settings.get("metadata") is int and not settings.has("target"):
-		metadata = settings.metadata
 	_name_pattern_set = _name_pattern_set or settings.get("sprite_name_pattern") is String
 	for key in _SHEET_KEYS:
 		if not settings.has(key):
@@ -135,13 +123,49 @@ func apply(settings: Dictionary) -> void:
 			set(key, value)
 	if image_format not in IMAGE_FORMATS:
 		image_format = "png"
-	if atlas_data not in AtlasFormats.FORMATS:
+	# A template taken out of the templates folder
+	if not AtlasFormats.has_format(grid_data, "grid"):
+		grid_data = "json"
+	if not AtlasFormats.has_format(atlas_data, "packed"):
 		atlas_data = "json"
 
 
-## Whether the export writes the spritesheet as one image
-func writes_sheet_image() -> bool:
-	return target in [Target.IMAGE, Target.GODOT, Target.JSON]
+## Whether the export packs the frames of [param sheet] on atlas pages: a packed atlas, or
+## a custom template for a packed sheet or one that can't describe a grid
+func packs(sheet: Spritesheet) -> bool:
+	if target != Target.CUSTOM:
+		return target == Target.ATLAS
+	var packed := sheet.layout == Spritesheet.Layout.PACKED
+	return packed or not AtlasFormats.can_describe(custom_template, "grid")
+
+
+## The format of the data file written next to the spritesheet image (see
+## [AtlasFormats]), or empty for none
+func get_image_data() -> String:
+	match target:
+		Target.DATA:
+			return grid_data
+		Target.CUSTOM:
+			return custom_template
+	return ""
+
+
+## The format of the data file of a packed atlas
+func get_atlas_data() -> String:
+	return custom_template if target == Target.CUSTOM else atlas_data
+
+
+## What's wrong with the template the export's data file is written from, or empty when
+## there's nothing wrong or no data file
+func get_template_error() -> String:
+	if target == Target.CUSTOM and custom_template.strip_edges().is_empty():
+		return tr("Pick a template file.")
+	match target:
+		Target.DATA, Target.CUSTOM:
+			return AtlasFormats.get_error(get_image_data())
+		Target.ATLAS:
+			return AtlasFormats.get_error(atlas_data)
+	return ""
 
 
 ## Extension of the file picked when exporting, or empty for a folder

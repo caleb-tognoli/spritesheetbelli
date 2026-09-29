@@ -79,8 +79,13 @@ func test_files_listed_are_the_files_written() -> void:
 			o.image_format = "jpg",
 		"hero"
 	)
-	await export_and_compare("godot", target.call(ExportOptions.Target.GODOT))
-	await export_and_compare("json", target.call(ExportOptions.Target.JSON), "hero.json")
+	await export_and_compare(
+		"godot",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.DATA
+			o.grid_data = "godot"
+	)
+	await export_and_compare("json", target.call(ExportOptions.Target.DATA), "hero.json")
 	await export_and_compare("gif", target.call(ExportOptions.Target.GIF))
 	await export_and_compare("atlas", target.call(ExportOptions.Target.ATLAS))
 
@@ -130,7 +135,7 @@ func test_dialog_lists_the_files_of_an_export() -> void:
 	Actions.run(&"export")
 	dialog.select_target(ExportOptions.Target.IMAGE)
 	assert_false(dialog.files_info.visible, "one file")
-	dialog.select_target(ExportOptions.Target.JSON)
+	dialog.select_target(ExportOptions.Target.DATA)
 	assert_true(dialog.files_info.visible)
 	assert_eq(dialog.files_info.text, "Files: spritesheet.png, spritesheet.json")
 	dialog.select_target(ExportOptions.Target.ATLAS)
@@ -157,7 +162,7 @@ func test_dialog_lists_the_files_of_an_export() -> void:
 func test_tokens_list_and_insert() -> void:
 	sheet.add_animation(SheetAnimation.create("walk", [Vector2i(2, 0)] as Array[Vector2i]))
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.JSON)
+	dialog.select_target(ExportOptions.Target.DATA)
 	var field := dialog.pattern
 	field.text = "hero_"
 	field.line_edit.caret_column = 5
@@ -206,7 +211,7 @@ func test_examples_prefer_frames_in_animations() -> void:
 		[Vector2i(1, 0), Vector2i(3, 0), Vector2i(0, 0)] as Array[Vector2i]
 	)
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.JSON)
+	dialog.select_target(ExportOptions.Target.DATA)
 	assert_eq(dialog.pattern.text, "{animation}_{animation_frame}", "the default with animations")
 	assert_eq(dialog.pattern_example.text, "For example: run_1.png, run_0.png, frame_0.png")
 
@@ -276,3 +281,120 @@ func test_opens_on_the_export_last_used_in_the_project() -> void:
 	main.files.open_file_dialogs.clear()
 	Actions.run(&"export")
 	assert_eq(dialog.get_options().target, ExportOptions.Target.GIF)
+
+
+## Writes a template file of the user's own in the test's folder
+func write_template(file_name: String, text: String) -> String:
+	var path := dir.path_join(file_name)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(text)
+	file.close()
+	return path
+
+
+## Picks [param path] in the dialog's template field, as typing it does
+func pick_template(path: String) -> void:
+	dialog.template_file.line_edit.text = path
+	dialog.template_file.line_edit.text_changed.emit(path)
+
+
+func test_custom_template() -> void:
+	var names := write_template(
+		"names.template",
+		"{{! name: Names\nextension: txt\nlayouts: grid\n}}\n{{#frames}}{{name}} {{x}}\n{{/frames}}"
+	)
+	Actions.run(&"export")
+	dialog.select_target(ExportOptions.Target.CUSTOM)
+	assert_true(dialog.template_file.visible)
+	assert_false(dialog.grid_data.visible, "its own template, not a list")
+	assert_eq(dialog.template_error.text, "Pick a template file.")
+	assert_true(dialog.get_ok_button().disabled)
+	pick_template(names)
+	assert_false(dialog.template_error.visible)
+	assert_false(dialog.get_ok_button().disabled)
+	assert_eq(dialog.files_info.text, "Files: spritesheet.png, spritesheet.txt")
+	assert_true(dialog.pattern.visible, "like an image and data file")
+	assert_false(dialog.frame_size.visible)
+	dialog.get_ok_button().pressed.emit()
+	main.files.export_file_dialog.hide()
+	main.files.open_file_dialogs.clear()
+	assert_eq(ExportOptions.from_sheet(sheet).custom_template, names, "remembered")
+	await export_and_compare("custom", func(_o: ExportOptions) -> void: pass)
+	var text := FileAccess.get_file_as_string(dir.path_join("custom/hero.txt"))
+	assert_eq(text, "0 0\n1 40\n2 80\n")
+
+	# A template only for atlases packs the sheet, with a file per page
+	var pages := write_template(
+		"pages.template",
+		"{{! extension: pg\nper_page: true\nlayouts: packed\n}}\n{{image}}{{#frames}} {{name}}{{/frames}}"
+	)
+	var settings := sheet.atlas_settings
+	settings.max_size = 64
+	sheet.set_atlas_settings(settings)
+	Actions.run(&"export")
+	pick_template(pages)
+	assert_true(dialog.frame_size.visible, "like a packed atlas")
+	assert_true(
+		dialog.files_info.text.begins_with("Files: hero_0.png, hero_1.png"), dialog.files_info.text
+	)
+	await export_and_compare(
+		"custom_pages", func(o: ExportOptions) -> void: o.custom_template = pages
+	)
+	assert_eq(files_in(dir.path_join("custom_pages")).size(), 6, "3 pages and 3 data files")
+	var page := FileAccess.get_file_as_string(dir.path_join("custom_pages/hero_1.pg"))
+	assert_eq(page, "hero_1.png 1")
+	dialog.hide()
+
+
+func test_template_errors_stop_the_export() -> void:
+	var broken := write_template("broken.template", "{{#frames}}\n{{name | pad}}\n{{/frames}}")
+	Actions.run(&"export")
+	dialog.select_target(ExportOptions.Target.CUSTOM)
+	pick_template(broken)
+	assert_true(dialog.template_error.visible)
+	assert_eq(dialog.template_error.text, "broken.template: line 2: pad takes 1 argument(s), not 0")
+	assert_true(dialog.get_ok_button().disabled)
+	pick_template(dir.path_join("nowhere.template"))
+	assert_true(dialog.template_error.text.begins_with("Could not find"), "a file that isn't there")
+	dialog.hide()
+
+	# Exporting again with a template broken since
+	set_options(
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.CUSTOM
+			o.custom_template = broken
+	)
+	assert_false(await main.files.export_to(dir.path_join("broken.png")))
+	assert_true(Notify.message_dialog.visible, "says why")
+	assert_true("line 2" in Notify.message_dialog.dialog_text, Notify.message_dialog.dialog_text)
+	Notify.message_dialog.hide()
+	assert_false(FileAccess.file_exists(dir.path_join("broken.png")), "nothing written")
+
+
+func test_data_formats_list_the_users_templates() -> void:
+	DirAccess.make_dir_recursive_absolute(AtlasFormats.user_dir)
+	var tiles := AtlasFormats.user_dir.path_join("tiles.template")
+	var file := FileAccess.open(tiles, FileAccess.WRITE)
+	file.store_string("{{! name: Tiles\nextension: tiles\nlayouts: grid\n}}\n{{frame_count}}")
+	file.close()
+	Actions.run(&"export")
+	dialog.select_target(ExportOptions.Target.DATA)
+	var listed := func(button: OptionButton) -> Array:
+		return range(button.item_count).map(button.get_item_metadata)
+	assert_eq(listed.call(dialog.grid_data)[-1], "tiles", "after a separator")
+	assert_true(dialog.grid_data.is_item_separator(dialog.grid_data.item_count - 2))
+	assert_false("tiles" in listed.call(dialog.atlas_data), "for grids only")
+	assert_true(dialog.templates_folder.visible)
+	dialog.grid_data.select(dialog.grid_data.item_count - 1)
+	dialog.grid_data.item_selected.emit(dialog.grid_data.selected)
+	assert_eq(dialog.files_info.text, "Files: spritesheet.png, spritesheet.tiles")
+	dialog.hide()
+	await export_and_compare(
+		"user",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.DATA
+			o.grid_data = "tiles"
+	)
+	assert_eq(FileAccess.get_file_as_string(dir.path_join("user/hero.tiles")), "3")
+	DirAccess.remove_absolute(tiles)
+	AtlasFormats.refresh()

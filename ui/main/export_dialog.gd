@@ -6,6 +6,7 @@ extends ConfirmationDialog
 signal export_requested
 
 const T := ExportOptions.Target
+const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
 const TARGETS := [
 	{
 		"target": T.IMAGE,
@@ -17,27 +18,18 @@ const TARGETS := [
 	{
 		"target": T.SPRITES,
 		"name": "Sprites",
-		"icon": preload("res://assets/icons/Folder.svg"),
+		"icon": FOLDER_ICON,
 		"about": "Every frame as its own PNG, in a folder.",
 	},
 	{
-		"target": T.GODOT,
-		"name": "Godot SpriteFrames",
+		"target": T.DATA,
+		"name": "Spritesheet and data file",
 		"icon": preload("res://assets/icons/SpriteFrames.svg"),
 		"about":
 		(
-			"The sheet as a PNG and a SpriteFrames resource (.tres) next to it, "
-			+ "ready for an AnimatedSprite2D. Each animation becomes one."
-		),
-	},
-	{
-		"target": T.JSON,
-		"name": "Aseprite / TexturePacker JSON",
-		"icon": preload("res://assets/icons/FileList.svg"),
-		"about":
-		(
-			"The sheet as a PNG and a JSON file next to it with every frame and "
-			+ "the animations as frame tags. Most engines and tools can read it."
+			"The sheet as a PNG and a file next to it that says where each frame is, "
+			+ "with the animations: a Godot SpriteFrames, TexturePacker or Aseprite JSON, "
+			+ "and more."
 		),
 	},
 	{
@@ -61,6 +53,16 @@ const TARGETS := [
 			+ "transparency and at most 255 colours; sheets with more are reduced."
 		),
 	},
+	{
+		"target": T.CUSTOM,
+		"name": "Custom template",
+		"icon": preload("res://assets/icons/TextFile.svg"),
+		"about":
+		(
+			"The sheet as a PNG and a data file written from a template of your own. "
+			+ "Packed sheets, and templates only for packed atlases, give atlas pages."
+		),
+	},
 ]
 ## What a sheet in the packed layout can be exported as
 const PACKED_TARGETS: Array[ExportOptions.Target] = [
@@ -68,6 +70,7 @@ const PACKED_TARGETS: Array[ExportOptions.Target] = [
 	ExportOptions.Target.ATLAS,
 	ExportOptions.Target.SPRITES,
 	ExportOptions.Target.GIF,
+	ExportOptions.Target.CUSTOM,
 ]
 const LABEL_WIDTH := 170
 ## Files named in the list of what an export writes, before "… 3 more"
@@ -89,9 +92,15 @@ var only_selected := CheckBox.new()
 var existing := OptionButton.new()
 var animation_fps := SpinBox.new()
 var frame_size := OptionButton.new()
+## Data formats, with their ids as the items' metadata
+var grid_data := OptionButton.new()
 var atlas_data := OptionButton.new()
+var template_file := TemplateFileField.new()
+var templates_folder := Button.new()
 var gif_animation := OptionButton.new()
 var gif_scale := SpinBox.new()
+## Why the template of the data file can't be used, which stops the export
+var template_error := Label.new()
 ## The files an export writes, when it writes more than one
 var files_info := Label.new()
 var output_info := Label.new()
@@ -101,6 +110,8 @@ var _settings := _grid()
 var _rows: Array[Dictionary] = []
 var _pattern_label: Label
 var _fps_label: Label
+## The rows of the data format dropdowns, which custom templates don't have
+var _format_rows: Array[Control] = []
 var _updating := false
 ## Pages of an atlas of the grid, by whether frames may be turned, found by packing it
 var _atlas_pages := {}
@@ -160,7 +171,7 @@ func _init() -> void:
 	transparent_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	transparent_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background_picker.add_child(transparent_label)
-	_add_row(_settings, "Background", background_picker, [T.IMAGE, T.GODOT, T.JSON, T.GIF])
+	_add_row(_settings, "Background", background_picker, [T.IMAGE, T.DATA, T.GIF])
 	gif_animation.tooltip_text = "Which animation the GIF plays"
 	_add_row(_settings, "Animation", gif_animation, [T.GIF])
 	gif_scale.min_value = 1
@@ -168,10 +179,27 @@ func _init() -> void:
 	gif_scale.suffix = "×"
 	gif_scale.tooltip_text = "Makes the GIF bigger, keeping pixels sharp"
 	_add_row(_settings, "Scale", gif_scale, [T.GIF])
-	for format: String in AtlasFormats.FORMATS:
-		atlas_data.add_item(AtlasFormats.FORMATS[format].name)
+	grid_data.tooltip_text = "The file next to the image that says where each frame is"
+	_format_rows.append(_add_row(_settings, "Data file", grid_data, [T.DATA]))
+	_format_rows.append(grid_data)
 	atlas_data.tooltip_text = "The file next to the atlas that says where each frame is"
-	_add_row(_settings, "Data file", atlas_data, [T.ATLAS])
+	_format_rows.append(_add_row(_settings, "Data file", atlas_data, [T.ATLAS]))
+	_format_rows.append(atlas_data)
+	template_file.tooltip_text = (
+		"The template the data file is written from. Its header says the file's " + "extension."
+	)
+	template_file.line_edit.tooltip_text = template_file.tooltip_text
+	_add_row(_settings, "Template", template_file, [T.CUSTOM])
+	templates_folder.text = "Open templates folder"
+	templates_folder.icon = FOLDER_ICON
+	templates_folder.tooltip_text = (
+		"Templates put in this folder are listed with the bundled ones. It has a copy of "
+		+ "every bundled template to start from."
+	)
+	# Browsers can't open a folder of the user's
+	var folder_targets := [] if WebFiles.is_web() else [T.DATA, T.ATLAS, T.CUSTOM]
+	_add_row(_settings, "", templates_folder, folder_targets)
+	templates_folder.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	frame_size.add_item("Their cell", ExportOptions.FrameSize.CELL)
 	frame_size.add_item("Their own", ExportOptions.FrameSize.FRAME)
 	frame_size.tooltip_text = (
@@ -188,23 +216,27 @@ func _init() -> void:
 	animation_fps.step = 0.5
 	animation_fps.suffix = "fps"
 	animation_fps.tooltip_text = "Frames per second of the animations"
-	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.GODOT, T.JSON, T.GIF])
+	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.DATA, T.GIF])
 
 	pattern.line_edit.custom_minimum_size = Vector2(120, 0)
 	pattern.tooltip_text = "How each frame is named, with tokens such as {index} filled in"
 	pattern.line_edit.tooltip_text = pattern.tooltip_text
-	_pattern_label = _add_row(_settings, "File names", pattern, [T.SPRITES, T.JSON, T.ATLAS])
+	_pattern_label = _add_row(_settings, "File names", pattern, [T.SPRITES, T.DATA, T.ATLAS])
 	pattern_example.theme_type_variation = &"StatusLabel"
 	pattern_example.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	pattern_example.custom_minimum_size = Vector2(200, 0)
 	# Sprites have the list of files instead
-	_add_row(_settings, "", pattern_example, [T.JSON, T.ATLAS])
+	_add_row(_settings, "", pattern_example, [T.DATA, T.ATLAS])
 	only_selected.text = "Only selected frames"
 	_add_row(_settings, "", only_selected, [T.SPRITES])
 	for label: String in ["Add a number", "Overwrite it", "Skip the sprite"]:
 		existing.add_item(label)
 	_add_row(_settings, "When a file exists", existing, [T.SPRITES])
 
+	template_error.theme_type_variation = &"ErrorLabel"
+	template_error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	template_error.custom_minimum_size = Vector2(380, 0)
+	right.add_child(template_error)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(spacer)
@@ -223,7 +255,10 @@ func _init() -> void:
 	existing.item_selected.connect(_changed.unbind(1))
 	frame_size.item_selected.connect(_changed.unbind(1))
 	gif_animation.item_selected.connect(_changed.unbind(1))
+	grid_data.item_selected.connect(_changed.unbind(1))
 	atlas_data.item_selected.connect(_changed.unbind(1))
+	template_file.path_changed.connect(_changed.unbind(1))
+	templates_folder.pressed.connect(open_templates_folder)
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
 	jpg_background.color_changed.connect(_changed.unbind(1))
@@ -245,6 +280,8 @@ func _ready() -> void:
 func refresh() -> void:
 	_updating = true
 	_atlas_pages.clear()
+	# Templates may have been put in the templates folder since
+	AtlasFormats.refresh()
 	var options := ExportOptions.from_sheet(Global.spritesheet)
 	# A packed sheet is exported as it's packed, not as a grid
 	var packed := _is_packed()
@@ -275,7 +312,9 @@ func refresh() -> void:
 		if animation.name == options.gif_animation:
 			gif_animation.select(gif_animation.item_count - 1)
 	gif_scale.set_value_no_signal(options.gif_scale)
-	atlas_data.select(AtlasFormats.FORMATS.keys().find(options.atlas_data))
+	_fill_formats(grid_data, "grid", options.grid_data)
+	_fill_formats(atlas_data, "packed", options.atlas_data)
+	template_file.path = options.custom_template
 	_updating = false
 	_update_labels(options)
 
@@ -316,8 +355,16 @@ func _options() -> ExportOptions:
 		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
 	)
 	options.gif_scale = int(gif_scale.value)
-	options.atlas_data = AtlasFormats.FORMATS.keys()[maxi(atlas_data.selected, 0)]
+	options.grid_data = _selected_format(grid_data)
+	options.atlas_data = _selected_format(atlas_data)
+	options.custom_template = template_file.path
 	return options
+
+
+## Opens the folder of the user's templates in the file manager, making it first
+func open_templates_folder() -> void:
+	AtlasFormats.prepare_user_dir()
+	OS.shell_open(ProjectSettings.globalize_path(AtlasFormats.user_dir))
 
 
 ## Saves the choices with the sheet (an unsaved change, not an undo step) and the JPG ones
@@ -356,6 +403,9 @@ func _update_labels(options: ExportOptions) -> void:
 	var files := _files(options)
 	files_info.visible = files.size() > 1
 	files_info.text = tr("Files: %s") % _list_files(files)
+	template_error.text = options.get_template_error()
+	template_error.visible = template_error.text != ""
+	get_ok_button().disabled = template_error.visible
 
 	match options.target:
 		T.SPRITES:
@@ -363,7 +413,7 @@ func _update_labels(options: ExportOptions) -> void:
 				tr("%d images of %d×%d px")
 				% [_sprite_coords(options).size(), sheet.sprite_size.x, sheet.sprite_size.y]
 			)
-		T.ATLAS:
+		_ when options.packs(sheet):
 			output_info.text = _atlas_info(options)
 		T.GIF:
 			var animation := options.get_gif_animation(sheet)
@@ -388,12 +438,19 @@ func _update_labels(options: ExportOptions) -> void:
 
 
 func _update_visibility(options: ExportOptions) -> void:
+	# A custom template has the settings of the export it's like, but its own template
+	var like := [options.target]
+	if options.target == T.CUSTOM:
+		like.append(T.ATLAS if options.packs(Global.spritesheet) else T.DATA)
 	for row in _rows:
-		var shown: bool = options.target in row.targets
+		var shown: bool = row.targets.any(func(target: int) -> bool: return target in like)
 		if row.format and options.image_format != row.format:
 			shown = false
 		for control: Control in row.controls:
 			control.visible = shown
+	if options.target == T.CUSTOM:
+		for control in _format_rows:
+			control.visible = false
 	_pattern_label.text = "File names" if options.target == T.SPRITES else "Frame names"
 	# Animations have their own speed; this one is for animations made from rows, and
 	# for a GIF of every frame
@@ -437,9 +494,9 @@ func _files(options: ExportOptions) -> PackedStringArray:
 	if sheet.is_empty() or options.target == T.SPRITES and coords.is_empty():
 		return []
 	var pages := -1
-	if options.target == T.ATLAS and not _is_packed():
+	if options.packs(sheet) and not _is_packed():
 		# Packing the grid can take a while, so it's done once
-		var turned := AtlasFormats.can_rotate(options.atlas_data)
+		var turned := AtlasFormats.can_rotate(options.get_atlas_data())
 		if not _atlas_pages.has(turned):
 			_atlas_pages[turned] = ExportFiles.get_page_count(sheet, options)
 		pages = _atlas_pages[turned]
@@ -471,7 +528,7 @@ func _atlas_info(options: ExportOptions) -> String:
 	var sheet := Global.spritesheet
 	if not _is_packed():
 		return tr("The size is found when packing")
-	if not AtlasFormats.can_rotate(options.atlas_data):
+	if not AtlasFormats.can_rotate(options.get_atlas_data()):
 		for place: Dictionary in sheet.placements.values():
 			if place.rotated:
 				return tr("This format can't describe turned frames. Pack without turning them.")
@@ -481,6 +538,29 @@ func _atlas_info(options: ExportOptions) -> String:
 	if sizes.size() == 1:
 		return tr("Atlas size: %d×%d px") % [sizes[0].x, sizes[0].y]
 	return tr("%d pages, the first %d×%d px") % [sizes.size(), sizes[0].x, sizes[0].y]
+
+
+## Lists in [param button] the formats that can describe [param layout], the user's own
+## after the bundled ones, and selects [param selected]
+static func _fill_formats(button: OptionButton, layout: String, selected: String) -> void:
+	button.clear()
+	var bundled := true
+	for format in AtlasFormats.get_formats(layout):
+		# The bundled ones come first
+		if bundled and not AtlasFormats.is_bundled(format) and button.item_count > 0:
+			button.add_separator()
+		bundled = AtlasFormats.is_bundled(format)
+		button.add_item(AtlasFormats.get_format_name(format))
+		button.set_item_metadata(-1, format)
+		if format == selected:
+			button.select(button.item_count - 1)
+
+
+## The id of the format selected in [param button], or else "json"
+static func _selected_format(button: OptionButton) -> String:
+	if button.selected < 0 or button.get_item_metadata(button.selected) == null:
+		return "json"
+	return button.get_item_metadata(button.selected)
 
 
 static func _is_packed() -> bool:

@@ -3,6 +3,7 @@ name: Sparrow / Starling XML
 extension: xml
 per_page: true
 rotation: clockwise
+layouts: grid, packed
 
 Turned frames are stored turned clockwise, and their size is as they are on the page.
 }}

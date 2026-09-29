@@ -114,7 +114,7 @@ func test_json_metadata_with_tags() -> void:
 	)
 	sheet.add_animation(SheetAnimation.create("walk", [Vector2i(0, 1)] as Array[Vector2i]))
 	var options := ExportOptions.new()
-	options.metadata = ExportOptions.MetadataFormat.JSON
+	options.target = ExportOptions.Target.DATA
 	options.spacing = 2
 	var path := dir.path_join("meta.png")
 	assert_eq(SpritesheetExporter.save_image(sheet.get_image(options), path), OK)
@@ -135,7 +135,8 @@ func test_json_metadata_with_tags() -> void:
 func test_godot_sprite_frames() -> void:
 	sheet.add_animation(SheetAnimation.create("run", sheet.get_sorted_coords(), 8))
 	var options := ExportOptions.new()
-	options.metadata = ExportOptions.MetadataFormat.GODOT
+	options.target = ExportOptions.Target.DATA
+	options.grid_data = "godot"
 	options.animation_fps = 8
 	var path := dir.path_join("hero.png")
 	assert_eq(Metadata.write_for_image(sheet, options, path), OK)
@@ -174,7 +175,8 @@ func test_rows_are_not_animations() -> void:
 	assert_eq(animations[0].name, "default")
 	assert_eq(animations[0].indices, [0, 1, 2])
 	var options := ExportOptions.new()
-	options.metadata = ExportOptions.MetadataFormat.GODOT
+	options.target = ExportOptions.Target.DATA
+	options.grid_data = "godot"
 	var path := dir.path_join("rows.png")
 	assert_eq(Metadata.write_for_image(sheet, options, path), OK)
 	var text := FileAccess.get_file_as_string(dir.path_join("rows.tres"))
@@ -212,19 +214,39 @@ func test_too_big_images_are_explained() -> void:
 
 func test_export_targets() -> void:
 	var options := ExportOptions.new()
-	options.apply({"metadata": ExportOptions.MetadataFormat.GODOT})
-	assert_eq(options.target, ExportOptions.Target.GODOT, "projects from before targets")
-	options.target = ExportOptions.Target.IMAGE
 	options.image_format = "webp"
 	assert_eq(options.get_file_extension(), "webp")
-	assert_eq(options.metadata, ExportOptions.MetadataFormat.NONE)
-	options.target = ExportOptions.Target.JSON
-	assert_eq(options.get_file_extension(), "png", "JSON goes with a PNG")
-	assert_true(options.writes_sheet_image())
+	assert_eq(options.get_image_data(), "", "no data file")
+	options.target = ExportOptions.Target.DATA
+	options.grid_data = "godot"
+	assert_eq(options.get_file_extension(), "png", "a data file goes with a PNG")
+	assert_eq(options.get_image_data(), "godot")
+	assert_false(options.packs(sheet))
+	options.custom_template = "C:/templates/mine.template"
 	var restored := ExportOptions.new()
 	restored.apply(options.to_dictionary())
-	assert_eq(restored.target, ExportOptions.Target.JSON)
+	assert_eq(restored.target, ExportOptions.Target.DATA)
 	assert_eq(restored.image_format, "webp")
+	assert_eq(restored.grid_data, "godot")
+	assert_eq(restored.custom_template, "C:/templates/mine.template")
+	restored.apply({"grid_data": "gone", "atlas_data": "gone"})
+	assert_eq([restored.grid_data, restored.atlas_data], ["json", "json"], "unknown formats")
+
+
+func test_duplicate_grid_names_are_made_unique() -> void:
+	var options := ExportOptions.new()
+	options.sprite_name_pattern = "{row}"
+	var names := Metadata.grid_frames(sheet, options).map(
+		func(frame: Dictionary) -> String: return frame.name
+	)
+	assert_eq(names, ["0.png", "0_2.png", "0_3.png"])
+	options.target = ExportOptions.Target.DATA
+	var path := dir.path_join("same.png")
+	assert_eq(Metadata.write_for_image(sheet, options, path), OK)
+	var json: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string(dir.path_join("same.json"))
+	)
+	assert_eq(json.frames.keys(), ["0.png", "0_2.png", "0_3.png"], "every frame")
 
 
 func test_animations_in_metadata() -> void:
@@ -252,7 +274,7 @@ func test_animations_in_metadata() -> void:
 
 func test_only_the_written_extension_is_left_out() -> void:
 	var options := ExportOptions.new()
-	options.target = ExportOptions.Target.JSON
+	options.target = ExportOptions.Target.DATA
 	# Typed name: the image and the data file written
 	var cases := {
 		"hero": ["hero.png", "hero.json"],
@@ -269,8 +291,8 @@ func test_only_the_written_extension_is_left_out() -> void:
 		)
 		assert_eq(image.get_file(), cases[typed][0], typed)
 		assert_eq(Metadata.get_path_for_image(image, options).get_file(), cases[typed][1], typed)
-	options.target = ExportOptions.Target.GODOT
-	options.metadata = ExportOptions.MetadataFormat.GODOT
+	options.target = ExportOptions.Target.DATA
+	options.grid_data = "godot"
 	var godot := SpritesheetExporter.with_extension("hero.tres", options.get_file_extension())
 	var tres := Metadata.get_path_for_image(godot, options)
 	assert_eq([godot, tres], ["hero.tres.png", "hero.tres.tres"])

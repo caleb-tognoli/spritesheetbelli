@@ -225,6 +225,15 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   `--tolerance <percent>` sets how close a colour must be (10 by default). The tolerance
   chosen in Add Spritesheet or Remove Background Colour is remembered, and both start with
   it next time.
+- Custom templates: the Export dialog's Custom template export writes the data file from
+  a template file of your own, next to the sheet or with atlas pages. The template's
+  header says the file's extension; a template's mistake is shown with its line instead
+  of exporting.
+- A templates folder (Export dialog > Open templates folder; not in the web version):
+  templates put there are listed with the bundled formats. It comes with a README and a
+  copy of every bundled template to start from.
+- Command line: `--template <file>` writes the data file from a template, and `--metadata`
+  and `--atlas-data` take any format, templates in the templates folder included.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -274,14 +283,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   progress overlay when they take a while.
 - One Export dialog (Ctrl+E) replaces Export Image, Export As, Export Sprites, Export
   Packed Atlas and Export Settings. It asks what to export (spritesheet image, sprites,
-  Godot SpriteFrames, Aseprite/TexturePacker JSON or a packed atlas) and shows only the
-  settings that matter. A Tokens… button next to the file names lists every token with
-  what it gives for a frame of the sheet, and inserts one at the caret; unknown tokens get
-  a warning. The example shows real names from the sheet, and exports that write more
-  than one file list them (the first few and how many more). The background says
-  "Transparent" when it is, frames are named `{animation}_{animation_frame}` by default
-  when the sheet has animations, and the dialog opens on the export last used in the
-  project. Exports always ask where to save, so only projects are overwritten without
+  the sheet with a data file, a packed atlas, an animated GIF or a custom template) and
+  shows only the settings that matter. A Tokens… button next to the file names lists every
+  token with what it gives for a frame of the sheet, and inserts one at the caret; unknown
+  tokens get a warning. The example shows real names from the sheet, and exports that
+  write more than one file list them (the first few and how many more). The background
+  says "Transparent" when it is, frames are named `{animation}_{animation_frame}` by
+  default when the sheet has animations, and the dialog opens on the export last used in
+  the project. Exports always ask where to save, so only projects are overwritten without
   asking.
 - Changing the export settings is no longer a step in the History, so Ctrl+Z after
   exporting undoes the last edit. They still count as unsaved changes. Spacing, padding
@@ -355,6 +364,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Spine `.atlas`, Sparrow / Starling XML, Godot SpriteFrames) is written from a template
   in `templates/`, filled by a small Mustache-like engine. The files are the same as
   before.
+- Grid sheets can be exported with any data file that can describe them (TexturePacker
+  JSON as a hash or an array, Phaser 3, libGDX / Spine, Sparrow / Starling, Godot
+  SpriteFrames): the Godot SpriteFrames and Aseprite / TexturePacker JSON exports are one
+  "Spritesheet and data file" export with a list of formats.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names
@@ -407,6 +420,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   pixelated.
 - With the interface scaled (150%, 200%…), the preview is sharp: frames, lines, numbers
   and icons were drawn at 100% and stretched, which blurred them.
+- Frames with the same name in a grid sheet's data file are numbered (walk, walk_2) like
+  in atlases, instead of being written twice.
 
 ## 0.2.0
 

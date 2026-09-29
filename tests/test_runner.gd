@@ -24,6 +24,7 @@ func _ready() -> void:
 	TestCase.remove_dir(TestCase.temp_path())
 	DirAccess.make_dir_recursive_absolute(TestCase.temp_path())
 	Settings.load_settings(TestCase.temp_path("settings.cfg"))
+	AtlasFormats.user_dir = TestCase.temp_path("templates")
 	# Undo what the real settings did at startup
 	Global.apply_ui_scale()
 	Global.apply_theme()

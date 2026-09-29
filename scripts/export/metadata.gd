@@ -2,22 +2,17 @@ class_name Metadata
 ## Describes where frames are in an exported image, for game engines. The files are
 ## written from the templates of [AtlasFormats].
 
-## The format of [constant AtlasFormats.FORMATS] each metadata format is written in
-const FORMATS := {
-	ExportOptions.MetadataFormat.JSON: "json",
-	ExportOptions.MetadataFormat.GODOT: "godot",
-}
 
-
-## Writes the metadata chosen in [param options] next to an exported image
+## Writes the data file chosen in [param options] (see [method ExportOptions.get_image_data])
+## next to an exported image
 static func write_for_image(
 	sheet: Spritesheet, options: ExportOptions, image_path: String, index_start := 0
 ) -> Error:
-	if options.metadata == ExportOptions.MetadataFormat.NONE:
+	var format := options.get_image_data()
+	if not format:
 		return OK
-	var format: String = FORMATS.get(options.metadata, "json")
-	if AtlasFormats.get_template(format).error:
-		push_error(AtlasFormats.get_template(format).error)
+	if AtlasFormats.get_error(format):
+		push_error(AtlasFormats.get_error(format))
 		return ERR_PARSE_ERROR
 	var page := {
 		"file": image_path.get_file(),
@@ -42,14 +37,16 @@ static func write_for_image(
 static func get_path_for_image(image_path: String, options: ExportOptions) -> String:
 	var format := SpritesheetExporter.get_image_format(image_path)
 	var base := SpritesheetExporter.without_extension(image_path, format)
-	return base + "." + AtlasFormats.get_extension(FORMATS.get(options.metadata, "json"))
+	return base + "." + AtlasFormats.get_extension(options.get_image_data())
 
 
-## Every frame of a grid export in reading order, with its cell in the image
+## Every frame of a grid export in reading order, with its cell in the image and a unique
+## name from the sprite name pattern
 static func grid_frames(
 	sheet: Spritesheet, options: ExportOptions, index_start := 0
 ) -> Array[Dictionary]:
 	var frames: Array[Dictionary] = []
+	var used := {}
 	for coord in sheet.get_sorted_coords():
 		var name := SpritesheetExporter.format_sprite_name(
 			options.sprite_name_pattern, sheet, coord, index_start
@@ -58,13 +55,26 @@ static func grid_frames(
 			frames
 			. append(
 				{
-					"name": name + ".png",
+					"name": unique_name(name, used) + ".png",
 					"coord": coord,
 					"rect": SpritesheetExporter.get_cell_rect(sheet, coord, options),
 				}
 			)
 		)
 	return frames
+
+
+## [param name], or with _2, _3… after it when it's in [param used] already, which it's
+## then added to. Data files name every frame differently, as engines look frames up by
+## name.
+static func unique_name(name: String, used: Dictionary) -> String:
+	var unique := name
+	var number := 2
+	while used.has(unique):
+		unique = "%s_%d" % [name, number]
+		number += 1
+	used[unique] = true
+	return unique
 
 
 ## The sheet's animations. Without any, all frames form one "default" animation, so a
