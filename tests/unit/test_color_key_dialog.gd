@@ -78,9 +78,7 @@ func test_the_preview_leaves_the_sheet_alone() -> void:
 	await settle()
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0).a, 0.0)
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "no longer selected")
-	select([] as Array[Vector2i])
-	await settle()
-	assert_true(dialog.remove_button.disabled, "nothing to remove it from")
+	assert_eq(dialog.targets_label.text, "In 1 selected frames")
 
 
 func test_remove_is_one_step_on_the_selected_frames() -> void:
@@ -102,6 +100,30 @@ func test_remove_is_one_step_on_the_selected_frames() -> void:
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_pixel(0, 0), Color.MAGENTA, "undone at once")
 	assert_eq(sheet.frames[Vector2i(2, 0)].get_pixel(0, 0), Color.MAGENTA, "undone at once")
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "the preview is gone")
+
+
+func test_every_frame_when_none_are_selected() -> void:
+	select([] as Array[Vector2i])
+	assert_true(Actions.is_enabled(&"color_key"), "enabled with frames")
+	Actions.run(&"color_key")
+	await settle()
+	assert_eq(dialog.targets_label.text, "In all 3 frames")
+	assert_false(dialog.remove_button.disabled)
+	for x in 3:
+		assert_eq(shown(Vector2i(x, 0)).get_pixel(0, 0).a, 0.0, "previewed in %d" % x)
+	var steps := Global.document.get_history().size()
+	dialog.remove_button.pressed.emit()
+	await settle()
+	assert_eq(Global.document.get_history().size(), steps + 1, "one step")
+	for x in 3:
+		assert_eq(sheet.frames[Vector2i(x, 0)].get_pixel(0, 0).a, 0.0, "removed in %d" % x)
+		assert_eq(sheet.frames[Vector2i(x, 0)].get_pixel(3, 3).a, 1.0)
+	Global.document.undo()
+	for x in 3:
+		assert_eq(sheet.frames[Vector2i(x, 0)].get_pixel(0, 0), Color.MAGENTA)
+
+	Global.document.perform("Clear", sheet.remove_frames.bind(sheet.get_sorted_coords()))
+	assert_false(Actions.is_enabled(&"color_key"), "nothing to remove it from")
 
 
 func test_cancel_and_escape_show_the_frames_as_they_are() -> void:

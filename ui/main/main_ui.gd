@@ -78,6 +78,7 @@ const DESCRIPTIONS := {
 		+ "move the selected frames inside their cells."
 	),
 	&"trim": "Of the selected frames, or of every frame when none are selected",
+	&"color_key": "From the selected frames, or from every frame when none are selected",
 }
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
@@ -450,7 +451,7 @@ func _register_actions() -> void:
 			edit_targets.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
 			has_frames
 		)
-	add.call(&"color_key", "Remove Background Colour…", color_key_dialog.open, has_selection)
+	add.call(&"color_key", "Remove Background Colour…", color_key_dialog.open, has_frames)
 	add.call(
 		&"add_outline",
 		"Add Outline…",
@@ -656,7 +657,8 @@ func add_outline(color: Color, thickness: int, corners: bool) -> void:
 	)
 
 
-## Makes pixels close to [param color] transparent in the selected frames
+## Makes pixels close to [param color] transparent in the selected frames, or in every frame
+## when none are selected
 func remove_background(color: Color, tolerance: float) -> void:
 	await edit_selection_in_background(
 		"Remove background",
@@ -665,18 +667,26 @@ func remove_background(color: Color, tolerance: float) -> void:
 			ImageUtils.color_key(img, color, tolerance)
 			return img,
 		Callable(),
-		FrameEdits.color_key_op(color, tolerance)
+		FrameEdits.color_key_op(color, tolerance),
+		get_target_coords()
 	)
 
 
-## Replaces each selected frame with [code]edit.call(copy_of_it)[/code], worked out on
-## worker threads with a progress bar when it takes a while, then applied as one undoable
-## step. [param move] and [param op] are as in [method Spritesheet.edit_frames].
+## Replaces each selected frame (or each of [param coords]) with
+## [code]edit.call(copy_of_it)[/code], worked out on worker threads with a progress bar when
+## it takes a while, then applied as one undoable step. [param move] and [param op] are as
+## in [method Spritesheet.edit_frames].
 func edit_selection_in_background(
-	action_name: String, progress_text: String, edit: Callable, move := Callable(), op := {}
+	action_name: String,
+	progress_text: String,
+	edit: Callable,
+	move := Callable(),
+	op := {},
+	coords: Array[Vector2i] = [],
 ) -> void:
 	var sheet := Global.spritesheet
-	var coords := preview.get_selected_coords()
+	if coords.is_empty():
+		coords = preview.get_selected_coords()
 	var sources: Array[Image] = []
 	for coord in coords:
 		sources.append(sheet.frames[coord])

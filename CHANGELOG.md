@@ -340,6 +340,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   the view moved. Nothing changes until Remove, which is one step to undo; Cancel or
   Escape leaves the frames as they were. The eyedropper picks the colour by clicking a
   frame, as the frame is, not as previewed.
+- Remove Background Colour works on every frame when none are selected, like Align and
+  Trim, and is available whenever the sheet has frames.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

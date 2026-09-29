@@ -1,12 +1,13 @@
 class_name ColorKeyDialog
 extends PanelContainer
 ## Remove Background Colour: a small panel over the preview, under the zoom, with the
-## colour to make transparent in the selected frames and how close a pixel must be to it,
+## colour to make transparent in the selected frames (every frame when none are selected)
+## and how close a pixel must be to it,
 ## see [ColorKeyControl]. It isn't modal: frames can be selected and the view moved while
 ## it's open, and its eyedropper picks the colour by clicking a frame, as the frame is,
 ## not as previewed.
 ##
-## While it's open, the preview shows the selected frames with the colour removed, see
+## While it's open, the preview shows those frames with the colour removed, see
 ## [method SpritesheetPreview.show_instead], without changing the sheet. Only Remove
 ## does, as one step to undo. Cancel or Escape closes it and shows the frames as they are.
 
@@ -17,8 +18,8 @@ var remove_button := Button.new()
 var cancel_button := Button.new()
 var preview: SpritesheetPreview
 
-## Removes the colour from the selected frames, called with the colour and the tolerance,
-## see [method setup]
+## Removes the colour from the frames, called with the colour and the tolerance, see
+## [method setup]
 var _remove := Callable()
 ## Whether the preview is updated at the end of the frame, once for many changes
 var _update_queued := false
@@ -70,8 +71,9 @@ func _init() -> void:
 
 
 ## Puts the panel in [param area]'s overlay, previewing on its preview and picking colours
-## from it. [param remove_background] removes the colour from the selected frames, called
-## with the colour and the tolerance; it can take a while.
+## from it. [param remove_background] removes the colour from the selected frames, or every
+## frame when none are selected, called with the colour and the tolerance; it can take a
+## while.
 func setup(area: PreviewArea, remove_background: Callable) -> void:
 	preview = area.spritesheet_preview
 	_remove = remove_background
@@ -83,10 +85,10 @@ func setup(area: PreviewArea, remove_background: Callable) -> void:
 	Global.document.loaded.connect(func(_view: Dictionary) -> void: close())
 
 
-## Opens the panel suggesting the top-left pixel of the first selected frame, usually the
-## background, and the tolerance used last
+## Opens the panel suggesting the top-left pixel of the first frame it works on, usually
+## the background, and the tolerance used last
 func open() -> void:
-	var coords := preview.get_selected_coords()
+	var coords := get_target_coords()
 	if not visible:
 		var color := key.get_color()
 		if not coords.is_empty() and not preview.spritesheet.frames[coords[0]].is_empty():
@@ -102,15 +104,21 @@ func close() -> void:
 	preview.show_instead({})
 
 
-## Removes the colour from the selected frames as one step to undo, and closes the panel.
-## The frames are previewed with it removed until then.
+## Removes the colour from the frames as one step to undo, and closes the panel. The
+## frames are previewed with it removed until then.
 func remove() -> void:
-	if preview.get_selected_coords().is_empty():
+	if get_target_coords().is_empty():
 		return
 	_close()
 	await _remove.call(key.get_color(), key.get_tolerance())
 	if not visible:
 		preview.show_instead({})
+
+
+## The selected frames, or every frame when none are
+func get_target_coords() -> Array[Vector2i]:
+	var coords := preview.get_selected_coords()
+	return coords if not coords.is_empty() else preview.spritesheet.get_sorted_coords()
 
 
 func _close() -> void:
@@ -137,8 +145,8 @@ func _queue_update() -> void:
 		_update_preview.call_deferred()
 
 
-## Shows the selected frames with the colour removed. Only frames not shown that way yet
-## are worked on, on worker threads.
+## Shows the frames it works on with the colour removed. Only frames not shown that way
+## yet are worked on, on worker threads.
 func _update_preview() -> void:
 	_update_queued = false
 	if not visible:
@@ -147,12 +155,13 @@ func _update_preview() -> void:
 		_stale = true
 		return
 	var sheet := preview.spritesheet
-	var coords := preview.get_selected_coords()
+	var coords := get_target_coords()
 	remove_button.disabled = coords.is_empty()
+	var selected := not preview.get_selected_coords().is_empty()
 	targets_label.text = (
 		tr("In %d selected frames") % coords.size()
-		if coords
-		else tr("Select the frames to remove it from")
+		if selected
+		else tr("In all %d frames") % coords.size()
 	)
 	var color := key.get_color()
 	var tolerance := key.get_tolerance()
@@ -188,7 +197,7 @@ func _update_preview() -> void:
 		_stale = false
 		_queue_update()
 		return
-	# Only the selected frames, as they are now
+	# Only the frames it works on, as they are now
 	var shown: Dictionary[Image, Image] = {}
 	for coord in coords:
 		if sheet.frames.get(coord) in _keyed:
