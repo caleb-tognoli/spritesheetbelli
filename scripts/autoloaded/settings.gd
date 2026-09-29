@@ -173,6 +173,15 @@ func add_recent_file(file: String) -> void:
 	set_value(&"recent_files", Array(recent))
 
 
+## Takes [param file] off the recent files list
+func remove_recent_file(file: String) -> void:
+	var recent := get_recent_files()
+	var index := recent.find(file)
+	if index >= 0:
+		recent.remove_at(index)
+		set_value(&"recent_files", Array(recent))
+
+
 func get_recent_files() -> PackedStringArray:
 	return PackedStringArray(get_value(&"recent_files"))
 

@@ -278,6 +278,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Theme: a System option, now the default, follows the operating system's dark or light
   mode as it changes, and a System accent colour setting uses the operating system's
   accent colour where it has one.
+- A start screen while nothing is open: Open, Add Sprite(s) and Add Spritesheet, and the
+  recent projects and sheets with a thumbnail, name and folder. Click one to open it, or
+  × to take it off the list; moved or deleted files say "Not found". Thumbnails are made
+  when a project is saved or opened, and from the image for sheets. In a browser it has
+  just the buttons.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -413,6 +418,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   JSON as a hash or an array, Phaser 3, libGDX / Spine, Sparrow / Starling, Godot
   SpriteFrames): the Godot SpriteFrames and Aseprite / TexturePacker JSON exports are one
   "Spritesheet and data file" export with a list of formats.
+- Cancelling the Add Spritesheet window after File > Open leaves nothing open, instead of
+  an empty sheet named after the image.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

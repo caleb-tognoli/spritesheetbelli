@@ -149,6 +149,7 @@ var about_dialog := AboutDialog.new()
 var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 var animation_commands := AnimationCommands.new()
+var start_screen := StartScreen.new()
 ## The settings and export on the left, and the sprites and history on the right
 var sidebar_split: SidebarSplit
 var panels_split: SidebarSplit
@@ -250,6 +251,9 @@ func _ready() -> void:
 	layout_controller.register_actions()
 	add_child(animation_commands)
 	animation_commands.setup(self)
+	# Over the canvas while nothing is open, with buttons for the actions registered above
+	preview_area.add_child(start_screen)
+	start_screen.file_chosen.connect(files.open_recent)
 	add_sprites_btn.tooltip_text = Actions.get_tooltip(&"add_sprites")
 	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
 	_update_export_button(ExportTarget.list(Global.spritesheet).size())

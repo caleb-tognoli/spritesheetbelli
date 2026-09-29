@@ -159,6 +159,17 @@ func get_name_path() -> String:
 	return FrameSource.get_first_path(spritesheet)
 
 
+## Whether nothing is open: no file, no frames and no history, as after New. The start
+## screen shows then, see [StartScreen].
+func is_blank() -> bool:
+	return (
+		path.is_empty()
+		and export_path.is_empty()
+		and spritesheet.is_empty()
+		and undo_redo.get_history_count() == 0
+	)
+
+
 ## Empties the document and forgets its file and history. The new sheet resizes with
 ## the filter chosen in the settings.
 func reset() -> void:

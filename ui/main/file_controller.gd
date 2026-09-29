@@ -82,7 +82,13 @@ func _ready() -> void:
 					Global.spritesheet.get_state(), "", Global.document.export_path
 				)
 	)
-	add_spritesheet_window.canceled.connect(func() -> void: loading_opened_file = false)
+	# Nothing was opened after all, so the start screen shows again
+	add_spritesheet_window.canceled.connect(
+		func() -> void:
+			if loading_opened_file:
+				loading_opened_file = false
+				Global.document.reset()
+	)
 
 	_create_unsaved_changes_dialog()
 	for dialog: FileDialog in [
@@ -331,6 +337,7 @@ func add_gif(path: String) -> void:
 	if opening:
 		set_filepath_when_opening_spritesheet = false
 		Settings.add_recent_file(path)
+		Thumbnails.make_for_image(path)
 		Global.document.reset()
 	var anim_name := path.get_file().get_basename()
 	_linking(path)
@@ -375,6 +382,7 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 	if set_filepath_when_opening_spritesheet:
 		set_filepath_when_opening_spritesheet = false
 		Settings.add_recent_file(spritesheet_path)
+		Thumbnails.make_for_image(spritesheet_path)
 		Global.document.reset()
 		Global.document.export_path = spritesheet_path
 		loading_opened_file = true
@@ -472,6 +480,7 @@ func _save_project(path: String) -> bool:
 	Global.document.mark_saved()
 	Settings.set_value(&"last_session", path)
 	Settings.add_recent_file(path)
+	Thumbnails.make_for_sheet(path, Global.spritesheet)
 	WebFiles.download(path)
 	if after_save.is_valid():
 		var action := after_save
@@ -507,6 +516,7 @@ func _open_project(path: String) -> bool:
 	)
 	Settings.set_value(&"last_session", path)
 	Settings.add_recent_file(path)
+	Thumbnails.make_for_sheet(path, Global.spritesheet, false)
 	return true
 
 
