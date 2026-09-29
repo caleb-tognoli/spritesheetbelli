@@ -11,6 +11,8 @@ signal dock_changed
 
 ## The shortest a shown dock gets, with the row of buttons
 const MIN_HEIGHT := 160
+## Room between a shown dock and the row of buttons under it
+const GAP := 4
 
 ## The row of buttons, under the dock shown
 var bar := HBoxContainer.new()
@@ -18,6 +20,8 @@ var bar := HBoxContainer.new()
 ## The button of each dock
 var _buttons: Dictionary[Control, Button] = {}
 var _shown: Control
+## Around the row of buttons, with the [constant GAP] above it while a dock is shown
+var _bar_margin := MarginContainer.new()
 ## The split between the sheet's preview and the docks
 var _split: SplitContainer
 
@@ -26,11 +30,11 @@ func _init() -> void:
 	add_theme_constant_override("separation", 0)
 	var bar_panel := PanelContainer.new()
 	bar_panel.theme_type_variation = &"SidebarPanel"
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 4)
-	margin.add_theme_constant_override("margin_right", 4)
-	margin.add_child(bar)
-	bar_panel.add_child(margin)
+	_bar_margin.add_theme_constant_override("margin_left", 4)
+	_bar_margin.add_theme_constant_override("margin_right", 4)
+	_bar_margin.add_theme_constant_override("margin_top", 0)
+	_bar_margin.add_child(bar)
+	bar_panel.add_child(_bar_margin)
 	# Always last, under the docks
 	add_child(bar_panel, false, Node.INTERNAL_MODE_BACK)
 
@@ -46,17 +50,18 @@ func _ready() -> void:
 	apply_height()
 
 
-## Adds [param dock], hidden, with a button called [param title] that shows it. Returns
-## the button.
-func add_dock(dock: Control, title: String) -> Button:
+## Adds [param dock], hidden, with a button called [param title], with [param icon] before
+## it, that shows it. Returns the button.
+func add_dock(dock: Control, title: String, icon: Texture2D = null) -> Button:
 	if dock.get_parent() != self:
 		add_child(dock)
 	dock.visible = false
 	dock.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var button := Button.new()
 	button.text = title
+	button.icon = icon
 	button.toggle_mode = true
-	button.theme_type_variation = &"ToolbarButton"
+	button.theme_type_variation = &"DockButton"
 	button.focus_mode = Control.FOCUS_NONE
 	button.toggled.connect(
 		func(on: bool) -> void:
@@ -78,6 +83,7 @@ func show_dock(dock: Control) -> void:
 	for each: Control in _buttons:
 		each.visible = each == dock
 		_buttons[each].set_pressed_no_signal(each == dock)
+	_bar_margin.add_theme_constant_override("margin_top", GAP if dock else 0)
 	apply_height()
 	dock_changed.emit()
 

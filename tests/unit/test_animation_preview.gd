@@ -106,6 +106,23 @@ func test_one_dock_shows_at_a_time() -> void:
 	assert_eq(dock.get_shown(), null, "none")
 
 
+func test_dock_button_has_an_icon_and_room() -> void:
+	var dock := panel.dock
+	var button := panel.dock_button
+	assert_eq(button.icon, AnimationPanel.ANIMATION_ICON, "the Animation menu's icon")
+	assert_eq(button.theme_type_variation, &"DockButton")
+	var box := button.get_theme_stylebox("normal")
+	var tool_box := panel.get_theme_stylebox("normal", &"ToolbarButton")
+	assert_true(box.content_margin_left > tool_box.content_margin_left, "more room than a tool")
+	await layout()
+	var shown_gap := dock.bar.global_position.y - panel.get_global_rect().end.y
+	assert_eq(shown_gap, float(BottomDock.GAP), "room between the dock and its button")
+	panel.set_expanded(false)
+	await layout()
+	var bar_panel: Control = dock.bar.get_parent().get_parent()
+	assert_eq(dock.bar.global_position.y, bar_panel.global_position.y, "none without a dock")
+
+
 func test_hidden_until_the_sheet_has_animations() -> void:
 	main.queue_free()
 	Settings.set_value(&"animation_panel", "auto")

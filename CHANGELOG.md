@@ -132,12 +132,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   `{animation}_{animation_frame:2}` gives walk_00, walk_01….
 - Animation panel: animations get a panel under the preview, between the sidebars, in
   place of the small player over the preview and the Animations window: the preview, the
-  list of animations (with the selected frames, or every frame, at the top) and the
-  chosen animation's details, side by side. It's a dock, like Godot's bottom panel: the
-  Animation button in the row under the preview, or P, shows or hides it; it stays hidden
-  until a sheet has animations, then opens once. Drag its top edge to make it taller (up
-  to half the window, remembered) and the separators between its parts. Frames can still
-  be selected while it's open.
+  list of animations (with the selected frames, or every frame, at the top) and the chosen
+  animation's details, side by side. It's a dock, like Godot's bottom panel: the Animation
+  button (with its icon) in the row under the preview, or P, shows or hides it; it stays
+  hidden until a sheet has animations, then opens once. Drag its top edge to make it
+  taller (up to half the window, remembered) and the separators between its parts. Frames
+  can still be selected while it's open.
 - The animation preview zooms with the wheel (by whole steps with pixel-perfect zoom) and
   fits again with a button or a double-click, pans when zoomed in, has a scrub bar to drag
   through the frames or click to one, and shows the frames over a checkerboard, a colour

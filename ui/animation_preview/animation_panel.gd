@@ -15,6 +15,7 @@ const ADD_ICON := preload("res://assets/icons/Add.svg")
 const DUPLICATE_ICON := preload("res://assets/icons/Duplicate.svg")
 const MIRROR_ICON := preload("res://assets/icons/MirrorX.svg")
 const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
+const ANIMATION_ICON := preload("res://assets/icons/Animation.svg")
 ## The narrowest the list gets
 const MIN_LIST_WIDTH := 120
 
@@ -113,7 +114,7 @@ func setup(sheet_preview: SpritesheetPreview) -> void:
 			)
 	)
 	dock = get_parent() as BottomDock
-	dock_button = dock.add_dock(self, "Animation")
+	dock_button = dock.add_dock(self, "Animation", ANIMATION_ICON)
 	dock_button.tooltip_text = Actions.get_tooltip(
 		&"toggle_animation", "Show or hide the animation panel"
 	)

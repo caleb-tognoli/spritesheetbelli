@@ -224,16 +224,17 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		theme.set_color("icon_pressed_color", type, icon_pressed)
 		theme.set_color("icon_hover_pressed_color", type, icon_pressed)
 		theme.set_color("icon_disabled_color", type, icon_disabled)
-	# Toolbar buttons are flat until hovered or pressed, like Godot's
-	theme.set_type_variation(&"ToolbarButton", "Button")
-	var tool_margins := Vector4(5, 3, 5, 3)
-	theme.set_stylebox("normal", &"ToolbarButton", _box(Color.TRANSPARENT, 4, tool_margins))
-	theme.set_stylebox("hover", &"ToolbarButton", _box(p.hover, 4, tool_margins))
-	theme.set_stylebox("pressed", &"ToolbarButton", _box(Color(p.accent, 0.25), 4, tool_margins))
-	theme.set_stylebox(
-		"hover_pressed", &"ToolbarButton", _box(Color(p.accent, 0.35), 4, tool_margins)
-	)
-	theme.set_stylebox("disabled", &"ToolbarButton", _box(Color.TRANSPARENT, 4, tool_margins))
+	# Toolbar buttons are flat until hovered or pressed, like Godot's. The buttons of the
+	# docks under the preview (see BottomDock) have more room around their text.
+	var tool_margins := {&"ToolbarButton": Vector4(5, 3, 5, 3), &"DockButton": Vector4(8, 4, 8, 4)}
+	for variation: StringName in tool_margins:
+		var margins: Vector4 = tool_margins[variation]
+		theme.set_type_variation(variation, "Button")
+		theme.set_stylebox("normal", variation, _box(Color.TRANSPARENT, 4, margins))
+		theme.set_stylebox("hover", variation, _box(p.hover, 4, margins))
+		theme.set_stylebox("pressed", variation, _box(Color(p.accent, 0.25), 4, margins))
+		theme.set_stylebox("hover_pressed", variation, _box(Color(p.accent, 0.35), 4, margins))
+		theme.set_stylebox("disabled", variation, _box(Color.TRANSPARENT, 4, margins))
 	# Toggle buttons in the sidebar stay subtle when on
 	theme.set_stylebox("pressed", "CheckBox", flat)
 	theme.set_stylebox("hover_pressed", "CheckBox", hover)
