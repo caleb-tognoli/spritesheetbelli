@@ -199,8 +199,8 @@ static func _frame(frame: Dictionary, index: int, duration: Variant) -> Dictiona
 		"trim_top": source.position.y,
 		"trim_right": source_size.x - source.end.x,
 		"trim_bottom": source_size.y - source.end.y,
-		## Whether it has a pivot: frames of a packed atlas do, their own or the atlas's
-		## default, and so do frames of a grid sheet when pivots are turned on in Settings
+		## Whether it has a pivot: every frame does when pivots are turned on in Settings,
+		## its own or the atlas's default, and none do while they're off
 		"has_pivot": has_pivot,
 		## The pivot from 0 to 1 across the frame with its borders, and in pixels from its
 		## top-left corner. Nothing without a pivot.

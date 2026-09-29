@@ -68,6 +68,7 @@ static func parse_tpsheet(text: String) -> Dictionary:
 
 
 func test_unity_tpsheet() -> void:
+	Settings.set_value(&"use_pivots", true)
 	var sheet := Golden.atlas_sheet({"max_size": 256})
 	var result := export_atlas(sheet, "unity")
 	var page := Image.load_from_file(result.path)
@@ -169,6 +170,7 @@ static func floats(values: Array) -> Array:
 
 
 func test_cocos2d_plist() -> void:
+	Settings.set_value(&"use_pivots", true)
 	var sheet := Golden.atlas_sheet(
 		{"max_size": 64, "allow_rotation": true, "default_pivot": Vector2(0.5, 1)}
 	)
@@ -252,6 +254,41 @@ func test_grid_sheet_pivots() -> void:
 	assert_true('pivotX="2.5" pivotY="3"' in xml, xml)
 	# SpriteFrames have no pivots
 	assert_eq(export_grid(sheet, "godot"), godot)
+
+
+## An atlas's frames get pivots only when they're turned on, as a grid sheet's do: "a&b"
+## has one of its own at (4, 3) of its 12×9 frame, and the others the default, the middle
+## of the bottom. Unity's file needs one anyway, so frames turn around their middle.
+func test_atlas_pivots_follow_the_setting() -> void:
+	var sheet := Golden.atlas_sheet({"max_size": 256, "default_pivot": Vector2(0.5, 1)})
+	var json := FileAccess.get_file_as_string(export_atlas(sheet, "json").json_path)
+	assert_false('"pivot"' in json, "none while turned off")
+	var plist: Dictionary = parse_plist(
+		FileAccess.get_file_as_string(export_atlas(sheet, "cocos2d").json_path)
+	)
+	assert_false(plist.frames["a&b.png"].has("anchor"), "no anchor")
+	assert_false(plist.frames["plank0.png"].has("anchor"), "no default anchor")
+	var xml := FileAccess.get_file_as_string(export_atlas(sheet, "sparrow").json_path)
+	assert_false("pivotX" in xml, xml)
+	var tpsheet := parse_tpsheet(
+		FileAccess.get_file_as_string(export_atlas(sheet, "unity").json_path)
+	)
+	assert_eq(tpsheet["a&b"].slice(4), [0.5, 0.5], "the middle")
+	assert_eq(tpsheet["plank0"].slice(4), [0.5, 0.5], "the middle")
+
+	Settings.set_value(&"use_pivots", true)
+	json = FileAccess.get_file_as_string(export_atlas(sheet, "json").json_path)
+	var frames: Dictionary = JSON.parse_string(json).frames
+	var own: Dictionary = frames["a&b.png"].pivot
+	assert_true(is_equal_approx(own.x, 4.0 / 12) and is_equal_approx(own.y, 3.0 / 9), str(own))
+	assert_eq(frames["plank0.png"].pivot, {"x": 0.5, "y": 1.0}, "the default")
+	plist = parse_plist(FileAccess.get_file_as_string(export_atlas(sheet, "cocos2d").json_path))
+	assert_true(plist.frames["a&b.png"].has("anchor"), "its own anchor")
+	assert_eq(plist_numbers(plist.frames["plank0.png"].anchor), [0.5, 0.0], "measured up")
+	tpsheet = parse_tpsheet(FileAccess.get_file_as_string(export_atlas(sheet, "unity").json_path))
+	assert_true(is_equal_approx(tpsheet["a&b"][4], 0.2), str(tpsheet["a&b"]))
+	# The default, measured up across the packed pixels, which stop 2 px above the bottom
+	assert_eq(tpsheet["plank0"].slice(4), [0.5, -0.1], "the default, measured up")
 
 
 ## The top-level "key: value" lines of a Defold file, and its "animations { }" blocks

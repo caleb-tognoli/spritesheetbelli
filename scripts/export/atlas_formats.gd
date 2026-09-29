@@ -204,13 +204,15 @@ static func prepare_user_dir() -> void:
 
 ## The frames of a packed atlas in reading order, from its regions (see
 ## [method AtlasPacker.get_regions]), with unique names from the sprite name pattern and
-## how long each is shown with [param fps]
+## how long each is shown with [param fps]. When pivots are turned on in Settings, each has
+## its pivot, as a grid sheet's frames do: its own, or the atlas's default.
 static func get_frames(
 	sheet: Spritesheet, regions: Array, options: ExportOptions, index_start := 0
 ) -> Array[Dictionary]:
 	var frames: Array[Dictionary] = []
 	var used := {}
 	var durations := Metadata.frame_durations(sheet, options.animation_fps)
+	var with_pivots: bool = Settings.get_value(&"use_pivots")
 	for region: AtlasPacker.Region in regions:
 		var name := SpritesheetExporter.format_sprite_name(
 			options.sprite_name_pattern, sheet, region.coord, index_start
@@ -223,8 +225,9 @@ static func get_frames(
 			"rotated": region.rotated,
 			"source_rect": region.source_rect,
 			"source_size": region.source_size,
-			"pivot": region.pivot,
 		}
+		if with_pivots:
+			frame.pivot = region.pivot
 		if durations.has(frames.size()):
 			frame.duration = durations[frames.size()]
 		elif options.animation_fps > 0:

@@ -171,7 +171,9 @@ func test_grid_without_animations() -> void:
 	check(export_grid(sheet, "grid_plain"))
 
 
+## With pivots turned on
 func test_atlas_turned_on_several_pages() -> void:
+	Settings.set_value(&"use_pivots", true)
 	var sheet := atlas_sheet(
 		{"max_size": 64, "allow_rotation": true, "default_pivot": Vector2(0.5, 1)}
 	)
@@ -187,13 +189,16 @@ func test_atlas_turned_on_several_pages() -> void:
 	check(export_atlas(sheet, "atlas_turned", ExportOptions.FrameSize.FRAME, unturned))
 
 
+## With pivots turned off: none are written, and Unity's frames turn around their middle
 func test_atlas_on_several_pages() -> void:
 	var sheet := atlas_sheet({"max_size": 64})
 	assert_true(PackedLayout.get_page_sizes(sheet).size() > 1, "several pages")
 	check(export_atlas(sheet, "atlas_pages", ExportOptions.FrameSize.CELL))
 
 
+## With pivots turned on
 func test_atlas_on_one_page() -> void:
+	Settings.set_value(&"use_pivots", true)
 	var sheet := atlas_sheet({"max_size": 256})
 	assert_eq(PackedLayout.get_page_sizes(sheet).size(), 1, "one page")
 	check(export_atlas(sheet, "atlas_page", ExportOptions.FrameSize.FRAME))

@@ -19,10 +19,6 @@
 				"w": 64,
 				"h": 64
 			},
-			"pivot": {
-				"x": 0.5,
-				"y": 0.5
-			},
 			"duration": 83,
 			"filename": "plank3.png"
 		},
@@ -44,10 +40,6 @@
 			"sourceSize": {
 				"w": 64,
 				"h": 64
-			},
-			"pivot": {
-				"x": 0.46875,
-				"y": 0.46875
 			},
 			"duration": 125,
 			"filename": "a&b.png"

@@ -8,6 +8,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	Settings.set_value(&"use_pivots", false)
 	remove_dir(dir)
 
 
@@ -139,6 +140,7 @@ func test_frames_are_resized_from_their_originals() -> void:
 
 
 func test_an_atlas_at_twice_the_size() -> void:
+	Settings.set_value(&"use_pivots", true)
 	var sheet := make_sheet()
 	var settings := sheet.atlas_settings
 	settings.padding = 1

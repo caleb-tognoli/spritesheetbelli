@@ -9,9 +9,9 @@ The .tpsheet file of TexturePacker, format 40300, which the free TexturePacker I
 package reads to cut the PNG next to it into sprites. Unity measures from the bottom
 left: y is from the bottom of the page, and the pivot is across the packed pixels from
 their bottom left, so a trimmed frame's pivot stays where it was in the whole frame and
-can be below 0 or above 1. Frames without a pivot (a grid sheet's while pivots are off
-in Settings) turn around their middle. Names escape %, #, : and ; as the importer
-expects. There are no borders for 9-slicing, and Unity can't use turned frames.
+can be below 0 or above 1. While pivots are off in Settings, frames turn around their
+middle. Names escape %, #, : and ; as the importer expects. There are no borders for
+9-slicing, and Unity can't use turned frames.
 }}
 #
 # Sprite sheet data for Unity.

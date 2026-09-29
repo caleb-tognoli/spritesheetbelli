@@ -51,6 +51,10 @@ func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 
 
+func after_each() -> void:
+	Settings.set_value(&"use_pivots", false)
+
+
 ## A frame with a block and a corner pixel of another colour, so turns show
 static func sprite(size: Vector2i, block: Rect2i, color: Color) -> Image:
 	var img := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
@@ -223,6 +227,7 @@ func test_texture_packer_pivots_and_phaser_pages() -> void:
 
 
 func test_round_trips_keep_every_place() -> void:
+	Settings.set_value(&"use_pivots", true)
 	var sheet := packed_sheet()
 	assert_true(PackedLayout.get_page_count(sheet) > 1, "more than one page")
 	var expected := rects_by_name(sheet)

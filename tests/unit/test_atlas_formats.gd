@@ -9,6 +9,10 @@ func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 
 
+func after_each() -> void:
+	Settings.set_value(&"use_pivots", false)
+
+
 ## A frame with a block and a corner pixel of another colour, so turns and flips show
 static func sprite(size: Vector2i, block: Rect2i, color: Color) -> Image:
 	var img := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
@@ -69,6 +73,7 @@ func test_turned_frames_come_back_from_texture_packer_json() -> void:
 
 
 func test_pivots_are_written() -> void:
+	Settings.set_value(&"use_pivots", true)
 	sheet.add_frames([sprite(Vector2i(20, 10), Rect2i(0, 0, 20, 10), Color.RED)] as Array[Image])
 	sheet.set_pivots([Vector2i(0, 0)] as Array[Vector2i], Vector2(10, 10))
 	pack_with({})
@@ -80,6 +85,7 @@ func test_pivots_are_written() -> void:
 
 
 func test_frames_without_a_pivot_use_the_default() -> void:
+	Settings.set_value(&"use_pivots", true)
 	sheet.add_frames([sprite(Vector2i(8, 8), Rect2i(0, 0, 8, 8), Color.RED)] as Array[Image])
 	pack_with({"default_pivot": Vector2(0.5, 1)})
 	var json: Dictionary = read_json(export_with("json").json_path)
