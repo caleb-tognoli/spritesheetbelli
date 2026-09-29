@@ -1,5 +1,5 @@
 extends "res://tests/test_case.gd"
-## The data files for Unity, Defold, Construct 3, Cocos2d-x and CSS: that they parse, and
+## The data files for Unity, Defold, Cocos2d-x and CSS: that they parse, and
 ## that engines reading them find each frame where it is, trimmed or turned
 
 const Golden := preload("res://tests/unit/test_golden_formats.gd")
@@ -283,19 +283,6 @@ func test_defold_tile_source() -> void:
 	var bob: Dictionary = animations[2]
 	assert_eq([bob.start_tile, bob.end_tile, bob.playback], ["1", "6", "PLAYBACK_LOOP_PINGPONG"])
 	assert_eq(parse_defold(export_grid(Golden.grid_sheet(false), "defold")).animations, [])
-
-
-func test_construct3_import_settings() -> void:
-	var sheet := Golden.grid_sheet(true)
-	var json: Dictionary = JSON.parse_string(export_grid(sheet, "construct3"))
-	assert_eq(json["import-mode"], "spritesheet")
-	assert_eq(json.spritesheet["horizontal-cells"], 3.0)
-	assert_eq(json.spritesheet["vertical-cells"], 2.0)
-	assert_eq(json.animation, {"speed": 12.0, "loop": true, "ping-pong": false}, "walk's")
-	var options := ExportOptions.new()
-	options.animation_fps = 6
-	json = JSON.parse_string(export_grid(Golden.grid_sheet(false), "construct3", options))
-	assert_eq(json.animation, {"speed": 6.0, "loop": true, "ping-pong": false}, "the export's")
 
 
 ## The rules of a CSS file by selector: the text between the braces

@@ -205,7 +205,7 @@ func test_bundled_templates() -> void:
 	var formats := AtlasFormats.get_formats()
 	# Project files and command lines name formats by these ids
 	var ids := ["json", "json-array", "phaser", "atlas", "sparrow", "godot", "unity", "defold"]
-	ids.append_array(["construct3", "cocos2d", "css", "scss"])
+	ids.append_array(["cocos2d", "css", "scss"])
 	for id: String in ids:
 		assert_true(AtlasFormats.is_bundled(id), id)
 	for file in files:

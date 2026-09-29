@@ -83,14 +83,13 @@ A small desktop tool made with Godot.</p>
   Starling XML, a Godot `SpriteFrames` resource with the sheet's animations (or every
   frame in one "default" animation when there are none), a Unity `.tpsheet`, a Cocos2d-x
   `.plist`, CSS or SCSS sprites (with the @2x image for high-density screens when exported
-  at scales 1 and 2), and for grid sheets a Defold tile source and Construct 3 import
-  settings, for a grid sheet or every page of a packed atlas, with pivots and turned
-  frames where the format has them. Every data file comes from a template, and your own
-  templates can add formats (see [Data file templates](#data-file-templates)). For Unity,
-  install the free
-  [TexturePacker Importer](https://assetstore.unity.com/packages/tools/sprite-management/texturepacker-importer-16641)
-  package and export with the Unity data file into your project's Assets folder, next to
-  the PNG: Unity cuts it into one sprite per frame, named after the frames, with their
+  at scales 1 and 2), and for grid sheets a Defold tile source, for a grid sheet or every
+  page of a packed atlas, with pivots and turned frames where the format has them. Every
+  data file comes from a template, and your own templates can add formats (see [Data file
+  templates](#data-file-templates)). For Unity, install the free [TexturePacker Importer](
+  https://assetstore.unity.com/packages/tools/sprite-management/texturepacker-importer-166
+  41) package and export with the Unity data file into your project's Assets folder, next
+  to the PNG: Unity cuts it into one sprite per frame, named after the frames, with their
   pivots, and cuts it again whenever you export over it.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
   size and the view you left them at.

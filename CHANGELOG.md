@@ -245,12 +245,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   and `--atlas-data` take any format, templates in the templates folder included.
 - More data file formats for game engines: a Unity `.tpsheet` for the free TexturePacker
   Importer package, a Defold tile source (grid sheets, with the animations as tile
-  ranges), Construct 3's `c3-import-settings.json` (grid sheets), a Cocos2d-x `.plist`
-  (format 3, with trimmed and turned frames and pivots) and CSS or SCSS sprites (a class
-  for every frame, and a Sass map and mixin). Templates get the `minus`, `times`,
-  `divide`, `css-ident` and `tpsheet-escape` filters, a grid sheet's columns, rows, cell
-  size, padding, spacing and extrusion, each frame's cell, and each animation's
-  from_cell, to_cell and reversed.
+  ranges), a Cocos2d-x `.plist` (format 3, with trimmed and turned frames and pivots) and
+  CSS or SCSS sprites (a class for every frame, and a Sass map and mixin). Templates get
+  the `minus`, `times`, `divide`, `css-ident` and `tpsheet-escape` filters, a grid sheet's
+  columns, rows, cell size, padding, spacing and extrusion, each frame's cell, and each
+  animation's from_cell, to_cell and reversed.
 - A GIF of each animation: "Every animation" in the Animated GIF export's Animation list
   writes a GIF of each animation, at its own speed, into a folder, named with a pattern
   (`{animation}` by default, or with `{count}`). On the command line, `--gifs <folder>`.
