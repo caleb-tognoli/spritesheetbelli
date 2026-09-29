@@ -107,7 +107,15 @@ func test_dropping_a_folder_without_images_links_it() -> void:
 func test_a_folder_without_images_is_linked_paused_when_reloading_is_off() -> void:
 	Settings.set_value(&"watch_sources", false)
 	await add_folder()
+	# Its tooltip in the Sprites panel says so too, until reloading is on again
+	var panel: SpritesPanel = main.layout_controller.sprites_panel
+	panel.visible = true
+	panel.refresh()
+	var label: Label = panel.folders_box.get_children()[-1].get_child(1)
+	assert_true(label.tooltip_text.ends_with("\nPaused: Reload changed files is off."))
 	Settings.set_value(&"watch_sources", true)
+	label = panel.folders_box.get_children()[-1].get_child(1)
+	assert_true(label.tooltip_text.ends_with("\nImages added to it are added here."))
 	assert_eq(Global.spritesheet.linked_folders, PackedStringArray([dir]), "still linked")
 	assert_false(Notify.message_dialog.visible, "no error")
 	assert_eq(Notify.get_toasts()[-1], "Linked linked, paused: Reload changed files is off.")

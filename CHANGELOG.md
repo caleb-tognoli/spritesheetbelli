@@ -191,7 +191,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   renamed images are followed: their frames link to the new name without asking. Linked
   folders are listed at the top of the Sprites panel, with *Unlink folder*, saved in the
   project and followed again when it's opened. *Reload changed files* turns this off too;
-  linking a folder while it's off says it's paused. Not in the web version.
+  linking a folder while it's off says it's paused, and so does its tooltip. Not in the
+  web version.
 - View > Pixel Grid (Shift+G) draws faint lines between pixels once you zoom in to 600%
   or more. The lines follow each frame's own pixels, so a frame scaled 2× gets a line
   every two pixels of the sheet. It's on by default and can also be turned off in

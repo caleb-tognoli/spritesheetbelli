@@ -205,7 +205,7 @@ func _show_folders() -> void:
 		elif watched:
 			tip += tr("Images added to it are added here.")
 		else:
-			tip += tr("Not followed while Reload changed files is off.")
+			tip += tr("Paused: Reload changed files is off.")
 		label.tooltip_text = tip
 		row.add_child(label)
 		var unlink := Button.new()
