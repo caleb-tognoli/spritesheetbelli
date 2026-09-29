@@ -45,6 +45,11 @@ static func get_paths(
 			return gifs
 		ExportOptions.Target.GIF:
 			return PackedStringArray([path])
+		ExportOptions.Target.STRIPS:
+			var strips := PackedStringArray()
+			for strip in StripExporter.get_strips(sheet, options, path):
+				strips.append(strip.path)
+			return strips
 	# A packed sheet is written as its pages
 	if sheet.layout == Spritesheet.Layout.PACKED:
 		return SpritesheetExporter.get_page_paths(path, PackedLayout.get_page_sizes(sheet).size())

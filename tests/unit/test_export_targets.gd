@@ -205,7 +205,7 @@ func test_a_gif_of_each_animation() -> void:
 	assert_false(dialog.animation_fps.visible, "animations have their own speed")
 	assert_eq(dialog.target_list.get_item_text(0), "hero · GIFs")
 	assert_eq(dialog.files_info.text, "Files: walk.gif, idle.gif")
-	assert_eq(rows.gif_example.text, "For example: walk.gif, idle.gif")
+	assert_eq(rows.example.text, "For example: walk.gif, idle.gif")
 	assert_eq(dialog.output_info.text, "2 GIFs of 8×8 px")
 	rows.gif_pattern.line_edit.text = "hero_{animation}"
 	rows.gif_pattern.line_edit.text_changed.emit(rows.gif_pattern.line_edit.text)
@@ -243,6 +243,47 @@ func test_a_gif_of_each_animation() -> void:
 	var gifs := WebFiles.OUTPUT_DIR.path_join("spritesheet_gifs")
 	assert_eq(DirAccess.get_files_at(gifs).size(), 2)
 	remove_dir(gifs)
+
+
+func test_gamemaker_strips() -> void:
+	sheet.add_animation(SheetAnimation.create("walk", sheet.get_sorted_coords().slice(0, 2)))
+	set_targets([make_target(ExportOptions.Target.IMAGE, "hero.png")])
+	Actions.run(&"export")
+	var rows := dialog.animation_files
+	assert_false(rows.strip_pattern.visible)
+	dialog.select_type(ExportOptions.Target.STRIPS)
+	assert_eq(dialog.output.path, dir.path_join("hero"), "a folder")
+	assert_true(rows.strip_pattern.visible)
+	assert_false(rows.gif_pattern.visible)
+	assert_true(dialog.background_picker.visible)
+	assert_eq(dialog.target_list.get_item_text(0), "hero · GameMaker strips")
+	assert_eq(rows.example.text, "For example: walk_strip2.png")
+	assert_eq(dialog.output_info.text, "1 strips of 8×8 px frames")
+	rows.strip_pattern.line_edit.text = "spr_{animation}_strip{count}"
+	rows.strip_pattern.line_edit.text_changed.emit(rows.strip_pattern.line_edit.text)
+	assert_eq(rows.example.text, "For example: spr_walk_strip2.png")
+	dialog.hide()
+	assert_eq(
+		ExportTarget.list(sheet)[0].options.strip_name_pattern, "spr_{animation}_strip{count}"
+	)
+	assert_true(await main.files.exports.export_again())
+	var strip := Image.load_from_file(dir.path_join("hero/spr_walk_strip2.png"))
+	assert_eq(strip.get_size(), Vector2i(16, 8))
+	assert_true("Saved 1 strips to hero." in "\n".join(Notify.get_toasts()))
+
+	# In a browser, the folder is downloaded
+	ExportController.in_browser = true
+	assert_true(await main.files.exports.export_again())
+	var strips := WebFiles.OUTPUT_DIR.path_join("spritesheet_strips")
+	assert_eq(Array(DirAccess.get_files_at(strips)), ["spr_walk_strip2.png"])
+	remove_dir(strips)
+
+	# A packed sheet has them too
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	ExportController.in_browser = false
+	Actions.run(&"export")
+	assert_false(dialog.type.is_item_disabled(dialog.type.selected))
+	dialog.hide()
 
 
 func test_export_writes_the_selected_target() -> void:

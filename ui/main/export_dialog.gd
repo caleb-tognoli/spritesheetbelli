@@ -58,6 +58,17 @@ const TYPES := [
 		),
 	},
 	{
+		"target": T.STRIPS,
+		"name": "GameMaker strips",
+		"icon": preload("res://assets/icons/ImageStrip.svg"),
+		"about":
+		(
+			"Each animation as a PNG of its frames side by side, in a folder, named for "
+			+ "GameMaker to cut it into frames when imported (walk_strip8.png). Frames in no "
+			+ "animation are left out."
+		),
+	},
+	{
 		"target": T.CUSTOM,
 		"name": "Custom template",
 		"icon": preload("res://assets/icons/TextFile.svg"),
@@ -74,6 +85,7 @@ const PACKED_TYPES: Array[ExportOptions.Target] = [
 	ExportOptions.Target.ATLAS,
 	ExportOptions.Target.SPRITES,
 	ExportOptions.Target.GIF,
+	ExportOptions.Target.STRIPS,
 	ExportOptions.Target.CUSTOM,
 ]
 const LABEL_WIDTH := 170
@@ -230,7 +242,7 @@ func _init() -> void:
 	transparent_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	transparent_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background_picker.add_child(transparent_label)
-	add_row(_settings, "Background", background_picker, [T.IMAGE, T.DATA, T.GIF])
+	add_row(_settings, "Background", background_picker, [T.IMAGE, T.DATA, T.GIF, T.STRIPS])
 	gif_animation.tooltip_text = "Which animation the GIF plays"
 	add_row(_settings, "Animation", gif_animation, [T.GIF])
 	gif_scale.min_value = 1
@@ -445,7 +457,8 @@ func get_options() -> ExportOptions:
 ## Asks where the selected target writes, then runs [param then] with the path picked
 func browse(then := Callable()) -> void:
 	var options := get_options()
-	var folder_title := "Export GIFs" if options.target == T.GIF else "Export Sprites"
+	var folder_titles := {T.GIF: "Export GIFs", T.STRIPS: "Export Strips"}
+	var folder_title: String = folder_titles.get(options.target, "Export Sprites")
 	output.browse(
 		ExportController.suggested_path(options), options.get_file_extension(), then, folder_title
 	)
@@ -629,6 +642,9 @@ func _update_labels(options: ExportOptions) -> void:
 		T.GIF when options.gif_every_animation:
 			var gif_size := sheet.sprite_size * options.gif_scale
 			output_info.text = (tr("%d GIFs of %d×%d px") % [files.size(), gif_size.x, gif_size.y])
+		T.STRIPS:
+			var cell := sheet.sprite_size
+			output_info.text = tr("%d strips of %d×%d px frames") % [files.size(), cell.x, cell.y]
 		T.GIF:
 			var animation := options.get_gif_animation(sheet)
 			var count := (

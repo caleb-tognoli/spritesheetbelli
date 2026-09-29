@@ -94,6 +94,8 @@ func get_format_name() -> String:
 			name = "GIF"
 			if options.gif_every_animation:
 				name = TranslationServer.translate("GIFs")
+		ExportOptions.Target.STRIPS:
+			name = TranslationServer.translate("GameMaker strips")
 		ExportOptions.Target.CUSTOM:
 			name = options.custom_template.strip_edges().get_file()
 			if name.is_empty():

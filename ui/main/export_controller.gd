@@ -71,7 +71,9 @@ static func suggested_path(options: ExportOptions) -> String:
 	var base_name := FileController.suggested_name(base)
 	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
 		base_name += "_atlas"
-	if options.target == ExportOptions.Target.GIF and options.gif_every_animation:
+	if options.target == ExportOptions.Target.STRIPS:
+		base_name += "_strips"
+	elif options.target == ExportOptions.Target.GIF and options.gif_every_animation:
 		base_name += "_gifs"
 	elif options.target == ExportOptions.Target.GIF and options.gif_animation:
 		base_name += "_" + options.gif_animation.validate_filename()
@@ -99,14 +101,14 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 			return await Notify.run_busy(
 				"Packing the atlas", _export_atlas.bind(path, options), slow
 			)
-		ExportOptions.Target.GIF when options.gif_every_animation:
-			return await _export_gifs(path, options)
 		ExportOptions.Target.GIF:
 			return await _export_gif(path, options)
 		ExportOptions.Target.SPRITES:
 			return await Notify.run_busy(
 				"Exporting sprites", _save_sprites.bind(path, options), slow
 			)
+		ExportOptions.Target.STRIPS:
+			return await Notify.run_busy("Exporting strips", _save_strips.bind(path, options), slow)
 	return await Notify.run_busy("Exporting", _export_image.bind(path, options), slow)
 
 
@@ -154,8 +156,28 @@ func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
 	return {"message": tr("Saved %d images to %s.") % [written.size(), folder.get_file()]}
 
 
-## Writes the animation chosen in [param options] as an animated GIF
+## Writes a GameMaker strip of each animation into [param folder]
+func _save_strips(folder: String, options: ExportOptions) -> Dictionary:
+	_empty_download_folder(folder)
+	var result := StripExporter.write(Global.spritesheet, options, folder)
+	if result.error == ERR_DOES_NOT_EXIST:
+		return {"error": tr("The spritesheet is empty.")}
+	if result.error == ERR_OUT_OF_MEMORY:
+		return {"error": result.message}
+	if result.error != OK:
+		return {
+			"error": tr("Could not export to %s (%s).") % [result.path, error_string(result.error)]
+		}
+	unlink_overwritten(result.paths)
+	WebFiles.download_folder(folder, folder.get_file() + ".zip")
+	return {"message": tr("Saved %d strips to %s.") % [result.paths.size(), folder.get_file()]}
+
+
+## Writes the animation chosen in [param options] as an animated GIF, or a GIF of each
+## animation into the folder at [param path]
 func _export_gif(path: String, options: ExportOptions) -> Dictionary:
+	if options.gif_every_animation:
+		return await _export_gifs(path, options)
 	var result := await GifEncoder.write(
 		Global.spritesheet,
 		options,

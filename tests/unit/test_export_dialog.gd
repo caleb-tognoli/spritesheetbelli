@@ -94,6 +94,7 @@ func test_files_listed_are_the_files_written() -> void:
 			o.gif_every_animation = true,
 		"out"
 	)
+	await export_and_compare("strips", target.call(ExportOptions.Target.STRIPS), "out")
 	await export_and_compare("atlas", target.call(ExportOptions.Target.ATLAS))
 
 	# Sprites: names taken by a file already there or by a frame before are numbered

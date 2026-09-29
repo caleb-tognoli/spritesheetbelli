@@ -252,6 +252,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - A GIF of each animation: "Every animation" in the Animated GIF export's Animation list
   writes a GIF of each animation, at its own speed, into a folder, named with a pattern
   (`{animation}` by default, or with `{count}`). On the command line, `--gifs <folder>`.
+- GameMaker strips: a new export writes each animation as a PNG of its frames side by
+  side, named like `walk_strip8.png`, which GameMaker's importer cuts into frames. The
+  name pattern (like `spr_{animation}_strip{count}`) and a background can be set; frames
+  in no animation are left out, and a sheet without animations gives one strip of every
+  frame. On the command line, `--strips <folder>`.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

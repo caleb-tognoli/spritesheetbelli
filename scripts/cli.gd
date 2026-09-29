@@ -29,6 +29,9 @@ Options:
                                  project (.sbelli) to write
   --sprites <folder>             Also export every frame as its own PNG
   --gifs <folder>                Also write a GIF of each animation, named after it
+  --strips <folder>              Also write a GameMaker strip of each animation
+                                 (walk_strip8.png: its frames side by side), or of
+                                 every frame when there are no animations
   --columns <n>                  Frames per row when packing (default: all in one row)
   --sprite-size <width>x<height> Resize the sprites
   --padding <px>                 Empty pixels around the sheet (or each atlas page)
@@ -77,7 +80,7 @@ const FLAGS: Array[String] = [
 	"--help", "--atlas", "--detect", "--rotate", "--repack", "--keep-background"
 ]
 ## Options saying where to write, without which a project writes its own exports
-const OUTPUTS: Array[String] = ["--out", "--sprites", "--gifs"]
+const OUTPUTS: Array[String] = ["--out", "--sprites", "--gifs", "--strips"]
 ## Options of what --out is written as, which the exports of a project have their own of
 const OUT_OPTIONS: Array[String] = [
 	"--metadata", "--template", "--atlas-data", "--atlas", "--fps", "--animation", "--scale"
@@ -185,6 +188,8 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		code = _write_sprites(sheet, options["--sprites"], export, say)
 	if options.has("--gifs") and code == 0:
 		code = await _write_gifs(sheet, options["--gifs"], export, say)
+	if options.has("--strips") and code == 0:
+		code = _write_strips(sheet, options["--strips"], export, say)
 	return code
 
 
@@ -218,6 +223,8 @@ static func _write_target(sheet: Spritesheet, target: ExportTarget, say: Callabl
 		return 1
 	if export.target == ExportOptions.Target.SPRITES:
 		return _write_sprites(sheet, path, export, say)
+	if export.target == ExportOptions.Target.STRIPS:
+		return _write_strips(sheet, path, export, say)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	if export.packs(sheet):
 		return _write_atlas(sheet, path, export, say)
@@ -471,6 +478,21 @@ static func _write_sprites(
 		say.call("Error: could not write %s" % error)
 	say.call("Wrote %d sprites to %s" % [written.size(), folder])
 	return 1 if errors else 0
+
+
+## Writes a GameMaker strip of each animation into [param folder]
+static func _write_strips(
+	sheet: Spritesheet, folder: String, export: ExportOptions, say: Callable
+) -> int:
+	var result := StripExporter.write(sheet, export, folder)
+	if result.error == ERR_OUT_OF_MEMORY:
+		say.call("Error: " + result.message)
+		return 1
+	if result.error != OK:
+		say.call("Error: could not write %s (%s)" % [result.path, error_string(result.error)])
+		return 1
+	say.call("Wrote %d strips to %s" % [result.paths.size(), folder])
+	return 0
 
 
 ## Writes each page of a packed sheet as an image, numbered when there are more

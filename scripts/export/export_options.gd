@@ -13,6 +13,7 @@ enum Target {
 	## A data file from [member custom_template], next to the spritesheet image or the pages
 	## of a packed atlas, see [method packs]
 	CUSTOM,
+	STRIPS,  ## Each animation as a GameMaker strip, in a folder, see [StripExporter]
 }
 enum Existing { ADD_NUMBER, OVERWRITE, SKIP }
 ## The size a packed atlas's data file gives each frame, which engines line frames up by
@@ -66,6 +67,9 @@ var gif_scale := 1
 var gif_every_animation := false
 ## File name of each GIF of [member gif_every_animation], see [AnimationFiles]
 var gif_name_pattern := "{animation}"
+## File name of each GameMaker strip, see [AnimationFiles]. GameMaker takes the frame
+## count from the "_strip" at the end.
+var strip_name_pattern := "{animation}_strip{count}"
 
 const _SHEET_KEYS: Array[StringName] = [
 	&"target",
@@ -86,6 +90,7 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"gif_scale",
 	&"gif_every_animation",
 	&"gif_name_pattern",
+	&"strip_name_pattern",
 ]
 
 ## Whether the settings applied had a pattern, which is then kept even when it's the default
@@ -185,7 +190,7 @@ func get_file_extension() -> String:
 	match target:
 		Target.IMAGE:
 			return image_format
-		Target.SPRITES:
+		Target.SPRITES, Target.STRIPS:
 			return ""
 		Target.GIF:
 			return "" if gif_every_animation else "gif"
