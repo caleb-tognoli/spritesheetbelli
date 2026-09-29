@@ -93,7 +93,8 @@ A small desktop tool made with Godot.</p>
   pivots, and cuts it again whenever you export over it.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
   size and the view you left them at.
-- Light and dark themes, an accent colour, interface scaling and keyboard shortcuts.
+- Light and dark themes, or the system's as it changes, an accent colour of your choice or
+  the system's, interface scaling and keyboard shortcuts.
 
 <details>
 <summary>Packed layout</summary>

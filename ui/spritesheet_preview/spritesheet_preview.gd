@@ -155,6 +155,7 @@ func _ready() -> void:
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	Settings.changed.connect(apply_settings.unbind(1))
+	Global.theme_applied.connect(apply_settings)
 	apply_settings()
 
 
@@ -168,7 +169,7 @@ func apply_settings() -> void:
 	checker_size = Settings.get_value(&"checker_size")
 	zoom_speed = Settings.get_value(&"zoom_speed")
 	index_start = Settings.get_value(&"index_start")
-	selection_color = Settings.get_value(&"accent_color")
+	selection_color = Global.accent_color
 	selection_tint = Settings.get_value(&"selection_tint") / 100.0
 	queue_redraw()
 

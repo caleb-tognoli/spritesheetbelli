@@ -275,6 +275,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   (`hero_0@2x.png`, `hero_0@2x.json`). CSS and SCSS sprites show the @2x image on
   high-density screens when 2 is among the scales. On the command line, `--scales 1,2`,
   which applies to `--strips` too.
+- Theme: a System option, now the default, follows the operating system's dark or light
+  mode as it changes, and a System accent colour setting uses the operating system's
+  accent colour where it has one.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

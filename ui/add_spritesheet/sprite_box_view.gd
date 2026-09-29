@@ -100,13 +100,14 @@ func _init() -> void:
 
 func _ready() -> void:
 	Settings.changed.connect(apply_settings.unbind(1))
+	Global.theme_applied.connect(apply_settings)
 	apply_settings()
 
 
 func apply_settings() -> void:
 	background_color = Settings.get_value(&"background_color")
 	box_color = Color(Settings.get_value(&"grid_color"), 1.0)
-	selection_color = Settings.get_value(&"accent_color")
+	selection_color = Global.accent_color
 	selection_tint = Settings.get_value(&"selection_tint") / 100.0
 	show_checkerboard = Settings.get_value(&"show_checkerboard")
 	_checker = ImageUtils.checker_texture(Settings.get_value(&"checker_size"))

@@ -38,8 +38,11 @@ const DEFAULTS := {
 	&"atlas_power_of_two": false,
 	&"atlas_square": false,
 	# Interface
-	&"theme": "dark",
+	# "system", following the operating system's dark mode, "dark" or "light"
+	&"theme": "system",
 	&"accent_color": AppTheme.DEFAULT_ACCENT,
+	# The operating system's accent colour instead of accent_color, where it has one
+	&"system_accent": false,
 	&"ui_scale": 0.0,
 	&"confirm_grid_shrink": true,
 	&"restore_session": false,

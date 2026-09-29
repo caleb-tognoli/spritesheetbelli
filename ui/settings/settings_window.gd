@@ -60,8 +60,9 @@ const CATEGORIES := [
 	[
 		"Interface",
 		[
-			[&"theme", "Theme", "option", ["Dark", "Light"], ["dark", "light"]],
+			[&"theme", "Theme", "option", ["System", "Dark", "Light"], ["system", "dark", "light"]],
 			[&"accent_color", "Accent colour", "color"],
+			[&"system_accent", "System accent colour", "check"],
 			[
 				&"ui_scale",
 				"Interface scale",
@@ -101,6 +102,8 @@ const DETAILS := {
 	&"atlas_dedupe": "Frames that look the same are packed once and share their place",
 	&"atlas_power_of_two": "Pages are 256, 512, 1024… px wide and tall, for older engines",
 	&"atlas_square": "Pages are as wide as they're tall",
+	&"theme": "System follows the operating system's dark or light mode",
+	&"system_accent": "Use the operating system's accent colour, where it has one",
 	&"ui_scale": "Automatic follows the screen's scale",
 }
 const REVERT_ICON := preload("res://assets/icons/Reload.svg")
@@ -169,6 +172,8 @@ func _init() -> void:
 
 func _ready() -> void:
 	Settings.changed.connect(_refresh)
+	# The accent colour may be the operating system's, which changes on its own
+	Global.theme_applied.connect(_refresh.bind(&"accent_color"))
 	about_to_popup.connect(func() -> void: _refresh(&""))
 	_filter()
 
@@ -266,6 +271,13 @@ func _create_control(key: StringName, kind: String, options: Array) -> Control:
 			picker.custom_minimum_size = Vector2(60, 0)
 			picker.color_changed.connect(func(color: Color) -> void: Settings.set_value(key, color))
 			_refreshers[key] = func() -> void: picker.color = Settings.get_value(key)
+			if key == &"accent_color":
+				# Shows the colour in use, the operating system's while it's used
+				_refreshers[key] = func() -> void:
+					picker.color = Global.accent_color
+					picker.disabled = (
+						Settings.get_value(&"system_accent") and Global.has_system_accent()
+					)
 			return picker
 		"spin":
 			var spin := SpinBox.new()

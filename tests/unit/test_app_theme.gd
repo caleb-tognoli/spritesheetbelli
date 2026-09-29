@@ -3,10 +3,107 @@ extends "res://tests/test_case.gd"
 
 const ALIGN_ICON := "res://assets/icons/ControlAlignCenter.svg"
 const PIN_ICON := "res://assets/icons/Pin.svg"
+const THEME_SETTINGS: Array[StringName] = [&"theme", &"accent_color", &"system_accent"]
+
+## The operating system's, replaced in tests
+var _is_system_dark: Callable = Global.is_system_dark
+var _get_system_accent: Callable = Global.get_system_accent
+## The stand-in operating system's dark mode and accent colour
+var _system_dark := true
+var _system_accent := Color.TRANSPARENT
 
 
 func after_each() -> void:
-	AppTheme.recolor_icons(Settings.get_value(&"theme") == "light")
+	Global.is_system_dark = _is_system_dark
+	Global.get_system_accent = _get_system_accent
+	_system_dark = true
+	_system_accent = Color.TRANSPARENT
+	for key in THEME_SETTINGS:
+		Settings.set_value(key, Settings.DEFAULTS[key])
+	Global.apply_theme()
+	AppTheme.recolor_icons(Global.light_theme)
+
+
+func test_the_theme_follows_the_system_by_default() -> void:
+	assert_eq(Settings.DEFAULTS[&"theme"], "system")
+	assert_false(Settings.DEFAULTS[&"system_accent"], "the app's own accent")
+	_use_stand_in_system()
+	Global.apply_theme()
+	assert_false(Global.light_theme, "dark like the system")
+	var background := _background()
+	_system_dark = false
+	Global.update_system_theme()
+	assert_true(Global.light_theme, "light like the system")
+	assert_ne(_background(), background, "applied")
+
+
+func test_the_system_theme_is_applied_again_when_it_changes() -> void:
+	_use_stand_in_system()
+	_system_dark = false
+	Global.apply_theme()
+	var applied := [0]
+	var count := func() -> void: applied[0] += 1
+	Global.theme_applied.connect(count)
+	Global.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	assert_eq(applied[0], 0, "not while the system is the same")
+	_system_dark = true
+	Global.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	assert_eq(applied[0], 1, "the system turned dark")
+	assert_false(Global.light_theme)
+	Settings.set_value(&"theme", "light")
+	assert_eq(applied[0], 2, "choosing a theme applies it")
+	assert_true(Global.light_theme)
+	_system_dark = false
+	Global.update_system_theme()
+	_system_dark = true
+	Global.update_system_theme()
+	assert_eq(applied[0], 2, "a chosen theme doesn't follow the system")
+	Global.theme_applied.disconnect(count)
+
+
+func test_the_system_accent_colour() -> void:
+	_use_stand_in_system()
+	_system_accent = Color.ORANGE
+	Global.apply_theme()
+	assert_eq(Global.accent_color, AppTheme.DEFAULT_ACCENT, "only when chosen")
+	Settings.set_value(&"system_accent", true)
+	assert_eq(Global.accent_color, Color.ORANGE)
+	var theme := ThemeDB.get_project_theme()
+	assert_eq(theme.get_color("checkbox_checked_color", "CheckBox"), Color.ORANGE, "applied")
+	_system_accent = Color.GREEN
+	Global.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	assert_eq(Global.accent_color, Color.GREEN, "follows the system's")
+	assert_eq(theme.get_color("checkbox_checked_color", "CheckBox"), Color.GREEN)
+	# Where the system has none, e.g. on the web, the chosen colour
+	_system_accent = Color.TRANSPARENT
+	Global.update_system_theme()
+	assert_eq(Global.accent_color, AppTheme.DEFAULT_ACCENT, "falls back")
+	Settings.set_value(&"accent_color", Color.RED)
+	assert_eq(Global.accent_color, Color.RED, "to the chosen one")
+
+
+func test_the_settings_window_shows_the_accent_in_use() -> void:
+	_use_stand_in_system()
+	_system_accent = Color.ORANGE
+	var window := SettingsWindow.new()
+	add_child(window)
+	window.popup_centered()
+	var picker := window.get_control(&"accent_color") as ColorPickerButton
+	var theme_option := window.get_control(&"theme") as OptionButton
+	assert_eq(theme_option.get_item_text(theme_option.selected), "System")
+	assert_false(picker.disabled)
+	(window.get_control(&"system_accent") as CheckBox).button_pressed = true
+	assert_true(Settings.get_value(&"system_accent"))
+	assert_true(picker.disabled, "the system's is used")
+	assert_eq(picker.color, Color.ORANGE, "shows the system's")
+	_system_accent = Color.GREEN
+	Global.update_system_theme()
+	assert_eq(picker.color, Color.GREEN, "as it changes")
+	_system_accent = Color.TRANSPARENT
+	Global.update_system_theme()
+	assert_false(picker.disabled, "the system has none")
+	assert_eq(picker.color, AppTheme.DEFAULT_ACCENT)
+	window.queue_free()
 
 
 func test_dark_theme_keeps_icon_colours() -> void:
@@ -131,3 +228,12 @@ func test_windows_inside_the_main_one_have_an_opaque_title_bar() -> void:
 
 static func _distance(a: Color, b: Color) -> float:
 	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
+
+
+func _use_stand_in_system() -> void:
+	Global.is_system_dark = func() -> bool: return _system_dark
+	Global.get_system_accent = func() -> Color: return _system_accent
+
+
+static func _background() -> Color:
+	return (ThemeDB.get_project_theme().get_stylebox("panel", "Panel") as StyleBoxFlat).bg_color

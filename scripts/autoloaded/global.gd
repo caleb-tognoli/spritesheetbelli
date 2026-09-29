@@ -1,6 +1,9 @@
 extends Node
 ## Holds the open document and keeps the window title in sync with it.
 
+## The theme was built again, see [method apply_theme]
+signal theme_applied
+
 var document := Document.new()
 ## True when started from the command line to pack or export, without the window
 var cli_mode := false
@@ -8,6 +11,17 @@ var cli_mode := false
 var ui_scale := 1.0
 ## Places and sizes the main window, on desktops only, see [method WindowPlacement.is_supported]
 var window_placement: WindowPlacement
+## Whether the interface is light: the [code]theme[/code] setting's, or the operating
+## system's for "System"
+var light_theme := false
+## The interface's accent colour: the [code]accent_color[/code] setting's, or the
+## operating system's when [code]system_accent[/code] is on and it has one
+var accent_color := AppTheme.DEFAULT_ACCENT
+## Whether the operating system is in dark mode, true where it can't tell. Tests replace it.
+var is_system_dark := func() -> bool:
+	return not DisplayServer.is_dark_mode_supported() or DisplayServer.is_dark_mode()
+## The operating system's accent colour, transparent where it has none. Tests replace it.
+var get_system_accent := func() -> Color: return DisplayServer.get_accent_color()
 ## The open document's spritesheet
 var spritesheet: Spritesheet:
 	get:
@@ -27,8 +41,12 @@ func _ready() -> void:
 		func(key: StringName) -> void:
 			if key == &"ui_scale":
 				apply_ui_scale()
-			elif key in [&"theme", &"accent_color"]:
+			elif key in [&"theme", &"accent_color", &"system_accent"]:
 				apply_theme()
+	)
+	# Follows the operating system's dark mode and accent colour as they change
+	DisplayServer.set_system_theme_change_callback(
+		func() -> void: update_system_theme.call_deferred()
 	)
 	get_tree().node_added.connect(_on_node_added)
 	# Placed now, before the main window is set up, so it only changes once after the splash
@@ -52,16 +70,51 @@ func free_unused_nodes(holder: Object) -> void:
 			(value as Node).free()
 
 
+func _notification(what: int) -> void:
+	# In case the operating system didn't say its theme changed
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN and not cli_mode:
+		update_system_theme()
+
+
 ## Fills the project theme (an empty resource in project.godot) with the generated one,
 ## so every control and window uses it, whatever its parents are
 func apply_theme() -> void:
-	var light: bool = Settings.get_value(&"theme") == "light"
+	light_theme = _is_light_theme()
+	accent_color = _get_accent_color()
 	var project_theme := ThemeDB.get_project_theme()
 	if project_theme == null:
 		return
 	project_theme.clear()
-	project_theme.merge_with(AppTheme.build(light, Settings.get_value(&"accent_color")))
+	project_theme.merge_with(AppTheme.build(light_theme, accent_color))
 	get_tree().root.propagate_notification(Control.NOTIFICATION_THEME_CHANGED)
+	theme_applied.emit()
+
+
+## Applies the theme again when it follows the operating system's dark mode or accent
+## colour and they changed
+func update_system_theme() -> void:
+	if _is_light_theme() != light_theme or _get_accent_color() != accent_color:
+		apply_theme()
+
+
+func _is_light_theme() -> bool:
+	match Settings.get_value(&"theme"):
+		"light":
+			return true
+		"system":
+			return not is_system_dark.call()
+	return false
+
+
+## Whether the operating system has an accent colour, see [member get_system_accent]
+func has_system_accent() -> bool:
+	return (get_system_accent.call() as Color).a > 0
+
+
+func _get_accent_color() -> Color:
+	if Settings.get_value(&"system_accent") and has_system_accent():
+		return Color(get_system_accent.call() as Color, 1.0)
+	return Settings.get_value(&"accent_color")
 
 
 ## Scales the whole interface, the main window and every separate one; "Automatic"

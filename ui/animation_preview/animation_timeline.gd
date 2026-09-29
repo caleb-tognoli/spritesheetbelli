@@ -665,7 +665,7 @@ func _valid_indices(indices: Array[int]) -> Array[int]:
 
 
 func _draw_overlay() -> void:
-	var accent: Color = Settings.get_value(&"accent_color")
+	var accent := Global.accent_color
 	var to_overlay := _overlay.get_global_transform().affine_inverse()
 	if _drop_index >= 0:
 		var gap := float(row.get_theme_constant(&"separation"))

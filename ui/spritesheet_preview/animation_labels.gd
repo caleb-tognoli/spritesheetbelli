@@ -260,10 +260,10 @@ func draw(canvas: SpritesheetPreview) -> void:
 
 
 func _get_palette() -> AppTheme.Palette:
-	var key := [Settings.get_value(&"theme"), Settings.get_value(&"accent_color")]
+	var key := [Global.light_theme, Global.accent_color]
 	if key != _palette_for:
 		_palette_for = key
-		_palette = AppTheme.palette(key[0] == "light", key[1])
+		_palette = AppTheme.palette(key[0], key[1])
 	return _palette
 
 

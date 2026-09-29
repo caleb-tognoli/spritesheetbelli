@@ -11,6 +11,14 @@ func test_values_persist_to_file() -> void:
 	assert_eq(Settings.get_value(&"checker_size"), 16)
 
 
+func test_theme_settings_persist() -> void:
+	Settings.set_value(&"theme", "light")
+	Settings.set_value(&"system_accent", true)
+	Settings.load_settings(Settings.path)
+	assert_eq(Settings.get_value(&"theme"), "light")
+	assert_true(Settings.get_value(&"system_accent"))
+
+
 func test_values_keep_their_type() -> void:
 	Settings.set_value(&"checker_size", 12.0)
 	assert_eq(typeof(Settings.get_value(&"checker_size")), TYPE_INT)
