@@ -182,13 +182,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Animations made from Aseprite tags take the tag's colour, unless it's Aseprite's default
   black.
 - Add Folder and dropping a folder link it, even one with no images yet: images added to
-  it later are added as
-  sprites where *New sprites go to* says, as one undo step, with a notice. Deleting images
-  from a linked folder asks whether to remove their frames, and renamed images are
-  followed: their frames link to the new name without asking. Linked folders are listed
-  at the top of the Sprites panel, with *Unlink folder*, saved in the project and followed
-  again when it's opened. *Reload changed files* turns this off too. Not in the web
-  version.
+  it later are added as sprites where *New sprites go to* says, as one undo step, with a
+  notice. Deleting images from a linked folder asks whether to remove their frames, and
+  renamed images are followed: their frames link to the new name without asking. Linked
+  folders are listed at the top of the Sprites panel, with *Unlink folder*, saved in the
+  project and followed again when it's opened. *Reload changed files* turns this off too;
+  linking a folder while it's off says it's paused. Not in the web version.
 - View > Pixel Grid (Shift+G) draws faint lines between pixels once you zoom in to 600%
   or more. The lines follow each frame's own pixels, so a frame scaled 2× gets a line
   every two pixels of the sheet. It's on by default and can also be turned off in

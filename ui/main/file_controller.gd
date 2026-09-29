@@ -237,7 +237,8 @@ func add_sprites_from_folder(folder: String) -> void:
 
 
 ## Links [param folders], which have no images, as one undoable step, so images saved there
-## are added (see [FolderWatcher]), and says so. False when none is linked, as in a browser.
+## are added (see [FolderWatcher]), and says so, or that they wait for Reload changed files.
+## False when none is linked, as in a browser.
 static func link_empty_folders(folders: PackedStringArray) -> bool:
 	var linked := _to_link(folders)
 	if linked.is_empty():
@@ -252,7 +253,10 @@ static func link_empty_folders(folders: PackedStringArray) -> bool:
 	var names: PackedStringArray = []
 	for folder in linked:
 		names.append(folder.get_file() if folder.get_file() else folder)
-	Notify.toast(TranslationServer.translate("Watching %s for new images.") % ", ".join(names))
+	var notice := TranslationServer.translate("Watching %s for new images.")
+	if not Settings.get_value(&"watch_sources"):
+		notice = TranslationServer.translate("Linked %s, paused: Reload changed files is off.")
+	Notify.toast(notice % ", ".join(names))
 	return true
 
 

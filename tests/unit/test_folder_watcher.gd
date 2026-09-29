@@ -104,6 +104,15 @@ func test_dropping_a_folder_without_images_links_it() -> void:
 	assert_eq(Notify.get_toasts()[-1], "Watching linked for new images.")
 
 
+func test_a_folder_without_images_is_linked_paused_when_reloading_is_off() -> void:
+	Settings.set_value(&"watch_sources", false)
+	await add_folder()
+	Settings.set_value(&"watch_sources", true)
+	assert_eq(Global.spritesheet.linked_folders, PackedStringArray([dir]), "still linked")
+	assert_false(Notify.message_dialog.visible, "no error")
+	assert_eq(Notify.get_toasts()[-1], "Linked linked, paused: Reload changed files is off.")
+
+
 func test_adding_images_does_not_link() -> void:
 	var path := write("a.png", Color.RED)
 	await main.files.add_sprites_from_paths(PackedStringArray([path]))
