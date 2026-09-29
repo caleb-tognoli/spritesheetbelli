@@ -1,0 +1,55 @@
+{{! spritesheetbelli template
+name: Phaser 3 multi-atlas JSON
+extension: json
+per_page: false
+rotation: clockwise
+}}
+{
+	"textures": [{{#pages}}
+		{
+			"image": "{{image | json-escape}}",
+			"format": "RGBA8888",
+			"size": {
+				"w": {{w}},
+				"h": {{h}}
+			},
+			"scale": 1,
+			"frames": [{{#frames}}
+				{
+					"frame": {
+						"x": {{x}},
+						"y": {{y}},
+						"w": {{w}},
+						"h": {{h}}
+					},
+					"rotated": {{rotated}},
+					"trimmed": {{trimmed}},
+					"spriteSourceSize": {
+						"x": {{trim_left}},
+						"y": {{trim_top}},
+						"w": {{w}},
+						"h": {{h}}
+					},
+					"sourceSize": {
+						"w": {{source_w}},
+						"h": {{source_h}}
+					},{{#has_pivot}}
+					"pivot": {
+						"x": {{pivot_x | json}},
+						"y": {{pivot_y | json}}
+					},{{/has_pivot}}
+					"filename": "{{name | json-escape}}"
+				}{{^@last}},{{/@last}}{{#@last}}
+			{{/@last}}{{/frames}}]
+		}{{^@last}},{{/@last}}{{#@last}}
+	{{/@last}}{{/pages}}],
+	"meta": {
+		"app": "{{app | json-escape}}",
+		"version": "{{version | json-escape}}"{{#animations}}{{#@first}},
+		"animations": {{{/@first}}
+			"{{name | json-escape}}": [{{#frames}}
+				"{{name | json-escape}}"{{^@last}},{{/@last}}{{#@last}}
+			{{/@last}}{{/frames}}]{{^@last}},{{/@last}}{{#@last}}
+		}{{/@last}}{{/animations}}
+	}
+}

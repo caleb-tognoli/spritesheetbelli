@@ -196,3 +196,19 @@ func test_array_json() -> void:
 	assert_true(json.frames is Array)
 	assert_eq(json.frames[0].filename, "0.png")
 	assert_eq(SheetData.parse_json(JSON.stringify(json)).frames.size(), 1, "readable")
+
+
+## Every format has its template, whose header agrees with the list
+func test_bundled_templates() -> void:
+	var files := DirAccess.get_files_at("res://templates")
+	for format: String in AtlasFormats.FORMATS:
+		var path: String = AtlasFormats.FORMATS[format].template
+		assert_true(path.get_file() in files, path)
+		var template := AtlasFormats.get_template(format)
+		assert_eq(template.error, "", path)
+		assert_eq(template.header.get("name"), AtlasFormats.FORMATS[format].name, path)
+		assert_true(template.header.get("extension", "") != "", path)
+		assert_true(template.header.get("per_page") is bool, path)
+		assert_true(
+			template.header.get("rotation") in ["clockwise", "counter-clockwise", "none"], path
+		)

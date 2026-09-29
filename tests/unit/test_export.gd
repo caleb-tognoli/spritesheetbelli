@@ -161,9 +161,8 @@ func test_godot_sprite_frames() -> void:
 func test_rows_are_not_animations() -> void:
 	sheet.move_frame(Vector2i(2, 0), Vector2i(0, 1))
 	sheet.set_grid_size(Vector2i(2, 2))
-	assert_eq(Metadata.frame_tags(sheet), [] as Array[Dictionary])
+	assert_eq(Metadata.animations(sheet, false), [] as Array[Dictionary])
 	var frames := Metadata.grid_frames(sheet, ExportOptions.new())
-	assert_eq(Metadata.animation_frame_names(sheet, frames), {})
 	var json: Dictionary = JSON.parse_string(
 		Metadata.sheet_json(sheet, frames, "a.png", Vector2i(8, 8), 12)
 	)
@@ -242,9 +241,13 @@ func test_animations_in_metadata() -> void:
 	)
 	assert_true('"loop": false' in tres, "once doesn't loop")
 	assert_true('"speed": 6.0' in tres, "its own speed")
-	var tags := Metadata.frame_tags(sheet)
-	assert_eq(tags[0].direction, "reverse")
-	assert_eq(tags[0].repeat, "1")
+	var json: Dictionary = JSON.parse_string(
+		Metadata.sheet_json(
+			sheet, Metadata.grid_frames(sheet, ExportOptions.new()), "a.png", Vector2i(8, 8), 12
+		)
+	)
+	assert_eq(json.meta.frameTags[0].direction, "reverse")
+	assert_eq(json.meta.frameTags[0].repeat, "1")
 
 
 func test_only_the_written_extension_is_left_out() -> void:

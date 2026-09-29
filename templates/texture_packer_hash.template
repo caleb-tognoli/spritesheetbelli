@@ -1,0 +1,63 @@
+{{! spritesheetbelli template
+name: TexturePacker JSON (hash)
+extension: json
+per_page: true
+rotation: clockwise
+}}
+{
+	"frames": {{{#frames}}
+		"{{file_name | json-escape}}": {
+			"frame": {
+				"x": {{x}},
+				"y": {{y}},
+				"w": {{w}},
+				"h": {{h}}
+			},
+			"rotated": {{rotated}},
+			"trimmed": {{trimmed}},
+			"spriteSourceSize": {
+				"x": {{trim_left}},
+				"y": {{trim_top}},
+				"w": {{w}},
+				"h": {{h}}
+			},
+			"sourceSize": {
+				"w": {{source_w}},
+				"h": {{source_h}}
+			}{{#has_pivot}},
+			"pivot": {
+				"x": {{pivot_x | json}},
+				"y": {{pivot_y | json}}
+			}{{/has_pivot}}{{#duration}},
+			"duration": {{duration}}{{/duration}}
+		}{{^@last}},{{/@last}}{{#@last}}
+	{{/@last}}{{/frames}}},
+	"meta": {
+		"app": "{{app | json-escape}}",
+		"version": "{{version | json-escape}}",
+		"image": "{{image | json-escape}}",
+		"format": "RGBA8888",
+		"size": {
+			"w": {{image_w}},
+			"h": {{image_h}}
+		},
+		"scale": "1",
+		"frameTags": [{{#all_frames}}{{#animations}}
+			{
+				"name": "{{name | json-escape}}",
+				"from": {{from}},
+				"to": {{to}},
+				"direction": "{{direction}}"{{#once}},
+				"repeat": "1"{{/once}}
+			}{{^@last}},{{/@last}}{{#@last}}
+		{{/@last}}{{/animations}}{{/all_frames}}]{{#animations}}{{#@first}},
+		"animations": {{{/@first}}
+			"{{name | json-escape}}": [{{#frames}}
+				"{{file_name | json-escape}}"{{^@last}},{{/@last}}{{#@last}}
+			{{/@last}}{{/frames}}]{{^@last}},{{/@last}}{{#@last}}
+		}{{/@last}}{{/animations}}{{#related}}{{#@first}},
+		"related_multi_packs": [{{/@first}}
+			"{{. | json-escape}}"{{^@last}},{{/@last}}{{#@last}}
+		]{{/@last}}{{/related}}
+	}
+}

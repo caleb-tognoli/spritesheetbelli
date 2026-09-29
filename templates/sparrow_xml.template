@@ -1,0 +1,15 @@
+{{! spritesheetbelli template
+name: Sparrow / Starling XML
+extension: xml
+per_page: true
+rotation: clockwise
+
+Turned frames are stored turned clockwise, and their size is as they are on the page.
+}}
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="{{image | xml-escape}}" width="{{image_w}}" height="{{image_h}}">
+{{#frames}}
+	<SubTexture name="{{name | xml-escape}}" x="{{x}}" y="{{y}}" width="{{packed_w}}" height="{{packed_h}}"{{#trimmed}} frameX="{{trim_left | negate}}" frameY="{{trim_top | negate}}" frameWidth="{{source_w}}" frameHeight="{{source_h}}"{{/trimmed}}{{#rotated}} rotated="true"{{/rotated}}{{#has_pivot}} pivotX="{{pivot_px_x | round 3}}" pivotY="{{pivot_px_y | round 3}}"{{/has_pivot}}/>
+{{/frames}}
+</TextureAtlas>
+

@@ -1,0 +1,44 @@
+{{! spritesheetbelli template
+name: Godot SpriteFrames
+extension: tres
+per_page: false
+rotation: none
+
+A frame's margin puts back the transparent borders it was packed without. SpriteFrames
+can't ping-pong, so the way back is written out. Without animations, every frame goes in
+one "default" animation, which AnimatedSprite2D plays.
+}}
+[gd_resource type="SpriteFrames" load_steps={{frame_count | plus page_count | plus 1}} format=3]
+
+{{#pages}}
+[ext_resource type="Texture2D" path="{{image}}" id="{{index | plus 1}}_sheet"]
+{{/pages}}
+
+{{#frames}}
+[sub_resource type="AtlasTexture" id="AtlasTexture_{{index}}"]
+atlas = ExtResource("{{page | plus 1}}_sheet")
+region = Rect2({{x}}, {{y}}, {{packed_w}}, {{packed_h}})
+{{#trimmed}}
+margin = Rect2({{trim_left}}, {{trim_top}}, {{trim_left | plus trim_right}}, {{trim_top | plus trim_bottom}})
+{{/trimmed}}
+
+{{/frames}}
+[resource]
+animations = [{{#animations}}{
+"frames": [{{#played_frames}}{
+"duration": {{relative_duration}},
+"texture": SubResource("AtlasTexture_{{index}}")
+}{{^@last}}, {{/@last}}{{/played_frames}}],
+"loop": {{loop}},
+"name": &"{{name | json-escape}}",
+"speed": {{fps}}
+}{{^@last}}, {{/@last}}{{/animations}}{{^animations}}{
+"frames": [{{#frames}}{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_{{index}}")
+}{{^@last}}, {{/@last}}{{/frames}}],
+"loop": true,
+"name": &"default",
+"speed": {{fps}}
+}{{/animations}}]
+

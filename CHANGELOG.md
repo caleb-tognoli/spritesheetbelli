@@ -351,6 +351,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   the colour picker no longer makes the app lag on big sheets.
 - Remove Background Colour works on every frame when none are selected, like Align and
   Trim, and is available whenever the sheet has frames.
+- Every data file (TexturePacker JSON hash and array, Phaser 3 multi-atlas, libGDX /
+  Spine `.atlas`, Sparrow / Starling XML, Godot SpriteFrames) is written from a template
+  in `templates/`, filled by a small Mustache-like engine. The files are the same as
+  before.
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

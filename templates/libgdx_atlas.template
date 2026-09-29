@@ -1,0 +1,28 @@
+{{! spritesheetbelli template
+name: libGDX / Spine .atlas
+extension: atlas
+per_page: false
+rotation: counter-clockwise
+
+Trimmed frames keep their size with borders ("orig") and where the packed pixels are in
+it ("offset"), which libGDX measures from the bottom. A turned frame has its size before
+turning: libGDX's TexturePacker writes "rotate: true" for regions it turned 90°
+counter-clockwise, and its TextureAtlas and Spine's runtimes read them that way.
+}}
+{{#pages}}
+
+{{image}}
+size: {{w}}, {{h}}
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+{{#frames}}
+{{name}}
+  rotate: {{rotated}}
+  xy: {{x}}, {{y}}
+  size: {{w}}, {{h}}
+  orig: {{source_w}}, {{source_h}}
+  offset: {{trim_left}}, {{trim_bottom}}
+  index: -1
+{{/frames}}
+{{/pages}}
