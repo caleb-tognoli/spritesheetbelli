@@ -46,17 +46,14 @@ mouse_filter = 1
 
 [node name="PreviewContainer" type="SubViewportContainer" parent="Layout/Stage"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-stretch = true
+layout_mode = 0
+offset_right = 1000.0
+offset_bottom = 600.0
 
 [node name="SubViewport" type="SubViewport" parent="Layout/Stage/PreviewContainer"]
 handle_input_locally = false
 size = Vector2i(1000, 600)
+size_2d_override_stretch = true
 render_target_update_mode = 4
 
 [node name="SpritesheetPreview" type="Node2D" parent="Layout/Stage/PreviewContainer/SubViewport"]

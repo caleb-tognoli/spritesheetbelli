@@ -320,7 +320,7 @@ func open_menu(index: int, position: Vector2) -> void:
 		type_menu.set_item_checked(i, type_menu.get_item_id(i) == animation.mode)
 	# Only the names chosen can be hidden
 	menu.set_item_disabled(menu.get_item_index(Item.HIDE), Global.spritesheet.label_playing_only)
-	var screen_position := area.container.get_screen_transform() * position
+	var screen_position := area.stage.get_screen_transform() * position
 	menu.popup(Rect2i(Vector2i(screen_position), Vector2i.ZERO))
 
 
@@ -350,7 +350,7 @@ func pick_color(index: int) -> void:
 		return
 	_coloring = index
 	color_picker.color = Global.spritesheet.animations[index].color
-	var below := area.container.get_screen_transform() * Vector2(rect.position.x, rect.end.y + 4)
+	var below := area.stage.get_screen_transform() * Vector2(rect.position.x, rect.end.y + 4)
 	color_popup.popup(Rect2i(Vector2i(below), Vector2i.ZERO))
 	# Kept inside the window, like the flyover
 	var window := area.get_window()

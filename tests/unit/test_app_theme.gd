@@ -42,9 +42,24 @@ func test_every_icon_follows_the_theme() -> void:
 
 func test_icons_over_sprites_keep_their_colours() -> void:
 	AppTheme.recolor_icons(true)
-	var pin := AppTheme.unthemed_icon(load(PIN_ICON)) as DPITexture
-	assert_true(pin.color_map.is_empty())
+	var raster := CanvasIcon.new(load(PIN_ICON)).get_raster(16).get_image()
+	var colors := {}
+	for y in raster.get_height():
+		for x in raster.get_width():
+			var color := raster.get_pixel(x, y)
+			if color.a == 1:
+				colors[color.to_html(false)] = true
+	assert_true(colors.has("e0e0e0"), "the dark theme's colour")
+	assert_false(colors.has("5a5a5a"), "not the light theme's")
 	assert_false((load(PIN_ICON) as DPITexture).color_map.is_empty(), "the original is themed")
+
+
+func test_icons_over_sprites_are_rasterised_at_the_size_drawn() -> void:
+	var icon := CanvasIcon.new(load(PIN_ICON))
+	for pixels: int in [9, 16, 28, 56]:
+		assert_eq(icon.get_raster(pixels).get_size(), Vector2(pixels, pixels))
+	var raster := icon.get_raster(28)
+	assert_true(icon.get_raster(28) == raster, "made once")
 
 
 func test_pressed_icons_are_the_accent_in_both_themes() -> void:

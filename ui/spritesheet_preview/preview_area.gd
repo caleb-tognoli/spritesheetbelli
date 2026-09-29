@@ -65,6 +65,10 @@ func _ready() -> void:
 	_update_hint_color()
 
 	_build_overlay()
+	stage.resized.connect(_fit_viewport)
+	# The window's size changes in its own pixels when the interface's scale does
+	get_viewport().size_changed.connect(_fit_viewport)
+	_fit_viewport()
 	update_ui()
 	spritesheet_preview.preview_updated.connect(update_ui)
 	spritesheet_preview.zoom_changed.connect(update_zoom_label)
@@ -169,6 +173,25 @@ func show_notice(text: String, tooltip := "") -> void:
 	notice_label.text = text
 	notice.tooltip_text = tooltip
 	notice.visible = not text.is_empty()
+
+
+## Fills the stage with the preview, rendered at the screen's resolution. Stretched from
+## the stage's size in interface pixels, it would be blurred when the interface is scaled.
+## It still shows the stage's size in interface pixels, so zoom and input don't change,
+## and the container is scaled down to fit its pixels in the stage.
+func _fit_viewport() -> void:
+	if not is_inside_tree():
+		return
+	var viewport := spritesheet_preview.get_viewport() as SubViewport
+	var ui_scale := get_viewport().get_final_transform().get_scale().x
+	var pixels := Vector2i((stage.size * ui_scale).round())
+	# The container is never smaller than the viewport, so that goes first
+	viewport.size = pixels
+	viewport.size_2d_override = (
+		Vector2i.ZERO if is_equal_approx(ui_scale, 1) else Vector2i(stage.size.round())
+	)
+	container.scale = Vector2.ONE / ui_scale
+	container.size = Vector2(pixels)
 
 
 ## As wide as the toolbar's widest group, so the splits around the preview never squeeze

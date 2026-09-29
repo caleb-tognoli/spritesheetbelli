@@ -7,8 +7,7 @@ const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
 ## On-screen size of the lock icon on locked cells
 const LOCK_ICON_SIZE := 28.0
 
-## Drawn over the cells, so the same in both themes
-static var _lock_icon := AppTheme.unthemed_icon(preload("res://assets/icons/Lock.svg"))
+static var _lock_icon := CanvasIcon.new(preload("res://assets/icons/Lock.svg"))
 
 ## The sheet shown, an empty one until [method update]
 var sheet := Spritesheet.new()
@@ -143,7 +142,7 @@ func _draw_lock(canvas: SpritesheetPreview, rect: Rect2, pixel: float) -> void:
 	canvas.draw_rect(rect, Color(0, 0, 0, 0.25))
 	var icon_size := minf(LOCK_ICON_SIZE * pixel, minf(rect.size.x, rect.size.y) * 0.6)
 	var icon_rect := Rect2(rect.get_center() - Vector2.ONE * icon_size / 2, Vector2.ONE * icon_size)
-	canvas.draw_texture_rect(_lock_icon, icon_rect, false, LOCKED_COLOR)
+	_lock_icon.draw(canvas, icon_rect, LOCKED_COLOR)
 
 
 ## Lines between the cells, or around each cell when there's space between them

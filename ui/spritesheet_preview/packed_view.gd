@@ -11,8 +11,7 @@ const OUTLINE_COLOR := Color(1, 1, 1, 0.3)
 const PIN_SIZE := 16.0
 const TURNED_COLOR := Color(0.5, 0.8, 1.0)
 
-## Drawn over the frames, so the same in both themes
-static var _pin_icon := AppTheme.unthemed_icon(preload("res://assets/icons/Pin.svg"))
+static var _pin_icon := CanvasIcon.new(preload("res://assets/icons/Pin.svg"))
 
 var sheet: Spritesheet
 ## Size of each page
@@ -207,8 +206,8 @@ func _draw_marks(canvas: SpritesheetPreview, coord: Vector2i, rect: Rect2, pixel
 		var corner := Rect2(rect.end.x - pin - pixel * 2, rect.position.y + pixel * 2, pin, pin)
 		# A shadow keeps the light icon visible on light frames
 		var shadow := Rect2(corner.position + Vector2.ONE * pixel, corner.size)
-		canvas.draw_texture_rect(_pin_icon, shadow, false, Color(0, 0, 0, 0.7))
-		canvas.draw_texture_rect(_pin_icon, corner, false)
+		_pin_icon.draw(canvas, shadow, Color(0, 0, 0, 0.7))
+		_pin_icon.draw(canvas, corner)
 	if place.rotated:
 		var corner := rect.position
 		canvas.draw_colored_polygon(

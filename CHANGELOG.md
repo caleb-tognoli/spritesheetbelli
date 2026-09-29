@@ -382,6 +382,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - In the web version, dialogs and other windows had a see-through title bar that showed
   the window behind through it; it's now opaque in the dialogs' colour, with the title and
   close button readable in both themes.
+- The lock on locked cells and the pin on pinned frames are crisp at any zoom instead of
+  pixelated.
+- With the interface scaled (150%, 200%…), the preview is sharp: frames, lines, numbers
+  and icons were drawn at 100% and stretched, which blurred them.
 
 ## 0.2.0
 

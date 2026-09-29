@@ -478,15 +478,6 @@ static func swatch(color: Color) -> Texture2D:
 	return _swatches[color]
 
 
-## A copy of [param icon] in its own colours, for drawing over sprites rather than on the
-## interface
-static func unthemed_icon(icon: Texture2D) -> Texture2D:
-	var copy := icon.duplicate() as Texture2D
-	if copy is DPITexture:
-		(copy as DPITexture).color_map = {}
-	return copy
-
-
 static func _box(
 	color: Color,
 	radius := 0,
