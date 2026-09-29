@@ -236,13 +236,12 @@ func test_user_templates() -> void:
 		"{{! name: A tile set\nextension: tiles\nlayouts: grid\n}}\n{{#frames}}{{name}}\n{{/frames}}"
 	)
 	write_text(AtlasFormats.user_dir.path_join("list.csv.template"), "{{#frames}}{{x}}{{/frames}}")
-	write_text(AtlasFormats.user_dir.path_join("json.template"), "not the bundled one")
 	write_text(AtlasFormats.user_dir.path_join("notes.txt"), "not a template")
 	AtlasFormats.refresh()
 	var formats := AtlasFormats.get_formats()
 	assert_eq(Array(formats.slice(-2)), ["tiles", "list.csv"], "after the bundled ones")
 	assert_false(AtlasFormats.is_bundled("tiles"))
-	assert_eq(AtlasFormats.get_error("json"), "", "the bundled one is kept")
+	assert_false(AtlasFormats.replaces_bundled("tiles"))
 	assert_true(AtlasFormats.has_format("tiles", "grid"))
 	assert_false(AtlasFormats.has_format("tiles", "packed"), "grid only")
 	# Without a header: named after its file, both layouts, no turned frames
@@ -262,6 +261,44 @@ func test_user_templates() -> void:
 	AtlasFormats.user_dir = user_dir
 	AtlasFormats.refresh()
 	assert_false(AtlasFormats.has_format("tiles"))
+
+
+## A template in the user's folder with the id of a bundled one replaces it, listed and
+## named as the user's, until it's taken out
+func test_user_template_replaces_the_bundled_one() -> void:
+	var user_dir := AtlasFormats.user_dir
+	AtlasFormats.user_dir = dir.path_join("replacing")
+	DirAccess.make_dir_recursive_absolute(AtlasFormats.user_dir)
+	AtlasFormats.refresh()
+	var before := AtlasFormats.get_formats()
+	var json := AtlasFormats.user_dir.path_join("json.template")
+	write_text(json, "{{! name: TexturePacker JSON (hash)\nextension: js\n}}\n{{frame_count}}")
+	AtlasFormats.refresh()
+	var formats := AtlasFormats.get_formats()
+	assert_eq(Array(formats).count("json"), 1, "listed once")
+	assert_eq(formats[-1], "json", "with the user's")
+	assert_false(AtlasFormats.is_bundled("json"))
+	assert_true(AtlasFormats.replaces_bundled("json"))
+	assert_eq(AtlasFormats.get_format_name("json"), "TexturePacker JSON (hash) (yours)")
+	assert_eq(AtlasFormats.get_template_path("json"), json)
+	assert_eq(AtlasFormats.get_extension("json"), "js")
+	sheet.add_frames([sprite(Vector2i(8, 8), Rect2i(0, 0, 8, 8), Color.RED)] as Array[Image])
+	pack_with({})
+	var result := export_with("json")
+	assert_eq(result.error, OK)
+	assert_eq(FileAccess.get_file_as_string(result.json_path), "1")
+	# Taken out, the bundled one is back where it was
+	DirAccess.remove_absolute(json)
+	AtlasFormats.refresh()
+	assert_true(AtlasFormats.is_bundled("json"))
+	assert_false(AtlasFormats.replaces_bundled("json"))
+	assert_eq(AtlasFormats.get_format_name("json"), "TexturePacker JSON (hash)")
+	assert_eq(
+		AtlasFormats.get_template_path("json"), AtlasFormats.BUNDLED_DIR.path_join("json.template")
+	)
+	assert_eq(AtlasFormats.get_formats(), before)
+	AtlasFormats.user_dir = user_dir
+	AtlasFormats.refresh()
 
 
 ## A template file given by its path, and what's wrong with one

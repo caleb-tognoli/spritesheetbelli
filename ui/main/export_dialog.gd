@@ -267,8 +267,8 @@ func _init() -> void:
 	templates_folder.text = "Open templates folder"
 	templates_folder.icon = FOLDER_ICON
 	templates_folder.tooltip_text = (
-		"Templates put in this folder are listed with the bundled ones. It has a copy of "
-		+ "every bundled template to start from."
+		"Templates put in this folder are listed with the bundled ones, and one named like "
+		+ "a bundled one replaces it. It has a copy of every bundled template to start from."
 	)
 	# Browsers can't open a folder of the user's
 	var folder_targets := [] if WebFiles.is_web() else [T.DATA, T.ATLAS, T.CUSTOM]

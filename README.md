@@ -174,8 +174,10 @@ spritesheetbelli --headless -- --export hero.sbelli --out hero.png --template my
 Every data file is written from a template: plain text with Mustache-like tags. The
 bundled ones are in `templates/`; put your own in the templates folder (Export dialog >
 Open templates folder) to list them with the others, or pick one file with Custom
-template. On the command line a template's id is its file name without `.template`
-(`--metadata <id>`, `--atlas-data <id>`), and `--template <file>` uses any file.
+template. A template there with the file name of a bundled one (like `json.template`)
+replaces it, marked "(yours)"; take it out to get the bundled one back. On the command
+line a template's id is its file name without `.template` (`--metadata <id>`,
+`--atlas-data <id>`), and `--template <file>` uses any file.
 
     {{name}}                 a value; nothing when it isn't set
     {{page.w}}  {{list.0}}   a value inside another

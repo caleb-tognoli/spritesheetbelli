@@ -42,7 +42,8 @@ Options:
                                  atlas (libGDX / Spine), sparrow (Starling XML),
                                  godot (SpriteFrames) or the id of a template in the
                                  user templates folder (its file name without
-                                 .template)
+                                 .template), which replaces a bundled one of the
+                                 same id
   --fps <n>                      Animation speed in the data file and GIFs (default 12)
   --atlas                        Write --out as a packed atlas with a data file. Packed
                                  sheets are always written as atlases.

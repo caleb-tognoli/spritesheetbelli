@@ -22,7 +22,9 @@ its file name without ".template": --metadata <id> or --atlas-data <id>.
 
 The "bundled" folder has a copy of every bundled template to start from. It's written
 again each time this folder is opened from the Export dialog, so copy a template out of
-it, with a name of its own, before changing it.
+it before changing it. A template here with the file name of a bundled one, like
+json.template, replaces that format, in the Export dialog (where its name is followed by
+"(yours)") and on the command line. Take it out to get the bundled one back.
 
 A template is plain text with Mustache-like tags, filled with the frames, animations and
 pages of the export. The comment at its top says the format's name, the extension of its
@@ -35,7 +37,8 @@ layouts it can describe. How to write one:
 static var user_dir := "user://templates"
 
 ## Formats by id, in the order they're listed, found by [method refresh]:
-## [code]{"name": String, "path": String, "layouts": PackedStringArray, "bundled": bool}[/code]
+## [code]{"name": String, "path": String, "layouts": PackedStringArray, "bundled": bool,
+## "replaces_bundled": bool}[/code]
 static var _formats := {}
 ## Templates by path, parsed when first used and again when the file has changed:
 ## [code]{"template": Template, "text": String}[/code]
@@ -43,7 +46,7 @@ static var _templates := {}
 
 
 ## Looks for templates again, to list the ones added to [member user_dir] or taken out.
-## A user template with the id of a bundled one is left out.
+## A user template with the id of a bundled one replaces it, listed with the user's.
 static func refresh() -> void:
 	_formats.clear()
 	for bundled: bool in [true, false]:
@@ -52,7 +55,7 @@ static func refresh() -> void:
 		var listed := bundled or DirAccess.dir_exists_absolute(dir)
 		var files := DirAccess.get_files_at(dir) if listed else PackedStringArray()
 		for file: String in files:
-			if file.get_extension() != EXTENSION or _formats.has(file.get_basename()):
+			if file.get_extension() != EXTENSION:
 				continue
 			var path := dir.path_join(file)
 			var header := _load(path).header
@@ -65,6 +68,7 @@ static func refresh() -> void:
 						"path": path,
 						"layouts": _layouts_of(header),
 						"bundled": bundled,
+						"replaces_bundled": _formats.has(file.get_basename()),
 					}
 				)
 			)
@@ -73,6 +77,8 @@ static func refresh() -> void:
 				return a.name.naturalnocasecmp_to(b.name) < 0
 		)
 		for format in found:
+			# Listed where the user's are, not where the bundled one was
+			_formats.erase(format.id)
 			_formats[format.id] = format
 
 
@@ -94,8 +100,15 @@ static func has_format(format: String, layout := "") -> bool:
 	return format in get_formats(layout)
 
 
+## Whether [param format] is a bundled format, not one of the user's own
 static func is_bundled(format: String) -> bool:
 	return has_format(format) and _formats[format].bundled
+
+
+## Whether [param format] is the user's own template in place of the bundled one with its
+## id
+static func replaces_bundled(format: String) -> bool:
+	return has_format(format) and _formats[format].replaces_bundled
 
 
 ## The file of the template of [param format]: a format's id, or else the path of a
@@ -129,10 +142,12 @@ static func get_header(format: String) -> Dictionary:
 	return get_template(format).header
 
 
-## The format's name, or else its file name
+## The format's name, or else its file name. The user's template in place of a bundled
+## one has "(yours)" after it, as it's most often named like the bundled one.
 static func get_format_name(format: String) -> String:
 	var fallback := get_template_path(format).get_file().trim_suffix("." + EXTENSION)
-	return str(get_header(format).get("name", fallback))
+	var name := str(get_header(format).get("name", fallback))
+	return name + " (yours)" if replaces_bundled(format) else name
 
 
 ## The extension of the format's file, or else the one in its template's file name, like

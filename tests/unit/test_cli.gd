@@ -328,6 +328,24 @@ func test_data_formats_from_templates() -> void:
 	DirAccess.remove_absolute(tiles)
 	AtlasFormats.refresh()
 
+	# One with a bundled one's id replaces it
+	var godot := AtlasFormats.user_dir.path_join("godot.template")
+	write_text(godot, "{{! extension: tres\n}}\nmine: {{frame_count}}")
+	AtlasFormats.refresh()
+	out = dir.path_join("mine.png")
+	for key: String in ["--metadata", "--atlas-data"]:
+		var args := ["--pack", frames, "--out", out, key, "godot"]
+		if key == "--atlas-data":
+			args.append("--atlas")
+		result = await run(args)
+		assert_eq(result[0], "0", str(result))
+		assert_eq(FileAccess.get_file_as_string(dir.path_join("mine.tres")), "mine: 5", key)
+	DirAccess.remove_absolute(godot)
+	AtlasFormats.refresh()
+	result = await run(["--pack", frames, "--out", out, "--metadata", "godot"])
+	var tres := FileAccess.get_file_as_string(dir.path_join("mine.tres"))
+	assert_true(tres.begins_with("[gd_resource"), "the bundled one again")
+
 	# A template file of its own
 	var template := dir.path_join("names.txt.template")
 	write_text(template, "{{#frames}}{{name}};{{/frames}}")

@@ -440,3 +440,54 @@ func test_data_formats_list_the_users_templates() -> void:
 	assert_eq(FileAccess.get_file_as_string(dir.path_join("user/hero.tiles")), "3")
 	DirAccess.remove_absolute(tiles)
 	AtlasFormats.refresh()
+
+
+## A template of the user's with a bundled one's id is listed with the user's, marked as
+## theirs, and exported with, until it's taken out
+func test_the_users_template_replaces_a_bundled_one() -> void:
+	DirAccess.make_dir_recursive_absolute(AtlasFormats.user_dir)
+	var json := AtlasFormats.user_dir.path_join("json.template")
+	var file := FileAccess.open(json, FileAccess.WRITE)
+	file.store_string("{{! name: TexturePacker JSON (hash)\nextension: json\n}}\nmine")
+	file.close()
+	Actions.run(&"export")
+	dialog.select_type(ExportOptions.Target.DATA)
+	var button := dialog.grid_data
+	var names := range(button.item_count).map(button.get_item_text)
+	var ids := range(button.item_count).map(button.get_item_metadata)
+	assert_eq(ids.count("json"), 1, "listed once")
+	var at := ids.find("json")
+	assert_eq(names[at], "TexturePacker JSON (hash) (yours)")
+	assert_true(button.is_item_separator(at - 1), "after a separator")
+	assert_true(
+		dialog.atlas_data.get_item_text(dialog.atlas_data.item_count - 1).ends_with(" (yours)")
+	)
+	button.select(at)
+	button.item_selected.emit(at)
+	assert_eq(dialog.files_info.text, "Files: spritesheet.png, spritesheet.json")
+	dialog.hide()
+	assert_eq(ExportTarget.list(sheet)[0].options.grid_data, "json", "picked by its id")
+	await export_and_compare(
+		"replaced",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.DATA
+			o.grid_data = "json"
+	)
+	assert_eq(FileAccess.get_file_as_string(dir.path_join("replaced/hero.json")), "mine")
+	# Taken out, the bundled one is back once the dialog looks again
+	DirAccess.remove_absolute(json)
+	Actions.run(&"export")
+	dialog.select_type(ExportOptions.Target.DATA)
+	names = range(button.item_count).map(button.get_item_text)
+	assert_true("TexturePacker JSON (hash)" in names, str(names))
+	assert_false(names.any(func(n: String) -> bool: return n.ends_with(" (yours)")), str(names))
+	assert_eq(range(button.item_count).filter(button.is_item_separator), [], "no user's")
+	dialog.hide()
+	await export_and_compare(
+		"bundled",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.DATA
+			o.grid_data = "json"
+	)
+	var text := FileAccess.get_file_as_string(dir.path_join("bundled/hero.json"))
+	assert_true(text.begins_with("{"), text)

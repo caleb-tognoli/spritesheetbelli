@@ -242,8 +242,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   header says the file's extension; a template's mistake is shown with its line instead
   of exporting.
 - A templates folder (Export dialog > Open templates folder; not in the web version):
-  templates put there are listed with the bundled formats. It comes with a README and a
-  copy of every bundled template to start from.
+  templates put there are listed with the bundled formats, and one named like a bundled
+  template (`json.template`) replaces it, marked "(yours)"; taking it out brings the
+  bundled one back. It comes with a README and a copy of every bundled template to start
+  from.
 - Command line: `--template <file>` writes the data file from a template, and `--metadata`
   and `--atlas-data` take any format, templates in the templates folder included.
 - More data file formats for game engines: a Unity `.tpsheet` for the free TexturePacker
