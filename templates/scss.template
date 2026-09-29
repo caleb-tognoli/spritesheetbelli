@@ -21,8 +21,9 @@ $sprite-pages: (
 {{#pages}}
 	"{{image | json-escape}}": (
 		size: {{w}}px {{h}}px,
-{{! Scale variants: a page's "retina_image", its image at twice the size, would be shown
-on screens with two or more pixels to a CSS pixel. Nothing sets it yet. }}
+{{! Scale variants: a page's "retina_image", its image at twice the size, is shown on
+screens with two or more pixels to a CSS pixel. It's set when the export's scales have
+1 and 2, in the file of scale 1. }}
 {{#retina_image}}
 		retina-image: "{{retina_image | json-escape}}",
 {{/retina_image}}

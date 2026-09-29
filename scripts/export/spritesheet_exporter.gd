@@ -15,15 +15,19 @@ const SPRITE_NAME_TOKENS := {
 }
 
 
-## Size of the exported image
+## Size of the exported image. Everything is [member ExportOptions.scale] times bigger,
+## the padding, spacing and extrusion too, so that each scale is the same image bigger.
 static func get_image_size(sheet: Spritesheet, options: ExportOptions) -> Vector2i:
 	if sheet.grid_size == Vector2i.ZERO or sheet.sprite_size == Vector2i.ZERO:
 		return Vector2i.ZERO
 	var cell := sheet.sprite_size + Vector2i.ONE * options.extrude * 2
 	return (
-		Vector2i.ONE * options.padding * 2
-		+ cell * sheet.grid_size
-		+ Vector2i.ONE * options.spacing * (sheet.grid_size - Vector2i.ONE)
+		(
+			Vector2i.ONE * options.padding * 2
+			+ cell * sheet.grid_size
+			+ Vector2i.ONE * options.spacing * (sheet.grid_size - Vector2i.ONE)
+		)
+		* options.scale
 	)
 
 
@@ -31,13 +35,16 @@ static func get_image_size(sheet: Spritesheet, options: ExportOptions) -> Vector
 static func get_cell_rect(sheet: Spritesheet, coord: Vector2i, options: ExportOptions) -> Rect2i:
 	var step := sheet.sprite_size + Vector2i.ONE * (options.extrude * 2 + options.spacing)
 	var position := Vector2i.ONE * (options.padding + options.extrude) + coord * step
-	return Rect2i(position, sheet.sprite_size)
+	return Rect2i(position * options.scale, sheet.sprite_size * options.scale)
 
 
 ## Where the frame itself (centred in its cell) ends up in the exported image
 static func get_frame_rect(sheet: Spritesheet, coord: Vector2i, options: ExportOptions) -> Rect2i:
 	var in_cell := sheet.get_frame_rect_in_cell(coord)
-	return Rect2i(get_cell_rect(sheet, coord, options).position + in_cell.position, in_cell.size)
+	return Rect2i(
+		get_cell_rect(sheet, coord, options).position + in_cell.position * options.scale,
+		in_cell.size * options.scale
+	)
 
 
 static func build_image(sheet: Spritesheet, options: ExportOptions) -> Image:
@@ -49,20 +56,33 @@ static func build_image(sheet: Spritesheet, options: ExportOptions) -> Image:
 	if options.background.a > 0:
 		img.fill(options.background)
 	for coord in sheet.frames:
-		var frame := sheet.get_frame_image(coord)
+		var frame := get_scaled_frame(sheet, coord, options.scale)
 		var rect := get_frame_rect(sheet, coord, options)
 		if options.background.a > 0:
 			img.blend_rect(frame, Rect2i(Vector2i.ZERO, frame.get_size()), rect.position)
 		else:
 			img.blit_rect(frame, Rect2i(Vector2i.ZERO, frame.get_size()), rect.position)
 		if options.extrude > 0:
-			extrude_edges(img, rect, options.extrude)
+			extrude_edges(img, rect, options.extrude * options.scale)
 	return img
 
 
-## The pages of a packed sheet as images, on the export's background
+## The frame at [param coord] as the sheet shows it, [param scale] times bigger: resized
+## from the original image with the sheet's filter, not from the sheet's scaled frame
+static func get_scaled_frame(sheet: Spritesheet, coord: Vector2i, scale: int) -> Image:
+	if scale == 1:
+		return sheet.get_frame_image(coord)
+	var original: Image = sheet.frames[coord]
+	var size := sheet.scaled_frames.scaled_size(original.get_size()) * scale
+	var img := original.duplicate() as Image
+	img.resize(size.x, size.y, sheet.scale_filter)
+	return img
+
+
+## The pages of a packed sheet as images, on the export's background, at the export's
+## scale
 static func build_pages(sheet: Spritesheet, options: ExportOptions) -> Array[Image]:
-	var pages := PackedLayout.render_pages(sheet)
+	var pages := PackedLayout.render_pages(sheet, false, options.scale)
 	if options.background.a > 0:
 		for i in pages.size():
 			var page := Image.create_empty(

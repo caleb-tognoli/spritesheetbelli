@@ -95,6 +95,20 @@ func test_files_listed_are_the_files_written() -> void:
 		"out"
 	)
 	await export_and_compare("strips", target.call(ExportOptions.Target.STRIPS), "out")
+	await export_and_compare(
+		"scales",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.DATA
+			o.grid_data = "godot"
+			o.scales = "1, 2, 3"
+	)
+	await export_and_compare(
+		"atlas scales",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.ATLAS
+			o.scales = "1, 2"
+	)
+	set_options(func(o: ExportOptions) -> void: o.scales = "1")
 	await export_and_compare("atlas", target.call(ExportOptions.Target.ATLAS))
 
 	# Sprites: names taken by a file already there or by a frame before are numbered

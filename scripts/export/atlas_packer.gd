@@ -22,6 +22,12 @@ class Region:
 	## The frame's pivot, from 0 to 1 across the untrimmed frame (or its cell)
 	var pivot := Vector2(0.5, 0.5)
 
+	## Makes the region [param scale] times bigger, for a page as many times bigger
+	func scale_by(scale: int) -> void:
+		rect = Rect2i(rect.position * scale, rect.size * scale)
+		source_rect = Rect2i(source_rect.position * scale, source_rect.size * scale)
+		source_size *= scale
+
 
 ## [param sheet] itself when it's packed, else a packed copy of it for exporting. Formats
 ## that can't describe turned frames get none.
@@ -98,6 +104,8 @@ static func pack(sheet: Spritesheet, spacing := 0, extrude := 0) -> Dictionary:
 
 ## Packs [param sheet] as [param options] say (or takes its packed layout) and writes the
 ## pages to [param path], numbered when there are more, with the data file next to them.
+## At a [member ExportOptions.scale] other than 1, it's the same atlas that many times
+## bigger: the frames are where they'd be at 1, so the scales line up.
 ## Returns [code]{"error": Error, "message": String, "path": String, "json_path": String,
 ## "paths": PackedStringArray, "frames": int, "size": Vector2i, "pages": int}[/code] with
 ## the first page and data file and every file written. The error is ERR_OUT_OF_MEMORY
@@ -111,9 +119,14 @@ static func write(
 		return {"error": ERR_UNAVAILABLE, "message": AtlasFormats.get_error(format)}
 	var packed := get_packed(sheet, options)
 	var regions := get_regions(packed, options.atlas_frame_size)
-	var sizes := PackedLayout.get_page_sizes(packed)
+	if options.scale != 1:
+		for region in regions:
+			region.scale_by(options.scale)
+	var sizes := PackedLayout.get_page_sizes(packed, options.scale)
 	# Pages are PNGs: "hero.png" gives hero.png and hero.json, "hero.json" hero.json.png
 	var base := SpritesheetExporter.without_extension(path, "png")
+	var retina_path := options.get_retina_path(path)
+	var retina_base := SpritesheetExporter.without_extension(retina_path, "png")
 	var result := {
 		"error": OK,
 		"message": "",
@@ -137,17 +150,23 @@ static func write(
 					% AtlasFormats.get_format_name(format)
 				)
 				return result
-	var images := PackedLayout.render_pages(packed, AtlasFormats.is_counter_clockwise(format))
+	var images := PackedLayout.render_pages(
+		packed, AtlasFormats.is_counter_clockwise(format), options.scale
+	)
 	var pages: Array[Dictionary] = []
 	for page in images.size():
 		var page_path := base + ".png"
+		var retina := retina_base + ".png"
 		if images.size() > 1:
 			page_path = "%s_%d.png" % [base, page]
+			retina = "%s_%d.png" % [retina_base, page]
 		result.error = images[page].save_png(page_path)
 		if result.error != OK:
 			return result
 		result.paths.append(page_path)
 		pages.append({"file": page_path.get_file(), "size": images[page].get_size()})
+		if retina_path:
+			pages[-1].retina_image = retina.get_file()
 	if pages:
 		result.path = result.paths[0]
 	var frames := AtlasFormats.get_frames(packed, regions, options, index_start)

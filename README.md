@@ -67,7 +67,10 @@ A small desktop tool made with Godot.</p>
   play it, double-click to rename it, right-click for more.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names
   like `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or
-  its pages as images; or an animation as an animated GIF. A project keeps a list of
+  its pages as images; an animation as an animated GIF, or a GIF of each animation; or
+  GameMaker strips (`walk_strip8.png`, each animation's frames side by side). Images, data
+  files and atlases can be written at several scales at once (`hero.png`, `hero@2x.png`),
+  each resized from the original frames with its own data file. A project keeps a list of
   exports, each with its settings and where it writes (relative to the project), so Export
   Again or the command line writes them all at once. The Export button sits at the top of
   the sidebar with the size of what it writes and how many exports there are, and the
@@ -78,11 +81,12 @@ A small desktop tool made with Godot.</p>
   Aseprite-style tags), a Phaser 3 multi-atlas, a libGDX / Spine `.atlas`, Sparrow /
   Starling XML, a Godot `SpriteFrames` resource with the sheet's animations (or every
   frame in one "default" animation when there are none), a Unity `.tpsheet`, a Cocos2d-x
-  `.plist`, CSS or SCSS sprites, and for grid sheets a Defold tile source and Construct 3
-  import settings, for a grid sheet or every page of a packed atlas, with pivots and
-  turned frames where the format has them. Every data file comes from a template, and
-  your own templates can add formats (see [Data file templates](#data-file-templates)).
-  For Unity, install the free
+  `.plist`, CSS or SCSS sprites (with the @2x image for high-density screens when exported
+  at scales 1 and 2), and for grid sheets a Defold tile source and Construct 3 import
+  settings, for a grid sheet or every page of a packed atlas, with pivots and turned
+  frames where the format has them. Every data file comes from a template, and your own
+  templates can add formats (see [Data file templates](#data-file-templates)). For Unity,
+  install the free
   [TexturePacker Importer](https://assetstore.unity.com/packages/tools/sprite-management/texturepacker-importer-16641)
   package and export with the Unity data file into your project's Assets folder, next to
   the PNG: Unity cuts it into one sprite per frame, named after the frames, with their
@@ -136,6 +140,12 @@ spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./h
 
 # Write every export the project has, as set up in the Export dialog
 spritesheetbelli --headless -- --export hero.sbelli
+
+# Write a 1x and a 2x sheet, each with its JSON file
+spritesheetbelli --headless -- --export hero.sbelli --out hero.png --metadata json --scales 1,2
+
+# A GIF of each animation, and GameMaker strips
+spritesheetbelli --headless -- --export hero.sbelli --gifs ./gifs --strips ./gamemaker
 
 # Cut a packed sheet into frames by the space around the sprites
 spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
@@ -211,7 +221,11 @@ Values:
 - each animation: name, fps, mode, loop, ping_pong, once, frames, frame_count,
   played_frames, from, to, direction, reversed, from_cell, to_cell; its frames also have
   relative_duration;
-- each page: index, image, w, h, frames, frame_count.
+- each page: index, image, w, h, frames, frame_count, retina_image (its image at twice the
+  size, in the 1x file of an export at scales 1 and 2).
+
+At scales other than 1, every size and position (and a grid's cell_w, cell_h, padding,
+spacing and extrude) is scaled.
 
 The comments in `scripts/export/template_data.gd` describe each one.
 

@@ -131,7 +131,9 @@ var gif_animation := OptionButton.new()
 var gif_scale := SpinBox.new()
 ## The settings of exports that write a file per animation
 var animation_files := AnimationFilesRows.new()
-## Why the template of the data file can't be used, which stops the export
+## The scales exports are written at
+var scale_rows := ScaleRows.new()
+## Why the export can't be written, like a template that can't be used, which stops it
 var template_error := Label.new()
 ## The files an export writes, when it writes more than one
 var files_info := Label.new()
@@ -282,6 +284,7 @@ func _init() -> void:
 		+ "with each other."
 	)
 	add_row(_settings, "Frame size in data", frame_size, [T.ATLAS])
+	scale_rows.add_to(self, _settings)
 
 	animation_fps.min_value = 1
 	animation_fps.max_value = 120
@@ -333,6 +336,7 @@ func _init() -> void:
 	output.path_changed.connect(_changed.unbind(1))
 	output.browse_pressed.connect(browse)
 	animation_files.changed.connect(_changed)
+	scale_rows.changed.connect(_changed)
 	templates_folder.pressed.connect(open_templates_folder)
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
@@ -524,6 +528,7 @@ func _show(target: ExportTarget) -> void:
 		if animation.name == options.gif_animation and not options.gif_every_animation:
 			gif_animation.select(gif_animation.item_count - 1)
 	animation_files.show_options(options)
+	scale_rows.show_options(options)
 	gif_scale.set_value_no_signal(options.gif_scale)
 	_fill_formats(grid_data, "grid", options.grid_data)
 	_fill_formats(atlas_data, "packed", options.atlas_data)
@@ -574,6 +579,7 @@ func _options() -> ExportOptions:
 	var named := gif_animation.selected > EVERY_ANIMATION
 	options.gif_animation = gif_animation.get_item_text(gif_animation.selected) if named else ""
 	animation_files.apply(options)
+	scale_rows.apply(options)
 	options.gif_scale = int(gif_scale.value)
 	options.grid_data = _selected_format(grid_data)
 	options.atlas_data = _selected_format(atlas_data)
@@ -627,7 +633,7 @@ func _update_labels(options: ExportOptions) -> void:
 	files_info.visible = files.size() > 1
 	files_info.text = tr("Files: %s") % _list_files(files)
 	animation_files.update(options, files)
-	template_error.text = options.get_template_error()
+	template_error.text = options.get_error()
 	template_error.visible = template_error.text != ""
 	get_ok_button().disabled = template_error.visible
 

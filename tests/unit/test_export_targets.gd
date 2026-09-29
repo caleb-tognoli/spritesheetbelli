@@ -286,6 +286,58 @@ func test_gamemaker_strips() -> void:
 	dialog.hide()
 
 
+## Types [param text] in the dialog's Scales field
+func type_scales(text: String) -> void:
+	dialog.scale_rows.scales.text = text
+	dialog.scale_rows.scales.text_changed.emit(text)
+
+
+func test_scales() -> void:
+	set_targets([make_target(ExportOptions.Target.IMAGE, "hero.png")])
+	Actions.run(&"export")
+	var rows := dialog.scale_rows
+	assert_true(rows.scales.visible)
+	assert_false(rows.suffix.visible, "one scale")
+	type_scales("1, 2")
+	assert_true(rows.suffix.visible)
+	assert_eq(dialog.files_info.text, "Files: hero.png, hero@2x.png")
+	type_scales("1, x")
+	assert_true(dialog.template_error.visible)
+	assert_true(dialog.get_ok_button().disabled, "can't be exported")
+	type_scales("2, 1")
+	assert_false(dialog.template_error.visible)
+	rows.suffix.line_edit.text = "_{scale}x"
+	rows.suffix.line_edit.text_changed.emit(rows.suffix.line_edit.text)
+	assert_eq(dialog.files_info.text, "Files: hero.png, hero_2x.png")
+	rows.suffix.line_edit.text = "@{size}x"
+	rows.suffix.line_edit.text_changed.emit(rows.suffix.line_edit.text)
+	assert_eq(rows.suffix.warning.text, "Unknown token: {size}")
+	rows.suffix.line_edit.text = ""
+	rows.suffix.line_edit.text_changed.emit("")
+	dialog.select_type(ExportOptions.Target.SPRITES)
+	assert_false(rows.scales.visible, "sprites have none")
+	dialog.select_type(ExportOptions.Target.DATA)
+	assert_eq(dialog.files_info.text, "Files: hero.png, hero.json, hero@2x.png, hero@2x.json")
+	dialog.hide()
+	assert_eq(ExportTarget.list(sheet)[0].options.scales, "2, 1")
+	assert_true(await main.files.exports.export_again())
+	var twice := Image.load_from_file(dir.path_join("hero@2x.png"))
+	assert_eq(twice.get_size(), Image.load_from_file(dir.path_join("hero.png")).get_size() * 2)
+	assert_true(FileAccess.file_exists(dir.path_join("hero@2x.json")))
+	var toasts := "\n".join(Notify.get_toasts())
+	assert_true("Also wrote hero@2x.json." in toasts, toasts)
+
+	# In a browser, each is downloaded
+	ExportController.in_browser = true
+	assert_true(await main.files.exports.export_again())
+	# Named after the last export
+	for file: String in ["hero.png", "hero@2x.png", "hero@2x.json"]:
+		var written := WebFiles.OUTPUT_DIR.path_join(file)
+		assert_true(FileAccess.file_exists(written), file)
+		DirAccess.remove_absolute(written)
+	DirAccess.remove_absolute(WebFiles.OUTPUT_DIR.path_join("hero.json"))
+
+
 func test_export_writes_the_selected_target() -> void:
 	set_targets(
 		[

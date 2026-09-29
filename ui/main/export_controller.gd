@@ -93,8 +93,21 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 	if options.get_file_extension():
 		path = SpritesheetExporter.with_extension(path, options.get_file_extension())
 	# The template may have changed since it was picked
-	if options.get_template_error():
-		return {"error": options.get_template_error()}
+	if options.get_error():
+		return {"error": options.get_error()}
+	var messages := PackedStringArray()
+	for scale in options.get_scales():
+		var result := await _export_at_scale(
+			options.scaled_path(path, scale), options.for_scale(scale)
+		)
+		if result.has("error"):
+			return result
+		messages.append(result.message)
+	return {"message": "\n".join(messages)}
+
+
+## Writes one scale of an export, see [member ExportOptions.scale]
+func _export_at_scale(path: String, options: ExportOptions) -> Dictionary:
 	var slow := FileController.is_big_sheet()
 	match options.target:
 		_ when options.packs(Global.spritesheet):
@@ -268,7 +281,8 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 				else tr("the background colour")
 			)
 		)
-	Global.document.export_path = path
+	if options.scale == 1:
+		Global.document.export_path = path
 	return {"message": message}
 
 
@@ -285,7 +299,8 @@ func _export_pages(path: String, options: ExportOptions) -> Dictionary:
 			return {"error": tr("Could not export to %s (%s).") % [paths[i], error_string(error)]}
 		WebFiles.download(paths[i])
 	unlink_overwritten(paths)
-	Global.document.export_path = path
+	if options.scale == 1:
+		Global.document.export_path = path
 	if paths.size() == 1:
 		return {
 			"message": tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]

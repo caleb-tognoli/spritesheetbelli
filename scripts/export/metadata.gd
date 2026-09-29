@@ -18,6 +18,9 @@ static func write_for_image(
 		"file": image_path.get_file(),
 		"size": SpritesheetExporter.get_image_size(sheet, options),
 	}
+	var retina := options.get_retina_path(image_path)
+	if retina:
+		page.retina_image = retina.get_file()
 	var data := TemplateData.build(
 		grid_frames(sheet, options, index_start),
 		animations(sheet, false),

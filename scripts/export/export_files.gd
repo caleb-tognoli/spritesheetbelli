@@ -25,7 +25,34 @@ static func get_paths(
 	if options.packs(sheet):
 		if page_count < 0:
 			page_count = get_page_count(sheet, options)
-		return get_atlas_paths(path, options.get_atlas_data(), page_count)
+		var atlas := PackedStringArray()
+		# Every scale has as many pages
+		for scale in options.get_scales():
+			atlas.append_array(
+				get_atlas_paths(
+					options.scaled_path(path, scale), options.get_atlas_data(), page_count
+				)
+			)
+		return atlas
+	var paths := PackedStringArray()
+	for scale in options.get_scales():
+		paths.append_array(
+			_get_paths_at_scale(
+				sheet, options, options.scaled_path(path, scale), coords, index_start, on_disk
+			)
+		)
+	return paths
+
+
+## The paths of one scale of an export that doesn't pack, see [method get_paths]
+static func _get_paths_at_scale(
+	sheet: Spritesheet,
+	options: ExportOptions,
+	path: String,
+	coords: Array[Vector2i],
+	index_start: int,
+	on_disk: bool,
+) -> PackedStringArray:
 	match options.target:
 		ExportOptions.Target.SPRITES:
 			var sprites := PackedStringArray()

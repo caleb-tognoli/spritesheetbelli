@@ -257,6 +257,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   name pattern (like `spr_{animation}_strip{count}`) and a background can be set; frames
   in no animation are left out, and a sheet without animations gives one strip of every
   frame. On the command line, `--strips <folder>`.
+- Scale variants: image, data file, atlas and custom template exports can be written at
+  several scales, like "1, 2". Each is the same sheet that many times bigger, with frames
+  resized from their originals with the sheet's filter and padding, spacing and extrusion
+  scaled too, and its own data file, named with a suffix (`hero@2x.png`, `hero@2x.json`).
+  CSS and SCSS sprites show the @2x image on high-density screens when 2 is among the
+  scales. On the command line, `--scales 1,2`.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

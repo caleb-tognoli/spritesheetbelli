@@ -70,6 +70,16 @@ var gif_name_pattern := "{animation}"
 ## File name of each GameMaker strip, see [AnimationFiles]. GameMaker takes the frame
 ## count from the "_strip" at the end.
 var strip_name_pattern := "{animation}_strip{count}"
+## The sizes an image, data file or atlas export is written at, whole numbers like
+## "1, 2": each is the sheet that many times bigger, see [method get_scales]
+var scales := "1"
+## Added to the file names of every scale but 1, with {scale} filled in, see
+## [method scaled_path]
+var scale_suffix := "@{scale}x"
+## The scale being written, one of [method get_scales]. Not stored: the exporters make
+## the images, the padding, spacing and extrusion and the data files' coordinates this
+## many times bigger.
+var scale := 1
 
 const _SHEET_KEYS: Array[StringName] = [
 	&"target",
@@ -91,7 +101,15 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"gif_every_animation",
 	&"gif_name_pattern",
 	&"strip_name_pattern",
+	&"scales",
+	&"scale_suffix",
 ]
+## The targets written at [member scales]
+const SCALED_TARGETS: Array[Target] = [Target.IMAGE, Target.DATA, Target.ATLAS, Target.CUSTOM]
+## The biggest scale
+const MAX_SCALE := 16
+## The tokens of [member scale_suffix], with what they give
+const SCALE_TOKENS := {"scale": "The scale, like 2"}
 
 ## Whether the settings applied had a pattern, which is then kept even when it's the default
 var _name_pattern_set := false
@@ -172,6 +190,13 @@ func get_atlas_data() -> String:
 	return custom_template if target == Target.CUSTOM else atlas_data
 
 
+## What stops the export: what's wrong with its scales or the template its data file is
+## written from, or empty when nothing is
+func get_error() -> String:
+	var scale_error := get_scale_error()
+	return scale_error if scale_error else get_template_error()
+
+
 ## What's wrong with the template the export's data file is written from, or empty when
 ## there's nothing wrong or no data file
 func get_template_error() -> String:
@@ -195,6 +220,78 @@ func get_file_extension() -> String:
 		Target.GIF:
 			return "" if gif_every_animation else "gif"
 	return "png"
+
+
+## The scales the export is written at, from [member scales], smallest first, each once.
+## Only images, data files and atlases have scales; other exports are written at 1.
+func get_scales() -> PackedInt32Array:
+	var result := PackedInt32Array()
+	if target in SCALED_TARGETS:
+		for part in _scale_parts():
+			if part.is_valid_int() and int(part) >= 1 and int(part) <= MAX_SCALE:
+				if int(part) not in result:
+					result.append(int(part))
+	result.sort()
+	return result if result else PackedInt32Array([1])
+
+
+## What's wrong with [member scales] and [member scale_suffix], or empty
+func get_scale_error() -> String:
+	if target not in SCALED_TARGETS:
+		return ""
+	for part in _scale_parts():
+		if not part.is_valid_int() or int(part) < 1 or int(part) > MAX_SCALE:
+			return tr("Scales are whole numbers from 1 to %d, like 1, 2.") % MAX_SCALE
+	var names := {}
+	for each in get_scales():
+		var name := scaled_path("a.png", each)
+		if names.has(name):
+			return tr("The scale suffix needs {scale} to name each scale's files apart.")
+		names[name] = true
+	return ""
+
+
+## [param path] with the suffix of [param at_scale] before its extension, when it's not 1:
+## "hero.png" gives "hero@2x.png". An atlas's pages and a data file are named after
+## that, as "hero@2x_0.png" and "hero@2x.json".
+func scaled_path(path: String, at_scale: int) -> String:
+	if at_scale == 1:
+		return path
+	var suffix := SpritesheetExporter.fill_tokens(
+		scale_suffix, {"scale": at_scale}, "@%dx" % at_scale
+	)
+	var extension := path.get_extension()
+	if extension.is_empty():
+		return path + suffix
+	return "%s%s.%s" % [path.get_basename(), suffix, extension]
+
+
+## A copy of the options for writing [param at_scale], see [member scale]
+func for_scale(at_scale: int) -> ExportOptions:
+	var copy := ExportOptions.new()
+	for key in _SHEET_KEYS:
+		copy.set(key, get(key))
+	copy.jpg_quality = jpg_quality
+	copy.opaque_background = opaque_background
+	copy.default_name_pattern = default_name_pattern
+	copy.scale = at_scale
+	return copy
+
+
+## The name of the image at twice the size of the one at [param path] of this scale, for
+## a page's "retina_image" in data files (see [TemplateData]), or empty when the export
+## isn't written at 2 as well
+func get_retina_path(path: String) -> String:
+	if scale != 1 or 2 not in get_scales():
+		return ""
+	return scaled_path(path, 2)
+
+
+func _scale_parts() -> PackedStringArray:
+	var parts := PackedStringArray()
+	for part in scales.replace(",", " ").split(" ", false):
+		parts.append(part.strip_edges())
+	return parts
 
 
 ## The animation of [param sheet] a GIF export plays, or null for every frame

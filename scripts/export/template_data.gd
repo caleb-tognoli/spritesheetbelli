@@ -47,6 +47,10 @@ static func build(
 					## Size of the page's image
 					"w": size.x,
 					"h": size.y,
+					## File name of the page's image at twice the size, when the export
+					## is written at scales 1 and 2 (for CSS on screens with two pixels to
+					## a CSS pixel), in the file of scale 1. Nothing otherwise.
+					"retina_image": pages[index].get("retina_image"),
 					## The frames on the page, see [method _frame]
 					"frames": on_page,
 					## How many frames are on it
@@ -101,14 +105,15 @@ static func grid_values(sheet: Spritesheet, options: ExportOptions) -> Dictionar
 		"columns": sheet.grid_size.x,
 		"rows": sheet.grid_size.y,
 		## The size of a cell, and so of every frame
-		"cell_w": sheet.sprite_size.x,
-		"cell_h": sheet.sprite_size.y,
+		"cell_w": sheet.sprite_size.x * options.scale,
+		"cell_h": sheet.sprite_size.y * options.scale,
 		## Transparent pixels around the image, between cells, and edge pixels repeated
 		## around each cell (inside the spacing): the first cell is at padding + extrude,
-		## and each next one cell_w + 2 × extrude + spacing further
-		"padding": options.padding,
-		"spacing": options.spacing,
-		"extrude": options.extrude,
+		## and each next one cell_w + 2 × extrude + spacing further. Like every size, as
+		## many times bigger as the image at a scale other than 1.
+		"padding": options.padding * options.scale,
+		"spacing": options.spacing * options.scale,
+		"extrude": options.extrude * options.scale,
 	}
 
 

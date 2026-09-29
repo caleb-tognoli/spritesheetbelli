@@ -232,11 +232,16 @@ static func get_page_rects(sheet: Spritesheet) -> Array[Array]:
 	return pages
 
 
-static func get_page_sizes(sheet: Spritesheet) -> Array[Vector2i]:
-	var settings := sheet.atlas_settings
+## The size of each page, or of each page [param scale] times bigger, with every frame at
+## the same place scaled as much, as an export at that scale writes them (see
+## [member ExportOptions.scale])
+static func get_page_sizes(sheet: Spritesheet, scale := 1) -> Array[Vector2i]:
+	var settings := _scaled_settings(sheet.atlas_settings, scale)
 	var sizes: Array[Vector2i] = []
 	for rects: Array[Rect2i] in get_page_rects(sheet):
-		sizes.append(RectPacker.page_size(rects, settings))
+		var scaled: Array[Rect2i] = []
+		scaled.assign(rects.map(func(rect: Rect2i) -> Rect2i: return _scaled_rect(rect, scale)))
+		sizes.append(RectPacker.page_size(scaled, settings))
 	return sizes
 
 
@@ -274,11 +279,16 @@ static func describe(sheet: Spritesheet) -> String:
 
 
 ## The pages as images, with every frame at its place. Turned frames are turned
-## clockwise, or [param counter_clockwise] for engines that expect that.
-static func render_pages(sheet: Spritesheet, counter_clockwise := false) -> Array[Image]:
-	var settings := sheet.atlas_settings
+## clockwise, or [param counter_clockwise] for engines that expect that. At a
+## [param scale] other than 1, the pages are that many times bigger with the frames
+## resized from their originals (see [method SpritesheetExporter.get_scaled_frame]) at
+## their places scaled as much.
+static func render_pages(
+	sheet: Spritesheet, counter_clockwise := false, scale := 1
+) -> Array[Image]:
+	var settings := _scaled_settings(sheet.atlas_settings, scale)
 	var images: Array[Image] = []
-	for size in get_page_sizes(sheet):
+	for size in get_page_sizes(sheet, scale):
 		images.append(Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8))
 	var drawn := {}
 	for coord in sheet.get_sorted_coords():
@@ -286,15 +296,28 @@ static func render_pages(sheet: Spritesheet, counter_clockwise := false) -> Arra
 		if place.is_empty() or drawn.has(_place_key(place)):
 			continue
 		drawn[_place_key(place)] = true
-		var pixels := sheet.get_frame_image(coord).get_region(place.src)
+		var frame := SpritesheetExporter.get_scaled_frame(sheet, coord, scale)
+		var pixels := frame.get_region(_scaled_rect(place.src, scale))
 		if place.rotated:
 			pixels.rotate_90(COUNTERCLOCKWISE if counter_clockwise else CLOCKWISE)
 		var page: Image = images[place.page]
-		var rect := Rect2i(place.position, pixels.get_size())
+		var rect := Rect2i(place.position * scale, pixels.get_size())
 		page.blit_rect(pixels, Rect2i(Vector2i.ZERO, rect.size), rect.position)
 		if settings.extrude > 0:
 			SpritesheetExporter.extrude_edges(page, rect, settings.extrude)
 	return images
+
+
+## [param settings] with the space around frames and pages [param scale] times bigger
+static func _scaled_settings(settings: AtlasSettings, scale: int) -> AtlasSettings:
+	settings.padding *= scale
+	settings.spacing *= scale
+	settings.extrude *= scale
+	return settings
+
+
+static func _scaled_rect(rect: Rect2i, scale: int) -> Rect2i:
+	return Rect2i(rect.position * scale, rect.size * scale)
 
 
 ## The part of the scaled frame that is packed: without its transparent borders when

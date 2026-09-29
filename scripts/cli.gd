@@ -54,6 +54,10 @@ Options:
   --animation <name>             The animation a GIF plays (default: the first one, or
                                  every frame when there are none)
   --scale <n>                    Make GIFs n times bigger
+  --scales <n,n...>              Write --out (an image, with its data file, or an
+                                 atlas) at each of these scales, like 1,2: n times
+                                 bigger, padding and spacing too, with @nx before the
+                                 extension (hero@2x.png), none for 1
 
 Packed layout:
   --layout <grid|packed>         Lay the frames out in a grid or packed on pages. A packed
@@ -83,7 +87,14 @@ const FLAGS: Array[String] = [
 const OUTPUTS: Array[String] = ["--out", "--sprites", "--gifs", "--strips"]
 ## Options of what --out is written as, which the exports of a project have their own of
 const OUT_OPTIONS: Array[String] = [
-	"--metadata", "--template", "--atlas-data", "--atlas", "--fps", "--animation", "--scale"
+	"--metadata",
+	"--template",
+	"--atlas-data",
+	"--atlas",
+	"--fps",
+	"--animation",
+	"--scale",
+	"--scales",
 ]
 
 
@@ -158,6 +169,14 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		export.gif_animation = sheet.animations[0].name
 	if options.has("--scale"):
 		export.gif_scale = clampi(int(options["--scale"]), 1, 16)
+	if options.has("--scales"):
+		# --out is an image or atlas, even when the project's export settings say otherwise
+		if export.target not in ExportOptions.SCALED_TARGETS:
+			export.target = ExportOptions.Target.IMAGE
+		export.scales = options["--scales"]
+		if export.get_scale_error():
+			say.call("Error: --scales: " + export.get_scale_error())
+			return 2
 	sheet.set_export_settings(export.to_dictionary())
 	if options.has("--sprite-size"):
 		var size := _parse_size(options["--sprite-size"])
@@ -175,13 +194,27 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		var packed := sheet.layout == Spritesheet.Layout.PACKED
 		var image := not ProjectFile.is_project_path(out) and not GifDecoder.is_gif_path(out)
 		var custom := export.target == ExportOptions.Target.CUSTOM
-		if image and export.get_template_error():
-			say.call("Error: " + export.get_template_error())
+		if image and export.get_error():
+			say.call("Error: " + export.get_error())
 			return 1
+		if image:
+			# Named with its extension first, so that every scale is named alike
+			out = SpritesheetExporter.with_image_extension(out)
 		if options.has("--atlas") or image and (packed or custom and export.packs(sheet)):
-			code = _write_atlas(sheet, out, export, say)
+			code = _each_scale(
+				export,
+				out,
+				func(path: String, at: ExportOptions) -> int:
+					return _write_atlas(sheet, path, at, say)
+			)
 		elif GifDecoder.is_gif_path(out):
 			code = await _write_gif(sheet, out, export, say)
+		elif image:
+			code = _each_scale(
+				export,
+				out,
+				func(path: String, at: ExportOptions) -> int: return _write(sheet, path, at, say)
+			)
 		else:
 			code = _write(sheet, out, export, say)
 	if options.has("--sprites") and code == 0:
@@ -218,23 +251,39 @@ static func _run_targets(sheet: Spritesheet, say: Callable) -> int:
 static func _write_target(sheet: Spritesheet, target: ExportTarget, say: Callable) -> int:
 	var export := target.options
 	var path := ExportTarget.fit_path(target.path, export)
-	if export.get_template_error():
-		say.call("Error: " + export.get_template_error())
+	if export.get_error():
+		say.call("Error: " + export.get_error())
 		return 1
 	if export.target == ExportOptions.Target.SPRITES:
 		return _write_sprites(sheet, path, export, say)
 	if export.target == ExportOptions.Target.STRIPS:
 		return _write_strips(sheet, path, export, say)
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
-	if export.packs(sheet):
-		return _write_atlas(sheet, path, export, say)
 	if export.target == ExportOptions.Target.GIF and export.gif_every_animation:
 		return await _write_gifs(sheet, path, export, say)
 	if export.target == ExportOptions.Target.GIF:
 		return await _write_gif(sheet, path, export, say)
-	if sheet.layout == Spritesheet.Layout.PACKED:
-		return _write_pages(sheet, path, export, say)
-	return _write(sheet, path, export, say)
+	var write := _write
+	if export.packs(sheet):
+		write = _write_atlas
+	elif sheet.layout == Spritesheet.Layout.PACKED:
+		write = _write_pages
+	return _each_scale(
+		export,
+		path,
+		func(at_path: String, at: ExportOptions) -> int: return write.call(sheet, at_path, at, say)
+	)
+
+
+## Writes every scale of [param export] (see [member ExportOptions.scales]) with
+## [param write], which takes the path and options of a scale and returns the exit code.
+## Returns the first that isn't 0.
+static func _each_scale(export: ExportOptions, path: String, write: Callable) -> int:
+	for scale in export.get_scales():
+		var code: int = write.call(export.scaled_path(path, scale), export.for_scale(scale))
+		if code != 0:
+			return code
+	return 0
 
 
 ## Sets the data files of [param export] from --metadata, --atlas-data and --template in
