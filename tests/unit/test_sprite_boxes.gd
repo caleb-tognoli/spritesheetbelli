@@ -318,11 +318,16 @@ func test_the_key_colour_finds_the_sprites_again() -> void:
 	open()
 	view.select([0] as Array[int])
 	view.remove_selected()
-	# Green away: the green sprite goes too
+	# Green away: the green sprite goes too, once confirmed
+	window.background.open()
 	window.background.pick(Color.GREEN)
-	await get_tree().process_frame
-	assert_eq(window.box_editor.get_boxes(), [FOUND[0], FOUND[2], FOUND[3], FOUND[4]])
+	for i in 5:
+		await get_tree().process_frame
 	assert_eq(view.image.get_pixelv(FOUND[1].position).a, 0.0, "shown without it")
+	var kept := SpriteBoxes.remove(FOUND, [0] as Array[int])
+	assert_eq(window.box_editor.get_boxes(), kept, "the boxes stay until confirmed")
+	window.background.confirm()
+	assert_eq(window.box_editor.get_boxes(), [FOUND[0], FOUND[2], FOUND[3], FOUND[4]])
 	window.box_editor.undo()
 	assert_eq(window.box_editor.get_boxes(), SpriteBoxes.remove(FOUND, [0] as Array[int]))
 

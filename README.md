@@ -20,8 +20,9 @@ A small desktop tool made with Godot.</p>
   image. The empty cells of an added sheet are locked so added sprites skip them, unless
   "Lock empty cells" is unticked. Sheets drawn on a solid colour, like magenta, have it
   made transparent before they're cut, so the grid is guessed from the gaps and frames
-  come in clean; pick another colour, or click the preview with the eyedropper, and set
-  how close a colour must be.
+  come in clean; the eyedropper button in the toolbar picks another colour (from the
+  colour picker, or by clicking the preview), sets how close a colour must be, or turns it
+  off.
 - **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
   `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
   frames are restored and tags become animations. Without one, the sprites are found by
@@ -36,10 +37,11 @@ A small desktop tool made with Godot.</p>
 - **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
   the pivot tool or presets and exported where the format has them.
 - **Edit frames.** The Select tool clicks and box-selects frames; the Move tool drags
-  them, or copies them with Alt. Flip, rotate, trim, remove a background colour (picked
-  with the eyedropper and previewed on the selected frames until you click Remove), add an
-  outline, replace, cut/copy/paste (also images copied in other apps), duplicate, insert
-  or remove cells, insert, remove or reorder rows. Everything can be undone.
+  them, or copies them with Alt. Flip, rotate, trim, remove a background colour (from the
+  eyedropper button in the toolbar, picked by clicking a frame and previewed on the
+  selected frames, or every frame, until you Confirm), add an outline, replace,
+  cut/copy/paste (also images copied in other apps), duplicate, insert or remove cells,
+  insert, remove or reorder rows. Everything can be undone.
 - **Stay linked to your art files.** Sprites and sheets remember the file they came from.
   When you save it again in your drawing program, spritesheetbelli asks whether to reload
   it, keeping the flips, trims, outlines and moves made here or going back to the file as

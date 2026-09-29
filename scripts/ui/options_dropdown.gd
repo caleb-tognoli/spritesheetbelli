@@ -3,7 +3,8 @@ extends Button
 ## A button that drops down a floating panel of rarely needed fields, and shows what's set
 ## in them as its text, e.g. "Spacing 2 · Extrude 1", or [member placeholder] when nothing
 ## is. Fields are added with [method add_field]; call [method update_text] after changes.
-## A field can have a button that resets it, shown while it isn't at its default.
+## A field can have a button that resets it, shown while it isn't at its default. Other
+## controls can go in [member content], around the fields.
 
 const ARROW := preload("res://assets/icons/GuiTreeArrowDown.svg")
 const RESET_ICON := preload("res://assets/icons/Reload.svg")
@@ -13,6 +14,8 @@ var placeholder := ""
 ## Returns what's set, like "Spacing 2 · Extrude 1", or an empty string
 var summarize := Callable()
 var popup := PopupPanel.new()
+## What the panel shows: [member fields], and anything added around them
+var content := VBoxContainer.new()
 var fields := GridContainer.new()
 ## Reset buttons, with whether their field is at its default
 var _resets: Dictionary[Button, Callable] = {}
@@ -30,20 +33,23 @@ func _init(empty_text := "") -> void:
 	fields.columns = 3
 	fields.add_theme_constant_override("h_separation", 12)
 	fields.add_theme_constant_override("v_separation", 8)
-	popup.add_child(fields)
+	content.add_theme_constant_override("separation", 8)
+	content.add_child(fields)
+	popup.add_child(content)
 	add_child(popup)
 	pressed.connect(open)
 
 
 ## Adds a labelled [param control] to the panel. Clicking the label focuses the control.
 ## With [param reset], a button after it calls that while [param is_default] is false.
+## Returns the slot after the control, where the button goes, to put another one in.
 func add_field(
 	label_text: String,
 	control: Control,
 	tooltip := "",
 	reset := Callable(),
 	is_default := Callable(),
-) -> void:
+) -> Container:
 	var label := Label.new()
 	label.text = label_text
 	label.tooltip_text = tooltip
@@ -68,6 +74,7 @@ func add_field(
 		button.pressed.connect(update_text)
 		slot.add_child(button)
 		_resets[button] = is_default
+	return slot
 
 
 ## Opens the panel below the button, at least as wide as it

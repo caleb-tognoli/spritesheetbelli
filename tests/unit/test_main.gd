@@ -844,6 +844,6 @@ func test_outline_keeps_frames_in_place() -> void:
 	var after := Global.spritesheet.get_frame_origin(Vector2i(0, 0))
 	assert_eq(Global.spritesheet.frames[Vector2i(0, 0)].get_size(), Vector2i(12, 12))
 	assert_eq(after, before - Vector2i(2, 2), "the pixels stay in place")
-	await main.remove_background(Color.BLACK, 0.05)
+	await main.color_key.remove(Color.BLACK, 0.05)
 	assert_true(Global.spritesheet.has_frame_origin(Vector2i(0, 0)), "keeps its place")
 	assert_eq(Global.document.get_history()[-1], "Remove background")

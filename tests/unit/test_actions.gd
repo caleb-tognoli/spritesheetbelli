@@ -157,8 +157,8 @@ func test_trim_and_color_key_actions() -> void:
 	Global.document.perform("Add", Global.spritesheet.add_frames.bind([img] as Array[Image]))
 	main.preview.set_selected_coords([Vector2i(3, 0)] as Array[Vector2i])
 	Actions.run(&"color_key")
-	assert_eq(main.color_key_dialog.key.get_color(), Color.MAGENTA, "suggests the corner colour")
-	main.color_key_dialog.remove_button.pressed.emit()
+	assert_eq(main.color_key.dropdown.get_color(), Color.MAGENTA, "suggests the corner colour")
+	main.color_key.dropdown.confirm_button.pressed.emit()
 	# Frames are processed on worker threads
 	for i in 5:
 		await get_tree().process_frame

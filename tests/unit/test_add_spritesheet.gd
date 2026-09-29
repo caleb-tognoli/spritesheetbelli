@@ -5,6 +5,7 @@ var window: AddSpritesheetWindow
 
 func before_each() -> void:
 	Global.document.reset()
+	Settings.set_value(&"background_tolerance", SheetBackground.DEFAULT_TOLERANCE)
 	window = load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
 	add_child(window)
 

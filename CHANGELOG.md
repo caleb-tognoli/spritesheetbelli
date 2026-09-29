@@ -200,10 +200,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   for the Grid cut.
 - Add Spritesheet notices when a sheet is drawn on a solid colour instead of
   transparency, like magenta, and makes it transparent: the grid is guessed and sprites
-  are found as if it were, and frames come in without it. "Make [colour] transparent" is
-  on for such sheets, with a tolerance. The colour can be chosen by hand for any sheet,
-  with the colour picker or by clicking the preview with the eyedropper, and the preview
-  updates as you go. Reloading a linked sheet makes its background transparent again.
+  are found as if it were, and frames come in without it. The eyedropper button in the
+  toolbar, in every cut, shows the colour under its icon while it's on, and opens a panel
+  to turn it off, choose the colour (with the colour picker, or by clicking the preview
+  with the eyedropper) and set a tolerance. The preview updates as you go; Confirm keeps
+  it, Cancel puts back what it was. Reloading a linked sheet makes its background
+  transparent again.
 - Add Spritesheet's Find sprites shows the image with a numbered box over each sprite,
   numbered in the order the frames are added, and the boxes can be edited: click to
   select (Shift or Ctrl for several), drag inside to move, drag an edge or corner to
@@ -334,12 +336,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Add Spritesheet opens in Grid when the sheet is in the Grid layout and in Find sprites
   when it's in the Packed layout. A data file next to the image still opens it cut where
   the data file says.
-- Remove Background Colour opens a small panel over the preview instead of a dialog, with
-  the same colour, eyedropper and tolerance as Add Spritesheet. While it's open, the
-  selected frames are shown with the colour removed, and frames can still be selected and
-  the view moved. Nothing changes until Remove, which is one step to undo; Cancel or
-  Escape leaves the frames as they were. The eyedropper picks the colour by clicking a
-  frame, as the frame is, not as previewed.
+- Remove Background Colour is a panel that drops down from an eyedropper button in the
+  canvas toolbar (also Frame > Remove Background Colour…) instead of a dialog, with the
+  same colour, eyedropper and tolerance as Add Spritesheet. While it's open, the frames
+  are shown with the colour removed. Nothing changes until Confirm, which is one step to
+  undo; Cancel, Escape or clicking away leaves the frames as they were. The eyedropper
+  picks the colour by clicking a frame, as the frame is, not as previewed. Dragging in
+  the colour picker no longer makes the app lag on big sheets.
 - Remove Background Colour works on every frame when none are selected, like Align and
   Trim, and is available whenever the sheet has frames.
 

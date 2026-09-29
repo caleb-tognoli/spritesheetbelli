@@ -17,6 +17,8 @@ const MIN_BORDER_SHARE := 0.8
 const BORDER_TOLERANCE := 0.02
 ## How close pixels must be to the background colour to be removed, unless told otherwise
 const DEFAULT_TOLERANCE := 0.1
+## Pixels in a band of rows keyed on its own thread, see [method remove_async]
+const BAND_PIXELS := 65536
 
 
 ## The background colour of [param img], opaque, or null when it doesn't have one
@@ -54,6 +56,31 @@ static func remove(img: Image, color: Color, tolerance := DEFAULT_TOLERANCE) -> 
 	var copy := img.duplicate() as Image
 	ImageUtils.color_key(copy, color, tolerance)
 	return copy
+
+
+## Like [method remove], but worked out on worker threads, in bands of rows, while the main
+## thread goes on, e.g. to preview a colour as it's being picked. To be awaited.
+static func remove_async(img: Image, color: Color, tolerance := DEFAULT_TOLERANCE) -> Image:
+	var size := img.get_size()
+	var bands := clampi(size.x * size.y / BAND_PIXELS, 1, OS.get_processor_count() * 2)
+	bands = mini(bands, size.y)
+	var keyed := await Parallel.map(
+		bands,
+		func(i: int) -> Image:
+			var top := size.y * i / bands
+			var band := img.get_region(Rect2i(0, top, size.x, size.y * (i + 1) / bands - top))
+			ImageUtils.color_key(band, color, tolerance)
+			return band
+	)
+	if bands == 1:
+		return keyed[0]
+	var result := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	for i in bands:
+		var band: Image = keyed[i]
+		result.blit_rect(
+			band, Rect2i(Vector2i.ZERO, band.get_size()), Vector2i(0, size.y * i / bands)
+		)
+	return result
 
 
 ## Whether [param a] is close enough to [param b] to be keyed with [param tolerance], the

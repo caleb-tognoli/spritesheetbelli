@@ -129,6 +129,14 @@ func test_big_images_are_keyed_the_same_on_threads() -> void:
 		var alpha := 0.0 if distance <= max_distance else 1.0
 		for x: int in [0, 321, 639]:
 			assert_eq(keyed.get_pixel(x, y).a, alpha, "%d, %d" % [x, y])
+	# In bands of rows, while the main thread goes on
+	var in_bands := await SheetBackground.remove_async(img, Color8(100, 0, 155), 0.05)
+	assert_eq(in_bands.get_size(), img.get_size())
+	assert_eq(in_bands.get_data(), keyed.get_data(), "the same pixels")
+	var small := magenta_sheet()
+	var small_keyed := await SheetBackground.remove_async(small, MAGENTA)
+	assert_eq(small_keyed.get_data(), SheetBackground.remove(small, MAGENTA).get_data())
+	assert_eq(small.get_pixel(0, 0), MAGENTA, "the image is left alone")
 
 
 func test_the_grid_is_guessed_from_the_gaps_of_the_background() -> void:
@@ -184,19 +192,29 @@ func test_the_import_makes_the_background_transparent() -> void:
 	assert_clean(Global.spritesheet, "added")
 
 
+## Waits for the background to be previewed, keyed on worker threads
+func settle() -> void:
+	for i in 5:
+		await get_tree().process_frame
+
+
 func test_turning_it_off_keeps_the_background() -> void:
 	window.setup(magenta_sheet())
+	window.background.open()
 	window.background.enabled_check.button_pressed = false
-	assert_clean(window.spritesheet, "cut again once, at the frame's end")
-	await get_tree().process_frame
+	assert_clean(window.spritesheet, "previewed at the frame's end")
+	await settle()
+	assert_eq(window.spritesheet.frames[Vector2i.ZERO].get_pixel(0, 0), MAGENTA, "previewed")
+	assert_false(window.background.tolerance_field.editable)
+	window.background.confirm()
 	assert_eq(window.spritesheet.frames[Vector2i.ZERO].get_pixel(0, 0), MAGENTA)
 	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2), "no gaps to guess from, so kept")
-	assert_false(window.background.tolerance_field.editable)
 
 	# A grid set by hand stays
 	window.update_grid_size(2, 1)
+	window.background.open()
 	window.background.enabled_check.button_pressed = true
-	await get_tree().process_frame
+	window.background.confirm()
 	assert_eq(window.spritesheet.grid_size, Vector2i(2, 1), "set by hand")
 	assert_clean(window.spritesheet, "on again")
 
@@ -209,9 +227,13 @@ func test_the_tolerance_takes_more_colours() -> void:
 	window.update_grid_size(4, 2)
 	var second := window.spritesheet.frames[Vector2i(1, 0)] as Image
 	assert_eq(second.get_pixel(0, 1).a, 1.0, "not within 10%")
+	window.background.open()
 	window.background.tolerance_field.value = 20
 	window.background.tolerance_field.value = 15
-	await get_tree().process_frame
+	await settle()
+	second = window.spritesheet.frames[Vector2i(1, 0)]
+	assert_eq(second.get_pixel(0, 1).a, 0.0, "previewed within 15%")
+	window.background.confirm()
 	second = window.spritesheet.frames[Vector2i(1, 0)]
 	assert_eq(second.get_pixel(0, 1).a, 0.0, "within 15%")
 
@@ -227,15 +249,19 @@ func test_transparent_sheets_can_have_a_colour_removed_by_hand() -> void:
 	assert_eq(window.spritesheet.frames.size(), 8)
 
 	var preview := window.preview_area.spritesheet_preview
+	window.background.open()
 	window.background.set_picking(true)
 	assert_true(preview.picking)
 	preview.color_picked.emit(Color.TRANSPARENT)
 	assert_true(window.background.is_picking(), "nothing to pick on a transparent pixel")
 	preview.color_picked.emit(Color.GREEN)
 	assert_false(preview.picking, "picked")
+	assert_true(window.background.is_open(), "still open")
 	assert_true(window.background.is_on())
 	assert_eq(window.background.get_color(), Color.GREEN)
-	await get_tree().process_frame
+	await settle()
+	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2), "the grid is guessed on Confirm")
+	window.background.confirm()
 	assert_eq(window.spritesheet.frames.size(), 4, "the green sprites are gone")
 	assert_eq(window.spritesheet.grid_size, Vector2i(4, 1), "guessed again")
 
@@ -247,6 +273,7 @@ func test_the_eyedropper_picks_from_the_preview() -> void:
 	window.preview_area.container.stretch = false
 	(preview.get_viewport() as SubViewport).size = Vector2i(600, 400)
 	preview.fit_to_view()
+	window.background.open()
 	window.background.set_picking(true)
 	# The blue eye of the second sprite
 	var target := preview.get_frame_world_rect(Vector2i(1, 0)).position + Vector2(3.5, 3.5)
@@ -257,7 +284,71 @@ func test_the_eyedropper_picks_from_the_preview() -> void:
 	preview._unhandled_input(click)
 	assert_eq(window.background.get_color(), Color.BLUE)
 	assert_false(window.background.is_picking())
+	assert_true(window.background.is_open(), "stays open")
 	assert_true(preview.get_selected_coords().is_empty(), "picking doesn't select")
+	window.background.cancel()
+
+
+func test_cancel_puts_the_background_back() -> void:
+	window.setup(magenta_sheet())
+	window.update_grid_size(2, 2)
+	var frames := window.spritesheet.frames.duplicate()
+	var cut_image := window.spritesheet_image
+	for close: Callable in [
+		func() -> void: window.background.cancel_button.pressed.emit(),
+		func() -> void:
+			var escape := InputEventAction.new()
+			escape.action = &"ui_cancel"
+			escape.pressed = true
+			window.background._input(escape),
+		func() -> void:
+			var click := InputEventMouseButton.new()
+			click.button_index = MOUSE_BUTTON_LEFT
+			click.pressed = true
+			click.position = window.preview_area.container.get_global_rect().get_center()
+			window.background._input(click),
+	]:
+		window.background.open()
+		window.background.swatch.color = Color.RED
+		window.background.enabled_check.button_pressed = false
+		window.background.tolerance_field.value = 40
+		await settle()
+		assert_eq(window.spritesheet_image, window.source_image, "previewed without it")
+		close.call()
+		assert_false(window.background.is_open())
+		assert_true(window.background.is_on(), "on again")
+		assert_eq(window.background.get_color(), MAGENTA)
+		assert_eq(window.background.get_tolerance(), SheetBackground.DEFAULT_TOLERANCE)
+		assert_eq(window.spritesheet_image, cut_image, "the image as it was")
+		assert_eq(window.spritesheet.grid_size, Vector2i(2, 2))
+		assert_eq(window.spritesheet.frames.size(), frames.size())
+		assert_clean(window.spritesheet, "cut as it was")
+		await settle()
+		assert_eq(window.spritesheet_image, cut_image, "nothing keyed late")
+	assert_eq(Settings.get_value(&"background_tolerance"), 0.1, "not remembered")
+
+
+func test_changes_are_previewed_once_a_frame_and_cut_on_confirm() -> void:
+	window.setup(magenta_sheet())
+	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
+	var boxes := window.box_editor.get_boxes()
+	window.background.open()
+	var passes := window.background_passes
+	# Like dragging in the colour picker
+	for i in 20:
+		window.background.set_key(true, Color(1, 0, 1 - i * 0.002), 0.1)
+		window.background.changed.emit()
+	await settle()
+	assert_eq(window.background_passes, passes + 1, "one keying pass")
+	assert_eq(window.spritesheet_image.get_pixel(0, 0).a, 0.0, "previewed")
+	assert_eq(window.box_editor.view.image, window.spritesheet_image, "shown under the boxes")
+	assert_eq(window.box_editor.get_boxes(), boxes, "not found again while it changes")
+	window.background.set_key(false, MAGENTA, 0.1)
+	window.background.changed.emit()
+	await settle()
+	assert_eq(window.box_editor.view.image, window.source_image)
+	window.background.confirm()
+	assert_eq(window.box_editor.get_boxes().size(), 1, "found again: one big sprite")
 
 
 func test_reloading_removes_the_background_again() -> void:
@@ -266,8 +357,9 @@ func test_reloading_removes_the_background_again() -> void:
 	var path := dir.path_join("magenta.png")
 	magenta_sheet().save_png(path)
 	window.setup(magenta_sheet(), path)
+	window.background.open()
 	window.background.tolerance_field.value = 5
-	await get_tree().process_frame
+	window.background.confirm()
 	var source: Dictionary = window.spritesheet.frame_sources[Vector2i(1, 0)]
 	assert_eq(source.key, {"color": "ff00ff", "tolerance": 0.05})
 	assert_eq(Settings.get_value(&"background_tolerance"), 0.05, "remembered")
@@ -286,8 +378,38 @@ func test_reloading_removes_the_background_again() -> void:
 	assert_color(pixels, Vector2i(1, 1), Color.YELLOW)
 
 	# Without the background removed, sources don't say so
+	window.background.open()
 	window.background.enabled_check.button_pressed = false
-	await get_tree().process_frame
+	window.background.confirm()
 	assert_false(window.spritesheet.frame_sources[Vector2i.ZERO].has("key"))
+
+
+func test_the_background_button_is_in_every_cut() -> void:
+	var frame := {"frame": {"x": 1, "y": 1, "w": 12, "h": 12}}
+	var data := SheetData.parse_json(JSON.stringify({"frames": {"0": frame}}))
+	window.setup(magenta_sheet(), "", data, "sheet.json")
+	for cut: AddSpritesheetWindow.Cut in [
+		AddSpritesheetWindow.Cut.GRID,
+		AddSpritesheetWindow.Cut.DETECT,
+		AddSpritesheetWindow.Cut.DATA
+	]:
+		window.set_cut(cut)
+		# The window itself isn't shown in tests
+		var shown := true
+		for node: Node in [window.background, window.background.get_parent()]:
+			shown = shown and (node as Control).visible
+		assert_true(shown, "in cut %d" % cut)
+	assert_true(window.background.shows_color, "shows the colour while on")
+	assert_true(window.background.enabled_check.visible, "can be turned off")
+	# Escape in the window closes the panel, not the window
+	window.background.open()
+	var closed := [false]
+	window.canceled.connect(func() -> void: closed[0] = true)
+	var escape := InputEventAction.new()
+	escape.action = &"ui_cancel"
+	escape.pressed = true
+	window.window_input.emit(escape)
+	assert_false(closed[0], "the window stays")
+	window.background.cancel()
 
 #endregion

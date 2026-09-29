@@ -1,22 +1,26 @@
 extends "res://tests/test_case.gd"
-## Remove Background Colour: previewed on the canvas without changing the sheet, removed as
-## one step, closed without a trace, and picked from a frame with the eyedropper
+## Remove Background Colour, in a panel dropped down from the canvas toolbar: previewed on
+## the canvas without changing the sheet, removed as one step on Confirm, closed without a
+## trace by Cancel, Escape or clicking away, and picked from a frame with the eyedropper
 
 var main: Control
 var preview: SpritesheetPreview
 var sheet: Spritesheet
-var dialog: ColorKeyDialog
+var color_key: ColorKeyPreview
+var dropdown: ColorKeyDropdown
 
 
 func before_each() -> void:
 	Global.document.reset()
+	# Remembered between runs, so each test starts from the default
 	Settings.set_value(&"background_tolerance", SheetBackground.DEFAULT_TOLERANCE)
 	main = load("res://ui/main/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
 	preview = main.preview
 	sheet = Global.spritesheet
-	dialog = main.color_key_dialog
+	color_key = main.color_key
+	dropdown = color_key.dropdown
 	Global.document.perform(
 		"Add",
 		sheet.add_frames.bind(
@@ -57,14 +61,43 @@ func select(coords: Array[Vector2i]) -> void:
 	preview.set_selected_coords(coords)
 
 
+func press(button_index: MouseButton, at: Vector2) -> InputEventMouseButton:
+	var click := InputEventMouseButton.new()
+	click.button_index = button_index
+	click.pressed = true
+	click.position = at
+	return click
+
+
+func escape() -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = &"ui_cancel"
+	event.pressed = true
+	return event
+
+
+func test_the_button_is_in_the_toolbar() -> void:
+	assert_true(dropdown.is_inside_tree())
+	assert_true(main.preview_area.toolbar.is_ancestor_of(dropdown))
+	assert_eq(dropdown.icon, ColorKeyDropdown.EYEDROPPER_ICON)
+	assert_eq(dropdown.tooltip_text, Actions.get_tooltip(&"color_key"))
+	assert_false(dropdown.disabled)
+	Global.document.perform("Clear", sheet.remove_frames.bind(sheet.get_sorted_coords()))
+	await get_tree().process_frame
+	assert_true(dropdown.disabled, "nothing to remove it from")
+	assert_false(Actions.is_enabled(&"color_key"))
+
+
 func test_the_preview_leaves_the_sheet_alone() -> void:
 	select([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
 	Global.document.mark_saved()
 	var history := Global.document.get_history()
 	Actions.run(&"color_key")
-	assert_true(dialog.visible)
-	assert_eq(dialog.key.get_color(), Color.MAGENTA, "suggests the corner colour")
-	assert_false(dialog.key.enabled_check.visible, "nothing to turn off")
+	assert_true(dropdown.is_open())
+	assert_eq(dropdown.get_color(), Color.MAGENTA, "suggests the corner colour")
+	assert_true(dropdown.is_on())
+	assert_false(dropdown.enabled_check.visible, "nothing to turn off")
+	assert_eq(dropdown.note.text, "In 2 selected frames")
 	await settle()
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0).a, 0.0, "removed in the preview")
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(3, 3), Color.RED, "the sprite stays")
@@ -73,21 +106,21 @@ func test_the_preview_leaves_the_sheet_alone() -> void:
 	assert_eq(Global.document.get_history(), history, "nothing to undo")
 	assert_false(Global.document.is_dirty, "nothing to save")
 
-	# Other frames selected while open are previewed instead
+	# Other frames selected while open (with the keyboard) are previewed instead
 	select([Vector2i(1, 0)] as Array[Vector2i])
 	await settle()
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0).a, 0.0)
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "no longer selected")
-	assert_eq(dialog.targets_label.text, "In 1 selected frames")
+	assert_eq(dropdown.note.text, "In 1 selected frames")
 
 
-func test_remove_is_one_step_on_the_selected_frames() -> void:
+func test_confirm_is_one_step_on_the_selected_frames() -> void:
 	select([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
 	Actions.run(&"color_key")
-	dialog.key.tolerance_field.value = 20
+	dropdown.tolerance_field.value = 20
 	var steps := Global.document.get_history().size()
-	dialog.remove_button.pressed.emit()
-	assert_false(dialog.visible, "closes")
+	dropdown.confirm_button.pressed.emit()
+	assert_false(dropdown.is_open(), "closes")
 	await settle()
 	assert_eq(Global.document.get_history().size(), steps + 1, "one step")
 	assert_eq(Global.document.get_history()[-1], "Remove background")
@@ -96,6 +129,7 @@ func test_remove_is_one_step_on_the_selected_frames() -> void:
 	assert_eq(sheet.frames[Vector2i(1, 0)].get_pixel(0, 0), Color.MAGENTA, "not selected")
 	assert_eq(sheet.frames[Vector2i(2, 0)].get_pixel(3, 3), Color.BLUE)
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0), Color.MAGENTA)
+	assert_eq(Settings.get_value(&"background_tolerance"), 0.2, "remembered")
 	Global.document.undo()
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_pixel(0, 0), Color.MAGENTA, "undone at once")
 	assert_eq(sheet.frames[Vector2i(2, 0)].get_pixel(0, 0), Color.MAGENTA, "undone at once")
@@ -107,12 +141,12 @@ func test_every_frame_when_none_are_selected() -> void:
 	assert_true(Actions.is_enabled(&"color_key"), "enabled with frames")
 	Actions.run(&"color_key")
 	await settle()
-	assert_eq(dialog.targets_label.text, "In all 3 frames")
-	assert_false(dialog.remove_button.disabled)
+	assert_eq(dropdown.note.text, "In all 3 frames")
+	assert_false(dropdown.confirm_button.disabled)
 	for x in 3:
 		assert_eq(shown(Vector2i(x, 0)).get_pixel(0, 0).a, 0.0, "previewed in %d" % x)
 	var steps := Global.document.get_history().size()
-	dialog.remove_button.pressed.emit()
+	dropdown.confirm()
 	await settle()
 	assert_eq(Global.document.get_history().size(), steps + 1, "one step")
 	for x in 3:
@@ -122,36 +156,48 @@ func test_every_frame_when_none_are_selected() -> void:
 	for x in 3:
 		assert_eq(sheet.frames[Vector2i(x, 0)].get_pixel(0, 0), Color.MAGENTA)
 
-	Global.document.perform("Clear", sheet.remove_frames.bind(sheet.get_sorted_coords()))
-	assert_false(Actions.is_enabled(&"color_key"), "nothing to remove it from")
 
-
-func test_cancel_and_escape_show_the_frames_as_they_are() -> void:
+func test_cancel_escape_and_clicking_away_leave_the_frames() -> void:
 	select([Vector2i(0, 0)] as Array[Vector2i])
+	var steps := Global.document.get_history().size()
 	Actions.run(&"color_key")
 	await settle()
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0).a, 0.0)
-	dialog.cancel_button.pressed.emit()
-	assert_false(dialog.visible)
+	dropdown.tolerance_field.value = 30
+	dropdown.cancel_button.pressed.emit()
+	assert_false(dropdown.is_open())
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "restored")
+	assert_eq(Settings.get_value(&"background_tolerance"), 0.1, "not remembered")
 	# Changes made after closing don't bring the preview back
-	dialog.key.tolerance_field.value = 30
+	dropdown.tolerance_field.value = 40
 	await settle()
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA)
 
 	Actions.run(&"color_key")
 	await settle()
-	dialog.key.set_picking(true)
-	var escape := InputEventAction.new()
-	escape.action = &"ui_cancel"
-	escape.pressed = true
-	dialog._input(escape)
-	assert_false(dialog.key.is_picking(), "Escape puts the eyedropper away first")
-	assert_true(dialog.visible)
-	dialog._input(escape)
-	assert_false(dialog.visible, "then closes")
+	dropdown.set_picking(true)
+	dropdown._input(escape())
+	assert_false(dropdown.is_picking(), "Escape puts the eyedropper away first")
+	assert_true(dropdown.is_open())
+	dropdown._on_popup_input(escape())
+	assert_false(dropdown.is_open(), "then closes, also from the panel")
+	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "restored")
+
+	Actions.run(&"color_key")
+	await settle()
+	var away: Vector2 = main.preview_area.container.get_global_rect().get_center()
+	dropdown._input(press(MOUSE_BUTTON_WHEEL_UP, away))
+	assert_true(dropdown.is_open(), "the wheel zooms")
+	dropdown._input(press(MOUSE_BUTTON_LEFT, away))
+	assert_false(dropdown.is_open(), "clicking away closes it")
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "restored")
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_pixel(0, 0), Color.MAGENTA)
+	assert_eq(Global.document.get_history().size(), steps, "nothing to undo")
+
+	# The button closes it again
+	Actions.run(&"color_key")
+	dropdown.pressed.emit()
+	assert_false(dropdown.is_open())
 
 
 func test_the_eyedropper_picks_from_a_frame_as_it_is() -> void:
@@ -162,22 +208,26 @@ func test_the_eyedropper_picks_from_a_frame_as_it_is() -> void:
 	main.preview_area.container.stretch = false
 	(preview.get_viewport() as SubViewport).size = Vector2i(600, 400)
 	preview.fit_to_view()
-	dialog.key.set_picking(true)
+	dropdown.set_picking(true)
 	assert_true(preview.picking)
 	# The magenta corner of the second frame, shown transparent in the preview
 	var target := preview.get_frame_world_rect(Vector2i(1, 0)).position + Vector2(0.5, 0.5)
-	var click := InputEventMouseButton.new()
-	click.button_index = MOUSE_BUTTON_LEFT
-	click.pressed = true
-	click.position = (target - preview.camera.position) * preview.camera.zoom
+	var click := press(MOUSE_BUTTON_LEFT, (target - preview.camera.position) * preview.camera.zoom)
+	# The click reaches the preview rather than closing the panel
+	var on_preview := press(
+		MOUSE_BUTTON_LEFT, main.preview_area.container.get_global_rect().get_center()
+	)
+	dropdown._input(on_preview)
+	assert_true(dropdown.is_open(), "picking")
 	preview._unhandled_input(click)
-	assert_eq(dialog.key.get_color(), Color.MAGENTA, "the frame's colour, not the preview's")
-	assert_false(dialog.key.is_picking())
+	assert_eq(dropdown.get_color(), Color.MAGENTA, "the frame's colour, not the preview's")
+	assert_false(dropdown.is_picking())
+	assert_true(dropdown.is_open(), "stays open")
 	# The green square of the same frame
-	dialog.key.set_picking(true)
+	dropdown.set_picking(true)
 	click.position = (target + Vector2(3, 3) - preview.camera.position) * preview.camera.zoom
 	preview._unhandled_input(click)
-	assert_eq(dialog.key.get_color(), Color.GREEN)
+	assert_eq(dropdown.get_color(), Color.GREEN)
 	assert_eq(
 		preview.get_selected_coords(),
 		[Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i],
@@ -191,13 +241,34 @@ func test_the_eyedropper_picks_from_a_frame_as_it_is() -> void:
 func test_the_tolerance_is_remembered() -> void:
 	select([Vector2i(0, 0)] as Array[Vector2i])
 	Actions.run(&"color_key")
-	assert_eq(dialog.key.get_tolerance(), SheetBackground.DEFAULT_TOLERANCE)
-	dialog.key.tolerance_field.value = 25
-	dialog.cancel_button.pressed.emit()
+	assert_eq(dropdown.get_tolerance(), SheetBackground.DEFAULT_TOLERANCE)
+	dropdown.tolerance_field.value = 25
+	dropdown.confirm()
 	assert_eq(Settings.get_value(&"background_tolerance"), 0.25)
+	await settle()
 	Settings.set_value(&"background_tolerance", 0.3)
 	Actions.run(&"color_key")
-	assert_eq(dialog.key.get_tolerance(), 0.3, "as Add Spritesheet left it")
+	assert_eq(dropdown.get_tolerance(), 0.3, "as Add Spritesheet left it")
+	dropdown.cancel()
+
+
+func test_changes_in_one_frame_are_keyed_once() -> void:
+	Actions.run(&"color_key")
+	await settle()
+	var passes := color_key.passes
+	assert_eq(passes, 1, "opening previews")
+	# Like dragging in the colour picker
+	for i in 20:
+		dropdown.set_key(true, Color(1, 0, 1 - i * 0.01), 0.1)
+		dropdown.changed.emit()
+	await settle()
+	assert_eq(color_key.passes, passes + 1, "one keying pass")
+	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0).a, 1.0, "the last colour isn't magenta")
+	dropdown.set_key(true, Color.MAGENTA, 0.1)
+	dropdown.changed.emit()
+	await settle()
+	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0).a, 0.0)
+	dropdown.cancel()
 
 
 func test_the_preview_is_at_the_sheets_scale() -> void:

@@ -47,8 +47,11 @@ var align_option := OptionButton.new()
 var more_options_btn := OptionsDropdown.new("Offset & Spacing")
 ## Keeps the sprites where they are in the image, in the packed layout
 var keep_layout := CheckBox.new()
-## Makes a colour transparent before cutting, on for sheets drawn on a solid colour
-var background := ColorKeyControl.new()
+## Makes a colour transparent before cutting, on for sheets drawn on a solid colour, in a
+## panel that drops down from its button in the toolbar
+var background := ColorKeyDropdown.new(true)
+## Keying passes started to preview the background, see [method _preview_background]
+var background_passes := 0
 ## The image with a box over each sprite, shown instead of the preview when finding
 ## sprites: the boxes, edited or not, are what's cut
 var box_editor := SpriteBoxEditor.new()
@@ -64,9 +67,20 @@ var _source_pages: Array[Image] = []
 ## Whether the grid is still the guessed one, which is guessed again when the background
 ## changes, as that changes where the sprites are
 var _grid_guessed := true
-## Whether the image is cut again at the end of the frame, once for many changes to the
-## background, see [method _on_background_changed]
+## Whether the background is previewed at the end of the frame, once for many changes to
+## it, see [method _on_background_changed]
 var _background_queued := false
+## Whether the images are being keyed on worker threads to preview the background, and
+## whether it changed in the meantime, so they're keyed again after
+var _keying := false
+var _key_stale := false
+## Counts new images, confirms and cancels: keying started before one of them is dropped
+var _key_generation := 0
+## What the images cut were keyed with, see [method _get_key]
+var _keyed_with := []
+## The images cut and what they were keyed with when the background's panel opened, which
+## Cancel puts back
+var _before_background := []
 ## Whether the cell size was set last, rather than the grid: the one set last is kept when
 ## the offset or spacing change, and the other follows
 var _by_cell_size := false
@@ -91,11 +105,8 @@ func _ready() -> void:
 	window_input.connect(
 		func(event: InputEvent) -> void:
 			if event.is_action_pressed(&"ui_cancel") and not event.is_echo():
-				# Escape puts the eyedropper away first
-				if background.is_picking():
-					background.set_picking(false)
-					set_input_as_handled()
-				else:
+				# The background's panel takes it first, see ColorKeyDropdown._input
+				if not background.is_open():
 					close_requested.emit()
 	)
 	lock_empty_cells.toggled.connect(
@@ -154,11 +165,20 @@ func _ready() -> void:
 	_update_options_label()
 
 	_build_cut_controls()
+	background.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	background.tooltip_text = (
+		"Makes a colour transparent before cutting, like a background the sheet is drawn on "
+		+ "instead of transparency"
+	)
+	background.opening.connect(
+		func() -> void: _before_background = [spritesheet_image, _other_pages, _keyed_with]
+	)
 	background.changed.connect(_on_background_changed)
-	background.watch_preview(preview_area.spritesheet_preview)
+	background.confirmed.connect(_on_background_confirmed)
+	background.canceled.connect(_on_background_canceled)
+	background.add_picker(preview_area.spritesheet_preview, preview_area.container)
 	# The eyedropper picks from the image under the boxes too
-	background.picking_changed.connect(func(on: bool) -> void: box_editor.view.picking = on)
-	box_editor.view.color_picked.connect(background.pick)
+	background.add_picker(box_editor.view, box_editor.view)
 	# Before the number of frames, which ends the toolbar
 	slice_info.add_sibling(background)
 	slice_info.get_parent().move_child(slice_info, background.get_index())
@@ -180,6 +200,8 @@ func _ready() -> void:
 	# Show the whole sheet once the window has its size
 	visibility_changed.connect(
 		func() -> void:
+			if not visible and background.is_open():
+				background.cancel()
 			if visible:
 				await get_tree().process_frame
 				preview_area.spritesheet_preview.fit_to_view()
@@ -200,6 +222,10 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	_source_pages = _load_other_pages()
 	var found: Variant = SheetBackground.detect(img)
 	_detected_background = found
+	if background.is_open():
+		background.cancel()
+	_key_generation += 1
+	_keyed_with = []
 	# Without one, the swatch starts at the top-left pixel, most often the background
 	background.set_key(
 		found != null,
@@ -251,12 +277,17 @@ func _guess_grid(or_keep := false) -> void:
 	cell_height.set_value_no_signal(cell_size.y)
 
 
-## Makes the background colour transparent in the images that are cut, when it's on. The
-## sprites are to be found again, as that changes where they are.
+## Makes the background colour transparent in the images that are cut, when it's on,
+## unless they already are, as previewed. The sprites are to be found again, as that
+## changes where they are.
 func _remove_background() -> void:
+	_boxes_stale = true
+	var key := _get_key()
+	if key == _keyed_with:
+		return
+	_keyed_with = key
 	spritesheet_image = source_image
 	_other_pages = _source_pages
-	_boxes_stale = true
 	if background.is_on():
 		var color := background.get_color()
 		var tolerance := background.get_tolerance()
@@ -267,16 +298,91 @@ func _remove_background() -> void:
 	box_editor.set_image(spritesheet_image)
 
 
-## Cuts the image again with the new background at the end of the frame, once for all the
-## changes made until then, like dragging in the colour picker
+## Whether the background is made transparent, and its colour and tolerance when it is
+func _get_key() -> Array:
+	if not background.is_on():
+		return [false]
+	return [true, background.get_color(), background.get_tolerance()]
+
+
+## Previews the background at the end of the frame, once for all the changes made until
+## then, like dragging in the colour picker
 func _on_background_changed() -> void:
 	if not _background_queued:
 		_background_queued = true
-		_cut_with_background.call_deferred()
+		_preview_background.call_deferred()
 
 
-func _cut_with_background() -> void:
+## Shows the images keyed with the background as it's being set. They're keyed on worker
+## threads, one pass at a time: changes made during a pass are keyed after it, with the
+## latest colour only. The grid is guessed again and the sprites are found again on
+## Confirm, as that takes a while on big sheets.
+func _preview_background() -> void:
 	_background_queued = false
+	if not background.is_open():
+		return
+	if _keying:
+		_key_stale = true
+		return
+	var key := _get_key()
+	if key == _keyed_with:
+		return
+	var generation := _key_generation
+	_keying = true
+	background_passes += 1
+	var sources: Array[Image] = [source_image]
+	sources.append_array(_source_pages)
+	var keyed: Array[Image] = []
+	for img in sources:
+		if img and key[0]:
+			keyed.append(await SheetBackground.remove_async(img, key[1], key[2]))
+		else:
+			keyed.append(img)
+	_keying = false
+	# A new image, Confirm or Cancel came in the meantime
+	if generation != _key_generation:
+		return
+	_keyed_with = key
+	spritesheet_image = keyed[0]
+	_other_pages = keyed.slice(1)
+	box_editor.set_image(spritesheet_image)
+	# Found sprites keep their boxes until Confirm
+	if get_cut() != Cut.DETECT:
+		_slice()
+	if _key_stale:
+		_key_stale = false
+		_on_background_changed()
+
+
+func _on_background_confirmed() -> void:
+	_key_generation += 1
+	_key_stale = false
+	if background.has_changed():
+		_cut_with_background()
+	else:
+		_restore_background()
+
+
+## Puts back the images cut as they were when the background's panel opened
+func _on_background_canceled() -> void:
+	_key_generation += 1
+	_key_stale = false
+	_restore_background()
+
+
+func _restore_background() -> void:
+	if _before_background.is_empty() or spritesheet_image == _before_background[0]:
+		return
+	spritesheet_image = _before_background[0]
+	_other_pages = _before_background[1]
+	_keyed_with = _before_background[2]
+	box_editor.set_image(spritesheet_image)
+	_slice()
+
+
+## Cuts the image again with the background as it's set, guessing the grid again (unless
+## it was set by hand) and finding the sprites again
+func _cut_with_background() -> void:
 	_remove_background()
 	if _grid_guessed:
 		_guess_grid(true)

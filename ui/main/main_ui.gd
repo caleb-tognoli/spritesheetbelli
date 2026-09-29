@@ -85,7 +85,7 @@ const SLOW_SCALE_WORK := 1_000_000
 ## Action buttons in the toolbar, in groups, and the view toggles next to the zoom. The
 ## first group works on every frame when none are selected.
 const TOOLBAR_GROUPS := [
-	[&"align_menu", &"pivot_menu", &"trim", &"pin_toggle"],
+	[&"align_menu", &"pivot_menu", &"trim", &"pin_toggle", &"color_key"],
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
@@ -141,7 +141,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 var shortcuts_dialog := ShortcutsDialog.new()
 var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
-var color_key_dialog := ColorKeyDialog.new()
+var color_key := ColorKeyPreview.new()
 var outline_dialog := OutlineDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
@@ -230,7 +230,8 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
 	add_child(settings_window)
-	color_key_dialog.setup(preview_area, remove_background)
+	add_child(color_key)
+	color_key.setup(preview_area, edit_selection_in_background)
 	add_child(outline_dialog)
 	add_child(export_dialog)
 	export_dialog.export_requested.connect(files.choose_export_path)
@@ -250,7 +251,9 @@ func _ready() -> void:
 	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
 	export_btn.tooltip_text = Actions.get_tooltip(&"export")
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
-	preview_area.set_toolbar_actions(TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS)
+	preview_area.set_toolbar_actions(
+		TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS, {&"color_key": color_key.dropdown}
+	)
 	var add_keys := [
 		Actions.get_shortcut_text(&"add_sprites"), Actions.get_shortcut_text(&"add_spritesheet")
 	]
@@ -451,7 +454,7 @@ func _register_actions() -> void:
 			edit_targets.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
 			has_frames
 		)
-	add.call(&"color_key", "Remove Background Colour…", color_key_dialog.open, has_frames)
+	add.call(&"color_key", "Remove Background Colour…", color_key.open, has_frames)
 	add.call(
 		&"add_outline",
 		"Add Outline…",
@@ -654,21 +657,6 @@ func add_outline(color: Color, thickness: int, corners: bool) -> void:
 		func(img: Image) -> Image: return ImageUtils.outline(img, color, thickness, corners),
 		FrameEdits.outline_move(thickness),
 		FrameEdits.outline_op(color, thickness, corners)
-	)
-
-
-## Makes pixels close to [param color] transparent in the selected frames, or in every frame
-## when none are selected
-func remove_background(color: Color, tolerance: float) -> void:
-	await edit_selection_in_background(
-		"Remove background",
-		"Removing background",
-		func(img: Image) -> Image:
-			ImageUtils.color_key(img, color, tolerance)
-			return img,
-		Callable(),
-		FrameEdits.color_key_op(color, tolerance),
-		get_target_coords()
 	)
 
 

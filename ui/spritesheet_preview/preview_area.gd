@@ -259,9 +259,12 @@ func update_ui() -> void:
 ## after the tools, each group after a separator, and [param view_ids] are
 ## toggles before the zoom. An id in [param submenus] (as in
 ## [method ActionPopupMenu.set_actions]) is a button that opens that menu, with a
-## description after the icon for its tooltip. The tools and the zoom buttons get the
-## tooltips of their actions too.
-func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submenus := {}) -> void:
+## description after the icon for its tooltip. An id in [param buttons] is that button,
+## which does what it does when pressed, kept enabled like the action and with its
+## tooltip. The tools and the zoom buttons get the tooltips of their actions too.
+func set_toolbar_actions(
+	edit_groups: Array, view_ids: Array[StringName], submenus := {}, buttons := {}
+) -> void:
 	for entry: Array in [
 		[select_tool_btn, &"tool_select"],
 		[move_tool_btn, &"tool_move"],
@@ -276,15 +279,20 @@ func set_toolbar_actions(edit_groups: Array, view_ids: Array[StringName], submen
 	for group: Array in edit_groups:
 		_edit_bar.add_child(VSeparator.new())
 		for id: StringName in group:
-			_edit_bar.add_child(_action_button(id, submenus))
+			_edit_bar.add_child(_action_button(id, submenus, buttons))
 	for id in view_ids:
-		_view_bar.add_child(_action_button(id, submenus))
+		_view_bar.add_child(_action_button(id, submenus, buttons))
 	if not Actions.state_changed.is_connected(_refresh_action_buttons):
 		Actions.state_changed.connect(_refresh_action_buttons)
 	_refresh_action_buttons()
 
 
-func _action_button(id: StringName, submenus: Dictionary) -> Button:
+func _action_button(id: StringName, submenus: Dictionary, buttons: Dictionary) -> Button:
+	if buttons.has(id):
+		var own: Button = buttons[id]
+		own.tooltip_text = Actions.get_tooltip(id)
+		_action_buttons[id] = own
+		return own
 	if submenus.has(id):
 		var entry: Array = submenus[id]
 		var menu_button := _tool_button(entry[2] if entry.size() > 2 else null, tr(entry[0]))
