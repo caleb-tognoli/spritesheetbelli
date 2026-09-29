@@ -153,24 +153,27 @@ static func write(
 	var images := PackedLayout.render_pages(
 		packed, AtlasFormats.is_counter_clockwise(format), options.scale
 	)
+	# Numbered before the scale's suffix: hero_0@2x.png
+	var suffix := options.get_scale_suffix(options.scale)
+	var page_paths := SpritesheetExporter.get_page_paths(base + ".png", images.size(), suffix)
+	var retinas := SpritesheetExporter.get_page_paths(
+		retina_base + ".png", images.size(), options.get_scale_suffix(2)
+	)
 	var pages: Array[Dictionary] = []
 	for page in images.size():
-		var page_path := base + ".png"
-		var retina := retina_base + ".png"
-		if images.size() > 1:
-			page_path = "%s_%d.png" % [base, page]
-			retina = "%s_%d.png" % [retina_base, page]
-		result.error = images[page].save_png(page_path)
+		result.error = images[page].save_png(page_paths[page])
 		if result.error != OK:
 			return result
-		result.paths.append(page_path)
-		pages.append({"file": page_path.get_file(), "size": images[page].get_size()})
+		result.paths.append(page_paths[page])
+		pages.append({"file": page_paths[page].get_file(), "size": images[page].get_size()})
 		if retina_path:
-			pages[-1].retina_image = retina.get_file()
+			pages[-1].retina_image = retinas[page].get_file()
 	if pages:
 		result.path = result.paths[0]
 	var frames := AtlasFormats.get_frames(packed, regions, options, index_start)
-	var written := AtlasFormats.write(packed, format, frames, pages, base, options.animation_fps)
+	var written := AtlasFormats.write(
+		packed, format, frames, pages, base, options.animation_fps, suffix
+	)
 	result.error = written.error
 	result.paths.append_array(written.paths)
 	if written.paths:

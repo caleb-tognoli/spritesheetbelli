@@ -55,9 +55,11 @@ Options:
                                  every frame when there are none)
   --scale <n>                    Make GIFs n times bigger
   --scales <n,n...>              Write --out (an image, with its data file, or an
-                                 atlas) at each of these scales, like 1,2: n times
-                                 bigger, padding and spacing too, with @nx before the
-                                 extension (hero@2x.png), none for 1
+                                 atlas) and --strips at each of these scales, like 1,2:
+                                 n times bigger, padding and spacing too, with @nx
+                                 before the extension (hero@2x.png, pages
+                                 hero_0@2x.png) or _strip (walk@2x_strip8.png), none
+                                 for 1
 
 Packed layout:
   --layout <grid|packed>         Lay the frames out in a grid or packed on pages. A packed
@@ -549,7 +551,9 @@ static func _write_pages(
 	sheet: Spritesheet, path: String, export: ExportOptions, say: Callable
 ) -> int:
 	var pages := SpritesheetExporter.build_pages(sheet, export)
-	var paths := SpritesheetExporter.get_page_paths(path, pages.size())
+	var paths := SpritesheetExporter.get_page_paths(
+		path, pages.size(), export.get_scale_suffix(export.scale)
+	)
 	for i in pages.size():
 		var error := SpritesheetExporter.save_image(pages[i], paths[i], export)
 		if error != OK:

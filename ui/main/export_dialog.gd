@@ -650,7 +650,9 @@ func _update_labels(options: ExportOptions) -> void:
 			output_info.text = (tr("%d GIFs of %d×%d px") % [files.size(), gif_size.x, gif_size.y])
 		T.STRIPS:
 			var cell := sheet.sprite_size
-			output_info.text = tr("%d strips of %d×%d px frames") % [files.size(), cell.x, cell.y]
+			# At each scale
+			var count := files.size() / options.get_scales().size()
+			output_info.text = tr("%d strips of %d×%d px frames") % [count, cell.x, cell.y]
 		T.GIF:
 			var animation := options.get_gif_animation(sheet)
 			var count := (

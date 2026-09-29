@@ -219,15 +219,17 @@ static func get_frames(
 
 
 ## Writes the data file (or one per page) for [param frames] on [param pages], named after
-## [param base_path] without an extension. Returns [code]{"error": Error, "paths":
-## PackedStringArray}[/code].
+## [param base_path] without an extension. Files per page are numbered before the
+## [param suffix] of the scale written (see [method SpritesheetExporter.get_page_path]).
+## Returns [code]{"error": Error, "paths": PackedStringArray}[/code].
 static func write(
 	sheet: Spritesheet,
 	format: String,
 	frames: Array[Dictionary],
 	pages: Array[Dictionary],
 	base_path: String,
-	fps: float
+	fps: float,
+	suffix := "",
 ) -> Dictionary:
 	var result := {"error": OK, "paths": PackedStringArray()}
 	if get_error(format):
@@ -240,7 +242,8 @@ static func write(
 	if has_file_per_page(format) and pages.size() > 1:
 		var files := PackedStringArray()
 		for page in pages.size():
-			files.append("%s_%d.%s" % [base_path.get_file(), page, extension])
+			var file := "%s.%s" % [base_path.get_file(), extension]
+			files.append(SpritesheetExporter.get_page_path(file, page, suffix))
 		for page in pages.size():
 			# Each page's file names the others, so opening one opens them all
 			var others := files.duplicate()

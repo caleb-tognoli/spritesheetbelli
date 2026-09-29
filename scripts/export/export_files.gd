@@ -30,24 +30,40 @@ static func get_paths(
 		for scale in options.get_scales():
 			atlas.append_array(
 				get_atlas_paths(
-					options.scaled_path(path, scale), options.get_atlas_data(), page_count
+					options.scaled_path(path, scale),
+					options.get_atlas_data(),
+					page_count,
+					options.get_scale_suffix(scale)
 				)
 			)
 		return atlas
+	if options.target == ExportOptions.Target.STRIPS:
+		# Every scale's strips go in the one folder
+		var strips := PackedStringArray()
+		for strip in StripExporter.get_strips(sheet, options, path):
+			strips.append(strip.path)
+		return strips
 	var paths := PackedStringArray()
 	for scale in options.get_scales():
 		paths.append_array(
 			_get_paths_at_scale(
-				sheet, options, options.scaled_path(path, scale), coords, index_start, on_disk
+				sheet,
+				options,
+				scale,
+				options.scaled_path(path, scale),
+				coords,
+				index_start,
+				on_disk
 			)
 		)
 	return paths
 
 
-## The paths of one scale of an export that doesn't pack, see [method get_paths]
+## The paths of [param scale] of an export that doesn't pack, see [method get_paths]
 static func _get_paths_at_scale(
 	sheet: Spritesheet,
 	options: ExportOptions,
+	scale: int,
 	path: String,
 	coords: Array[Vector2i],
 	index_start: int,
@@ -72,14 +88,11 @@ static func _get_paths_at_scale(
 			return gifs
 		ExportOptions.Target.GIF:
 			return PackedStringArray([path])
-		ExportOptions.Target.STRIPS:
-			var strips := PackedStringArray()
-			for strip in StripExporter.get_strips(sheet, options, path):
-				strips.append(strip.path)
-			return strips
 	# A packed sheet is written as its pages
 	if sheet.layout == Spritesheet.Layout.PACKED:
-		return SpritesheetExporter.get_page_paths(path, PackedLayout.get_page_sizes(sheet).size())
+		return SpritesheetExporter.get_page_paths(
+			path, PackedLayout.get_page_sizes(sheet).size(), options.get_scale_suffix(scale)
+		)
 	var paths := PackedStringArray([path])
 	if options.get_image_data():
 		paths.append(Metadata.get_path_for_image(path, options))
@@ -88,16 +101,20 @@ static func _get_paths_at_scale(
 
 ## The pages of a packed atlas and its data files, as [method AtlasPacker.write] names
 ## them when [param path] is picked: pages are PNGs, numbered when there are more, and
-## formats with a file per page number theirs the same way
-static func get_atlas_paths(path: String, format: String, page_count: int) -> PackedStringArray:
+## formats with a file per page number theirs the same way, before the [param suffix] of
+## the scale (see [method SpritesheetExporter.get_page_path])
+static func get_atlas_paths(
+	path: String, format: String, page_count: int, suffix := ""
+) -> PackedStringArray:
 	var base := SpritesheetExporter.without_extension(path, "png")
 	var data := AtlasFormats.get_extension(format)
 	var paths := PackedStringArray()
-	for page in page_count:
-		paths.append(base + ".png" if page_count == 1 else "%s_%d.png" % [base, page])
+	if page_count > 0:
+		paths = SpritesheetExporter.get_page_paths(base + ".png", page_count, suffix)
 	if AtlasFormats.has_file_per_page(format) and page_count > 1:
-		for page in page_count:
-			paths.append("%s_%d.%s" % [base, page, data])
+		paths.append_array(
+			SpritesheetExporter.get_page_paths(base + "." + data, page_count, suffix)
+		)
 	else:
 		paths.append(base + "." + data)
 	return paths

@@ -200,6 +200,102 @@ func test_css_shows_twice_the_size_on_retina_screens() -> void:
 	assert_true('retina-image: "atlas@2x.png"' in scss, scss)
 
 
+## Three 12×12 frames on pages of 16 px, a page each
+static func make_paged_sheet() -> Spritesheet:
+	var sheet := Spritesheet.new()
+	var images: Array[Image] = []
+	for color: Color in [Color.RED, Color.GREEN, Color.BLUE]:
+		images.append(make_image(color, Vector2i(12, 12)))
+	sheet.add_frames(images)
+	var settings := sheet.atlas_settings
+	settings.max_size = 16
+	sheet.set_atlas_settings(settings)
+	return sheet
+
+
+func test_pages_are_numbered_before_the_suffix() -> void:
+	assert_eq(SpritesheetExporter.get_page_path("a/hero@2x.png", 0, "@2x"), "a/hero_0@2x.png")
+	assert_eq(SpritesheetExporter.get_page_path("a/hero@2x", 1, "@2x"), "a/hero_1@2x")
+	assert_eq(SpritesheetExporter.get_page_path("a/hero.png", 1), "a/hero_1.png")
+	assert_eq(
+		SpritesheetExporter.get_page_paths("a/hero@2x.png", 1, "@2x"),
+		PackedStringArray(["a/hero@2x.png"]),
+		"one page isn't numbered"
+	)
+
+	# An atlas with a data file per page, at each scale
+	var sheet := make_paged_sheet()
+	var options := make_options(ExportOptions.Target.ATLAS)
+	options.atlas_data = "json"
+	var path := dir.path_join("atlas.png")
+	var written := PackedStringArray()
+	var pages := 0
+	for scale in options.get_scales():
+		var at := options.for_scale(scale)
+		var result := AtlasPacker.write(sheet, at, options.scaled_path(path, scale))
+		assert_eq(result.error, OK)
+		written.append_array(result.paths)
+		pages = result.pages
+	assert_true(pages > 1, "pages: %d" % pages)
+	assert_eq(ExportFiles.get_paths(sheet, options, path), written, "listed as written")
+	for page in pages:
+		for file: String in ["atlas_%d@2x.png", "atlas_%d@2x.json", "atlas_%d.png"]:
+			assert_true(dir.path_join(file % page) in written, file % page)
+	var data := read_json(dir.path_join("atlas_1@2x.json"))
+	assert_eq(data.meta.image, "atlas_1@2x.png")
+	assert_true("atlas_0@2x.json" in str(data.meta), "names the other pages: %s" % data.meta)
+
+	# The retina image of each page
+	options.atlas_data = "scss"
+	var scss_path: String = AtlasPacker.write(sheet, options.for_scale(1), path).json_path
+	var scss := FileAccess.get_file_as_string(scss_path)
+	assert_true('retina-image: "atlas_1@2x.png"' in scss, scss)
+
+	# A sheet in the packed layout, as images
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	options = make_options(ExportOptions.Target.IMAGE)
+	var listed := ExportFiles.get_paths(sheet, options, path)
+	assert_true(dir.path_join("atlas_1@2x.png") in listed, str(listed))
+	var project := dir.path_join("pages.sbelli")
+	assert_eq(ProjectFile.save(sheet, project), OK)
+	var output: Array[String] = []
+	var out := dir.path_join("out/pages.png")
+	var args := ["--export", project, "--out", out, "--scales", "1,2"]
+	assert_eq(await Cli.run(PackedStringArray(args), output), 0, str(output))
+	assert_true(FileAccess.file_exists(dir.path_join("out/pages_1@2x.png")), str(output))
+	assert_true(FileAccess.file_exists(dir.path_join("out/pages_1@2x.json")), "an atlas")
+
+
+func test_strips_at_twice_the_size() -> void:
+	var sheet := make_sheet()
+	sheet.add_animation(SheetAnimation.create("walk", sheet.get_sorted_coords()))
+	var options := make_options(ExportOptions.Target.STRIPS)
+	var folder := dir.path_join("strips")
+	var result := StripExporter.write(sheet, options, folder)
+	assert_eq(result.error, OK)
+	assert_eq(
+		Array(result.paths),
+		[folder.path_join("walk_strip2.png"), folder.path_join("walk@2x_strip2.png")],
+		"the suffix before _strip, as GameMaker names the sprite walk@2x"
+	)
+	assert_eq(ExportFiles.get_paths(sheet, options, folder), result.paths, "listed as written")
+	assert_scaled(
+		Image.load_from_file(result.paths[1]),
+		Image.load_from_file(result.paths[0]),
+		2,
+		"a strip at 2, a smaller frame in its cell too"
+	)
+
+	# Patterns of their own
+	options.strip_name_pattern = "spr_{animation}_strip{count:2}.png"
+	assert_eq(StripExporter.get_name_pattern(options, 2), "spr_{animation}@2x_strip{count:2}")
+	assert_eq(StripExporter.get_name_pattern(options, 1), options.strip_name_pattern)
+	options.strip_name_pattern = "{count}_{animation}"
+	assert_eq(StripExporter.get_name_pattern(options, 2), "{count}_{animation}@2x", "at the end")
+	options.scale_suffix = "_hd{scale}"
+	assert_eq(StripExporter.get_strips(sheet, options, folder)[1].path.get_file(), "2_walk_hd2.png")
+
+
 func test_command_line() -> void:
 	var sheet := make_sheet()
 	var project := dir.path_join("hero.sbelli")
@@ -223,6 +319,12 @@ func test_command_line() -> void:
 	args = ["--export", project, "--out", out, "--scales", "1,x"]
 	assert_eq(await Cli.run(PackedStringArray(args), output), 2, "not a scale")
 	assert_eq(await Cli.run(PackedStringArray(["--export", project, "--scales", "2"]), output), 2)
+	var strips := dir.path_join("strips")
+	args = ["--export", project, "--strips", strips, "--scales", "1,2"]
+	assert_eq(await Cli.run(PackedStringArray(args), output), 0, str(output))
+	var files := Array(DirAccess.get_files_at(strips))
+	files.sort()
+	assert_eq(files, ["frame@2x_strip2.png", "frame_strip2.png"], "strips too")
 	assert_true("--scales <n,n...>" in Cli.USAGE)
 
 	# A project's own export at its scales

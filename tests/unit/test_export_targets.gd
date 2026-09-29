@@ -262,6 +262,11 @@ func test_gamemaker_strips() -> void:
 	rows.strip_pattern.line_edit.text = "spr_{animation}_strip{count}"
 	rows.strip_pattern.line_edit.text_changed.emit(rows.strip_pattern.line_edit.text)
 	assert_eq(rows.example.text, "For example: spr_walk_strip2.png")
+	# At two scales, with the suffix before "_strip"
+	assert_true(dialog.scale_rows.scales.visible)
+	type_scales("1, 2")
+	assert_eq(rows.example.text, "For example: spr_walk_strip2.png, spr_walk@2x_strip2.png")
+	assert_eq(dialog.output_info.text, "1 strips of 8×8 px frames", "at each scale")
 	dialog.hide()
 	assert_eq(
 		ExportTarget.list(sheet)[0].options.strip_name_pattern, "spr_{animation}_strip{count}"
@@ -269,13 +274,17 @@ func test_gamemaker_strips() -> void:
 	assert_true(await main.files.exports.export_again())
 	var strip := Image.load_from_file(dir.path_join("hero/spr_walk_strip2.png"))
 	assert_eq(strip.get_size(), Vector2i(16, 8))
-	assert_true("Saved 1 strips to hero." in "\n".join(Notify.get_toasts()))
+	var twice := Image.load_from_file(dir.path_join("hero/spr_walk@2x_strip2.png"))
+	assert_eq(twice.get_size(), Vector2i(32, 16))
+	assert_true("Saved 2 strips to hero." in "\n".join(Notify.get_toasts()))
 
-	# In a browser, the folder is downloaded
+	# In a browser, the folder is downloaded, every scale in it
 	ExportController.in_browser = true
 	assert_true(await main.files.exports.export_again())
 	var strips := WebFiles.OUTPUT_DIR.path_join("spritesheet_strips")
-	assert_eq(Array(DirAccess.get_files_at(strips)), ["spr_walk_strip2.png"])
+	var in_zip := Array(DirAccess.get_files_at(strips))
+	in_zip.sort()
+	assert_eq(in_zip, ["spr_walk@2x_strip2.png", "spr_walk_strip2.png"])
 	remove_dir(strips)
 
 	# A packed sheet has them too

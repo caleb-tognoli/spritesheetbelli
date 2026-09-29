@@ -69,14 +69,15 @@ A small desktop tool made with Godot.</p>
   like `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or
   its pages as images; an animation as an animated GIF, or a GIF of each animation; or
   GameMaker strips (`walk_strip8.png`, each animation's frames side by side). Images, data
-  files and atlases can be written at several scales at once (`hero.png`, `hero@2x.png`),
-  each resized from the original frames with its own data file. A project keeps a list of
-  exports, each with its settings and where it writes (relative to the project), so Export
-  Again or the command line writes them all at once. The Export button sits at the top of
-  the sidebar with the size of what it writes and how many exports there are, and the
-  Export dialog shows only the settings that matter for each, with a Tokens… list for file
-  names and the files it will write. Padding, spacing and edge extrusion are set in the
-  sidebar, where the preview shows them, for the grid and the atlas.
+  files, atlases and strips can be written at several scales at once (`hero.png`,
+  `hero@2x.png`, pages `hero_0@2x.png`, strips `walk@2x_strip8.png`), each resized from
+  the original frames with its own data file. A project keeps a list of exports, each with
+  its settings and where it writes (relative to the project), so Export Again or the
+  command line writes them all at once. The Export button sits at the top of the sidebar
+  with the size of what it writes and how many exports there are, and the Export dialog
+  shows only the settings that matter for each, with a Tokens… list for file names and the
+  files it will write. Padding, spacing and edge extrusion are set in the sidebar, where
+  the preview shows them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (hash or array, with
   Aseprite-style tags), a Phaser 3 multi-atlas, a libGDX / Spine `.atlas`, Sparrow /
   Starling XML, a Godot `SpriteFrames` resource with the sheet's animations (or every
@@ -144,8 +145,8 @@ spritesheetbelli --headless -- --export hero.sbelli
 # Write a 1x and a 2x sheet, each with its JSON file
 spritesheetbelli --headless -- --export hero.sbelli --out hero.png --metadata json --scales 1,2
 
-# A GIF of each animation, and GameMaker strips
-spritesheetbelli --headless -- --export hero.sbelli --gifs ./gifs --strips ./gamemaker
+# A GIF of each animation, and GameMaker strips at 1x and 2x
+spritesheetbelli --headless -- --export hero.sbelli --gifs ./gifs --strips ./gamemaker --scales 1,2
 
 # Cut a packed sheet into frames by the space around the sprites
 spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames

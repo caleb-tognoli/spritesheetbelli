@@ -95,6 +95,9 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 	# The template may have changed since it was picked
 	if options.get_error():
 		return {"error": options.get_error()}
+	# Every scale's strips go in the one folder, written at once, see [StripExporter]
+	if options.target == ExportOptions.Target.STRIPS:
+		return await _export_at_scale(path, options)
 	var messages := PackedStringArray()
 	for scale in options.get_scales():
 		var result := await _export_at_scale(
@@ -289,7 +292,9 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 ## Writes each page of the packed sheet as an image, numbered when there are more
 func _export_pages(path: String, options: ExportOptions) -> Dictionary:
 	var pages := SpritesheetExporter.build_pages(Global.spritesheet, options)
-	var paths := SpritesheetExporter.get_page_paths(path, pages.size())
+	var paths := SpritesheetExporter.get_page_paths(
+		path, pages.size(), options.get_scale_suffix(options.scale)
+	)
 	for i in pages.size():
 		var problem := ImageUtils.size_problem(pages[i].get_size(), path.get_extension())
 		if problem:

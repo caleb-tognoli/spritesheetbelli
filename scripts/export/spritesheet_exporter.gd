@@ -95,14 +95,25 @@ static func build_pages(sheet: Spritesheet, options: ExportOptions) -> Array[Ima
 
 
 ## Where each of [param count] pages goes: [param path], or numbered from 0 when there
-## are more
-static func get_page_paths(path: String, count: int) -> PackedStringArray:
+## are more, see [method get_page_path]
+static func get_page_paths(path: String, count: int, suffix := "") -> PackedStringArray:
 	if count <= 1:
 		return PackedStringArray([path])
 	var paths := PackedStringArray()
 	for page in count:
-		paths.append("%s_%d.%s" % [path.get_basename(), page, path.get_extension()])
+		paths.append(get_page_path(path, page, suffix))
 	return paths
+
+
+## [param path] numbered as page [param page]. A path of a scale (see
+## [method ExportOptions.scaled_path]) ends with [param suffix], the scale's suffix, which
+## stays last, as iOS and Cocos name pages: "hero@2x.png" gives "hero_0@2x.png".
+static func get_page_path(path: String, page: int, suffix := "") -> String:
+	var extension := path.get_extension()
+	var base := path.get_basename() if extension else path
+	var last := suffix if suffix and base.ends_with(suffix) else ""
+	var numbered := "%s_%d%s" % [base.left(base.length() - last.length()), page, last]
+	return "%s.%s" % [numbered, extension] if extension else numbered
 
 
 ## Repeats the edge pixels of [param rect] outward by [param amount] pixels

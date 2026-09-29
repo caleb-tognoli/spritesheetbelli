@@ -96,6 +96,13 @@ func test_files_listed_are_the_files_written() -> void:
 	)
 	await export_and_compare("strips", target.call(ExportOptions.Target.STRIPS), "out")
 	await export_and_compare(
+		"strip scales",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.STRIPS
+			o.scales = "1, 2",
+		"out"
+	)
+	await export_and_compare(
 		"scales",
 		func(o: ExportOptions) -> void:
 			o.target = ExportOptions.Target.DATA
@@ -108,6 +115,20 @@ func test_files_listed_are_the_files_written() -> void:
 			o.target = ExportOptions.Target.ATLAS
 			o.scales = "1, 2"
 	)
+	# Pages, each with a data file, numbered before the suffix: hero_0@2x.json
+	var before := sheet.atlas_settings
+	var small := sheet.atlas_settings
+	small.max_size = 64
+	sheet.set_atlas_settings(small)
+	await export_and_compare(
+		"atlas page scales",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.ATLAS
+			o.atlas_data = "json"
+			o.scales = "1, 2"
+	)
+	assert_true(FileAccess.file_exists(dir.path_join("atlas page scales/hero_1@2x.json")))
+	sheet.set_atlas_settings(before)
 	set_options(func(o: ExportOptions) -> void: o.scales = "1")
 	await export_and_compare("atlas", target.call(ExportOptions.Target.ATLAS))
 

@@ -26,7 +26,7 @@ func add_to(dialog: ExportDialog, grid: GridContainer) -> void:
 	suffix.line_edit.custom_minimum_size = Vector2(120, 0)
 	suffix.tooltip_text = (
 		"Added to the names of the files of each scale but 1, before the extension: "
-		+ "hero@2x.png and hero@2x.json"
+		+ "hero@2x.png and hero@2x.json, pages hero_0@2x.png, strips walk@2x_strip8.png"
 	)
 	suffix.line_edit.tooltip_text = suffix.tooltip_text
 	var several := func(options: ExportOptions) -> bool:

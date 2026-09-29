@@ -70,8 +70,8 @@ var gif_name_pattern := "{animation}"
 ## File name of each GameMaker strip, see [AnimationFiles]. GameMaker takes the frame
 ## count from the "_strip" at the end.
 var strip_name_pattern := "{animation}_strip{count}"
-## The sizes an image, data file or atlas export is written at, whole numbers like
-## "1, 2": each is the sheet that many times bigger, see [method get_scales]
+## The sizes an image, data file, atlas or strips export is written at, whole numbers
+## like "1, 2": each is the sheet that many times bigger, see [method get_scales]
 var scales := "1"
 ## Added to the file names of every scale but 1, with {scale} filled in, see
 ## [method scaled_path]
@@ -105,7 +105,9 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"scale_suffix",
 ]
 ## The targets written at [member scales]
-const SCALED_TARGETS: Array[Target] = [Target.IMAGE, Target.DATA, Target.ATLAS, Target.CUSTOM]
+const SCALED_TARGETS: Array[Target] = [
+	Target.IMAGE, Target.DATA, Target.ATLAS, Target.CUSTOM, Target.STRIPS
+]
 ## The biggest scale
 const MAX_SCALE := 16
 ## The tokens of [member scale_suffix], with what they give
@@ -223,7 +225,8 @@ func get_file_extension() -> String:
 
 
 ## The scales the export is written at, from [member scales], smallest first, each once.
-## Only images, data files and atlases have scales; other exports are written at 1.
+## Only images, data files, atlases and strips have scales; other exports are written at
+## 1.
 func get_scales() -> PackedInt32Array:
 	var result := PackedInt32Array()
 	if target in SCALED_TARGETS:
@@ -252,18 +255,26 @@ func get_scale_error() -> String:
 
 
 ## [param path] with the suffix of [param at_scale] before its extension, when it's not 1:
-## "hero.png" gives "hero@2x.png". An atlas's pages and a data file are named after
-## that, as "hero@2x_0.png" and "hero@2x.json".
+## "hero.png" gives "hero@2x.png", and its data file is named after that, "hero@2x.json".
+## Pages are numbered before the suffix, "hero_0@2x.png" (see
+## [method SpritesheetExporter.get_page_path]), and strips have it before "_strip" (see
+## [StripExporter]).
 func scaled_path(path: String, at_scale: int) -> String:
-	if at_scale == 1:
+	var suffix := get_scale_suffix(at_scale)
+	if suffix.is_empty():
 		return path
-	var suffix := SpritesheetExporter.fill_tokens(
-		scale_suffix, {"scale": at_scale}, "@%dx" % at_scale
-	)
 	var extension := path.get_extension()
 	if extension.is_empty():
 		return path + suffix
 	return "%s%s.%s" % [path.get_basename(), suffix, extension]
+
+
+## What the names of the files of [param at_scale] end with, before the extension:
+## [member scale_suffix] with {scale} filled in, like "@2x", or empty at 1
+func get_scale_suffix(at_scale: int) -> String:
+	if at_scale == 1:
+		return ""
+	return SpritesheetExporter.fill_tokens(scale_suffix, {"scale": at_scale}, "@%dx" % at_scale)
 
 
 ## A copy of the options for writing [param at_scale], see [member scale]
