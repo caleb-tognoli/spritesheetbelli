@@ -283,6 +283,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   × to take it off the list; moved or deleted files say "Not found". Thumbnails are made
   when a project is saved or opened, and from the image for sheets. In a browser it has
   just the buttons.
+- Keyboard Shortcuts (F1): a search box finds shortcuts by name or by key, like "ctrl+e"
+  or "F2", and every key of an action is listed.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

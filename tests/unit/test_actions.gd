@@ -82,6 +82,62 @@ func test_shortcuts_dialog_lists_actions() -> void:
 	main.shortcuts_dialog.hide()
 
 
+func test_shortcuts_dialog_search() -> void:
+	var dialog: ShortcutsDialog = main.shortcuts_dialog
+	dialog.popup_centered()
+	await get_tree().process_frame
+	assert_true(dialog.search.has_focus(), "focused when it opens")
+	var shown := func(query: String) -> Array[String]:
+		dialog.search.text = query
+		dialog.filter()
+		var texts: Array[String] = []
+		for label: Label in dialog.find_children("*", "Label", true, false):
+			if label.visible and label.text:
+				texts.append(label.text)
+		return texts
+	var found: Array[String] = shown.call("ctrl+e")
+	assert_true("Export" in found, "by key")
+	assert_true("Export Again" in found, "Ctrl+Shift+E has Ctrl and E")
+	assert_true("File" in found, "under its menu")
+	assert_false("Save" in found)
+	assert_false("Edit" in found, "empty menus hidden")
+	assert_false("Zoom In" in found, "Ctrl+Equal isn't Ctrl+E")
+	found = shown.call("F2")
+	assert_true("Animation" in found)
+	assert_eq(found.size(), 1 + 3 * 2, "a heading and three rows: F2, Shift+F2, Ctrl+F2")
+	found = shown.call("flip")
+	assert_true("Flip Horizontally" in found, "by name")
+	assert_true("Frame" in found)
+	assert_false("View" in found)
+	found = shown.call("escape")
+	assert_true("Select None" in found, "by its second key")
+	assert_true("Ctrl+Shift+A, Escape" in found, "every key shown")
+	found = shown.call("wheel")
+	assert_true("Zoom" in found, "preview rows by what they say")
+	found = shown.call("view")
+	assert_true("Status Bar" in found, "a whole menu")
+	found = shown.call("qqqq")
+	assert_eq(found, ["No shortcuts match"] as Array[String])
+	dialog.hide()
+	dialog.popup_centered()
+	assert_eq(dialog.search.text, "", "a new search each time")
+	assert_true(shown.call("").size() > 50, "everything")
+	dialog.hide()
+
+
+func test_shortcut_key_matching() -> void:
+	assert_true(ShortcutsDialog.matches_key("ctrl+e", "Ctrl+E"))
+	assert_true(ShortcutsDialog.matches_key("CTRL + E", "Ctrl+E"))
+	assert_true(ShortcutsDialog.matches_key("shift+ctrl+e", "Ctrl+Shift+E"), "in any order")
+	assert_true(ShortcutsDialog.matches_key("ctrl", "Ctrl+Shift+E"), "only modifiers")
+	assert_true(ShortcutsDialog.matches_key("f2", "Shift+F2"))
+	assert_false(ShortcutsDialog.matches_key("ctrl+e", "Ctrl+Equal"))
+	assert_false(ShortcutsDialog.matches_key("shift+e", "Ctrl+E"))
+	assert_false(ShortcutsDialog.matches_key("+", "Ctrl+E"))
+	assert_false(ShortcutsDialog.matches_key("", "Ctrl+E"))
+	assert_eq(Actions.get_shortcut_texts(&"redo"), PackedStringArray(["Ctrl+Y", "Ctrl+Shift+Z"]))
+
+
 func test_undo_redo_shortcuts() -> void:
 	Actions.run(&"select_all")
 	Actions.run(&"delete_frames")

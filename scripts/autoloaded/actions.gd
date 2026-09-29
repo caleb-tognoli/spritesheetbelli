@@ -99,12 +99,19 @@ func get_shortcut(id: StringName) -> Shortcut:
 
 ## The first key of the action's shortcut, e.g. "Ctrl+Shift+S"
 func get_shortcut_text(id: StringName) -> String:
+	var keys := get_shortcut_texts(id)
+	return keys[0] if not keys.is_empty() else ""
+
+
+## Every key of the action's shortcut, e.g. "Ctrl+Y" and "Ctrl+Shift+Z"
+func get_shortcut_texts(id: StringName) -> PackedStringArray:
+	var keys := PackedStringArray()
 	if not InputMap.has_action(id):
-		return ""
+		return keys
 	for event in InputMap.action_get_events(id):
 		if event is InputEventKey:
-			return event.as_text().replace(" (Physical)", "")
-	return ""
+			keys.append(event.as_text().replace(" (Physical)", ""))
+	return keys
 
 
 ## Tooltip for a button that runs the action: its name and shortcut, like "Save (Ctrl+S)",
