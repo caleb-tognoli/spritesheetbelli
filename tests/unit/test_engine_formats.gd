@@ -11,6 +11,10 @@ func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 
 
+func after_each() -> void:
+	Settings.set_value(&"use_pivots", false)
+
+
 ## Packs [param sheet] and writes it with [param format], each frame with its own size
 func export_atlas(sheet: Spritesheet, format: String) -> Dictionary:
 	var options := ExportOptions.new()
@@ -220,6 +224,34 @@ func test_cocos2d_trimmed_offsets() -> void:
 	# 3 px transparent on the left, 4 on the right, 1 at the top and 2 at the bottom
 	assert_eq(plist.frames["a&b.png"].spriteOffset, "{-0.5,0.5}")
 	assert_eq(plist.frames["post0.png"].spriteOffset, "{0,0}")
+
+
+## A grid sheet's frames get pivots when they're turned on, as an atlas's do: "it's", 6×12
+## and 2 px into its 10×12 cell, has one at (0.5, 3), which is (2.5, 3) in its cell, and the
+## others the default, the middle of the bottom
+func test_grid_sheet_pivots() -> void:
+	var sheet := Golden.grid_sheet(true)
+	assert_eq(sheet.get_frame_rect_in_cell(coord_named(sheet, "it's")), Rect2i(2, 0, 6, 12))
+	var godot := export_grid(sheet, "godot")
+	assert_false('"pivot"' in export_grid(sheet, "json"), "none while turned off")
+	Settings.set_value(&"use_pivots", true)
+	var json: Dictionary = JSON.parse_string(export_grid(sheet, "json"))
+	assert_eq(json.frames["it's.png"].pivot, {"x": 0.25, "y": 0.25})
+	assert_eq(json.frames["idle.png"].pivot, {"x": 0.5, "y": 1.0}, "the default")
+	var frames: Array = JSON.parse_string(export_grid(sheet, "json-array")).frames
+	assert_eq(frames[2].pivot, {"x": 0.25, "y": 0.25})
+	# Unity measures up from the bottom
+	var tpsheet := parse_tpsheet(export_grid(sheet, "unity"))
+	assert_eq(tpsheet["it's"].slice(4), [0.25, 0.75])
+	assert_eq(tpsheet["idle"].slice(4), [0.5, 0.0])
+	# So does Cocos2d
+	var plist: Dictionary = parse_plist(export_grid(sheet, "cocos2d"))
+	assert_eq(plist_numbers(plist.frames["it's.png"].anchor), [0.25, 0.75])
+	assert_eq(plist_numbers(plist.frames["idle.png"].anchor), [0.5, 0.0])
+	var xml := export_grid(sheet, "sparrow")
+	assert_true('pivotX="2.5" pivotY="3"' in xml, xml)
+	# SpriteFrames have no pivots
+	assert_eq(export_grid(sheet, "godot"), godot)
 
 
 ## The top-level "key: value" lines of a Defold file, and its "animations { }" blocks

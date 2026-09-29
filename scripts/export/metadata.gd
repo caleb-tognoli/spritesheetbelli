@@ -45,28 +45,38 @@ static func get_path_for_image(image_path: String, options: ExportOptions) -> St
 
 
 ## Every frame of a grid export in reading order, with its cell in the image and a unique
-## name from the sprite name pattern
+## name from the sprite name pattern. When pivots are turned on in Settings, each has a
+## pivot across its cell, as an atlas's frames do: its own, or the atlas's default.
 static func grid_frames(
 	sheet: Spritesheet, options: ExportOptions, index_start := 0
 ) -> Array[Dictionary]:
 	var frames: Array[Dictionary] = []
 	var used := {}
+	var with_pivots: bool = Settings.get_value(&"use_pivots")
 	for coord in sheet.get_sorted_coords():
 		var name := SpritesheetExporter.format_sprite_name(
 			options.sprite_name_pattern, sheet, coord, index_start
 		)
-		(
-			frames
-			. append(
-				{
-					"name": unique_name(name, used) + ".png",
-					"coord": coord,
-					"cell": coord.y * sheet.grid_size.x + coord.x,
-					"rect": SpritesheetExporter.get_cell_rect(sheet, coord, options),
-				}
-			)
-		)
+		var frame := {
+			"name": unique_name(name, used) + ".png",
+			"coord": coord,
+			"cell": coord.y * sheet.grid_size.x + coord.x,
+			"rect": SpritesheetExporter.get_cell_rect(sheet, coord, options),
+		}
+		if with_pivots:
+			frame.pivot = grid_pivot(sheet, coord)
+		frames.append(frame)
 	return frames
+
+
+## The pivot of the frame at [param coord] of a grid sheet, from 0 to 1 across its cell:
+## its own, or the atlas's default (see [method AtlasPacker.get_regions])
+static func grid_pivot(sheet: Spritesheet, coord: Vector2i) -> Vector2:
+	if not sheet.has_pivot(coord):
+		return sheet.atlas_settings.default_pivot
+	var in_cell := sheet.get_frame_rect_in_cell(coord).position
+	var pivot := sheet.get_pivot(coord) * sheet.frame_scale + Vector2(in_cell)
+	return pivot / Vector2(sheet.sprite_size.max(Vector2i.ONE))
 
 
 ## [param name], or with _2, _3… after it when it's in [param used] already, which it's

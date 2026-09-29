@@ -33,8 +33,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   numbered when there are more than one, turned frames are stored the way each engine
   expects, and frame names are made unique.
 - Pivots, turned on in Settings > General: a pivot mode (E) drags the pivot of the
-  selected frames, and Frame > Pivot has presets, top left and bottom left included. Pivots follow flips and turns, stay on their pixel when trimming, and are
-  exported where the format has them. Frames without one use the atlas's default.
+  selected frames, and Frame > Pivot has presets, top left and bottom left included.
+  Pivots follow flips and turns, stay on their pixel when trimming, and are exported where
+  the format has them, for grid sheets with a data file too. Frames without one use the
+  atlas's default.
 - View > Sprites lists every frame with a thumbnail, its name and size, under the first
   animation showing it, in play order, with a dot of the animation's colour, and the
   others under "No animation"; in the grid layout, the button next to the search field

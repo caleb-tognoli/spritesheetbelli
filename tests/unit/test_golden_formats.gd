@@ -14,6 +14,10 @@ func before_each() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 
 
+func after_each() -> void:
+	Settings.set_value(&"use_pivots", false)
+
+
 ## The bundled formats that can describe [param layout]
 static func bundled_formats(layout: String) -> Array:
 	return Array(AtlasFormats.get_formats(layout)).filter(AtlasFormats.is_bundled)
@@ -29,7 +33,9 @@ static func sprite(size: Vector2i, block: Rect2i, color: Color, sprite_name: Str
 
 
 ## A grid sheet of five frames with a gap, frames of different sizes and names that need
-## escaping, and animations of every mode with durations and speeds of their own
+## escaping, and animations of every mode with durations and speeds of their own. With
+## animations, "it's" has a pivot of its own and the others the default, at the bottom,
+## which data files have when pivots are turned on.
 static func grid_sheet(with_animations: bool) -> Spritesheet:
 	var sheet := Spritesheet.new()
 	var images: Array[Image] = [
@@ -45,6 +51,8 @@ static func grid_sheet(with_animations: bool) -> Spritesheet:
 	if not with_animations:
 		return sheet
 	var coords := sheet.get_sorted_coords()
+	sheet.set_pivots([coords[2]] as Array[Vector2i], Vector2(0.5, 3))
+	sheet.set_atlas_settings(AtlasSettings.from_dictionary({"default_pivot": Vector2(0.5, 1)}))
 	var walk := SheetAnimation.create("walk", [coords[0], coords[1], coords[2]], 12)
 	walk.durations = [1.0, 2.5, 1.0] as Array[float]
 	sheet.add_animation(walk)
@@ -150,12 +158,17 @@ func check(paths: PackedStringArray) -> void:
 			)
 
 
+## With pivots turned on
 func test_grid_with_animations() -> void:
+	Settings.set_value(&"use_pivots", true)
 	check(export_grid(grid_sheet(true), "grid_animations"))
 
 
+## With pivots turned off: none are written
 func test_grid_without_animations() -> void:
-	check(export_grid(grid_sheet(false), "grid_plain"))
+	var sheet := grid_sheet(false)
+	sheet.set_pivots(sheet.get_sorted_coords(), Vector2(1, 1))
+	check(export_grid(sheet, "grid_plain"))
 
 
 func test_atlas_turned_on_several_pages() -> void:

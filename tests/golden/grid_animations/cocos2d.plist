@@ -8,6 +8,8 @@
 			<dict>
 				<key>aliases</key>
 				<array/>
+				<key>anchor</key>
+				<string>{0.5,0}</string>
 				<key>spriteOffset</key>
 				<string>{0,0}</string>
 				<key>spriteSize</key>
@@ -23,6 +25,8 @@
 			<dict>
 				<key>aliases</key>
 				<array/>
+				<key>anchor</key>
+				<string>{0.5,0}</string>
 				<key>spriteOffset</key>
 				<string>{0,0}</string>
 				<key>spriteSize</key>
@@ -38,6 +42,8 @@
 			<dict>
 				<key>aliases</key>
 				<array/>
+				<key>anchor</key>
+				<string>{0.25,0.75}</string>
 				<key>spriteOffset</key>
 				<string>{0,0}</string>
 				<key>spriteSize</key>
@@ -53,6 +59,8 @@
 			<dict>
 				<key>aliases</key>
 				<array/>
+				<key>anchor</key>
+				<string>{0.5,0}</string>
 				<key>spriteOffset</key>
 				<string>{0,0}</string>
 				<key>spriteSize</key>
@@ -68,6 +76,8 @@
 			<dict>
 				<key>aliases</key>
 				<array/>
+				<key>anchor</key>
+				<string>{0.5,0}</string>
 				<key>spriteOffset</key>
 				<string>{0,0}</string>
 				<key>spriteSize</key>

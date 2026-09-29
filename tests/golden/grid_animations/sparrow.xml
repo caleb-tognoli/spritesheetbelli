@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TextureAtlas imagePath="sparrow.png" width="42" height="32">
-	<SubTexture name="idle" x="2" y="2" width="10" height="12"/>
-	<SubTexture name="a&amp;b" x="16" y="2" width="10" height="12"/>
-	<SubTexture name="it&apos;s" x="30" y="2" width="10" height="12"/>
-	<SubTexture name="_up_" x="2" y="18" width="10" height="12"/>
-	<SubTexture name="dot" x="30" y="18" width="10" height="12"/>
+	<SubTexture name="idle" x="2" y="2" width="10" height="12" pivotX="5" pivotY="12"/>
+	<SubTexture name="a&amp;b" x="16" y="2" width="10" height="12" pivotX="5" pivotY="12"/>
+	<SubTexture name="it&apos;s" x="30" y="2" width="10" height="12" pivotX="2.5" pivotY="3"/>
+	<SubTexture name="_up_" x="2" y="18" width="10" height="12" pivotX="5" pivotY="12"/>
+	<SubTexture name="dot" x="30" y="18" width="10" height="12" pivotX="5" pivotY="12"/>
 </TextureAtlas>
