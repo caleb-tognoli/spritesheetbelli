@@ -201,7 +201,11 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	var found: Variant = SheetBackground.detect(img)
 	_detected_background = found
 	# Without one, the swatch starts at the top-left pixel, most often the background
-	background.set_key(found != null, found if found != null else img.get_pixel(0, 0))
+	background.set_key(
+		found != null,
+		found if found != null else img.get_pixel(0, 0),
+		Settings.get_value(&"background_tolerance")
+	)
 	background.set_picking(false)
 	_boxes_found = false
 	_remove_background()

@@ -84,13 +84,14 @@ func setup(area: PreviewArea, remove_background: Callable) -> void:
 
 
 ## Opens the panel suggesting the top-left pixel of the first selected frame, usually the
-## background
+## background, and the tolerance used last
 func open() -> void:
 	var coords := preview.get_selected_coords()
-	if not visible and not coords.is_empty():
-		var sample := preview.spritesheet.frames[coords[0]]
-		if not sample.is_empty():
-			key.set_key(true, sample.get_pixel(0, 0), key.get_tolerance())
+	if not visible:
+		var color := key.get_color()
+		if not coords.is_empty() and not preview.spritesheet.frames[coords[0]].is_empty():
+			color = preview.spritesheet.frames[coords[0]].get_pixel(0, 0)
+		key.set_key(true, color, Settings.get_value(&"background_tolerance"))
 	visible = true
 	_queue_update()
 

@@ -125,6 +125,9 @@ spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./h
 # Cut a packed sheet into frames by the space around the sprites
 spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
 
+# Cut a sheet drawn on magenta into frames, keeping the magenta
+spritesheetbelli --headless -- --cut hero_magenta.png --grid 8x2 --keep-background --sprites ./frames
+
 # Pack a project tightly with a JSON file, and make a GIF of its walk animation
 spritesheetbelli --headless -- --export hero.sbelli --out hero_atlas.png --atlas
 spritesheetbelli --headless -- --export hero.sbelli --out walk.gif --animation walk --scale 4
@@ -134,8 +137,9 @@ spritesheetbelli --headless -- --cut ui.atlas --layout packed --out ui.sbelli
 spritesheetbelli --headless -- --export ui.sbelli --out ui.png --atlas-data atlas --max-size 1024
 ```
 
-Run with `--help` for every option. The exit code is 0 on success, 1 on errors and 2 on
-bad usage.
+`--cut` makes a solid background colour, like magenta, transparent unless
+`--keep-background` is given; `--tolerance` sets how close a colour must be. Run with
+`--help` for every option. The exit code is 0 on success, 1 on errors and 2 on bad usage.
 
 ## Building from source
 

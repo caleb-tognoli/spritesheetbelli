@@ -7,6 +7,8 @@ var window: AddSpritesheetWindow
 
 func before_each() -> void:
 	Global.document.reset()
+	# Remembered between runs, so each test starts from the default
+	Settings.set_value(&"background_tolerance", SheetBackground.DEFAULT_TOLERANCE)
 	window = load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
 	add_child(window)
 
@@ -268,6 +270,9 @@ func test_reloading_removes_the_background_again() -> void:
 	await get_tree().process_frame
 	var source: Dictionary = window.spritesheet.frame_sources[Vector2i(1, 0)]
 	assert_eq(source.key, {"color": "ff00ff", "tolerance": 0.05})
+	assert_eq(Settings.get_value(&"background_tolerance"), 0.05, "remembered")
+	window.setup(magenta_sheet(), path)
+	assert_eq(window.background.get_tolerance(), 0.05, "starts with the last tolerance")
 	var saved := FrameSource.from_json(FrameSource.to_json(source, dir), dir)
 	assert_eq(saved, source, "kept in projects")
 

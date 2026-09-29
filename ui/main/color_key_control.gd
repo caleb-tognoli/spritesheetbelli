@@ -68,7 +68,9 @@ func _init() -> void:
 	tolerance_field.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	tolerance_field.tooltip_text = "How different a pixel can be and still be made transparent"
 	tolerance_field.value_changed.connect(
-		func(_value: float) -> void:
+		func(value: float) -> void:
+			# What Add Spritesheet and Remove Background Colour start with next time
+			Settings.set_value(&"background_tolerance", value / 100.0)
 			if is_on():
 				changed.emit()
 	)

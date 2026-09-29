@@ -158,6 +158,44 @@ func test_cut_a_grid_and_find_sprites() -> void:
 	assert_eq((await run(["--cut", path, "--grid", "3", "--out", "x.png"]))[0], "2")
 
 
+func test_cut_removes_a_background_colour() -> void:
+	# Three sprites on magenta, 16 px apart, with a magenta notch in their top-left corner
+	var sheet := Image.create_empty(48, 16, false, Image.FORMAT_RGBA8)
+	sheet.fill(Color.MAGENTA)
+	for i in 3:
+		sheet.fill_rect(Rect2i(i * 16 + 3, 3, 10, 10), Color.from_hsv(i / 3.0, 1, 0.8))
+		sheet.fill_rect(Rect2i(i * 16 + 3, 3, 2, 2), Color.MAGENTA)
+	# A little off the background colour
+	sheet.set_pixel(0, 15, Color8(242, 0, 242))
+	var path := dir.path_join("magenta.png")
+	sheet.save_png(path)
+	var project := dir.path_join("magenta.sbelli")
+	var cut_sheet := Spritesheet.new()
+	for cut: Array in [["--grid", "3x1"], [], ["--detect"]]:
+		var result := await run(["--cut", path, "--out", project] + cut)
+		assert_eq(result[0], "0", str(result))
+		cut_sheet.set_state(ProjectFile.load(project).state)
+		assert_eq(cut_sheet.frames.size(), 3, "cut at the gaps with %s" % [cut])
+		var first: Image = cut_sheet.frames[Vector2i(0, 0)]
+		assert_eq(first.get_pixel(0, 0).a, 0.0, "transparent with %s" % [cut])
+		assert_eq(first.get_pixel(first.get_width() / 2, first.get_height() / 2).a, 1.0)
+		if cut != ["--detect"]:
+			assert_eq(first.get_pixel(0, 15).a, 0.0, "within the tolerance")
+
+		result = await run(["--cut", path, "--out", project, "--keep-background"] + cut)
+		assert_eq(result[0], "0", str(result))
+		cut_sheet.set_state(ProjectFile.load(project).state)
+		assert_eq(cut_sheet.frames.size(), 3, "still cut at the gaps with %s" % [cut])
+		first = cut_sheet.frames[Vector2i(0, 0)]
+		assert_eq(first.get_pixel(0, 0), Color.MAGENTA, "kept with %s" % [cut])
+
+	var tight := await run(["--cut", path, "--out", project, "--grid", "3x1", "--tolerance", "0"])
+	assert_eq(tight[0], "0", str(tight))
+	cut_sheet.set_state(ProjectFile.load(project).state)
+	assert_eq(cut_sheet.frames[Vector2i(0, 0)].get_pixel(0, 15).a, 1.0, "not within 0%")
+	assert_eq((await run(["--cut", path, "--out", project, "--tolerance", "x"]))[0], "2")
+
+
 func test_cut_with_a_data_file_to_an_atlas_and_gif() -> void:
 	var packed := dir.path_join("packed.png")
 	await run(["--pack", dir.path_join("frames"), "--out", dir.path_join("strip.png")])

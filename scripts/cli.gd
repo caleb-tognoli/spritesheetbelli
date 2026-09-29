@@ -16,7 +16,8 @@ Commands:
   --cut <image>                  Cut a spritesheet or animated GIF into frames: with the
                                  data file next to it (TexturePacker, Aseprite or Phaser
                                  JSON, libGDX / Spine .atlas), else a grid guessed from
-                                 the name or the gaps
+                                 the name or the gaps. A solid background colour, like
+                                 magenta, is made transparent.
   --help                         Show this help
 
 Options:
@@ -53,11 +54,17 @@ Cutting:
   --data <file>                  Cut where this data file (.json or .atlas) says
   --detect                       Find the sprites by the transparency around them
   --join <px>                    With --detect, keep parts this close together
-  --align <center|bottom>        With --detect, how to line the frames up"""
+  --align <center|bottom>        With --detect, how to line the frames up
+  --keep-background              Keep a solid background colour instead of making it
+                                 transparent
+  --tolerance <percent>          How different a pixel can be from the background colour
+                                 and still be made transparent (default 10)"""
 
 const COMMANDS: Array[String] = ["--pack", "--export", "--cut", "--help"]
 ## Options without a value
-const FLAGS: Array[String] = ["--help", "--atlas", "--detect", "--rotate", "--repack"]
+const FLAGS: Array[String] = [
+	"--help", "--atlas", "--detect", "--rotate", "--repack", "--keep-background"
+]
 
 
 ## Whether [param args] ask for command-line mode
@@ -256,6 +263,18 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 	var img := Image.load_from_file(path)
 	if img == null:
 		return {"error": "could not load %s." % path}
+	var tolerance := SheetBackground.DEFAULT_TOLERANCE
+	if options.has("--tolerance"):
+		var percent: String = options["--tolerance"]
+		if not percent.is_valid_float() or float(percent) < 0 or float(percent) > 100:
+			return {"error": "--tolerance must be from 0 to 100.", "code": 2}
+		tolerance = float(percent) / 100.0
+	# A sheet on a solid colour has it made transparent, like Add Spritesheet does. Its
+	# gaps are found in the keyed image even when the colour is kept.
+	var background: Variant = SheetBackground.detect(img)
+	var keyed := SheetBackground.remove(img, background, tolerance) if background != null else img
+	var keep_background := options.has("--keep-background")
+	var cut_from := img if keep_background else keyed
 
 	if options.has("--detect"):
 		var alignments := {
@@ -264,12 +283,9 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		var align: String = options.get("--align", "center")
 		if not alignments.has(align):
 			return {"error": "--align must be center or bottom.", "code": 2}
-		var found: Variant = SheetBackground.detect(img)
-		if found != null:
-			img = SheetBackground.remove(img, found)
-		var rows := SpriteDetector.detect(img, int(options.get("--join", "0")))
+		var rows := SpriteDetector.detect(keyed, int(options.get("--join", "0")))
 		var detected := SpriteDetector.to_spritesheet(
-			img, rows, alignments[align], "", options.get("--layout") == "packed"
+			cut_from, rows, alignments[align], "", options.get("--layout") == "packed"
 		)
 		return {"sheet": detected}
 	# Without a grid, a data file next to the image says where the frames are
@@ -282,19 +298,19 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		var others: Array[Image] = []
 		var pages := data.get_page_paths(data_path)
 		for page in range(1, pages.size()):
-			others.append(Image.load_from_file(pages[page]))
+			var other := Image.load_from_file(pages[page])
+			if other and background != null and not keep_background:
+				other = SheetBackground.remove(other, background, tolerance)
+			others.append(other)
 		var keep: bool = options.get("--layout") == "packed"
-		return {"sheet": data.to_spritesheet(img, "", "", keep, others)}
+		return {"sheet": data.to_spritesheet(cut_from, "", "", keep, others)}
 
-	# A sheet on a solid colour has gaps of that colour between its sprites
-	var background: Variant = SheetBackground.detect(img)
-	var keyed := SheetBackground.remove(img, background) if background != null else img
 	var grid := GridGuesser.guess(keyed, path)
 	if options.has("--grid"):
 		grid = _parse_size(options["--grid"])
 		if grid.x <= 0 or grid.y <= 0:
 			return {"error": "--grid must look like 8x2.", "code": 2}
-	var sliced := Slicer.slice(img, grid)
+	var sliced := Slicer.slice(cut_from, grid)
 	var sheet := Spritesheet.new()
 	sheet.begin_batch()
 	sheet.set_grid_size(grid)

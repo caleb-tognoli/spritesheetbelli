@@ -10,6 +10,7 @@ var dialog: ColorKeyDialog
 
 func before_each() -> void:
 	Global.document.reset()
+	Settings.set_value(&"background_tolerance", SheetBackground.DEFAULT_TOLERANCE)
 	main = load("res://ui/main/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -163,6 +164,18 @@ func test_the_eyedropper_picks_from_a_frame_as_it_is() -> void:
 	await settle()
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(3, 3).a, 0.0, "previews the picked colour")
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0), Color.MAGENTA)
+
+
+func test_the_tolerance_is_remembered() -> void:
+	select([Vector2i(0, 0)] as Array[Vector2i])
+	Actions.run(&"color_key")
+	assert_eq(dialog.key.get_tolerance(), SheetBackground.DEFAULT_TOLERANCE)
+	dialog.key.tolerance_field.value = 25
+	dialog.cancel_button.pressed.emit()
+	assert_eq(Settings.get_value(&"background_tolerance"), 0.25)
+	Settings.set_value(&"background_tolerance", 0.3)
+	Actions.run(&"color_key")
+	assert_eq(dialog.key.get_tolerance(), 0.3, "as Add Spritesheet left it")
 
 
 func test_the_preview_is_at_the_sheets_scale() -> void:

@@ -217,6 +217,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   walk_2 after walk, with a colour of its own. New sits above the animation list, with
   Duplicate, Mirror and Delete next to it while an animation is chosen; Duplicate is also
   in the Animation menu and in an animation name's right-click menu on the grid.
+- The command line's `--cut` makes a solid background colour, like magenta, transparent,
+  as Add Spritesheet does, for a grid, a data file and `--detect`. `--keep-background`
+  keeps it (the grid and sprites are still found as if it were transparent), and
+  `--tolerance <percent>` sets how close a colour must be (10 by default). The tolerance
+  chosen in Add Spritesheet or Remove Background Colour is remembered, and both start with
+  it next time.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
