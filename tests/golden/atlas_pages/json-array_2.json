@@ -1,0 +1,83 @@
+{
+	"frames": [
+		{
+			"frame": {
+				"x": 0,
+				"y": 0,
+				"w": 20,
+				"h": 58
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 22,
+				"y": 3,
+				"w": 20,
+				"h": 58
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 83,
+			"filename": "post0.png"
+		},
+		{
+			"frame": {
+				"x": 0,
+				"y": 0,
+				"w": 20,
+				"h": 58
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 22,
+				"y": 3,
+				"w": 20,
+				"h": 58
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 167,
+			"filename": "post1.png"
+		}
+	],
+	"meta": {
+		"app": "spritesheetbelli",
+		"version": "{version}",
+		"image": "json-array_2.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 20,
+			"h": 58
+		},
+		"scale": "1",
+		"frameTags": [],
+		"animations": {
+			"roll": [
+				"plank0.png",
+				"post0.png",
+				"a&b.png"
+			],
+			"spin": [
+				"post1.png",
+				"plank1.png"
+			]
+		},
+		"related_multi_packs": [
+			"json-array_0.json",
+			"json-array_1.json"
+		]
+	}
+}

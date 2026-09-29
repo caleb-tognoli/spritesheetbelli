@@ -1,0 +1,55 @@
+
+atlas.png
+size: 85, 80
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+plank0
+  rotate: false
+  xy: 0, 0
+  size: 60, 20
+  orig: 64, 24
+  offset: 2, 2
+  index: -1
+plank1
+  rotate: false
+  xy: 0, 20
+  size: 60, 20
+  orig: 64, 24
+  offset: 2, 2
+  index: -1
+plank2
+  rotate: false
+  xy: 0, 40
+  size: 60, 20
+  orig: 64, 24
+  offset: 2, 2
+  index: -1
+plank3
+  rotate: false
+  xy: 0, 60
+  size: 60, 20
+  orig: 64, 24
+  offset: 2, 2
+  index: -1
+post0
+  rotate: false
+  xy: 60, 0
+  size: 20, 58
+  orig: 24, 64
+  offset: 2, 3
+  index: -1
+post1
+  rotate: false
+  xy: 60, 0
+  size: 20, 58
+  orig: 24, 64
+  offset: 2, 3
+  index: -1
+a&b
+  rotate: false
+  xy: 80, 0
+  size: 5, 6
+  orig: 12, 9
+  offset: 3, 2
+  index: -1

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="sparrow_2.png" width="20" height="58">
+	<SubTexture name="post0" x="0" y="0" width="20" height="58" frameX="-22" frameY="-3" frameWidth="64" frameHeight="64" pivotX="32" pivotY="32"/>
+	<SubTexture name="post1" x="0" y="0" width="20" height="58" frameX="-22" frameY="-3" frameWidth="64" frameHeight="64" pivotX="32" pivotY="32"/>
+</TextureAtlas>

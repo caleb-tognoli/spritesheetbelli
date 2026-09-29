@@ -1,0 +1,157 @@
+{
+	"frames": {
+		"idle.png": {
+			"frame": {
+				"x": 2,
+				"y": 2,
+				"w": 10,
+				"h": 12
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 10,
+				"h": 12
+			},
+			"sourceSize": {
+				"w": 10,
+				"h": 12
+			},
+			"duration": 83
+		},
+		"a&b.png": {
+			"frame": {
+				"x": 16,
+				"y": 2,
+				"w": 10,
+				"h": 12
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 10,
+				"h": 12
+			},
+			"sourceSize": {
+				"w": 10,
+				"h": 12
+			},
+			"duration": 208
+		},
+		"it's.png": {
+			"frame": {
+				"x": 30,
+				"y": 2,
+				"w": 10,
+				"h": 12
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 10,
+				"h": 12
+			},
+			"sourceSize": {
+				"w": 10,
+				"h": 12
+			},
+			"duration": 83
+		},
+		"_up_.png": {
+			"frame": {
+				"x": 2,
+				"y": 18,
+				"w": 10,
+				"h": 12
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 10,
+				"h": 12
+			},
+			"sourceSize": {
+				"w": 10,
+				"h": 12
+			},
+			"duration": 125
+		},
+		"dot.png": {
+			"frame": {
+				"x": 30,
+				"y": 18,
+				"w": 10,
+				"h": 12
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 10,
+				"h": 12
+			},
+			"sourceSize": {
+				"w": 10,
+				"h": 12
+			},
+			"duration": 200
+		}
+	},
+	"meta": {
+		"app": "spritesheetbelli",
+		"version": "{version}",
+		"image": "json.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 42,
+			"h": 32
+		},
+		"scale": "1",
+		"frameTags": [
+			{
+				"name": "walk",
+				"from": 0,
+				"to": 2,
+				"direction": "forward"
+			},
+			{
+				"name": "jump & \"fall\"",
+				"from": 1,
+				"to": 3,
+				"direction": "reverse",
+				"repeat": "1"
+			},
+			{
+				"name": "bob",
+				"from": 0,
+				"to": 4,
+				"direction": "pingpong"
+			}
+		],
+		"animations": {
+			"walk": [
+				"idle.png",
+				"a&b.png",
+				"it's.png"
+			],
+			"jump & \"fall\"": [
+				"_up_.png",
+				"a&b.png"
+			],
+			"bob": [
+				"idle.png",
+				"_up_.png",
+				"dot.png"
+			]
+		}
+	}
+}

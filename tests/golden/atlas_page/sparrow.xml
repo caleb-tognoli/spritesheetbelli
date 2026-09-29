@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="sparrow.png" width="85" height="80">
+	<SubTexture name="plank0" x="0" y="0" width="60" height="20" frameX="-2" frameY="-2" frameWidth="64" frameHeight="24" pivotX="32" pivotY="12"/>
+	<SubTexture name="plank1" x="0" y="20" width="60" height="20" frameX="-2" frameY="-2" frameWidth="64" frameHeight="24" pivotX="32" pivotY="12"/>
+	<SubTexture name="plank2" x="0" y="40" width="60" height="20" frameX="-2" frameY="-2" frameWidth="64" frameHeight="24" pivotX="32" pivotY="12"/>
+	<SubTexture name="plank3" x="0" y="60" width="60" height="20" frameX="-2" frameY="-2" frameWidth="64" frameHeight="24" pivotX="32" pivotY="12"/>
+	<SubTexture name="post0" x="60" y="0" width="20" height="58" frameX="-2" frameY="-3" frameWidth="24" frameHeight="64" pivotX="12" pivotY="32"/>
+	<SubTexture name="post1" x="60" y="0" width="20" height="58" frameX="-2" frameY="-3" frameWidth="24" frameHeight="64" pivotX="12" pivotY="32"/>
+	<SubTexture name="a&amp;b" x="80" y="0" width="5" height="6" frameX="-3" frameY="-1" frameWidth="12" frameHeight="9" pivotX="4" pivotY="3"/>
+</TextureAtlas>

@@ -1,0 +1,222 @@
+{
+	"frames": [
+		{
+			"frame": {
+				"x": 0,
+				"y": 0,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 2,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 24
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 167,
+			"filename": "plank0.png"
+		},
+		{
+			"frame": {
+				"x": 0,
+				"y": 20,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 2,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 24
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 167,
+			"filename": "plank1.png"
+		},
+		{
+			"frame": {
+				"x": 0,
+				"y": 40,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 2,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 24
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 83,
+			"filename": "plank2.png"
+		},
+		{
+			"frame": {
+				"x": 0,
+				"y": 60,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 2,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 24
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 83,
+			"filename": "plank3.png"
+		},
+		{
+			"frame": {
+				"x": 60,
+				"y": 0,
+				"w": 20,
+				"h": 58
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 3,
+				"w": 20,
+				"h": 58
+			},
+			"sourceSize": {
+				"w": 24,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 83,
+			"filename": "post0.png"
+		},
+		{
+			"frame": {
+				"x": 60,
+				"y": 0,
+				"w": 20,
+				"h": 58
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 3,
+				"w": 20,
+				"h": 58
+			},
+			"sourceSize": {
+				"w": 24,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 167,
+			"filename": "post1.png"
+		},
+		{
+			"frame": {
+				"x": 80,
+				"y": 0,
+				"w": 5,
+				"h": 6
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 3,
+				"y": 1,
+				"w": 5,
+				"h": 6
+			},
+			"sourceSize": {
+				"w": 12,
+				"h": 9
+			},
+			"pivot": {
+				"x": 0.333333343267441,
+				"y": 0.333333343267441
+			},
+			"duration": 125,
+			"filename": "a&b.png"
+		}
+	],
+	"meta": {
+		"app": "spritesheetbelli",
+		"version": "{version}",
+		"image": "json-array.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 85,
+			"h": 80
+		},
+		"scale": "1",
+		"frameTags": [
+			{
+				"name": "roll",
+				"from": 0,
+				"to": 6,
+				"direction": "forward"
+			},
+			{
+				"name": "spin",
+				"from": 1,
+				"to": 5,
+				"direction": "pingpong"
+			}
+		],
+		"animations": {
+			"roll": [
+				"plank0.png",
+				"post0.png",
+				"a&b.png"
+			],
+			"spin": [
+				"post1.png",
+				"plank1.png"
+			]
+		}
+	}
+}

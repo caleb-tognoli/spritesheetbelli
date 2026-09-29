@@ -1,0 +1,134 @@
+{
+	"frames": [
+		{
+			"frame": {
+				"x": 0,
+				"y": 0,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 2,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 24
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 1.0
+			},
+			"duration": 83,
+			"filename": "plank3.png"
+		},
+		{
+			"frame": {
+				"x": 0,
+				"y": 20,
+				"w": 20,
+				"h": 58
+			},
+			"rotated": true,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 3,
+				"w": 20,
+				"h": 58
+			},
+			"sourceSize": {
+				"w": 24,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 1.0
+			},
+			"duration": 83,
+			"filename": "post0.png"
+		},
+		{
+			"frame": {
+				"x": 0,
+				"y": 20,
+				"w": 20,
+				"h": 58
+			},
+			"rotated": true,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 3,
+				"w": 20,
+				"h": 58
+			},
+			"sourceSize": {
+				"w": 24,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 1.0
+			},
+			"duration": 167,
+			"filename": "post1.png"
+		},
+		{
+			"frame": {
+				"x": 58,
+				"y": 20,
+				"w": 5,
+				"h": 6
+			},
+			"rotated": true,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 3,
+				"y": 1,
+				"w": 5,
+				"h": 6
+			},
+			"sourceSize": {
+				"w": 12,
+				"h": 9
+			},
+			"pivot": {
+				"x": 0.333333343267441,
+				"y": 0.333333343267441
+			},
+			"duration": 125,
+			"filename": "a&b.png"
+		}
+	],
+	"meta": {
+		"app": "spritesheetbelli",
+		"version": "{version}",
+		"image": "json-array_1.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 64,
+			"h": 40
+		},
+		"scale": "1",
+		"frameTags": [],
+		"animations": {
+			"roll": [
+				"plank0.png",
+				"post0.png",
+				"a&b.png"
+			],
+			"spin": [
+				"post1.png",
+				"plank1.png"
+			]
+		},
+		"related_multi_packs": [
+			"json-array_0.json"
+		]
+	}
+}

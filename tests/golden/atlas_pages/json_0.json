@@ -1,0 +1,106 @@
+{
+	"frames": {
+		"plank0.png": {
+			"frame": {
+				"x": 0,
+				"y": 0,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 22,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 167
+		},
+		"plank1.png": {
+			"frame": {
+				"x": 0,
+				"y": 20,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 22,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 167
+		},
+		"plank2.png": {
+			"frame": {
+				"x": 0,
+				"y": 40,
+				"w": 60,
+				"h": 20
+			},
+			"rotated": false,
+			"trimmed": true,
+			"spriteSourceSize": {
+				"x": 2,
+				"y": 22,
+				"w": 60,
+				"h": 20
+			},
+			"sourceSize": {
+				"w": 64,
+				"h": 64
+			},
+			"pivot": {
+				"x": 0.5,
+				"y": 0.5
+			},
+			"duration": 83
+		}
+	},
+	"meta": {
+		"app": "spritesheetbelli",
+		"version": "{version}",
+		"image": "json_0.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 60,
+			"h": 60
+		},
+		"scale": "1",
+		"frameTags": [],
+		"animations": {
+			"roll": [
+				"plank0.png",
+				"post0.png",
+				"a&b.png"
+			],
+			"spin": [
+				"post1.png",
+				"plank1.png"
+			]
+		},
+		"related_multi_packs": [
+			"json_1.json",
+			"json_2.json"
+		]
+	}
+}
