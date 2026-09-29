@@ -545,11 +545,7 @@ func _register_actions() -> void:
 
 	add.call(&"zoom_in", "Zoom In", preview.zoom_by.bind(1.25))
 	add.call(&"zoom_out", "Zoom Out", preview.zoom_by.bind(0.8))
-	add.call(
-		&"zoom_reset",
-		"Actual Size",
-		func() -> void: preview.set_zoom(1, preview.get_viewport_rect().size / 2)
-	)
+	add.call(&"zoom_reset", "Actual Size", preview.reset_zoom)
 	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
 	Actions.add(
 		&"toggle_status_bar",

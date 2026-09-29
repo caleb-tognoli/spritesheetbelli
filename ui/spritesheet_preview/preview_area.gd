@@ -127,10 +127,7 @@ func _build_overlay() -> void:
 	zoom_out_btn.pressed.connect(func() -> void: spritesheet_preview.zoom_by(0.8))
 	zoom_in_btn.pressed.connect(func() -> void: spritesheet_preview.zoom_by(1.25))
 	# The percentage goes back to 100%
-	zoom_label_btn.pressed.connect(
-		func() -> void:
-			spritesheet_preview.set_zoom(1, spritesheet_preview.get_viewport_rect().size / 2)
-	)
+	zoom_label_btn.pressed.connect(func() -> void: spritesheet_preview.reset_zoom())
 
 	notice.theme_type_variation = &"PreviewOverlay"
 	notice.visible = false
@@ -184,14 +181,26 @@ func _fit_viewport() -> void:
 		return
 	var viewport := spritesheet_preview.get_viewport() as SubViewport
 	var ui_scale := get_viewport().get_final_transform().get_scale().x
-	var pixels := Vector2i((stage.size * ui_scale).round())
+	var shown := Vector2i(stage.size.round())
+	shown = Vector2i(_exact_size(shown.x, ui_scale), _exact_size(shown.y, ui_scale))
+	var pixels := Vector2i((Vector2(shown) * ui_scale).round())
 	# The container is never smaller than the viewport, so that goes first
 	viewport.size = pixels
-	viewport.size_2d_override = (
-		Vector2i.ZERO if is_equal_approx(ui_scale, 1) else Vector2i(stage.size.round())
-	)
+	viewport.size_2d_override = Vector2i.ZERO if is_equal_approx(ui_scale, 1) else shown
 	container.scale = Vector2.ONE / ui_scale
 	container.size = Vector2(pixels)
+
+
+## The size from [param length] interface pixels up that is a whole number of screen pixels
+## at [param ui_scale], e.g. an even size at 150%, so the preview is stretched by exactly
+## the interface's scale and pixel-perfect zoom stays even (see [PixelZoom]). The few
+## pixels more are cut off at the stage's edge. Just [param length] when none is close.
+static func _exact_size(length: int, ui_scale: float) -> int:
+	for more in 8:
+		var pixels := (length + more) * ui_scale
+		if absf(pixels - roundf(pixels)) < 0.001:
+			return length + more
+	return length
 
 
 ## As wide as the toolbar's widest group, so the splits around the preview never squeeze

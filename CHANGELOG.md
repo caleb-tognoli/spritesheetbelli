@@ -112,7 +112,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   rounds down to a whole zoom (200%, 300%… or 50%, 33%, 25%… below 100%) and the zoom
   buttons, shortcuts and wheel step through whole zooms, so every pixel is the same size
   on screen, in the preview and the Add Spritesheet window. Auto applies when the sheet's
-  resize filter is Nearest.
+  resize filter is Nearest. With the interface scaled, whole zooms are whole screen
+  pixels: at 150%, 67%, 133%, 200%, 267%…, and Actual Size goes to the nearest one
+  (133%); at 100% and 200% they're as before.
 - Settings > Preview > Selection tint sets how strongly the accent colour covers selected
   frames, from 0% (only their outline) to 100%; the default 25% looks as before. It
   applies to the preview and to Add Spritesheet.
@@ -453,7 +455,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The lock on locked cells and the pin on pinned frames are crisp at any zoom instead of
   pixelated.
 - With the interface scaled (150%, 200%…), the preview is sharp: frames, lines, numbers
-  and icons were drawn at 100% and stretched, which blurred them.
+  and icons were drawn at 100% and stretched, which blurred them. It's stretched by
+  exactly the interface's scale, so pixels are all the same width.
 - Frames with the same name in a grid sheet's data file are numbered (walk, walk_2) like
   in atlases, instead of being written twice.
 

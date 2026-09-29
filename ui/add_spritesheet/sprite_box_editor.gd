@@ -120,7 +120,7 @@ func _build_overlay(stage: Control) -> void:
 	fit_btn.pressed.connect(fit_to_view)
 	zoom_out_btn.pressed.connect(func() -> void: view.zoom_by(0.8))
 	zoom_in_btn.pressed.connect(func() -> void: view.zoom_by(1.25))
-	zoom_label_btn.pressed.connect(func() -> void: view.set_zoom(1))
+	zoom_label_btn.pressed.connect(func() -> void: view.reset_zoom())
 	zoom_label_btn.text = "100%"
 	stage.add_child(zoom)
 	zoom.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 10)

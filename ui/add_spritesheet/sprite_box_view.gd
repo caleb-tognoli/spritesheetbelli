@@ -201,10 +201,12 @@ func set_zoom(value: float, anchor := size / 2) -> void:
 ## Zooms by [param factor], or to the next whole zoom that way with pixel-perfect zoom, see
 ## [PixelZoom]
 func zoom_by(factor: float, anchor := size / 2) -> void:
-	if PixelZoom.is_on():
-		set_zoom(PixelZoom.step(zoom, factor), anchor)
-	else:
-		set_zoom(zoom * factor, anchor)
+	set_zoom(PixelZoom.zoom_by(self, zoom, factor), anchor)
+
+
+## Zooms to 100%, or the whole zoom nearest it with pixel-perfect zoom
+func reset_zoom() -> void:
+	set_zoom(PixelZoom.actual_size(self))
 
 
 ## Zooms and centres the view so the whole image is visible, and keeps it so when the
@@ -218,7 +220,7 @@ func fit_to_view() -> void:
 	else:
 		var fit := room / content
 		var value := minf(fit.x, fit.y)
-		set_zoom(PixelZoom.round_down(value) if PixelZoom.is_on() else value)
+		set_zoom(PixelZoom.fitting(self, value))
 		pan = ((size - content * zoom) / 2).round()
 	_fitted = true
 	queue_redraw()
@@ -289,7 +291,7 @@ func _handle_key(event: InputEventKey) -> bool:
 	elif event.is_action(&"zoom_fit", true):
 		fit_to_view()
 	elif event.is_action(&"zoom_reset", true):
-		set_zoom(1)
+		reset_zoom()
 	else:
 		return false
 	return true

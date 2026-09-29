@@ -175,7 +175,8 @@ func _ready() -> void:
 				onion_button.button_pressed = Settings.get_value(&"onion_skin")
 			elif key in [&"animation_background", &"animation_background_color"]:
 				_show_background()
-			elif key == &"pixel_perfect_zoom" and stage.fitted:
+			# Whole zooms are whole screen pixels, see PixelZoom
+			elif key in [&"pixel_perfect_zoom", &"ui_scale"] and stage.fitted:
 				stage.fit()
 	)
 	_show_background()

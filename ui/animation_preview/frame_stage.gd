@@ -79,9 +79,7 @@ func get_fit_zoom() -> float:
 		return 1.0
 	var room := (size - Vector2.ONE * MARGIN * 2) / Vector2(content_size)
 	var fitting := maxf(minf(room.x, room.y), MIN_ZOOM)
-	return clampf(
-		PixelZoom.round_down(fitting) if PixelZoom.is_on() else fitting, MIN_ZOOM, MAX_ZOOM
-	)
+	return clampf(PixelZoom.fitting(self, fitting), MIN_ZOOM, MAX_ZOOM)
 
 
 ## Zooms to [param value] keeping the point under [param anchor] (in the stage's pixels)
@@ -112,7 +110,7 @@ func zoom_by_notches(notches: float, anchor := size / 2) -> void:
 	if absf(_wheel_notches) < 1 - PixelZoom.EPSILON:
 		return
 	_wheel_notches = 0
-	set_zoom(PixelZoom.step(zoom, 1 + speed if notches > 0 else 1 / (1 + speed)), anchor)
+	set_zoom(PixelZoom.zoom_by(self, zoom, 1 + speed if notches > 0 else 1 / (1 + speed)), anchor)
 
 
 ## Whether the frames are bigger than the stage, so dragging moves around

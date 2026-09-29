@@ -517,6 +517,67 @@ func test_pixel_perfect_zoom() -> void:
 	Settings.set_value(&"pixel_perfect_zoom", "auto")
 
 
+func test_pixel_perfect_zoom_with_the_interface_scaled() -> void:
+	var area: PreviewArea = main.preview_area
+	var preview: SpritesheetPreview = main.preview
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	Settings.set_value(&"pixel_perfect_zoom", "on")
+	Settings.set_value(&"ui_scale", 1.5)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_true(absf(PixelZoom.screen_scale(preview) - 1.5) < 0.0001)
+	var viewport := preview.get_viewport() as SubViewport
+	assert_eq(
+		Vector2(viewport.size),
+		Vector2(viewport.size_2d_override) * 1.5,
+		"stretched by exactly the interface's scale"
+	)
+	preview.set_zoom(1)
+	var labels: Array[String] = []
+	for i in 3:
+		area.zoom_in_btn.pressed.emit()
+		labels.append(area.zoom_label_btn.text)
+	assert_eq(labels, ["133%", "200%", "267%"] as Array[String], "2, 3, 4 screen pixels")
+	labels.clear()
+	for i in 3:
+		area.zoom_out_btn.pressed.emit()
+		labels.append(area.zoom_label_btn.text)
+	assert_eq(labels, ["200%", "133%", "67%"] as Array[String], "and back")
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel.pressed = true
+	wheel.factor = 1
+	preview._unhandled_input(wheel)
+	assert_eq(area.zoom_label_btn.text, "133%", "the wheel too")
+
+	preview.set_zoom(3)
+	area.zoom_label_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "133%", "100% is the nearest, 2 screen pixels")
+	preview.set_zoom(3)
+	Actions.run(&"zoom_reset")
+	assert_eq(area.zoom_label_btn.text, "133%")
+
+	area.center_view_btn.pressed.emit()
+	var zoom := preview.camera.zoom.x
+	assert_true(absf(zoom * 1.5 - roundf(zoom * 1.5)) < 0.0001, "fits at whole screen pixels")
+	var shown := Vector2(Global.spritesheet.sprite_size) * zoom
+	var view := preview.get_viewport_rect().size
+	assert_true(shown.x <= view.x and shown.y <= view.y, "fits")
+	area.zoom_in_btn.pressed.emit()
+	shown = Vector2(Global.spritesheet.sprite_size) * preview.camera.zoom.x
+	assert_true(shown.x > view.x - 80 or shown.y > view.y - 80, "the biggest that fits")
+
+	Settings.set_value(&"ui_scale", 2.0)
+	await get_tree().process_frame
+	preview.set_zoom(1)
+	area.zoom_in_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "200%", "at 200%, as at 100%")
+	area.zoom_label_btn.pressed.emit()
+	assert_eq(area.zoom_label_btn.text, "100%")
+	Settings.set_value(&"ui_scale", Settings.DEFAULTS[&"ui_scale"])
+	Settings.set_value(&"pixel_perfect_zoom", "auto")
+
+
 func test_formatted_text_is_translatable() -> void:
 	var german := Translation.new()
 	german.locale = "de"

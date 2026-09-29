@@ -354,10 +354,12 @@ func set_zoom(value: float, anchor := Vector2.ZERO) -> void:
 ## Zooms by [param factor] around the centre of the view, or to the next whole zoom that
 ## way with pixel-perfect zoom, see [PixelZoom]
 func zoom_by(factor: float, anchor := get_viewport_rect().size / 2) -> void:
-	if PixelZoom.is_on():
-		set_zoom(PixelZoom.step(camera.zoom.x, factor), anchor)
-	else:
-		set_zoom(camera.zoom.x * factor, anchor)
+	set_zoom(PixelZoom.zoom_by(self, camera.zoom.x, factor), anchor)
+
+
+## Zooms to 100% around the centre, or the whole zoom nearest it with pixel-perfect zoom
+func reset_zoom() -> void:
+	set_zoom(PixelZoom.actual_size(self), get_viewport_rect().size / 2)
 
 
 ## Zooms and centres the view so the whole spritesheet is visible
@@ -369,7 +371,7 @@ func fit_to_view() -> void:
 		var pages := packed_view.get_content_rect()
 		if pages.has_area() and view.x > MARGIN * 2 and view.y > MARGIN * 2:
 			var room := (view - Vector2.ONE * MARGIN * 2) / pages.size
-			set_zoom(_fitting_zoom(minf(room.x, room.y)))
+			set_zoom(PixelZoom.fitting(self, minf(room.x, room.y)))
 			camera.position = pages.get_center() - view / 2 / camera.zoom
 			return
 	if content.x <= 0 or content.y <= 0 or view.x <= MARGIN * 2 or view.y <= MARGIN * 2:
@@ -383,14 +385,9 @@ func fit_to_view() -> void:
 	var labels := animation_labels.get_margins()
 	var space := view - Vector2.ONE * MARGIN * 2 - Vector2(labels.x + labels.z, labels.y + labels.w)
 	var fit := space.max(Vector2.ONE) / content
-	set_zoom(_fitting_zoom(minf(fit.x, fit.y)))
+	set_zoom(PixelZoom.fitting(self, minf(fit.x, fit.y)))
 	var corner := Vector2.ONE * MARGIN + Vector2(labels.x, labels.y)
 	camera.position = -(corner + (space - content * camera.zoom) / 2) / camera.zoom
-
-
-## [param zoom] rounded down to a whole zoom with pixel-perfect zoom
-static func _fitting_zoom(zoom: float) -> float:
-	return PixelZoom.round_down(zoom) if PixelZoom.is_on() else zoom
 
 
 ## Where the view looks, to show the same place again with [method set_view]: the zoom

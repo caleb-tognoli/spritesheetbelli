@@ -308,6 +308,26 @@ func test_zoom_and_pan() -> void:
 	assert_true(stage.fitted)
 
 
+func test_zoom_steps_in_screen_pixels_with_the_interface_scaled() -> void:
+	Settings.set_value(&"pixel_perfect_zoom", "on")
+	Settings.set_value(&"ui_scale", 1.5)
+	await layout()
+	var stage := animation.player.stage
+	assert_true(stage.fitted)
+	var on_screen := stage.zoom * 1.5
+	assert_true(absf(on_screen - roundf(on_screen)) < 0.001, "fits at whole screen pixels")
+	assert_true(stage.zoom * 16 <= stage.size.x and stage.zoom * 16 <= stage.size.y, "fits")
+	var fit_zoom := stage.zoom
+	stage.zoom_by_notches(1)
+	var speed: float = Settings.get_value(&"zoom_speed")
+	assert_true(absf(stage.zoom - PixelZoom.step(fit_zoom, 1 + speed, 1.5)) < 0.001, "a step")
+	on_screen = stage.zoom * 1.5
+	assert_true(absf(on_screen - roundf(on_screen)) < 0.001, "at whole screen pixels")
+	stage.zoom_by_notches(-1)
+	assert_true(absf(stage.zoom - fit_zoom) < 0.001, "and back")
+	Settings.set_value(&"ui_scale", Settings.DEFAULTS[&"ui_scale"])
+
+
 func test_background_choice() -> void:
 	var player := animation.player
 	var stage := player.stage
