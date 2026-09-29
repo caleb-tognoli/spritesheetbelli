@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://ctwlyg4n3odn0" path="res://ui/main/file_controller.gd" id="10_files"]
 [ext_resource type="Script" uid="uid://b5qiq6t17j0wt" path="res://ui/main/history_panel.gd" id="11_history"]
 [ext_resource type="Script" uid="uid://cm1ta1eutyomu" path="res://ui/animation_preview/animation_panel.gd" id="12_animation"]
+[ext_resource type="Script" uid="uid://crnq22bcliymm" path="res://ui/main/bottom_dock.gd" id="13_dock"]
 
 [node name="Main" type="Control" unique_id=1567927908]
 layout_mode = 3
@@ -324,7 +325,12 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="AnimationPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit/CanvasSplit" unique_id=702184533]
+[node name="BottomDock" type="VBoxContainer" parent="Layout/Split/PreviewSplit/CanvasSplit" unique_id=702184534]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("13_dock")
+
+[node name="AnimationPanel" type="PanelContainer" parent="Layout/Split/PreviewSplit/CanvasSplit/BottomDock" unique_id=702184533]
 unique_name_in_owner = true
 layout_mode = 2
 script = ExtResource("12_animation")

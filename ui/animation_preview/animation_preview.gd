@@ -3,9 +3,6 @@ extends MarginContainer
 ## The preview of the animation panel, see [AnimationPanel]. Plays one of the sheet's
 ## animations, or the selected frames (every frame when fewer than two are selected).
 
-## What's played changed: another animation, or another name
-signal title_changed(title: String)
-
 ## Speed of the selection, which isn't an animation of its own
 const SELECTION_FPS := 12.0
 
@@ -16,7 +13,6 @@ var player := FramePlayer.new()
 
 ## Index of the animation being played, or -1 for the selected frames
 var _animation_index := -1
-var _title := ""
 
 
 func _init() -> void:
@@ -44,11 +40,6 @@ func get_animation_index() -> int:
 	return _animation_index
 
 
-## What's played: the animation's name, or which frames
-func get_title() -> String:
-	return _title
-
-
 ## What the selected frames are called, which depends on how many there are: fewer than
 ## two play every frame
 func get_selection_title() -> String:
@@ -67,10 +58,8 @@ func refresh() -> void:
 	if _animation_index >= animations.size():
 		_animation_index = -1
 
-	var title := get_selection_title()
 	if _animation_index >= 0:
 		var animation := animations[_animation_index]
-		title = animation.name
 		player.fps = animation.fps
 		player.mode = animation.mode
 		player.set_cells(animation.cells, animation.durations)
@@ -79,6 +68,3 @@ func refresh() -> void:
 		player.fps = SELECTION_FPS
 		player.mode = SheetAnimation.Mode.LOOP
 		player.set_cells(sheet.get_sorted_coords() if selected.size() < 2 else selected)
-	if title != _title:
-		_title = title
-		title_changed.emit(title)

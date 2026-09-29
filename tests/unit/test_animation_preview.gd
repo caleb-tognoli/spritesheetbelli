@@ -5,7 +5,7 @@ extends "res://tests/test_case.gd"
 ## Settings the panel remembers, put back after each test
 const PANEL_SETTINGS: Array[StringName] = [
 	&"animation_panel",
-	&"animation_panel_height",
+	&"bottom_dock_height",
 	&"animation_preview_width",
 	&"animation_list_width",
 	&"animation_frames_text",
@@ -56,51 +56,65 @@ func add_animation(anim_name: String, cells: Array[Vector2i], fps := 12.0) -> Sh
 	return added
 
 
-func test_p_collapses_and_expands() -> void:
+func test_p_hides_and_shows_it() -> void:
 	var events := InputMap.action_get_events(&"toggle_animation")
 	assert_eq((events[0] as InputEventKey).keycode, KEY_P)
+	var dock := panel.dock
 	assert_true(panel.is_expanded())
 	assert_true(Actions.is_checked(&"toggle_animation"))
+	assert_true(panel.dock_button.button_pressed, "its dock button is pressed")
+	assert_eq(panel.dock_button.text, "Animation")
 	await layout()
-	var tall := panel.size.y
+	var tall := dock.size.y
+	var row := dock.bar.get_combined_minimum_size().y
 	Actions.run(&"toggle_animation")
 	await layout()
 	assert_false(panel.is_expanded())
-	assert_false(panel.columns.visible, "only the bar")
-	assert_true(panel.size.y < tall / 2, "slim")
-	assert_true(panel.play_button.visible, "play/pause in the bar")
-	assert_eq(panel.title_label.text, "All frames", "what plays")
+	assert_false(panel.visible, "hidden")
+	assert_false(panel.dock_button.button_pressed)
+	assert_true(dock.bar.is_visible_in_tree(), "the row of buttons stays")
+	assert_eq(dock.size.y, row, "only the row")
+	assert_false(Actions.is_checked(&"toggle_animation"), "unchecked in the menu")
 	assert_eq(Settings.get_value(&"animation_panel"), "closed", "remembered")
-	panel.collapse_button.pressed.emit()
+	panel.dock_button.button_pressed = true
 	await layout()
-	assert_true(panel.is_expanded(), "the button opens it again")
-	assert_false(panel.play_button.visible, "the preview has its own")
-	assert_eq(panel.size.y, tall, "as tall as before")
+	assert_true(panel.is_expanded(), "its button shows it again")
+	assert_eq(dock.size.y, tall, "as tall as before")
 	assert_eq(Settings.get_value(&"animation_panel"), "open")
+	panel.dock_button.button_pressed = false
+	assert_false(panel.is_expanded(), "and pressing it again hides it")
+	assert_false(main.preview_area._action_buttons.has(&"toggle_animation"), "not in the toolbar")
 
 
-func test_collapsed_bar_keeps_playing() -> void:
+func test_one_dock_shows_at_a_time() -> void:
+	var dock := panel.dock
+	var other := Control.new()
+	var button := dock.add_dock(other, "Other")
+	assert_eq(button.get_index(), panel.dock_button.get_index() + 1, "in the row")
+	assert_false(other.visible)
+	button.button_pressed = true
+	assert_eq(dock.get_shown(), other)
+	assert_true(other.visible)
+	assert_false(panel.visible, "in place of the animation panel")
+	assert_false(panel.dock_button.button_pressed)
+	assert_eq(Settings.get_value(&"animation_panel"), "closed")
+	Actions.run(&"toggle_animation")
+	assert_true(panel.visible)
+	assert_false(other.visible)
+	assert_false(button.button_pressed)
 	panel.set_expanded(false)
-	var player := animation.player
-	assert_true(player.play_hidden)
-	var first := panel.thumbnail.texture
-	assert_ne(first, null, "a thumbnail of the frame")
-	player._process(1.0 / player.fps + 0.0001)
-	assert_eq(player.get_current_cell(), Vector2i(1, 0), "plays while collapsed")
-	assert_ne(panel.thumbnail.texture, first)
-	panel.play_button.pressed.emit()
-	assert_false(player.playing, "paused from the bar")
-	assert_eq(panel.play_button.icon, FramePlayer.PLAY_ICON)
+	assert_eq(dock.get_shown(), null, "none")
 
 
-func test_collapsed_until_the_sheet_has_animations() -> void:
+func test_hidden_until_the_sheet_has_animations() -> void:
 	main.queue_free()
 	Settings.set_value(&"animation_panel", "auto")
 	await open_main()
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
-	assert_false(panel.is_expanded(), "collapsed at first")
+	assert_false(panel.is_expanded(), "hidden at first")
+	assert_true(panel.dock.bar.is_visible_in_tree(), "with its button in the row")
 	assert_eq(Settings.get_value(&"animation_panel"), "auto")
 	add_animation("walk", [Vector2i(0, 0)] as Array[Vector2i])
 	assert_true(panel.is_expanded(), "opens with the first animation")
@@ -112,26 +126,27 @@ func test_collapsed_until_the_sheet_has_animations() -> void:
 
 func test_height_is_clamped_and_remembered() -> void:
 	await layout()
-	var split: SplitContainer = panel.get_parent()
+	var dock := panel.dock
+	var split: SplitContainer = dock.get_parent()
 	var half := int(panel.get_viewport_rect().size.y / 2)
-	assert_eq(panel.get_max_height(), half)
-	assert_eq(panel.size.y, float(Settings.get_value(&"animation_panel_height")))
+	assert_eq(dock.get_max_height(), half)
+	assert_eq(dock.size.y, float(Settings.get_value(&"bottom_dock_height")))
 	split.split_offset = -200
 	split.drag_ended.emit()
-	assert_eq(Settings.get_value(&"animation_panel_height"), 200)
+	assert_eq(Settings.get_value(&"bottom_dock_height"), 200)
 	split.split_offset = -half - 100
 	split.dragged.emit(split.split_offset)
 	assert_eq(split.split_offset, -half, "no taller than half the window")
 	split.drag_ended.emit()
-	assert_eq(Settings.get_value(&"animation_panel_height"), half)
+	assert_eq(Settings.get_value(&"bottom_dock_height"), half)
 	split.split_offset = -40
 	split.drag_ended.emit()
-	assert_eq(Settings.get_value(&"animation_panel_height"), AnimationPanel.MIN_HEIGHT)
+	assert_eq(Settings.get_value(&"bottom_dock_height"), BottomDock.MIN_HEIGHT)
 	await layout()
-	assert_eq(panel.size.y, float(AnimationPanel.MIN_HEIGHT), "no shorter than the smallest")
-	Settings.set_value(&"animation_panel_height", 5000)
-	panel.apply_height()
-	assert_eq(panel.get_height(), half, "a remembered height fits the window")
+	assert_eq(dock.size.y, float(BottomDock.MIN_HEIGHT), "no shorter than the smallest")
+	Settings.set_value(&"bottom_dock_height", 5000)
+	dock.apply_height()
+	assert_eq(dock.get_height(), half, "a remembered height fits the window")
 
 
 func test_preview_is_square_until_dragged() -> void:
@@ -351,15 +366,88 @@ func test_editing_in_the_details() -> void:
 	assert_eq(window.name_edit.text, "animation")
 	Global.document.undo()
 	assert_eq(sheet.animations[0].mode, SheetAnimation.Mode.LOOP, "each edit a step")
-	window.mirror_button.pressed.emit()
+	panel.mirror_button.pressed.emit()
 	assert_eq(sheet.animations.size(), 2, "mirrored")
 	assert_eq(window.get_animation_index(), 1, "the copy is chosen")
-	window.delete_button.pressed.emit()
+	panel.delete_button.pressed.emit()
 	assert_eq(sheet.animations.size(), 1)
 	assert_eq(window.get_animation_index(), 0, "the one before it")
-	window.delete_button.pressed.emit()
+	panel.delete_button.pressed.emit()
 	assert_true(sheet.animations.is_empty())
 	assert_eq(animation.get_animation_index(), -1, "the frames play again")
+
+
+func test_list_buttons() -> void:
+	await layout()
+	assert_eq(panel.new_button.get_parent().get_index(), 0, "New at the top of the list")
+	var buttons: Array[Button] = [panel.duplicate_button, panel.mirror_button, panel.delete_button]
+	for button in buttons:
+		assert_eq(button.get_parent(), panel.new_button.get_parent(), "next to New")
+		assert_false(button.visible, "only for an animation")
+		assert_ne(button.tooltip_text, "")
+	var row := panel.new_button.get_parent() as Control
+	var width := row.get_combined_minimum_size().x
+	panel.new_button.pressed.emit()
+	for button in buttons:
+		assert_true(button.is_visible_in_tree())
+	assert_eq(row.get_combined_minimum_size().x, width, "the list keeps its width")
+	assert_false("mirror_button" in panel.detail, "not in the details")
+	assert_false("add_button" in panel.detail, "frames are dragged to the timeline instead")
+	panel.list.select(0)
+	panel.list.item_selected.emit(0)
+	for button in buttons:
+		assert_false(button.visible, "not for the frames")
+
+
+func test_duplicate() -> void:
+	var sheet := Global.spritesheet
+	var walk := SheetAnimation.create(
+		"walk", [Vector2i(2, 0), Vector2i(0, 0)] as Array[Vector2i], 8
+	)
+	walk.durations = [2.0, 1.0] as Array[float]
+	walk.mode = SheetAnimation.Mode.PING_PONG
+	Global.document.perform("New animation", sheet.add_animation.bind(walk))
+	panel.select_animation(0)
+	var steps := Global.document.undo_redo.get_history_count()
+	panel.duplicate_button.pressed.emit()
+	assert_eq(sheet.animations.size(), 2)
+	assert_eq(Global.document.undo_redo.get_history_count(), steps + 1, "one step")
+	assert_eq(Global.document.get_history()[-1], "Duplicate animation")
+	var copy := sheet.animations[1]
+	assert_eq(copy.name, "walk_2", "a name of its own")
+	assert_eq(copy.cells, walk.cells, "the same frames")
+	assert_eq(copy.durations, walk.durations)
+	assert_eq(copy.fps, 8.0)
+	assert_eq(copy.mode, SheetAnimation.Mode.PING_PONG)
+	assert_ne(copy.color, sheet.animations[0].color, "a colour of its own")
+	assert_eq(panel.get_selected(), 1, "the copy is chosen")
+	assert_eq(panel.detail.name_edit.text, "walk_2")
+	panel.duplicate_button.pressed.emit()
+	assert_eq(sheet.animations[2].name, "walk_3", "a copy of walk_2 counts on")
+	Global.document.undo()
+	Global.document.undo()
+	assert_eq(sheet.animations.size(), 1, "undone")
+	assert_eq(panel.get_selected(), 0)
+	assert_eq(Actions.get_action(&"duplicate_animation").label, "Duplicate Animation")
+	assert_true(Actions.run(&"duplicate_animation"), "also in the Animation menu")
+	assert_eq(sheet.animations.size(), 2)
+
+
+func test_preview_fits_its_buttons_on_one_row() -> void:
+	await layout()
+	var controls := animation.player.controls
+	var width := 0.0
+	for child: Control in controls.get_children():
+		width += child.get_combined_minimum_size().x
+	assert_true(width > 0)
+	assert_true(animation.get_combined_minimum_size().x >= width, "never narrower than them")
+	panel.columns.split_offset = 10
+	panel.columns.drag_ended.emit()
+	await layout()
+	assert_true(animation.size.x >= width, "even dragged narrow")
+	var first := controls.get_child(0) as Control
+	for child: Control in controls.get_children():
+		assert_eq(child.position.y, first.position.y, "one row")
 
 
 func test_frames_past_the_end_are_outside_the_sheet() -> void:

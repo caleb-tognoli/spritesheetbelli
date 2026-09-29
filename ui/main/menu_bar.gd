@@ -116,6 +116,7 @@ const MENUS := {
 		&"animation_from_selection",
 		&"",
 		&"edit_animations",
+		&"duplicate_animation",
 		&"mirror_animation",
 		&"delete_animation",
 		&"",

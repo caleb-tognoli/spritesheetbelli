@@ -13,10 +13,11 @@ extends Node
 signal animation_chosen(index: int)
 ## Asked from a name's right-click menu, done by the animation panel
 signal edit_requested(index: int)
+signal duplicate_requested(index: int)
 signal mirror_requested(index: int)
 signal delete_requested(index: int)
 
-enum Item { RENAME, EDIT, COLOR, MIRROR, HIDE, DELETE }
+enum Item { RENAME, EDIT, COLOR, DUPLICATE, MIRROR, HIDE, DELETE }
 
 const ICON := preload("res://assets/icons/AnimationLabels.svg")
 const SHOWN_ICON := preload("res://assets/icons/GuiVisibilityVisible.svg")
@@ -274,6 +275,7 @@ func _build_menu() -> void:
 	menu.add_child(type_menu)
 	menu.add_submenu_node_item("Type", type_menu)
 	menu.add_item("Colour…", Item.COLOR)
+	menu.add_item("Duplicate", Item.DUPLICATE)
 	menu.add_item("Mirror", Item.MIRROR)
 	menu.add_item("Hide Label", Item.HIDE)
 	menu.add_separator()
@@ -331,6 +333,8 @@ func _on_menu_item(id: int) -> void:
 			edit_requested.emit(index)
 		Item.COLOR:
 			pick_color(index)
+		Item.DUPLICATE:
+			duplicate_requested.emit(index)
 		Item.MIRROR:
 			mirror_requested.emit(index)
 		Item.HIDE:

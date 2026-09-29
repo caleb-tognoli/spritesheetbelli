@@ -246,6 +246,23 @@ func test_unique_animation_names() -> void:
 	assert_eq(sheet.get_unique_animation_name("walk"), "walk_3", "the sheet's names are taken")
 
 
+func test_duplicate_animation() -> void:
+	var run := SheetAnimation.create("run", [Vector2i(1, 0), Vector2i(0, 0)] as Array[Vector2i], 6)
+	run.durations = [1.0, 3.0] as Array[float]
+	run.mode = SheetAnimation.Mode.ONCE
+	run.show_label = false
+	sheet.add_animation(run)
+	assert_eq(sheet.duplicate_animation(0), 1, "added after the others")
+	var copy := sheet.animations[1]
+	var original := sheet.animations[0]
+	assert_eq(copy.name, "run_2")
+	for property: String in ["cells", "durations", "fps", "mode", "show_label"]:
+		assert_eq(copy.get(property), original.get(property), property)
+	assert_ne(copy.color, original.color, "a colour of its own")
+	assert_eq(sheet.duplicate_animation(5), -1, "no such animation")
+	assert_eq(sheet.animations.size(), 2)
+
+
 func test_ping_pong_playback() -> void:
 	var imgs: Array[Image] = []
 	for color: Color in [Color.RED, Color.GREEN, Color.BLUE]:

@@ -5,11 +5,6 @@ extends VBoxContainer
 ## frame, show the previous frame faintly behind the current one (onion skin), choose
 ## what's behind the frames and fit them in the stage again.
 
-## The shown frame changed, e.g. to highlight it elsewhere
-signal frame_changed(cell: Vector2i)
-## Playing started or stopped
-signal playing_changed(playing: bool)
-
 const PLAY_ICON := preload("res://assets/icons/Play.svg")
 const PAUSE_ICON := preload("res://assets/icons/Pause.svg")
 const START_ICON := preload("res://assets/icons/PlayStartBackwards.svg")
@@ -35,8 +30,6 @@ var mode := SheetAnimation.Mode.LOOP:
 			_direction = 1
 var playing := true:
 	set = set_playing
-## Whether it keeps playing while hidden, e.g. for a thumbnail shown elsewhere
-var play_hidden := false
 
 var stage := FrameStage.new()
 ## Drags through the frames, or jumps to one
@@ -49,9 +42,8 @@ var onion_button := Button.new()
 var background_button := MenuButton.new()
 var fit_button := Button.new()
 var counter := Label.new()
-## Holds the buttons, so owners can add their own controls next to them. They wrap onto
-## another row when narrow.
-var controls := HFlowContainer.new()
+## Holds the buttons, on one row: the player is never narrower than they are together
+var controls := HBoxContainer.new()
 ## Where the background colour is picked
 var color_popup := PopupPanel.new()
 var color_picker := ColorPicker.new()
@@ -93,8 +85,7 @@ func _init() -> void:
 	counter.theme_type_variation = &"StatusLabel"
 	scrub_row.add_child(counter)
 
-	controls.add_theme_constant_override("h_separation", 0)
-	controls.add_theme_constant_override("v_separation", 0)
+	controls.add_theme_constant_override("separation", 0)
 	add_child(controls)
 	for button: Button in [start_button, previous_button, play_button, next_button, onion_button]:
 		button.theme_type_variation = &"ToolbarButton"
@@ -201,7 +192,6 @@ func set_sheet(value: Spritesheet) -> void:
 
 
 func set_playing(value: bool) -> void:
-	var changed := value != playing
 	playing = value
 	play_button.icon = PAUSE_ICON if playing else PLAY_ICON
 	play_button.tooltip_text = "Pause" if playing else "Play"
@@ -209,8 +199,6 @@ func set_playing(value: bool) -> void:
 	if playing and mode == SheetAnimation.Mode.ONCE and _position >= _cells.size() - 1:
 		_position = 0
 		_show_current()
-	if changed:
-		playing_changed.emit(playing)
 
 
 ## Plays [param cells] in order, each for its number of frames in [param durations]
@@ -286,16 +274,8 @@ func step(by: int) -> void:
 	_show_current()
 
 
-## The current frame's picture, e.g. for a thumbnail, or null without frames
-func get_current_texture() -> Texture2D:
-	var cell := get_current_cell()
-	return _texture(cell) if cell != Spritesheet.NO_CELL else null
-
-
 func _process(delta: float) -> void:
-	if not is_inside_tree() or not playing or _cells.size() < 2:
-		return
-	if not is_visible_in_tree() and not play_hidden:
+	if not is_visible_in_tree() or not playing or _cells.size() < 2:
 		return
 	_elapsed += delta
 	while playing and _elapsed >= _frame_time():
@@ -353,7 +333,6 @@ func _show_current() -> void:
 	var show_onion := onion_button.button_pressed and previous != Spritesheet.NO_CELL
 	stage.onion = _texture(previous) if show_onion else null
 	counter.text = "%d / %d" % [_position + 1, _cells.size()]
-	frame_changed.emit(cell)
 
 
 func _texture(cell: Vector2i) -> ImageTexture:

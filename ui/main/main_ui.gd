@@ -88,7 +88,7 @@ const TOOLBAR_GROUPS := [
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
-	&"toggle_grid", &"toggle_indices", &"toggle_animation", &"toggle_sprites", &"toggle_history"
+	&"toggle_grid", &"toggle_indices", &"toggle_sprites", &"toggle_history"
 ]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [

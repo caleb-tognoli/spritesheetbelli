@@ -4,7 +4,7 @@ extends "res://tests/test_case.gd"
 
 const PANEL_SETTINGS: Array[StringName] = [
 	&"animation_panel",
-	&"animation_panel_height",
+	&"bottom_dock_height",
 	&"animation_frames_text",
 	&"show_sprites",
 	&"index_start",
@@ -73,7 +73,7 @@ func test_shows_the_frames() -> void:
 	assert_eq(tile.get_label_text(), "1", "its number without a name")
 	assert_true("16×16" in tile.tooltip_text, tile.tooltip_text)
 	assert_false(timeline.empty_hint.visible)
-	for button: Button in [detail.mirror_button, detail.delete_button]:
+	for button: Button in [panel.mirror_button, panel.delete_button]:
 		assert_true(button.is_visible_in_tree(), "mirror and delete stay")
 	assert_false("frames_editor" in detail, "no Edit Animation window")
 
@@ -91,16 +91,6 @@ func test_adding_frames_is_one_step() -> void:
 	Global.document.undo()
 	assert_eq(animation().cells, cells([0, 1, 2]), "undone")
 	assert_eq(timeline.row.get_child_count(), 3, "the timeline follows")
-
-
-func test_add_selected() -> void:
-	assert_true(detail.add_button.disabled, "nothing selected")
-	main.preview.set_selected_coords(cells([3, 1]))
-	assert_false(detail.add_button.disabled)
-	var before := steps()
-	detail.add_button.pressed.emit()
-	assert_eq(animation().cells, cells([0, 1, 2, 1, 3]), "after the last, in reading order")
-	assert_eq(steps(), before + 1, "one step")
 
 
 func test_moving_frames() -> void:
@@ -300,9 +290,9 @@ func test_long_labels_are_cut_at_the_end() -> void:
 
 
 func test_tiles_fit_the_panel_height() -> void:
-	for height: int in [AnimationPanel.MIN_HEIGHT, 320]:
-		Settings.set_value(&"animation_panel_height", height)
-		panel.apply_height()
+	for height: int in [BottomDock.MIN_HEIGHT, 320]:
+		Settings.set_value(&"bottom_dock_height", height)
+		panel.dock.apply_height()
 		await get_tree().process_frame
 		await get_tree().process_frame
 		var picture := timeline.get_picture_size()
@@ -311,8 +301,8 @@ func test_tiles_fit_the_panel_height() -> void:
 			var bottom := timeline.get_global_rect().end.y
 			assert_true(bottom <= detail.get_global_rect().end.y + 0.5, "fits: %d" % height)
 	var tall := timeline.get_picture_size()
-	Settings.set_value(&"animation_panel_height", AnimationPanel.MIN_HEIGHT)
-	panel.apply_height()
+	Settings.set_value(&"bottom_dock_height", BottomDock.MIN_HEIGHT)
+	panel.dock.apply_height()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_true(timeline.get_picture_size() < tall, "smaller in a short panel")

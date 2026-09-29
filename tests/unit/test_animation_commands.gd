@@ -223,6 +223,7 @@ func test_menus() -> void:
 		&"animation_from_row",
 		&"animation_from_selection",
 		&"edit_animations",
+		&"duplicate_animation",
 		&"mirror_animation",
 		&"toggle_animation",
 		&"toggle_onion_skin",

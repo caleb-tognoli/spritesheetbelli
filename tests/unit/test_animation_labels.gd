@@ -447,7 +447,15 @@ func test_clicking_a_name() -> void:
 	controls.menu.hide()
 	assert_eq(sheet.animations[0].fps, 24.0)
 	assert_eq(sheet.animations[0].mode, SheetAnimation.Mode.ONCE)
-	# Delete, through the animation panel
+	# Duplicate and delete, through the animation panel
+	var count := sheet.animations.size()
+	controls.open_menu(0, Vector2.ZERO)
+	controls.menu.id_pressed.emit(AnimationLabelControls.Item.DUPLICATE)
+	controls.menu.hide()
+	assert_eq(sheet.animations.size(), count + 1)
+	assert_eq(sheet.animations[-1].name, "stroll_2")
+	assert_eq(main.animation_panel.get_selected(), count, "the copy is chosen")
+	Global.document.undo()
 	controls.open_menu(1, Vector2.ZERO)
 	controls.menu.id_pressed.emit(AnimationLabelControls.Item.DELETE)
 	controls.menu.hide()

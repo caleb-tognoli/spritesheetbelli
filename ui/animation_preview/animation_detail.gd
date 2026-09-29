@@ -3,16 +3,9 @@ extends ScrollContainer
 ## Where the animation chosen in the animation panel is edited: its name, speed, type and
 ## colour on one line, and its frames below on an [AnimationTimeline], where they're
 ## dragged into place, taken out and timed. Frames of the sheet are added by dragging them
-## there, or with Add selected. Frames as text shows them typed instead: sprite numbers,
-## names and ranges such as "0-3, 5, idle". It's also mirrored or deleted here. Every
-## change can be undone.
+## there, from the sheet or the Sprites panel. Frames as text shows them typed instead:
+## sprite numbers, names and ranges such as "0-3, 5, idle". Every change can be undone.
 
-## A mirrored copy was added at [param index]
-signal animation_added(index: int)
-
-const REMOVE_ICON := preload("res://assets/icons/Remove.svg")
-const MIRROR_ICON := preload("res://assets/icons/MirrorX.svg")
-const ADD_ICON := preload("res://assets/icons/Add.svg")
 const TEXT_ICON := preload("res://assets/icons/FrameNumbers.svg")
 const MODE_ICONS := {
 	SheetAnimation.Mode.ONCE: preload("res://assets/icons/PlayStart.svg"),
@@ -25,19 +18,12 @@ const MODES: Array[SheetAnimation.Mode] = [
 ]
 const SEPARATION := 6
 
-## Where the frames Add selected adds are selected
-var preview: SpritesheetPreview:
-	set = set_preview
-var delete_button := Button.new()
-var mirror_button := Button.new()
 var name_edit := LineEdit.new()
 var fps_spin := SpinBox.new()
 var mode_option := OptionButton.new()
 ## Its colour, changed as one step when the picker closes
 var color_button := ColorPickerButton.new()
 var timeline := AnimationTimeline.new()
-## Adds the frames selected in the sheet after the last frame
-var add_button := Button.new()
 ## Shows or hides the frames as text, remembered in the animation_frames_text setting
 var frames_text_button := Button.new()
 var frames_edit := LineEdit.new()
@@ -82,21 +68,8 @@ func _init() -> void:
 	_build_fields()
 	_content.add_child(_fields)
 
-	var frames_row := HBoxContainer.new()
-	frames_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	frames_row.add_theme_constant_override("separation", SEPARATION)
-	timeline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frames_row.add_child(timeline)
-	add_button.text = "Add selected"
-	add_button.icon = ADD_ICON
-	add_button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-	add_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_button.custom_minimum_size.x = 76
-	add_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	add_button.tooltip_text = "Add the frames selected in the sheet after the last frame"
-	frames_row.add_child(add_button)
-	_content.add_child(frames_row)
+	timeline.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content.add_child(timeline)
 
 	frames_edit.placeholder_text = "0-7"
 	frames_edit.tooltip_text = (
@@ -116,9 +89,6 @@ func _init() -> void:
 	_frames_text.add_child(frames_info)
 	_content.add_child(_frames_text)
 
-	delete_button.pressed.connect(remove_animation)
-	mirror_button.pressed.connect(mirror_animation)
-	add_button.pressed.connect(add_selected)
 	frames_text_button.toggled.connect(show_frames_text)
 	name_edit.text_submitted.connect(func(_text: String) -> void: _apply())
 	name_edit.focus_exited.connect(_apply)
@@ -143,15 +113,7 @@ func _ready() -> void:
 	)
 	frames_text_button.set_pressed_no_signal(Settings.get_value(&"animation_frames_text"))
 	_frames_text.visible = frames_text_button.button_pressed
-	_update_add_button()
 	show_animation(_index)
-
-
-func set_preview(value: SpritesheetPreview) -> void:
-	preview = value
-	if preview:
-		preview.selection_changed.connect(_update_add_button)
-	_update_add_button()
 
 
 ## Shows the animation at [param index] to edit, or a hint with -1
@@ -218,31 +180,7 @@ func refresh() -> void:
 	_updating = false
 
 
-## Adds the frames selected in the sheet, in reading order, after the last frame
-func add_selected() -> void:
-	if _index >= 0 and preview:
-		timeline.insert_cells(preview.get_selected_coords())
-
-
-## Adds a mirrored copy of the animation
-func mirror_animation() -> void:
-	if _index < 0:
-		return
-	var added: int = Global.document.perform(
-		"Mirror animation", SheetAnimation.mirror.bind(Global.spritesheet, _index)
-	)
-	if added >= 0:
-		animation_added.emit(added)
-
-
-func remove_animation() -> void:
-	if _index >= 0:
-		Global.document.perform(
-			"Delete animation", Global.spritesheet.remove_animation.bind(_index)
-		)
-
-
-## The name, speed, type and colour on one line, then the buttons
+## The name, speed, type and colour on one line, then the frames as text button
 func _build_fields() -> void:
 	_fields.add_theme_constant_override("separation", SEPARATION)
 	name_edit.placeholder_text = "walk"
@@ -270,18 +208,9 @@ func _build_fields() -> void:
 	frames_text_button.icon = TEXT_ICON
 	frames_text_button.toggle_mode = true
 	frames_text_button.tooltip_text = "Frames as text: numbers, names and ranges like 0-3, 5*2"
-	mirror_button.icon = MIRROR_ICON
-	mirror_button.tooltip_text = "Mirrored copy: the frames flipped into a new row"
-	delete_button.icon = REMOVE_ICON
-	delete_button.tooltip_text = "Delete the animation"
-	for button: Button in [frames_text_button, mirror_button, delete_button]:
-		button.theme_type_variation = &"ToolbarButton"
-		button.focus_mode = Control.FOCUS_NONE
-		_fields.add_child(button)
-
-
-func _update_add_button() -> void:
-	add_button.disabled = preview == null or preview.get_selected_coords().is_empty()
+	frames_text_button.theme_type_variation = &"ToolbarButton"
+	frames_text_button.focus_mode = Control.FOCUS_NONE
+	_fields.add_child(frames_text_button)
 
 
 ## Gives the timeline the height the other rows leave, so its tiles fit a short panel

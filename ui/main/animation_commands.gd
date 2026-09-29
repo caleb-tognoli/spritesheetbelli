@@ -3,15 +3,17 @@ extends Node
 ## Makes animations quickly from the frames of a row, a column or the selection, asking
 ## for a name that starts as what the frames' names share. When an animation already has
 ## exactly those frames, it's renamed instead. Also the actions on the animation chosen
-## in the animation panel: mirroring and deleting it, and onion skin. Names animations on
-## the grid, see [AnimationLabelControls], and does what their right-click menu asks.
+## in the animation panel: duplicating, mirroring and deleting it, and onion skin. Names
+## animations on the grid, see [AnimationLabelControls], and does what their right-click
+## menu asks.
 ## Rows and columns are the ones of the right-clicked cell for the preview's menu, and of
 ## the first selected frame otherwise.
 
 const NO_CELL := SpritesheetPreview.NO_CELL
 const ICONS := {
-	&"mirror_animation": preload("res://assets/icons/MirrorX.svg"),
-	&"delete_animation": preload("res://assets/icons/Remove.svg"),
+	&"duplicate_animation": AnimationPanel.DUPLICATE_ICON,
+	&"mirror_animation": AnimationPanel.MIRROR_ICON,
+	&"delete_animation": AnimationPanel.REMOVE_ICON,
 	&"toggle_onion_skin": preload("res://assets/icons/Onion.svg"),
 	&"animation_labels": AnimationLabelControls.ICON,
 }
@@ -70,23 +72,15 @@ func _register_actions() -> void:
 		func() -> void: name_frames(main.preview.get_selected_coords()),
 		func() -> bool: return not main.preview.get_selected_coords().is_empty()
 	)
-	# The buttons in the animation panel's details do the same
-	var detail: AnimationDetail = main.animation_panel.detail
-	var has_current := func() -> bool: return detail.get_animation_index() >= 0
-	Actions.add(
-		&"mirror_animation",
-		"Mirror Animation",
-		detail.mirror_animation,
-		has_current,
-		ICONS[&"mirror_animation"]
-	)
-	Actions.add(
-		&"delete_animation",
-		"Delete Animation",
-		detail.remove_animation,
-		has_current,
-		ICONS[&"delete_animation"]
-	)
+	# The buttons above the animation panel's list do the same
+	var panel: AnimationPanel = main.animation_panel
+	var has_current := func() -> bool: return panel.get_selected() >= 0
+	for action: Array in [
+		[&"duplicate_animation", "Duplicate Animation", panel.duplicate_animation],
+		[&"mirror_animation", "Mirror Animation", panel.mirror_animation],
+		[&"delete_animation", "Delete Animation", panel.remove_animation],
+	]:
+		Actions.add(action[0], action[1], action[2], has_current, ICONS[action[0]])
 	Actions.add(
 		&"animation_labels",
 		"Animation Labels…",
@@ -124,16 +118,17 @@ func _setup_labels() -> void:
 			_choose_animation(index)
 			panel.edit()
 	)
-	controls.mirror_requested.connect(
-		func(index: int) -> void:
-			_choose_animation(index)
-			panel.detail.mirror_animation()
-	)
-	controls.delete_requested.connect(
-		func(index: int) -> void:
-			_choose_animation(index)
-			panel.detail.remove_animation()
-	)
+	for request: Array in [
+		[controls.duplicate_requested, panel.duplicate_animation],
+		[controls.mirror_requested, panel.mirror_animation],
+		[controls.delete_requested, panel.remove_animation],
+	]:
+		var action: Callable = request[1]
+		(request[0] as Signal).connect(
+			func(index: int) -> void:
+				_choose_animation(index)
+				action.call()
+		)
 
 
 ## The cell whose row or column the actions use: the right-clicked one while the preview's

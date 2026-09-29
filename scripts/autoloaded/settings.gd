@@ -51,13 +51,14 @@ const DEFAULTS := {
 	# 0 for as narrow as they can be, see SidebarSplit
 	&"sidebar_width": 0,
 	&"panels_width": 0,
-	# Height of the animation panel under the preview, and the widths of its preview (0: as
-	# wide as it's tall) and its list (0: as narrow as it can be), see AnimationPanel
-	&"animation_panel_height": 240,
+	# Height of the docks under the preview, see BottomDock
+	&"bottom_dock_height": 240,
+	# Widths of the animation panel's preview (0: as wide as it's tall) and its list (0: as
+	# narrow as it can be), see AnimationPanel
 	&"animation_preview_width": 0,
 	&"animation_list_width": 0,
-	# Whether the animation panel is "open" or "closed". "auto" keeps it closed until the
-	# sheet has animations, then opens it once.
+	# Whether the animation panel is "open" or "closed" in the docks under the preview.
+	# "auto" keeps it closed until the sheet has animations, then opens it once.
 	&"animation_panel": "auto",
 	# Whether the chosen animation's frames are also shown as text, see AnimationDetail
 	&"animation_frames_text": false,
@@ -84,7 +85,7 @@ const REMEMBERED: Array[StringName] = [
 	&"recent_files",
 	&"sidebar_width",
 	&"panels_width",
-	&"animation_panel_height",
+	&"bottom_dock_height",
 	&"animation_preview_width",
 	&"animation_list_width",
 	&"animation_panel",

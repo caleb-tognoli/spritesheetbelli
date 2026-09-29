@@ -124,11 +124,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Animation panel: animations get a panel under the preview, between the sidebars, in
   place of the small player over the preview and the Animations window: the preview, the
   list of animations (with the selected frames, or every frame, at the top) and the
-  chosen animation's details, side by side. Drag its top edge to make it taller (up to
-  half the window, remembered) and the separators between its parts. P or the arrow
-  collapses it to a bar with the name of what plays and play/pause; it stays collapsed
-  until a sheet has animations, then opens once. Frames can still be selected while it's
-  open.
+  chosen animation's details, side by side. It's a dock, like Godot's bottom panel: the
+  Animation button in the row under the preview, or P, shows or hides it; it stays hidden
+  until a sheet has animations, then opens once. Drag its top edge to make it taller (up
+  to half the window, remembered) and the separators between its parts. Frames can still
+  be selected while it's open.
 - The animation preview zooms with the wheel (by whole steps with pixel-perfect zoom) and
   fits again with a button or a double-click, pans when zoomed in, has a scrub bar to drag
   through the frames or click to one, and shows the frames over a checkerboard, a colour
@@ -140,7 +140,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   new animation in the animation panel. When an animation already has exactly those
   frames, it's renamed instead. Rows and columns are the right-clicked cell's, or the
   first selected frame's, in the grid layout.
-- An Animation menu with these, Edit, Mirror Animation and Delete Animation (of the
+- An Animation menu with these, Edit, Duplicate, Mirror and Delete Animation (of the
   animation chosen in the animation panel), Animation Panel (P) and Onion Skin.
 - The grid names animations: an animation that is exactly one row is named in the left
   margin (the right one when it runs right to left), one that is exactly one column above
@@ -157,14 +157,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   animation, and how many more can't be named. The choices are saved in the project and
   can be undone. Not in the packed layout.
 - Clicking an animation's name on the grid selects its frames and plays it,
-  double-clicking renames it, right-clicking offers Rename, Edit, Speed, Type, Mirror,
-  Hide Label and Delete, and hovering highlights its frames and tells its length, speed
-  and type.
+  double-clicking renames it, right-clicking offers Rename, Edit, Speed, Type, Duplicate,
+  Mirror, Hide Label and Delete, and hovering highlights its frames and tells its length,
+  speed and type.
 - The animation panel's details show the chosen animation's frames on a timeline: each
   frame with its picture, its place, the part of its name that differs from the others
   and how long it's shown (×1.0). Frames are dragged into another order, taken out with ×
   or Delete, picked with Ctrl, Shift or a box, and added by dragging them from the sheet
-  or the Sprites panel, several at once, or with Add selected. Every change is a step to
+  or the Sprites panel, several at once. Every change is a step to
   undo. The name, speed and type share one line above it; the typed frames (`0-3, 4*2`)
   are one button away.
 - Every animation has a colour of its own, picked far from the others' when it's made and
@@ -213,6 +213,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   the packed layout as before, and reloading the file cuts the same boxes again. Changing
   Join parts within or the colour made transparent finds the sprites again; Undo brings
   back boxes edited by hand, and Reset starts over.
+- Duplicate an animation: a copy with the same frames, timing, speed and type, named
+  walk_2 after walk, with a colour of its own. New sits above the animation list, with
+  Duplicate, Mirror and Delete next to it while an animation is chosen; Duplicate is also
+  in the Animation menu and in an animation name's right-click menu on the grid.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
@@ -235,8 +239,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   list of sprites. Align in Cell, Pivot, Trim and Pinned come first and work on every
   frame when none are selected; Select All and Select None are in the Edit menu only.
 - A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
-  rotate, Align in Cell and Trim, toggles for grid lines (G), frame numbers (N) and the
-  animation panel (P). Zoom floats over the top-right corner of the preview, like in
+  rotate, Align in Cell and Trim, toggles for grid lines (G) and frame numbers (N). Zoom
+  floats over the top-right corner of the preview, like in
   Godot: a button fits the view, and clicking the zoom level goes back to 100%.
 - The right-click menu groups flipping and rotating under Transform, and has Align in
   Cell and Rows submenus.

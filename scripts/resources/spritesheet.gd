@@ -639,6 +639,18 @@ func set_animation(index: int, animation: SheetAnimation) -> void:
 	_changed()
 
 
+## Adds a copy of the animation at [param index], with a name and colour of its own: walk
+## gives walk_2, see [method get_unique_animation_name]. Returns the copy's index, or -1
+## when there's no such animation.
+func duplicate_animation(index: int) -> int:
+	if index < 0 or index >= _animations.size():
+		return -1
+	var copy := SheetAnimation.from_dictionary(_animations[index])
+	copy.name = get_unique_animation_name(copy.name)
+	copy.color = SheetAnimation.NO_COLOR
+	return add_animation(copy)
+
+
 func remove_animation(index: int) -> void:
 	if index < 0 or index >= _animations.size():
 		return

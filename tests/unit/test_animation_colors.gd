@@ -4,7 +4,7 @@ extends "res://tests/test_case.gd"
 ## and on the labels
 
 const GRID := Vector2i(6, 2)
-const PANEL_SETTINGS: Array[StringName] = [&"animation_panel", &"animation_panel_height"]
+const PANEL_SETTINGS: Array[StringName] = [&"animation_panel", &"bottom_dock_height"]
 
 var main: Control
 var sheet: Spritesheet
