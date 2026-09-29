@@ -240,9 +240,13 @@ static func _animation(
 		direction = "pingpong"
 	elif mode == SheetAnimation.Mode.ONCE:
 		mode_name = "once"
+	var color: Color = animation.get("color", SheetAnimation.NO_COLOR)
 	return {
 		## Its name
 		"name": animation.name,
+		## Its colour, like Aseprite writes a tag's: "#rrggbbff", in lower case. Nothing
+		## for the "default" animation of a sheet without any.
+		"color": _only_if(color.a > 0, "#" + color.to_html(true)),
 		## Frames per second: its own speed, or else the export's
 		"fps": animation_fps,
 		## How it plays: "loop", "ping_pong" (forward then back, again and again) or "once",

@@ -96,8 +96,9 @@ static func unique_name(name: String, used: Dictionary) -> String:
 ## SpriteFrames resource still has something to play, unless [param with_default] is
 ## false.
 ## Returns [code]{"name": String, "indices": Array, "durations": Array, "mode":
-## SheetAnimation.Mode, "fps": float}[/code] with indices into [method grid_frames] and
-## how many frames each is shown for; fps is 0 when not set.
+## SheetAnimation.Mode, "fps": float, "color": Color}[/code] with indices into
+## [method grid_frames] and how many frames each is shown for; fps is 0 when not set, and
+## the "default" animation has no colour.
 static func animations(sheet: Spritesheet, with_default := true) -> Array[Dictionary]:
 	var coords := sheet.get_sorted_coords()
 	var result: Array[Dictionary] = []
@@ -110,14 +111,18 @@ static func animations(sheet: Spritesheet, with_default := true) -> Array[Dictio
 				func(cell: Vector2i) -> int: return index_of[cell]
 			)
 			if not indices.is_empty():
-				result.append(
-					{
-						"name": animation.name,
-						"indices": indices,
-						"durations": Array(animation.get_frame_durations(sheet)),
-						"mode": animation.mode,
-						"fps": animation.fps
-					}
+				(
+					result
+					. append(
+						{
+							"name": animation.name,
+							"indices": indices,
+							"durations": Array(animation.get_frame_durations(sheet)),
+							"mode": animation.mode,
+							"fps": animation.fps,
+							"color": animation.color,
+						}
+					)
 				)
 		return result
 	if with_default:

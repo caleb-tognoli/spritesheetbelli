@@ -193,3 +193,45 @@ func test_a_data_file_wins_over_the_layout() -> void:
 		window.setup(gaps_sheet(), "", data_for_gaps_sheet(), "sheet.json")
 		assert_eq(window.get_cut(), AddSpritesheetWindow.Cut.DATA, str(layout))
 		assert_eq(window.spritesheet.frames.size(), 8)
+
+
+## Exported frame tags have the animations' colours, which come back as they were when
+## the sheet is added with its data file, even to a sheet whose animations have the same
+## colours
+func test_animation_colours_come_back() -> void:
+	var sheet := Spritesheet.new()
+	var images: Array[Image] = []
+	for color: Color in [Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW]:
+		images.append(make_image(color, Vector2i(8, 8)))
+	sheet.add_frames(images)
+	var coords := sheet.get_sorted_coords()
+	# The first two get the palette's first colours, the third one of its own
+	sheet.add_animation(SheetAnimation.create("walk", coords.slice(0, 2)))
+	sheet.add_animation(SheetAnimation.create("jump", coords.slice(2, 3)))
+	var hit := SheetAnimation.create("hit", coords.slice(3, 4))
+	hit.color = Color("40e0c0")
+	sheet.add_animation(hit)
+	var colors := sheet.animations.map(
+		func(animation: SheetAnimation) -> Color: return animation.color
+	)
+	var options := ExportOptions.new()
+	var frames := Metadata.grid_frames(sheet, options)
+	var json := Metadata.sheet_json(sheet, frames, "sheet.png", Vector2i(32, 8), 12)
+	var tags: Array = JSON.parse_string(json).meta.frameTags
+	assert_eq(
+		tags.map(func(tag: Dictionary) -> String: return tag.color),
+		["#" + colors[0].to_html(), "#" + colors[1].to_html(), "#40e0c0ff"]
+	)
+	var target := Global.spritesheet
+	target.add_frames([make_image(Color.WHITE)] as Array[Image])
+	target.add_animation(SheetAnimation.create("run", [Vector2i.ZERO] as Array[Vector2i]))
+	target.add_animation(SheetAnimation.create("idle", [Vector2i.ZERO] as Array[Vector2i]))
+	assert_eq(target.animations[1].color, colors[1], "the same colours as two of them")
+	var image := SpritesheetExporter.build_image(sheet, options)
+	window.setup(image, "", SheetData.parse_json(json), "sheet.json")
+	assert_eq(window.get_cut(), AddSpritesheetWindow.Cut.DATA)
+	window.add_spritesheet_to_global()
+	var added := target.animations.slice(2).map(
+		func(animation: SheetAnimation) -> Color: return animation.color
+	)
+	assert_eq(added, colors, "kept")

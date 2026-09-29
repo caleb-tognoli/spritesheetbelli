@@ -127,8 +127,10 @@ func test_json_metadata_with_tags() -> void:
 		json.frames["1.png"].frame, {"x": 6.0, "y": 0.0, "w": 4.0, "h": 4.0}, "spacing applied"
 	)
 	assert_eq(json.meta.frameTags.size(), 2)
+	var color := "#" + sheet.animations[1].color.to_html()
 	assert_eq(
-		json.meta.frameTags[1], {"name": "walk", "from": 2.0, "to": 2.0, "direction": "forward"}
+		json.meta.frameTags[1],
+		{"name": "walk", "from": 2.0, "to": 2.0, "direction": "forward", "color": color}
 	)
 
 

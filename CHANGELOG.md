@@ -180,9 +180,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   are one button away.
 - Every animation has a colour of its own, picked far from the others' when it's made and
   saved with the project. Change it with the colour button in the animation details, or
-  with Colour… on its name on the grid. The animation list shows each one's colour.
-  Animations made from Aseprite tags take the tag's colour, unless it's Aseprite's default
-  black.
+  with Colour… on its name on the grid. The animation list shows each one's colour. JSON
+  exports write each animation's colour on its frame tag, as Aseprite does. Animations
+  made from tags take the tag's colour, even one another animation has, unless it's
+  Aseprite's default black.
 - Add Folder and dropping a folder link it, even one with no images yet: images added to
   it later are added as sprites where *New sprites go to* says, as one undo step, with a
   notice. Deleting images from a linked folder asks whether to remove their frames, and

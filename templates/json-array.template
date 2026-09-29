@@ -50,7 +50,8 @@ layouts: grid, packed
 				"from": {{from}},
 				"to": {{to}},
 				"direction": "{{direction}}"{{#once}},
-				"repeat": "1"{{/once}}
+				"repeat": "1"{{/once}}{{#color}},
+				"color": "{{color}}"{{/color}}
 			}{{^@last}},{{/@last}}{{#@last}}
 		{{/@last}}{{/animations}}{{/all_frames}}]{{#animations}}{{#@first}},
 		"animations": {{{/@first}}

@@ -156,16 +156,16 @@ func test_aseprite_tag_colours() -> void:
 	for animation in sheet.animations:
 		colors.append(animation.color)
 	assert_eq(colors[0], Color("e04040"), "the tag's, opaque")
+	var palette := range(SheetAnimation.HUES).map(SheetAnimation.get_palette_color)
 	for i in range(1, 4):
-		assert_true(
-			SheetAnimation.is_palette_color(colors[i]), "Aseprite's default black is picked for"
-		)
+		assert_true(colors[i] in palette, "Aseprite's default black is picked for")
 		assert_false(colors[i] in colors.slice(0, i), "apart from the others")
+	assert_eq(data.get_own_colors(), [true, false, false, false] as Array[bool])
 	# Added to an open sheet, the tag's colour stays and the picked ones are picked again
 	var target := Spritesheet.new()
 	target.set_frame(Vector2i.ZERO, make_image(Color.RED))
 	target.add_animation(SheetAnimation.create("run", [Vector2i.ZERO] as Array[Vector2i]))
-	AddSpritesheetWindow.add_sheet(target, sheet, false)
+	AddSpritesheetWindow.add_sheet(target, sheet, false, data.get_own_colors())
 	var added := target.animations
 	assert_eq(added[1].color, Color("e04040"))
 	assert_ne(added[2].color, added[0].color, "apart from the open sheet's")

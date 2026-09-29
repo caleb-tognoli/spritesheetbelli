@@ -218,9 +218,9 @@ Values:
 - each frame: index, name, file_name, column, row, cell, page, x, y, w, h, packed_w,
   packed_h, rotated, trimmed, source_w, source_h, trim_left/top/right/bottom, has_pivot,
   pivot_x, pivot_y, pivot_px_x, pivot_px_y, duration;
-- each animation: name, fps, mode, loop, ping_pong, once, frames, frame_count,
-  played_frames, from, to, direction, reversed, from_cell, to_cell; its frames also have
-  relative_duration;
+- each animation: name, color (like Aseprite's `#rrggbbff`), fps, mode, loop, ping_pong,
+  once, frames, frame_count, played_frames, from, to, direction, reversed, from_cell,
+  to_cell; its frames also have relative_duration;
 - each page: index, image, w, h, frames, frame_count, retina_image (its image at twice the
   size, in the 1x file of an export at scales 1 and 2).
 

@@ -299,6 +299,15 @@ func to_spritesheet(
 	return sheet
 
 
+## Whether each animation of [method to_spritesheet], in order, has a colour from the file
+## (a tag's) rather than one the sheet picked. Those after the tags have none.
+func get_own_colors() -> Array[bool]:
+	var result: Array[bool] = []
+	for tag in tags:
+		result.append(tag.color != SheetAnimation.NO_COLOR)
+	return result
+
+
 ## Rows of frames when tags don't overlap: [code]{"name": String, "count": int}[/code]
 ## in frame order, or empty
 func _rows_by_tag() -> Array[Dictionary]:

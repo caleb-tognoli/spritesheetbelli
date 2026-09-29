@@ -626,15 +626,24 @@ func add_spritesheet_to_global() -> void:
 
 	var target := Global.spritesheet
 	var lock_empty: bool = Settings.get_value(&"lock_empty_cells")
-	Global.document.perform("Add spritesheet", add_sheet.bind(target, spritesheet, lock_empty))
+	var own_colors: Array[bool] = []
+	if get_cut() == Cut.DATA:
+		own_colors = sheet_data.get_own_colors()
+	Global.document.perform(
+		"Add spritesheet", add_sheet.bind(target, spritesheet, lock_empty, own_colors)
+	)
 	frames_added.emit()
 	close_requested.emit()
 
 
 ## Places the whole grid of [param sheet] below the frames of [param target], keeping
 ## empty rows and columns. With [param lock_empty], its empty cells are locked so added
-## sprites skip them.
-static func add_sheet(target: Spritesheet, sheet: Spritesheet, lock_empty: bool) -> void:
+## sprites skip them. [param own_colors] says which of its animations, in order, have a
+## colour from the file (see [method SheetData.get_own_colors]), which they keep even
+## when another animation has it; the others get one far from the open sheet's.
+static func add_sheet(
+	target: Spritesheet, sheet: Spritesheet, lock_empty: bool, own_colors: Array[bool] = []
+) -> void:
 	var offset := Vector2i(0, target.get_first_free_row())
 	var packed := sheet.layout == Spritesheet.Layout.PACKED
 	# A packed sheet's pages go after the open sheet's
@@ -652,15 +661,16 @@ static func add_sheet(target: Spritesheet, sheet: Spritesheet, lock_empty: bool)
 			data.placement = data.placement.duplicate()
 			data.placement.page += first_page
 		target.set_cell(coord + offset, data)
-	for animation in sheet.animations:
+	var animations := sheet.animations
+	for index in animations.size():
+		var animation := animations[index]
 		animation.name = target.get_unique_animation_name(animation.name)
 		var cells: Array[Vector2i] = []
 		for cell in animation.cells:
 			cells.append(cell + offset)
 		animation.cells = cells
-		# A colour far from the open sheet's animations, not only from its own sheet's,
-		# unless the file gave it one (an Aseprite tag's)
-		if SheetAnimation.is_palette_color(animation.color):
+		# A colour far from the open sheet's animations, not only from its own sheet's
+		if index >= own_colors.size() or not own_colors[index]:
 			animation.color = SheetAnimation.NO_COLOR
 		target.add_animation(animation)
 	if lock_empty:

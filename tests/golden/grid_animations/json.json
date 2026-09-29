@@ -141,20 +141,23 @@
 				"name": "walk",
 				"from": 0,
 				"to": 2,
-				"direction": "forward"
+				"direction": "forward",
+				"color": "#28a7c1ff"
 			},
 			{
 				"name": "jump & \"fall\"",
 				"from": 1,
 				"to": 3,
 				"direction": "reverse",
-				"repeat": "1"
+				"repeat": "1",
+				"color": "#eb6845ff"
 			},
 			{
 				"name": "bob",
 				"from": 0,
 				"to": 4,
-				"direction": "pingpong"
+				"direction": "pingpong",
+				"color": "#b46ff3ff"
 			}
 		],
 		"animations": {
