@@ -61,8 +61,15 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   SpriteFrames get each frame's duration, JSON gets milliseconds per frame, and
   durations from Aseprite JSON are kept. The animation panel shows how long a cycle
   takes.
-- File > Export Again (Ctrl+Shift+E) repeats the last export to the same place without
-  asking. Projects remember where that was.
+- Export targets: a project keeps a list of exports, each with its own settings and the
+  file it writes, saved relative to the project. The Export dialog lists them on the
+  left, with Add, Duplicate and Remove, and the selected one's settings and Export to path
+  (with Browse…) on the right; Export writes the selected one and Export All every one.
+  File > Export Again (Ctrl+Shift+E) writes them all without asking, and opens the dialog
+  when there are none. The sidebar's Export button shows how many there are. In the web
+  version they download instead.
+- Command line: `--export project.sbelli` without `--out` or `--sprites` writes every
+  export of the project, set up in the Export dialog.
 - Animated GIFs can be opened, added as a spritesheet or dropped: the frames go in a
   new row, with an animation named after the file at the GIF's speed and frame times.
   Adding a GIF as sprites adds every frame and the animation too.
@@ -289,9 +296,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   tokens get a warning. The example shows real names from the sheet, and exports that
   write more than one file list them (the first few and how many more). The background
   says "Transparent" when it is, frames are named `{animation}_{animation_frame}` by
-  default when the sheet has animations, and the dialog opens on the export last used in
-  the project. Exports always ask where to save, so only projects are overwritten without
-  asking.
+  default when the sheet has animations, and the dialog opens on the export last
+  selected. An export without a file asks where to save the first time; after that it
+  writes there without asking.
 - Changing the export settings is no longer a step in the History, so Ctrl+Z after
   exporting undoes the last edit. They still count as unsaved changes. Spacing, padding
   and extruded edges set in the sidebar are still undone like the rest of the layout.

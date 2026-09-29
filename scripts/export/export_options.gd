@@ -84,6 +84,9 @@ const _SHEET_KEYS: Array[StringName] = [
 
 ## Whether the settings applied had a pattern, which is then kept even when it's the default
 var _name_pattern_set := false
+## The settings applied that aren't options, such as the project's export targets (see
+## [ExportTarget]), given back as they are by [method to_dictionary]
+var _kept := {}
 
 
 ## Options from a sheet's export settings and the user's settings
@@ -112,6 +115,9 @@ static func from_settings() -> ExportOptions:
 
 func apply(settings: Dictionary) -> void:
 	_name_pattern_set = _name_pattern_set or settings.get("sprite_name_pattern") is String
+	for key: Variant in settings:
+		if StringName(str(key)) not in _SHEET_KEYS:
+			_kept[str(key)] = settings[key]
 	for key in _SHEET_KEYS:
 		if not settings.has(key):
 			continue
@@ -188,9 +194,10 @@ func get_gif_animation(sheet: Spritesheet) -> SheetAnimation:
 	return null
 
 
-## The per-sheet values, for [method Spritesheet.set_export_settings]
+## The per-sheet values, for [method Spritesheet.set_export_settings], with the settings
+## applied that aren't options
 func to_dictionary() -> Dictionary:
-	var result := {}
+	var result := _kept.duplicate(true)
 	var defaults := ExportOptions.new()
 	defaults.sprite_name_pattern = default_name_pattern
 	for key in _SHEET_KEYS:

@@ -1,6 +1,7 @@
 class_name FileController
 extends Node
-## Opening, saving, exporting and adding files, with the dialogs they need.
+## Opening, saving and adding files, with the dialogs they need. [member exports] writes
+## exports.
 
 const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
 const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp, *.gif ; Images"
@@ -11,7 +12,6 @@ const SLOW_FILE_BYTES := 4_000_000
 
 @export var add_spritesheet_window: AddSpritesheetWindow
 
-var warned_about_jpg_transparency := false
 ## True while the Add Spritesheet window shows a file picked with Open
 var loading_opened_file := false
 var set_filepath_when_opening_spritesheet := false
@@ -31,30 +31,25 @@ var replace_image_dialog := _create_file_dialog(
 	"Replace Image", FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
 )
 var _replace_coord := Vector2i.ZERO
-## Returns the selected frames, for exporting only those
-var get_selected_coords := func() -> Array[Vector2i]: return []
+## Writes exports, see [ExportController]
+var exports := ExportController.new()
 ## Returns the preview's view (see [method SpritesheetPreview.get_view]), saved with projects
 var get_view := func() -> Dictionary: return {}
 
 @onready var open_sprites_dialog: FileDialog = $OpenSpritesDialog
 @onready var open_spritesheet_dialog: FileDialog = $OpenSpritesheetDialog
-@onready var save_sprites_dialog: FileDialog = $SaveSpritesDialog
-@onready var export_file_dialog: FileDialog = $ExportFileDialog
 
 
 func _ready() -> void:
 	open_sprites_dialog.filters = [IMAGE_FILTER]
 	open_spritesheet_dialog.filters = [IMAGE_FILTER, DATA_FILTER]
-	save_sprites_dialog.title = "Export Sprites"
-	save_sprites_dialog.ok_button_text = "Export"
 	open_sprites_dialog.files_selected.connect(add_sprites_from_paths)
 	open_spritesheet_dialog.file_selected.connect(show_add_spritesheet_window)
 	open_dialog.file_selected.connect(open_path)
-	save_sprites_dialog.dir_selected.connect(export_to)
-	export_file_dialog.file_selected.connect(export_to)
 	save_project_dialog.file_selected.connect(save_project)
 	save_project_dialog.canceled.connect(func() -> void: after_save = Callable())
 	open_folder_dialog.dir_selected.connect(add_sprites_from_folder)
+	add_child(exports)
 	add_child(open_dialog)
 	add_child(save_project_dialog)
 	add_child(open_folder_dialog)
@@ -93,8 +88,6 @@ func _ready() -> void:
 	for dialog: FileDialog in [
 		open_sprites_dialog,
 		open_spritesheet_dialog,
-		save_sprites_dialog,
-		export_file_dialog,
 		open_dialog,
 		save_project_dialog,
 		open_folder_dialog,
@@ -141,15 +134,6 @@ func _web_file_dialog(dialog: FileDialog) -> void:
 			WebFiles.pick(".%s,%s" % [ProjectFile.EXTENSION, images_and_data], true, emit_main)
 		save_project_dialog:
 			dialog.file_selected.emit(WebFiles.output_path(suggested_project_path()))
-		export_file_dialog:
-			dialog.file_selected.emit(WebFiles.output_path(dialog.current_file))
-		save_sprites_dialog:
-			var base_name := suggested_name(Global.document.get_name_path())
-			var folder := WebFiles.output_path(base_name + "_sprites")
-			DirAccess.make_dir_recursive_absolute(folder)
-			for file in DirAccess.get_files_at(folder):
-				DirAccess.remove_absolute(folder.path_join(file))
-			dialog.dir_selected.emit(folder)
 
 
 ## Of files picked together in a browser, the one to open: a data file, which brings its
@@ -396,36 +380,6 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
-func save_sprites(folder: String) -> bool:
-	return await Notify.run_busy("Exporting sprites", _save_sprites.bind(folder), _is_big_sheet())
-
-
-func _save_sprites(folder: String) -> bool:
-	var errors: PackedStringArray = []
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	var coords: Array[Vector2i] = []
-	if options.only_selected:
-		coords = get_selected_coords.call()
-		if coords.is_empty():
-			(
-				Notify
-				. error(
-					'No frames are selected. Select frames or turn off "Only selected frames" when exporting.'
-				)
-			)
-			return false
-	var written := SpritesheetExporter.export_sprites(
-		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
-	)
-	unlink_overwritten(written)
-	if not errors.is_empty():
-		Notify.error(tr("Could not save: %s.") % ", ".join(errors))
-		return false
-	WebFiles.download_folder(folder, folder.get_file() + ".zip")
-	Notify.toast(tr("Saved %d images to %s.") % [written.size(), folder.get_file()])
-	return true
-
-
 func _create_unsaved_changes_dialog() -> void:
 	unsaved_changes_dialog.title = "Unsaved changes"
 	unsaved_changes_dialog.ok_button_text = "Save"
@@ -493,14 +447,13 @@ static func _suggest(dialog: FileDialog, path: String) -> void:
 
 
 func save_project(path: String) -> bool:
-	return await Notify.run_busy("Saving", _save_project.bind(path), _is_big_sheet())
+	return await Notify.run_busy("Saving", _save_project.bind(path), is_big_sheet())
 
 
 func _save_project(path: String) -> bool:
 	path = ProjectFile.with_extension(path)
 	var extra := {
 		"export_path": Global.document.export_path,
-		"last_export": Global.document.last_export,
 		"source_hashes": _hashes_to_json(Global.document.source_hashes, path.get_base_dir()),
 		"folder_files": _folder_files_to_json(path.get_base_dir()),
 		"view": view_to_json(get_view.call()),
@@ -542,7 +495,6 @@ func _open_project(path: String) -> bool:
 		result.extra.get("export_path", ""),
 		view_from_json(result.extra.get("view"))
 	)
-	Global.document.last_export = str(result.extra.get("last_export", ""))
 	Global.document.source_hashes = _hashes_from_json(
 		result.extra.get("source_hashes"), path.get_base_dir()
 	)
@@ -568,253 +520,6 @@ func open_path(path: String) -> void:
 	else:
 		set_filepath_when_opening_spritesheet = true
 		show_add_spritesheet_window(path)
-
-
-## Asks where to export, following the sheet's export settings. The file dialog asks
-## before overwriting a file.
-func choose_export_path() -> void:
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	var suggested := suggested_export_path(options)
-	if options.target == ExportOptions.Target.SPRITES:
-		_suggest(save_sprites_dialog, suggested)
-		popup_file_dialog(save_sprites_dialog)
-		return
-	var extension := options.get_file_extension()
-	var names := {
-		"png": "PNG Images", "jpg": "JPEG Images", "webp": "WebP Images", "gif": "GIF Images"
-	}
-	var patterns := {
-		"png": "*.png", "jpg": "*.jpg, *.jpeg, *.jpe", "webp": "*.webp", "gif": "*.gif"
-	}
-	export_file_dialog.filters = ["%s ; %s" % [patterns[extension], names[extension]]]
-	export_file_dialog.title = "Export"
-	_suggest(export_file_dialog, suggested)
-	popup_file_dialog(export_file_dialog)
-
-
-## Where to suggest exporting: next to the last export, else the file the document is
-## named after (see [method Document.get_name_path]), with its name and the export's
-## extension (see [method SpritesheetExporter.with_extension])
-static func suggested_export_path(options: ExportOptions) -> String:
-	var document := Global.document
-	var base := document.export_path if document.export_path else document.get_name_path()
-	var folder := base.get_base_dir()
-	var base_name := suggested_name(base)
-	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
-		base_name += "_atlas"
-	if options.target == ExportOptions.Target.GIF and options.gif_animation:
-		base_name += "_" + options.gif_animation.validate_filename()
-	var path := folder.path_join(base_name)
-	var extension := options.get_file_extension()
-	if not extension:
-		return path
-	# The same file, spelled as it was ("HERO.PNG")
-	if path == base.get_basename() and SpritesheetExporter.has_extension(base, extension):
-		return base
-	return SpritesheetExporter.with_extension(path, extension)
-
-
-## Exports to [param path] what the sheet's export settings say, with the extension of
-## the file written unless it's typed with it (see [method SpritesheetExporter.with_extension])
-func export_to(path: String) -> bool:
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	if options.get_file_extension():
-		path = SpritesheetExporter.with_extension(path, options.get_file_extension())
-	# The template may have changed since it was picked
-	if options.get_template_error():
-		Notify.error(options.get_template_error())
-		return false
-	var exported := false
-	match options.target:
-		_ when options.packs(Global.spritesheet):
-			exported = await export_atlas(path)
-		ExportOptions.Target.GIF:
-			exported = await export_gif(path)
-		ExportOptions.Target.SPRITES:
-			exported = await save_sprites(path)
-		_:
-			exported = await export_image_to(path)
-	if exported:
-		Global.document.last_export = path
-	return exported
-
-
-## Exports the same way to the same place as last time, without asking
-func export_again() -> bool:
-	var path := Global.document.last_export
-	if path.is_empty():
-		return false
-	var extension := ExportOptions.from_sheet(Global.spritesheet).get_file_extension()
-	# The export type or format may have changed since: the same name, without the
-	# extension written last time, with this one's
-	if extension and not SpritesheetExporter.has_extension(path, extension):
-		path = SpritesheetExporter.with_extension(path.get_basename(), extension)
-	return await export_to(path)
-
-
-## Writes the animation chosen in the export settings as an animated GIF
-func export_gif(path: String) -> bool:
-	var sheet := Global.spritesheet
-	var result := await GifEncoder.write(
-		sheet,
-		ExportOptions.from_sheet(sheet),
-		path,
-		func(done: int, total: int) -> void: Notify.progress("Making the GIF", done, total)
-	)
-	Notify.hide_progress()
-	if result.error == ERR_DOES_NOT_EXIST:
-		Notify.error("The animation has no frames.")
-		return false
-	if result.error != OK:
-		Notify.error(tr("Could not export to %s (%s).") % [result.path, error_string(result.error)])
-		return false
-	unlink_overwritten([result.path])
-	WebFiles.download(result.path)
-	Notify.toast(tr("Exported %s (%d frames).") % [result.path.get_file(), result.frames])
-	return true
-
-
-func export_image_to(path: String) -> bool:
-	return await Notify.run_busy("Exporting", _export_image_to.bind(path), _is_big_sheet())
-
-
-func _export_image_to(path: String) -> bool:
-	if Global.spritesheet.is_empty():
-		Notify.error("The spritesheet is empty.")
-		return false
-
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	# The chosen format's extension, unless the name was typed with it
-	path = SpritesheetExporter.with_extension(path, options.get_file_extension())
-	if Global.spritesheet.layout == Spritesheet.Layout.PACKED:
-		return _export_pages(path, options)
-	var problem := ImageUtils.size_problem(
-		SpritesheetExporter.get_image_size(Global.spritesheet, options), path.get_extension()
-	)
-	if problem:
-		Notify.error(problem + "\n" + tr("Make the sprites smaller or use fewer cells."))
-		return false
-	var spritesheet_image := Global.spritesheet.get_image(options)
-	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
-
-	if error != OK:
-		Notify.error(tr("Could not export to %s (%s).") % [path, error_string(error)])
-		return false
-	unlink_overwritten([path])
-
-	var message := tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
-	var metadata_error := Metadata.write_for_image(
-		Global.spritesheet, options, path, Settings.get_value(&"index_start")
-	)
-	if metadata_error != OK:
-		Notify.error(tr("Could not write the metadata (%s).") % error_string(metadata_error))
-		return false
-	WebFiles.download(path)
-	if options.get_image_data():
-		unlink_overwritten([Metadata.get_path_for_image(path, options)])
-		message += tr("\nAlso wrote %s.") % Metadata.get_path_for_image(path, options).get_file()
-		WebFiles.download(Metadata.get_path_for_image(path, options))
-	if (
-		not SpritesheetExporter.supports_transparency(path)
-		and ImageUtils.has_transparency(spritesheet_image)
-		and not warned_about_jpg_transparency
-	):
-		warned_about_jpg_transparency = true
-		message += (
-			tr("\nJPG doesn't support transparency, so transparent areas were filled with %s.")
-			% (
-				tr("white")
-				if options.opaque_background == Color.WHITE
-				else tr("the background colour")
-			)
-		)
-	Global.document.export_path = path
-	Notify.toast(message, 7.0 if "\n" in message else 3.0)
-	return true
-
-
-## Writes each page of the packed sheet as an image, numbered when there are more
-func _export_pages(path: String, options: ExportOptions) -> bool:
-	var pages := SpritesheetExporter.build_pages(Global.spritesheet, options)
-	var paths := SpritesheetExporter.get_page_paths(path, pages.size())
-	for i in pages.size():
-		var problem := ImageUtils.size_problem(pages[i].get_size(), path.get_extension())
-		if problem:
-			Notify.error(problem)
-			return false
-		var error := SpritesheetExporter.save_image(pages[i], paths[i], options)
-		if error != OK:
-			Notify.error(tr("Could not export to %s (%s).") % [paths[i], error_string(error)])
-			return false
-		WebFiles.download(paths[i])
-	unlink_overwritten(paths)
-	Global.document.export_path = path
-	if paths.size() == 1:
-		Notify.toast(tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()])
-	else:
-		Notify.toast(tr("Exported %d pages, from %s.") % [paths.size(), paths[0].get_file()])
-	return true
-
-
-## Packs trimmed frames tightly and writes the atlas PNG with a JSON file next to it
-func export_atlas(path: String) -> bool:
-	return await Notify.run_busy("Packing the atlas", _export_atlas.bind(path), _is_big_sheet())
-
-
-func _export_atlas(path: String) -> bool:
-	var sheet := Global.spritesheet
-	var result := AtlasPacker.write(
-		sheet, ExportOptions.from_sheet(sheet), path, Settings.get_value(&"index_start")
-	)
-	if result.error == ERR_OUT_OF_MEMORY:
-		Notify.error(tr("The frames don't fit in a %d px atlas.") % AtlasPacker.MAX_SIZE)
-		return false
-	if result.error == ERR_UNAVAILABLE:
-		Notify.error(tr(result.message))
-		return false
-	if result.error != OK:
-		Notify.error(tr("Could not export the atlas (%s).") % error_string(result.error))
-		return false
-	unlink_overwritten(result.paths)
-	for written: String in result.paths:
-		WebFiles.download(written)
-	var size: Vector2i = result.size
-	if result.pages > 1:
-		Notify.toast(
-			(
-				tr("Packed %d frames on %d pages, from %s, and %s.")
-				% [result.frames, result.pages, result.path.get_file(), result.json_path.get_file()]
-			)
-		)
-		return true
-	Notify.toast(
-		(
-			tr("Packed %d frames into %s (%d×%d px) and %s.")
-			% [result.frames, result.path.get_file(), size.x, size.y, result.json_path.get_file()]
-		)
-	)
-	return true
-
-
-## Frames linked to files that were just written over would be cut from what
-## spritesheetbelli made, with their edits made twice, so they're unlinked instead
-func unlink_overwritten(paths: PackedStringArray) -> void:
-	var document := Global.document
-	var unlinked: PackedStringArray = []
-	for path in paths:
-		if path not in document.unwatched_paths:
-			document.unwatched_paths.append(path)
-		document.source_hashes.erase(path)
-		if FrameSource.unlink(Global.spritesheet, path) > 0:
-			unlinked.append(path.get_file())
-	if not unlinked.is_empty():
-		Notify.toast(
-			(
-				tr("Frames from %s are no longer linked to it, since the export wrote over it.")
-				% ", ".join(unlinked)
-			),
-			6.0
-		)
 
 
 ## Frames are about to be linked to [param path], so it's watched again even if it was
@@ -918,7 +623,8 @@ static func is_big_file(path: String) -> bool:
 	return file != null and file.get_length() > SLOW_FILE_BYTES
 
 
-static func _is_big_sheet() -> bool:
+## Whether work on the sheet takes long enough to show a "please wait" overlay
+static func is_big_sheet() -> bool:
 	var sheet := Global.spritesheet
 	var pixels := 0
 	for coord in sheet.frames:

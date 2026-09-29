@@ -79,7 +79,7 @@ func test_add_spritesheet_keeps_empty_rows() -> void:
 func test_export_appends_png_extension() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	var path := dir.path_join("sheet_no_ext")
-	await main.files.export_image_to(path)
+	await main.files.exports.export_to(path)
 	assert_true(FileAccess.file_exists(path + ".png"))
 	assert_eq(Global.document.export_path, path + ".png", "Ctrl+E exports here next time")
 	Notify.message_dialog.hide()
@@ -94,33 +94,35 @@ func test_the_export_format_adds_its_extension() -> void:
 	var written := typed + ".jpg"
 	DirAccess.remove_absolute(typed)
 	DirAccess.remove_absolute(written)
-	assert_true(await main.files.export_to(typed))
+	assert_true(await main.files.exports.export_to(typed))
 	assert_true(FileAccess.file_exists(written), "a JPG, the PNG's extension part of its name")
 	assert_false(FileAccess.file_exists(typed))
 	assert_eq(Global.document.export_path, written)
-	assert_eq(Global.document.last_export, written)
-	assert_eq(FileController.suggested_export_path(options), written)
+	assert_eq(ExportController.suggested_path(options), written)
 
-	# Another format since: the same name, format.png
+	# A target of another format since: the same name, format.png
+	var target := ExportTarget.create(Global.spritesheet, options.to_dictionary())
+	target.path = written
+	target.options.image_format = "webp"
 	options.image_format = "webp"
-	Global.spritesheet.set_export_settings(options.to_dictionary())
-	assert_eq(FileController.suggested_export_path(options), typed + ".webp")
+	assert_eq(ExportController.suggested_path(options), typed + ".webp")
+	assert_eq(ExportController.get_output_path(target), typed + ".webp")
 	DirAccess.remove_absolute(typed + ".webp")
-	assert_true(await main.files.export_again())
+	var targets: Array[ExportTarget] = [target]
+	assert_true(await main.files.exports.export_targets(targets))
 	assert_true(FileAccess.file_exists(typed + ".webp"), "again, as WebP")
-	assert_eq(Global.document.last_export, typed + ".webp")
 
 	# Typed with the format's extension, in any case or spelling: written as typed
 	options.image_format = "jpg"
 	Global.spritesheet.set_export_settings(options.to_dictionary())
 	var jpeg := dir.path_join("FORMAT.JPEG")
 	DirAccess.remove_absolute(jpeg)
-	assert_true(await main.files.export_to(jpeg))
+	assert_true(await main.files.exports.export_to(jpeg))
 	assert_true(FileAccess.file_exists(jpeg))
-	assert_eq(Global.document.last_export, jpeg)
-	assert_eq(FileController.suggested_export_path(options), jpeg)
-	assert_true(await main.files.export_again())
-	assert_eq(Global.document.last_export, jpeg, "the same file again")
+	assert_eq(ExportController.suggested_path(options), jpeg)
+	target.path = jpeg
+	target.options.image_format = "jpg"
+	assert_eq(ExportController.get_output_path(target), jpeg, "the same file again")
 	for path: String in [written, typed + ".webp", jpeg]:
 		DirAccess.remove_absolute(path)
 
@@ -457,7 +459,7 @@ func test_empty_hint_and_toasts() -> void:
 	)
 	await get_tree().process_frame
 	assert_false(main.preview_area.empty_hint.visible)
-	await main.files.export_image_to(dir.path_join("toast.png"))
+	await main.files.exports.export_to(dir.path_join("toast.png"))
 	assert_true(Notify.get_toasts()[-1].begins_with("Exported toast.png"))
 
 
@@ -628,7 +630,7 @@ func test_export_dialog() -> void:
 	assert_true(dialog.visible)
 	assert_true(dialog.image_format.visible, "image settings for an image")
 	assert_false(dialog.pattern.visible)
-	dialog.select_target(ExportOptions.Target.SPRITES)
+	dialog.select_type(ExportOptions.Target.SPRITES)
 	assert_false(dialog.image_format.visible)
 	assert_true(dialog.pattern.visible, "file names for sprites")
 	assert_false("padding" in dialog, "spacing is in the sidebar")
@@ -636,7 +638,7 @@ func test_export_dialog() -> void:
 	assert_eq(dialog.background_picker.color.a, 0.0, "transparent by default")
 	dialog.background_picker.color = Color.RED
 	dialog.background_picker.color_changed.emit(Color.RED)
-	dialog.select_target(ExportOptions.Target.DATA)
+	dialog.select_type(ExportOptions.Target.DATA)
 	assert_true(dialog.animation_fps.visible)
 	var formats := dialog.grid_data
 	var godot := range(formats.item_count).find_custom(
@@ -645,17 +647,23 @@ func test_export_dialog() -> void:
 	formats.select(godot)
 	formats.item_selected.emit(godot)
 	dialog.get_ok_button().pressed.emit()
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	assert_eq(options.target, ExportOptions.Target.DATA, "saved with the sheet")
-	assert_eq(options.background, Color.RED)
-	assert_true(main.files.export_file_dialog in main.files.open_file_dialogs, "asks where")
-	assert_eq(main.files.export_file_dialog.current_file, "spritesheet.png")
-	main.files.export_file_dialog.hide()
-	main.files.open_file_dialogs.clear()
+	var file_dialog := dialog.output.file_dialog
+	assert_true(file_dialog.visible, "asks where")
+	assert_eq(file_dialog.current_file, "spritesheet.png")
+	assert_true(dialog.visible, "until it's picked")
 
 	var path := dir.path_join("dialog_export.png")
-	assert_true(await main.files.export_to(path))
+	file_dialog.file_selected.emit(path)
+	await get_tree().process_frame
+	assert_false(dialog.visible)
+	assert_true(FileAccess.file_exists(path))
 	assert_true(FileAccess.file_exists(dir.path_join("dialog_export.tres")), "SpriteFrames too")
+	var targets := ExportTarget.list(Global.spritesheet)
+	assert_eq(targets.size(), 1, "kept in the project")
+	assert_eq(targets[0].options.target, ExportOptions.Target.DATA)
+	assert_eq(targets[0].options.background, Color.RED)
+	assert_eq(targets[0].path, path)
+	Notify.message_dialog.hide()
 
 
 func test_export_dialog_for_a_packed_sheet() -> void:
@@ -666,22 +674,20 @@ func test_export_dialog_for_a_packed_sheet() -> void:
 	var dialog: ExportDialog = main.export_dialog
 	var atlas := (
 		ExportDialog
-		. TARGETS
+		. TYPES
 		. map(func(t: Dictionary) -> int: return t.target)
 		. find(ExportOptions.Target.ATLAS)
 	)
-	assert_eq(dialog.targets.get_selected_items(), PackedInt32Array([atlas]), "atlas first")
-	assert_false(dialog.targets.is_item_disabled(0), "pages as images")
-	assert_true(dialog.targets.is_item_disabled(2), "no data file of a grid")
+	assert_eq(dialog.type.selected, atlas, "atlas first")
+	assert_false(dialog.type.is_item_disabled(0), "pages as images")
+	assert_true(dialog.type.is_item_disabled(2), "no data file of a grid")
 	assert_true(dialog.atlas_data.visible)
 	assert_true("Atlas size" in dialog.output_info.text, dialog.output_info.text)
-	dialog.select_target(ExportOptions.Target.IMAGE)
+	dialog.select_type(ExportOptions.Target.IMAGE)
 	assert_true("Image size" in dialog.output_info.text, dialog.output_info.text)
-	dialog.get_ok_button().pressed.emit()
-	main.files.export_file_dialog.hide()
-	main.files.open_file_dialogs.clear()
+	dialog.hide()
 	Actions.run(&"export")
-	assert_eq(dialog.targets.get_selected_items(), PackedInt32Array([0]), "remembered")
+	assert_eq(dialog.type.selected, 0, "remembered")
 	dialog.hide()
 
 
@@ -701,7 +707,7 @@ func test_packed_pages_export_as_images() -> void:
 	options.target = ExportOptions.Target.IMAGE
 	sheet.set_export_settings(options.to_dictionary())
 	var path := dir.path_join("pages.png")
-	assert_true(await main.files.export_to(path))
+	assert_true(await main.files.exports.export_to(path))
 	for i in 3:
 		var page := Image.load_from_file(dir.path_join("pages_%d.png" % i))
 		assert_eq(page.get_size(), pages[i])
@@ -770,36 +776,6 @@ func test_opening_an_image_uses_its_data_file() -> void:
 	var sheet := Global.spritesheet
 	assert_eq(sheet.frames[Vector2i(1, 1)].get_size(), Vector2i(22, 16))
 	assert_eq(sheet.animations[0].cells, [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
-
-
-func test_export_again() -> void:
-	assert_false(Actions.is_enabled(&"export_again"), "nothing exported yet")
-	Global.spritesheet.add_frames([make_image(Color.RED), make_image(Color.BLUE)] as Array[Image])
-	var path := dir.path_join("again.png")
-	DirAccess.remove_absolute(path)
-	assert_true(await main.files.export_to(path))
-	assert_eq(Global.document.last_export, path)
-	await get_tree().process_frame
-	assert_true(Actions.is_enabled(&"export_again"))
-	DirAccess.remove_absolute(path)
-	assert_true(await main.files.export_again())
-	assert_true(FileAccess.file_exists(path), "written again")
-
-	# Another export type since: the same name, without the PNG's extension, with its own
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	options.target = ExportOptions.Target.GIF
-	Global.spritesheet.set_export_settings(options.to_dictionary())
-	DirAccess.remove_absolute(dir.path_join("again.gif"))
-	assert_true(await main.files.export_again())
-	assert_true(FileAccess.file_exists(dir.path_join("again.gif")))
-	assert_false(FileAccess.file_exists(dir.path_join("again.png.gif")))
-
-	var project := dir.path_join("again.sbelli")
-	assert_true(main.files.save_project(project))
-	Global.document.reset()
-	assert_eq(Global.document.last_export, "")
-	assert_true(main.files.open_project(project))
-	assert_eq(Global.document.last_export, dir.path_join("again.gif"), "kept in the project")
 
 
 func test_resize_filter_sticks_at_the_original_size() -> void:

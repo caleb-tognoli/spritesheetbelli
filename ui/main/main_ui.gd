@@ -69,6 +69,7 @@ const ICONS := {
 ## What tooltips say after an action's name and shortcut, see [member AppAction.description]
 const DESCRIPTIONS := {
 	&"export": "The spritesheet as an image, as sprites or for a game engine",
+	&"export_again": "Every export of the project, or else the Export dialog",
 	&"add_sprites": "Image files as sprites",
 	&"add_spritesheet": "Cut a spritesheet image into frames and add them",
 	&"tool_select": "Click or drag to select frames",
@@ -234,13 +235,14 @@ func _ready() -> void:
 	color_key.setup(preview_area, edit_selection_in_background)
 	add_child(outline_dialog)
 	add_child(export_dialog)
-	export_dialog.export_requested.connect(files.choose_export_path)
+	export_dialog.exports = files.exports
+	files.exports.open_dialog = Actions.run.bind(&"export")
 	add_child(about_dialog)
 	add_child(source_watcher)
 	animation_panel.setup(preview)
 	outline_dialog.outline_chosen.connect(add_outline)
 	files.restore_session.call_deferred()
-	files.get_selected_coords = preview.get_selected_coords
+	files.exports.get_selected_coords = preview.get_selected_coords
 	export_dialog.get_selected_coords = preview.get_selected_coords
 	files.get_view = preview.get_view
 	(%MenuBar as MainMenuBar).recent_files.file_chosen.connect(files.open_recent)
@@ -250,7 +252,7 @@ func _ready() -> void:
 	animation_commands.setup(self)
 	add_sprites_btn.tooltip_text = Actions.get_tooltip(&"add_sprites")
 	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
-	export_btn.tooltip_text = Actions.get_tooltip(&"export")
+	_update_export_button(ExportTarget.list(Global.spritesheet).size())
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	preview_area.set_toolbar_actions(
 		TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS, {&"color_key": color_key.dropdown}
@@ -350,12 +352,7 @@ func _register_actions() -> void:
 	add.call(&"save", "Save", files.save, has_frames)
 	add.call(&"save_as", "Save As…", files.save_as, has_frames)
 	add.call(&"export", "Export…", func() -> void: export_dialog.popup_centered(), has_frames)
-	add.call(
-		&"export_again",
-		"Export Again",
-		files.export_again,
-		func() -> bool: return has_frames.call() and Global.document.last_export != ""
-	)
+	add.call(&"export_again", "Export Again", files.exports.export_again, has_frames)
 	add.call(
 		&"add_sprites", "Add Sprite(s)…", files.popup_file_dialog.bind(files.open_sprites_dialog)
 	)
@@ -820,9 +817,21 @@ func set_text_params(spritesheet: Spritesheet) -> void:
 	sheet_size.text = "%d × %d px" % [image_size.x, image_size.y]
 	if spritesheet.layout == Spritesheet.Layout.PACKED:
 		sheet_size.text = PackedLayout.describe(spritesheet)
+	_update_export_button(ExportTarget.list(spritesheet).size())
 	layout_controller.update()
 	update_sheet_info()
 	resize_filter.select(get_resize_filter())
+
+
+## The export button says how many exports the project has, which Export Again writes
+func _update_export_button(count: int) -> void:
+	export_btn.text = tr("Export… (%d)") % count if count else tr("Export…")
+	export_btn.tooltip_text = Actions.get_tooltip(&"export")
+	if count:
+		var again := Actions.get_shortcut_text(&"export_again")
+		export_btn.tooltip_text += (
+			"\n" + tr("%d exports, written by Export Again (%s)") % [count, again]
+		)
 
 
 ## Frame count, grid and image size in the status bar

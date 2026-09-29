@@ -81,7 +81,11 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"locked": locked,
 		"animations": animations,
 		"animation_labels": "playing" if sheet.label_playing_only else "chosen",
-		"export": JSON.from_native(sheet.export_settings),
+		# Exports go where they did when the project is moved with them
+		"export":
+		JSON.from_native(
+			ExportTarget.paths_to_relative(sheet.export_settings, path.get_base_dir())
+		),
 		"frames": frames,
 		"extra": extra,
 	}
@@ -194,7 +198,8 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
 		"animations": animations,
 		"label_playing_only": data.get("animation_labels") == "playing",
-		"export": _read_export_settings(data.get("export", {})),
+		"export":
+		ExportTarget.paths_to_absolute(_read_export_settings(data.get("export", {})), folder),
 		"folders": folders,
 	}
 	return {"state": state, "extra": data.get("extra", {})}

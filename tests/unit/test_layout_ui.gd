@@ -281,12 +281,10 @@ func test_frame_size_in_data_is_an_export_setting() -> void:
 	Actions.run(&"layout_packed")
 	Actions.run(&"export")
 	var dialog: ExportDialog = main.export_dialog
-	dialog.select_target(ExportOptions.Target.ATLAS)
+	dialog.select_type(ExportOptions.Target.ATLAS)
 	assert_true(dialog.frame_size.visible)
 	dialog.frame_size.select(dialog.frame_size.get_item_index(ExportOptions.FrameSize.FRAME))
 	dialog.frame_size.item_selected.emit(dialog.frame_size.selected)
-	dialog.get_ok_button().pressed.emit()
-	var options := ExportOptions.from_sheet(sheet)
+	dialog.hide()
+	var options := ExportTarget.list(sheet)[0].options
 	assert_eq(options.atlas_frame_size, ExportOptions.FrameSize.FRAME)
-	main.files.export_file_dialog.hide()
-	main.files.open_file_dialogs.clear()

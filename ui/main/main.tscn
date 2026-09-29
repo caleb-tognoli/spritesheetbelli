@@ -48,23 +48,6 @@ access = 2
 filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
 use_native_dialog = true
 
-[node name="SaveSpritesDialog" type="FileDialog" parent="Files" unique_id=2058307897]
-title = "Open a Directory"
-size = Vector2i(454, 175)
-ok_button_text = "Select Current Folder"
-file_mode = 2
-access = 2
-use_native_dialog = true
-
-[node name="ExportFileDialog" type="FileDialog" parent="Files" unique_id=547570530]
-auto_translate_mode = 1
-title = "Export"
-size = Vector2i(454, 175)
-ok_button_text = "Save"
-access = 2
-filters = PackedStringArray("*.png; PNG Images", "*.jpg, *.jpeg, *.jpe; JPEG Images", "*.webp; WebP Images")
-use_native_dialog = true
-
 [node name="Background" type="Panel" parent="." unique_id=941109527]
 layout_mode = 1
 anchors_preset = 15

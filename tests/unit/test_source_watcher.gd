@@ -173,7 +173,7 @@ func test_reload_from_file_action() -> void:
 func test_exporting_over_a_linked_file_unlinks_it() -> void:
 	var path := write("walk.png", Color.RED)
 	await add_sprites([path])
-	assert_true(await main.files.export_image_to(path))
+	assert_true(await main.files.exports.export_to(path))
 	assert_true(Global.spritesheet.frame_sources.is_empty())
 	assert_true(path in Global.document.unwatched_paths)
 	var toasts := " ".join(Notify.get_toasts())

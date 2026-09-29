@@ -1,13 +1,16 @@
 class_name ExportDialog
 extends ConfirmationDialog
-## Asks what to export and shows only the settings that matter for it. The choices are
-## saved with the project; confirming emits [signal export_requested] to pick where.
-
-signal export_requested
+## Adds and edits the project's export targets (see [ExportTarget]): their list on the left,
+## the one selected on the right, with only the settings that matter for its type and
+## where it writes. Export writes the selected one and Export All every one. Edits are
+## changes to the project, kept when closing, but not undo steps. A project without
+## targets gets a new one, kept once it's changed or exported, so a one-off export is
+## still a click or two.
 
 const T := ExportOptions.Target
 const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
-const TARGETS := [
+## What can be exported, in the order the Type list has them
+const TYPES := [
 	{
 		"target": T.IMAGE,
 		"name": "Spritesheet image",
@@ -65,7 +68,7 @@ const TARGETS := [
 	},
 ]
 ## What a sheet in the packed layout can be exported as
-const PACKED_TARGETS: Array[ExportOptions.Target] = [
+const PACKED_TYPES: Array[ExportOptions.Target] = [
 	ExportOptions.Target.IMAGE,
 	ExportOptions.Target.ATLAS,
 	ExportOptions.Target.SPRITES,
@@ -73,13 +76,25 @@ const PACKED_TARGETS: Array[ExportOptions.Target] = [
 	ExportOptions.Target.CUSTOM,
 ]
 const LABEL_WIDTH := 170
+const EXPORT_ALL := &"export_all"
 ## Files named in the list of what an export writes, before "… 3 more"
 const FILES_SHOWN := 5
 
 ## The frames selected in the preview, for exporting only those
 var get_selected_coords := func() -> Array[Vector2i]: return []
-var targets := ItemList.new()
+## Writes the exports
+var exports: ExportController
+## The project's targets, with the type's icon, where each writes and its format
+var target_list := ItemList.new()
+var add_target := Button.new()
+var duplicate_target := Button.new()
+var remove_target := Button.new()
+var export_all: Button
+## The type of the selected target, with [constant TYPES]' order
+var type := OptionButton.new()
 var about := Label.new()
+## Where the selected target writes. Browsers download exports instead, so it isn't shown.
+var output := OutputPathField.new()
 var image_format := OptionButton.new()
 var jpg_quality := SpinBox.new()
 var jpg_background := ColorPickerButton.new()
@@ -106,9 +121,16 @@ var files_info := Label.new()
 var output_info := Label.new()
 
 var _settings := _grid()
+## The targets edited, stored with the sheet when the dialog closes or exports
+var _targets: Array[ExportTarget] = []
+var _selected := 0
+## Whether [member _targets] is the new target of a project without any, which is only
+## kept once it's changed or exported
+var _draft := false
 ## Controls of each row, with the targets they're shown for
 var _rows: Array[Dictionary] = []
 var _pattern_label: Label
+var _output_label: Label
 var _fps_label: Label
 ## The rows of the data format dropdowns, which custom templates don't have
 var _format_rows: Array[Control] = []
@@ -119,31 +141,63 @@ var _atlas_pages := {}
 
 func _init() -> void:
 	title = "Export"
-	ok_button_text = "Export…"
+	ok_button_text = "Export"
+	cancel_button_text = "Close"
+	# Exporting a target that doesn't know where to write asks first
+	dialog_hide_on_ok = false
+	export_all = add_button("Export All", false, EXPORT_ALL)
+	export_all.tooltip_text = "Export every one in the list"
 	DialogButtons.apply(self)
 	# Big enough for every export type, so it doesn't change size when switching
-	min_size = Vector2i(760, 470)
+	min_size = Vector2i(840, 500)
 	var layout := HBoxContainer.new()
 	layout.add_theme_constant_override("separation", 16)
 	add_child(layout)
 
-	targets.custom_minimum_size = Vector2(250, 280)
-	targets.fixed_icon_size = Vector2i(16, 16)
-	for entry: Dictionary in TARGETS:
-		targets.add_item(entry.name, entry.icon)
-	layout.add_child(targets)
+	var left := VBoxContainer.new()
+	layout.add_child(left)
+	target_list.custom_minimum_size = Vector2(230, 280)
+	target_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	target_list.fixed_icon_size = Vector2i(16, 16)
+	target_list.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	left.add_child(target_list)
+	var list_buttons := HBoxContainer.new()
+	left.add_child(list_buttons)
+	add_target.text = "Add"
+	add_target.icon = preload("res://assets/icons/Add.svg")
+	add_target.tooltip_text = "Add an export, to write more than one at once"
+	duplicate_target.icon = preload("res://assets/icons/Duplicate.svg")
+	duplicate_target.tooltip_text = "Duplicate the selected export"
+	remove_target.icon = preload("res://assets/icons/Remove.svg")
+	remove_target.tooltip_text = "Remove the selected export"
+	for button: Button in [add_target, duplicate_target, remove_target]:
+		list_buttons.add_child(button)
 
 	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(380, 0)
+	right.custom_minimum_size = Vector2(420, 0)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 12)
 	layout.add_child(right)
+	var head := _grid()
+	right.add_child(head)
+	var every_type := TYPES.map(func(entry: Dictionary) -> int: return entry.target)
+	for entry: Dictionary in TYPES:
+		type.add_icon_item(entry.icon, entry.name)
+	type.tooltip_text = "What the export writes"
+	_add_row(head, "Type", type, every_type)
 	about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# A wrapped label needs a width, or it's measured one word per line
-	about.custom_minimum_size = Vector2(380, 0)
+	about.custom_minimum_size = Vector2(420, 0)
 	about.theme_type_variation = &"StatusLabel"
 	right.add_child(about)
 	right.add_child(_settings)
+
+	output.tooltip_text = (
+		"Where the export writes. The files written next to it, like data files and pages, "
+		+ "are named after it."
+	)
+	output.line_edit.tooltip_text = output.tooltip_text
+	_output_label = _add_row(_settings, "Export to", output, every_type)
 
 	for format: String in ExportOptions.IMAGE_FORMATS:
 		image_format.add_item(format.to_upper())
@@ -247,7 +301,7 @@ func _init() -> void:
 	output_info.theme_type_variation = &"StatusLabel"
 	right.add_child(output_info)
 
-	targets.item_selected.connect(_changed.unbind(1))
+	type.item_selected.connect(_changed.unbind(1))
 	image_format.item_selected.connect(_changed.unbind(1))
 	background_picker.color_changed.connect(_changed.unbind(1))
 	pattern.text_changed.connect(_changed.unbind(1))
@@ -258,11 +312,27 @@ func _init() -> void:
 	grid_data.item_selected.connect(_changed.unbind(1))
 	atlas_data.item_selected.connect(_changed.unbind(1))
 	template_file.path_changed.connect(_changed.unbind(1))
+	output.path_changed.connect(_changed.unbind(1))
+	output.browse_pressed.connect(browse)
 	templates_folder.pressed.connect(open_templates_folder)
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
 	jpg_background.color_changed.connect(_changed.unbind(1))
-	confirmed.connect(_on_confirmed)
+	target_list.item_selected.connect(select)
+	add_target.pressed.connect(add)
+	duplicate_target.pressed.connect(duplicate_selected)
+	remove_target.pressed.connect(remove_selected)
+	confirmed.connect(export_selected)
+	custom_action.connect(
+		func(action: StringName) -> void:
+			if action == EXPORT_ALL:
+				_export(_targets.duplicate())
+	)
+	visibility_changed.connect(
+		func() -> void:
+			if not visible:
+				_store()
+	)
 
 
 func _ready() -> void:
@@ -276,25 +346,140 @@ func _ready() -> void:
 		SpinScroll.enable(spin)
 
 
-## Shows the sheet's export settings
+## Shows the project's targets, or a new one when there are none, selecting the one
+## selected last time
 func refresh() -> void:
-	_updating = true
 	_atlas_pages.clear()
 	# Templates may have been put in the templates folder since
 	AtlasFormats.refresh()
-	var options := ExportOptions.from_sheet(Global.spritesheet)
 	# A packed sheet is exported as it's packed, not as a grid
 	var packed := _is_packed()
-	for i in TARGETS.size():
-		var grid_only: bool = TARGETS[i].target not in PACKED_TARGETS
-		targets.set_item_disabled(i, packed and grid_only)
-		targets.set_item_tooltip(i, tr("Only in the grid layout") if packed and grid_only else "")
-	# Packed sheets are usually exported as atlases, until another export is picked
-	var chosen: bool = Global.spritesheet.export_settings.has("target")
-	if packed and (options.target not in PACKED_TARGETS or not chosen):
-		options.target = T.ATLAS
-	targets.select(_target_index(options.target))
-	targets.ensure_current_is_visible()
+	for i in TYPES.size():
+		var grid_only: bool = TYPES[i].target not in PACKED_TYPES
+		type.set_item_disabled(i, packed and grid_only)
+		type.set_item_tooltip(i, tr("Only in the grid layout") if packed and grid_only else "")
+	_targets = ExportTarget.list(Global.spritesheet)
+	_draft = _targets.is_empty()
+	if _draft:
+		_targets.append(new_target())
+	_fill_list()
+	select(_selected)
+
+
+## A target to add: like the sheet's own export settings, like how it was imported. Packed
+## sheets are usually exported as atlases, until another export is picked.
+static func new_target() -> ExportTarget:
+	var sheet := Global.spritesheet
+	var target := ExportTarget.create(sheet, ExportOptions.from_sheet(sheet).to_dictionary())
+	var chosen := sheet.export_settings.has("target")
+	if _is_packed() and (target.options.target not in PACKED_TYPES or not chosen):
+		target.options.target = T.ATLAS
+	return target
+
+
+## The targets as edited
+func get_targets() -> Array[ExportTarget]:
+	return _targets
+
+
+## The selected target
+func get_target() -> ExportTarget:
+	return _targets[_selected]
+
+
+## Shows the target at [param index] of the list
+func select(index: int) -> void:
+	_selected = clampi(index, 0, _targets.size() - 1)
+	target_list.select(_selected)
+	target_list.ensure_current_is_visible()
+	remove_target.disabled = _draft
+	export_all.disabled = _targets.size() < 2
+	_show(_targets[_selected])
+
+
+## Adds a new target after the others and selects it
+func add() -> void:
+	_draft = false
+	_targets.append(new_target())
+	_fill_list()
+	select(_targets.size() - 1)
+
+
+## Adds a copy of the selected target after it, to change a little
+func duplicate_selected() -> void:
+	_draft = false
+	_targets.insert(_selected + 1, get_target().copy(Global.spritesheet))
+	_fill_list()
+	select(_selected + 1)
+
+
+## Removes the selected target. The last one leaves a new one in its place, kept only when
+## it's changed or exported, as in a project without targets.
+func remove_selected() -> void:
+	_targets.remove_at(_selected)
+	_draft = _targets.is_empty()
+	if _draft:
+		_targets.append(new_target())
+	_fill_list()
+	select(_selected)
+
+
+## Selects what to export
+func select_type(target: ExportOptions.Target) -> void:
+	type.select(_type_index(target))
+	_changed()
+
+
+## The options of the selected target as set in the dialog
+func get_options() -> ExportOptions:
+	return get_target().options
+
+
+## Asks where the selected target writes, then runs [param then] with the path picked
+func browse(then := Callable()) -> void:
+	var options := get_options()
+	output.browse(ExportController.suggested_path(options), options.get_file_extension(), then)
+
+
+## Exports the selected target, asking where first when it doesn't know
+func export_selected() -> void:
+	var target := get_target()
+	if ExportController.has_place(target):
+		_export([target])
+	else:
+		browse(func(_path: String) -> void: _export([target]))
+
+
+## Closes the dialog, which stores the targets, and exports those in [param list]
+func _export(list: Array[ExportTarget]) -> void:
+	_draft = false
+	hide()
+	if exports:
+		await exports.export_targets(list)
+
+
+## Stores the targets with the sheet (a change to save, not an undo step) and the JPG
+## options as settings. A new target that wasn't changed or exported isn't kept.
+func _store() -> void:
+	if _targets.is_empty():
+		return
+	var options := get_options()
+	Settings.set_value(&"jpg_quality", options.jpg_quality)
+	Settings.set_value(&"jpg_background", options.opaque_background)
+	var sheet := Global.spritesheet
+	var kept: Array[ExportTarget] = []
+	if not _draft:
+		kept = _targets
+	var settings := ExportTarget.settings_with(sheet, kept)
+	if settings != sheet.export_settings:
+		Global.document.perform("Export targets", sheet.set_export_settings.bind(settings))
+
+
+## Shows the settings of [param target]
+func _show(target: ExportTarget) -> void:
+	_updating = true
+	var options := target.options
+	type.select(_type_index(options.target))
 	image_format.select(ExportOptions.IMAGE_FORMATS.find(options.image_format))
 	jpg_quality.set_value_no_signal(roundi(options.jpg_quality * 100))
 	jpg_background.color = options.opaque_background
@@ -315,38 +500,44 @@ func refresh() -> void:
 	_fill_formats(grid_data, "grid", options.grid_data)
 	_fill_formats(atlas_data, "packed", options.atlas_data)
 	template_file.path = options.custom_template
+	output.path = target.path
 	_updating = false
 	_update_labels(options)
 
 
-## Selects what to export
-func select_target(target: ExportOptions.Target) -> void:
-	targets.select(_target_index(target))
-	_changed()
-
-
-## The options as set in the dialog
-func get_options() -> ExportOptions:
-	return _options()
-
-
+## Takes the dialog's settings into the selected target. A type or format writing another
+## kind of file changes the extension of its path.
 func _changed() -> void:
-	if not _updating:
-		_update_labels(_options())
+	if _updating or _targets.is_empty():
+		return
+	var target := get_target()
+	var extension := target.options.get_file_extension()
+	target.options = _options()
+	target.path = output.path
+	if target.options.get_file_extension() != extension:
+		target.path = ExportTarget.fit_path(target.path, target.options)
+		if target.path != output.path:
+			output.path = target.path
+	_draft = false
+	remove_target.disabled = false
+	_update_item(_selected)
+	_update_labels(target.options)
 
 
 func _options() -> ExportOptions:
-	var options := ExportOptions.from_sheet(Global.spritesheet)
-	var selected := targets.get_selected_items()
-	if not selected.is_empty():
-		options.target = TARGETS[selected[0]].target
+	var options := ExportTarget.create(Global.spritesheet).options
+	options.target = TYPES[maxi(type.selected, 0)].target
 	options.image_format = ExportOptions.IMAGE_FORMATS[maxi(image_format.selected, 0)]
 	options.jpg_quality = jpg_quality.value / 100.0
 	options.opaque_background = jpg_background.color
 	options.background = background_picker.color
-	options.sprite_name_pattern = (
-		pattern.text if pattern.text.strip_edges() else options.default_name_pattern
-	)
+	# A pattern that was set is kept even when it's the default; emptied, it's the default,
+	# which follows the sheet
+	if pattern.text.strip_edges():
+		if get_target().to_dictionary().has("sprite_name_pattern"):
+			options.apply({"sprite_name_pattern": pattern.text})
+		else:
+			options.sprite_name_pattern = pattern.text
 	options.only_selected = only_selected.button_pressed
 	options.existing_files = existing.selected as ExportOptions.Existing
 	options.animation_fps = animation_fps.value
@@ -367,26 +558,29 @@ func open_templates_folder() -> void:
 	OS.shell_open(ProjectSettings.globalize_path(AtlasFormats.user_dir))
 
 
-## Saves the choices with the sheet (an unsaved change, not an undo step) and the JPG ones
-## as settings
-func _on_confirmed() -> void:
-	var options := _options()
-	Settings.set_value(&"jpg_quality", options.jpg_quality)
-	Settings.set_value(&"jpg_background", options.opaque_background)
-	var sheet := Global.spritesheet
-	var settings := options.to_dictionary()
-	# Kept even when it's the default, so the choice is remembered
-	settings.target = options.target
-	# No pattern: the default, which follows the sheet
-	if not pattern.text.strip_edges():
-		settings.erase("sprite_name_pattern")
-	if settings != sheet.export_settings:
-		Global.document.perform("Export settings", sheet.set_export_settings.bind(settings))
-	export_requested.emit()
+func _fill_list() -> void:
+	target_list.clear()
+	for i in _targets.size():
+		target_list.add_item("")
+		_update_item(i)
+
+
+## Shows in the list where the target at [param index] writes, and what
+func _update_item(index: int) -> void:
+	var target := _targets[index]
+	var file := tr("No file picked yet")
+	if ExportController.in_browser:
+		file = ExportController.get_output_path(target).get_file()
+	elif target.path:
+		file = ExportTarget.fit_path(target.path, target.options).get_file()
+	target_list.set_item_text(index, "%s · %s" % [file, target.get_format_name()])
+	target_list.set_item_icon(index, TYPES[_type_index(target.options.target)].icon)
+	var full := target.path if target.path and not ExportController.in_browser else file
+	target_list.set_item_tooltip(index, "%s\n%s" % [full, target.get_format_name()])
 
 
 func _update_labels(options: ExportOptions) -> void:
-	about.text = TARGETS[_target_index(options.target)].about
+	about.text = TYPES[_type_index(options.target)].about
 	_update_visibility(options)
 
 	var sheet := Global.spritesheet
@@ -452,6 +646,9 @@ func _update_visibility(options: ExportOptions) -> void:
 		for control in _format_rows:
 			control.visible = false
 	_pattern_label.text = "File names" if options.target == T.SPRITES else "Frame names"
+	# Browsers download exports
+	_output_label.visible = not ExportController.in_browser
+	output.visible = _output_label.visible
 	# Animations have their own speed; this one is for animations made from rows, and
 	# for a GIF of every frame
 	var own_speed := options.target == T.GIF and options.gif_animation != ""
@@ -486,8 +683,8 @@ func _add_row(
 	return label
 
 
-## The files the export writes, as named when exporting where it's suggested, see
-## [method FileController.suggested_export_path]
+## The files the selected target writes, as named when exporting to its path or else
+## where it's suggested, see [method ExportController.suggested_path]
 func _files(options: ExportOptions) -> PackedStringArray:
 	var sheet := Global.spritesheet
 	var coords := _sprite_coords(options)
@@ -500,7 +697,9 @@ func _files(options: ExportOptions) -> PackedStringArray:
 		if not _atlas_pages.has(turned):
 			_atlas_pages[turned] = ExportFiles.get_page_count(sheet, options)
 		pages = _atlas_pages[turned]
-	var path := FileController.suggested_export_path(options)
+	var path := ExportController.suggested_path(options)
+	if output.path and not ExportController.in_browser:
+		path = ExportTarget.fit_path(output.path, options)
 	var index_start: int = Settings.get_value(&"index_start")
 	return ExportFiles.get_paths(sheet, options, path, coords, index_start, false, pages)
 
@@ -567,9 +766,9 @@ static func _is_packed() -> bool:
 	return Global.spritesheet.layout == Spritesheet.Layout.PACKED
 
 
-static func _target_index(target: ExportOptions.Target) -> int:
-	for i in TARGETS.size():
-		if TARGETS[i].target == target:
+static func _type_index(target: ExportOptions.Target) -> int:
+	for i in TYPES.size():
+		if TYPES[i].target == target:
 			return i
 	return 0
 

@@ -46,7 +46,7 @@ func export_and_compare(case: String, change: Callable, file_name := "hero.png")
 	var index_start: int = Settings.get_value(&"index_start")
 	var expected := ExportFiles.get_paths(sheet, options, path, [], index_start, true)
 	var before := Array(files_in(folder))
-	assert_true(await main.files.export_to(path), case)
+	assert_true(await main.files.exports.export_to(path), case)
 	var written := Array(files_in(folder)).filter(func(f: String) -> bool: return f not in before)
 	var names := Array(expected).map(func(p: String) -> String: return p.trim_prefix(folder + "/"))
 	written.sort()
@@ -133,14 +133,14 @@ func test_files_listed_are_the_files_written() -> void:
 
 func test_dialog_lists_the_files_of_an_export() -> void:
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.IMAGE)
+	dialog.select_type(ExportOptions.Target.IMAGE)
 	assert_false(dialog.files_info.visible, "one file")
-	dialog.select_target(ExportOptions.Target.DATA)
+	dialog.select_type(ExportOptions.Target.DATA)
 	assert_true(dialog.files_info.visible)
 	assert_eq(dialog.files_info.text, "Files: spritesheet.png, spritesheet.json")
-	dialog.select_target(ExportOptions.Target.ATLAS)
+	dialog.select_type(ExportOptions.Target.ATLAS)
 	assert_eq(dialog.files_info.text, "Files: spritesheet_atlas.png, spritesheet_atlas.json")
-	dialog.select_target(ExportOptions.Target.GIF)
+	dialog.select_type(ExportOptions.Target.GIF)
 	assert_false(dialog.files_info.visible)
 
 	var images: Array[Image] = []
@@ -148,7 +148,7 @@ func test_dialog_lists_the_files_of_an_export() -> void:
 		images.append(make_image(Color.WHITE))
 	sheet.add_frames(images)
 	dialog.refresh()
-	dialog.select_target(ExportOptions.Target.SPRITES)
+	dialog.select_type(ExportOptions.Target.SPRITES)
 	assert_eq(dialog.files_info.text, "Files: 0.png, 1.png, 2.png, 3.png … 6 more")
 	assert_false(dialog.pattern_example.visible, "the files show the names")
 	dialog.only_selected.button_pressed = true
@@ -162,7 +162,7 @@ func test_dialog_lists_the_files_of_an_export() -> void:
 func test_tokens_list_and_insert() -> void:
 	sheet.add_animation(SheetAnimation.create("walk", [Vector2i(2, 0)] as Array[Vector2i]))
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.DATA)
+	dialog.select_type(ExportOptions.Target.DATA)
 	var field := dialog.pattern
 	field.text = "hero_"
 	field.line_edit.caret_column = 5
@@ -211,7 +211,7 @@ func test_examples_prefer_frames_in_animations() -> void:
 		[Vector2i(1, 0), Vector2i(3, 0), Vector2i(0, 0)] as Array[Vector2i]
 	)
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.DATA)
+	dialog.select_type(ExportOptions.Target.DATA)
 	assert_eq(dialog.pattern.text, "{animation}_{animation_frame}", "the default with animations")
 	assert_eq(dialog.pattern_example.text, "For example: run_1.png, run_0.png, frame_0.png")
 
@@ -223,14 +223,14 @@ func test_default_name_pattern_follows_the_sheet() -> void:
 	assert_eq(options.sprite_name_pattern, "{animation}_{animation_frame}")
 	assert_false(options.to_dictionary().has("sprite_name_pattern"), "a default, not stored")
 
-	# Confirming without changing it keeps it a default
+	# Closing without changing it keeps it a default
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.SPRITES)
+	dialog.select_type(ExportOptions.Target.SPRITES)
 	assert_eq(dialog.pattern.line_edit.placeholder_text, "{animation}_{animation_frame}")
-	dialog.get_ok_button().pressed.emit()
-	main.files.save_sprites_dialog.hide()
-	main.files.open_file_dialogs.clear()
-	assert_false(sheet.export_settings.has("sprite_name_pattern"))
+	dialog.hide()
+	var stored := func() -> Dictionary: return ExportTarget.list(sheet)[0].to_dictionary()
+	assert_eq(stored.call().target, ExportOptions.Target.SPRITES)
+	assert_false(stored.call().has("sprite_name_pattern"))
 
 	# A pattern that's set is kept, also when it's the default without animations
 	options.sprite_name_pattern = "{index}"
@@ -239,17 +239,24 @@ func test_default_name_pattern_follows_the_sheet() -> void:
 	round_trip.apply(sheet.export_settings)
 	assert_eq(round_trip.to_dictionary().sprite_name_pattern, "{index}")
 	assert_eq(ExportOptions.from_sheet(sheet).sprite_name_pattern, "{index}")
+	var target := ExportTarget.create(sheet, {"sprite_name_pattern": "{index}"})
+	sheet.set_export_settings(ExportTarget.settings_with(sheet, [target]))
+	assert_eq(stored.call().sprite_name_pattern, "{index}")
+	Actions.run(&"export")
+	assert_eq(dialog.pattern.text, "{index}")
+	dialog.only_selected.toggled.emit(false)
+	dialog.hide()
+	assert_eq(stored.call().sprite_name_pattern, "{index}", "still set")
 	Actions.run(&"export")
 	dialog.pattern.text = ""
-	dialog.get_ok_button().pressed.emit()
-	main.files.save_sprites_dialog.hide()
-	main.files.open_file_dialogs.clear()
-	assert_false(sheet.export_settings.has("sprite_name_pattern"), "emptied: the default")
+	dialog.pattern.text_changed.emit("")
+	dialog.hide()
+	assert_false(stored.call().has("sprite_name_pattern"), "emptied: the default")
 
 
 func test_transparent_background_says_so() -> void:
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.IMAGE)
+	dialog.select_type(ExportOptions.Target.IMAGE)
 	assert_true(dialog.transparent_label.visible)
 	assert_eq(dialog.transparent_label.text, "Transparent")
 	dialog.background_picker.color = Color.RED
@@ -257,30 +264,19 @@ func test_transparent_background_says_so() -> void:
 	assert_false(dialog.transparent_label.visible)
 
 
-func test_opens_on_the_export_last_used_in_the_project() -> void:
+func test_opens_on_the_export_last_selected() -> void:
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.IMAGE)
-	dialog.image_format.select(ExportOptions.IMAGE_FORMATS.find("webp"))
-	dialog.image_format.item_selected.emit(dialog.image_format.selected)
-	dialog.get_ok_button().pressed.emit()
-	main.files.export_file_dialog.hide()
-	main.files.open_file_dialogs.clear()
-	var path := dir.path_join("last_used")
-	assert_true(await main.files.save_project(path))
-	Notify.message_dialog.hide()
-
-	Global.document.reset()
-	assert_eq(ExportOptions.from_sheet(Global.spritesheet).image_format, "png", "a new project")
-	assert_true(await main.files.open_project(path + ".sbelli"))
+	dialog.select_type(ExportOptions.Target.IMAGE)
+	dialog.add()
+	dialog.select_type(ExportOptions.Target.GIF)
+	dialog.hide()
+	Actions.run(&"export")
+	assert_eq(dialog.target_list.item_count, 2)
+	assert_eq(dialog.get_options().target, ExportOptions.Target.GIF)
+	dialog.select(0)
+	dialog.hide()
 	Actions.run(&"export")
 	assert_eq(dialog.get_options().target, ExportOptions.Target.IMAGE)
-	assert_eq(dialog.get_options().image_format, "webp")
-	dialog.select_target(ExportOptions.Target.GIF)
-	dialog.get_ok_button().pressed.emit()
-	main.files.export_file_dialog.hide()
-	main.files.open_file_dialogs.clear()
-	Actions.run(&"export")
-	assert_eq(dialog.get_options().target, ExportOptions.Target.GIF)
 
 
 ## Writes a template file of the user's own in the test's folder
@@ -304,7 +300,7 @@ func test_custom_template() -> void:
 		"{{! name: Names\nextension: txt\nlayouts: grid\n}}\n{{#frames}}{{name}} {{x}}\n{{/frames}}"
 	)
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.CUSTOM)
+	dialog.select_type(ExportOptions.Target.CUSTOM)
 	assert_true(dialog.template_file.visible)
 	assert_false(dialog.grid_data.visible, "its own template, not a list")
 	assert_eq(dialog.template_error.text, "Pick a template file.")
@@ -315,11 +311,14 @@ func test_custom_template() -> void:
 	assert_eq(dialog.files_info.text, "Files: spritesheet.png, spritesheet.txt")
 	assert_true(dialog.pattern.visible, "like an image and data file")
 	assert_false(dialog.frame_size.visible)
-	dialog.get_ok_button().pressed.emit()
-	main.files.export_file_dialog.hide()
-	main.files.open_file_dialogs.clear()
-	assert_eq(ExportOptions.from_sheet(sheet).custom_template, names, "remembered")
-	await export_and_compare("custom", func(_o: ExportOptions) -> void: pass)
+	dialog.hide()
+	assert_eq(ExportTarget.list(sheet)[0].options.custom_template, names, "remembered")
+	await export_and_compare(
+		"custom",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.CUSTOM
+			o.custom_template = names
+	)
 	var text := FileAccess.get_file_as_string(dir.path_join("custom/hero.txt"))
 	assert_eq(text, "0 0\n1 40\n2 80\n")
 
@@ -349,7 +348,7 @@ func test_custom_template() -> void:
 func test_template_errors_stop_the_export() -> void:
 	var broken := write_template("broken.template", "{{#frames}}\n{{name | pad}}\n{{/frames}}")
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.CUSTOM)
+	dialog.select_type(ExportOptions.Target.CUSTOM)
 	pick_template(broken)
 	assert_true(dialog.template_error.visible)
 	assert_eq(dialog.template_error.text, "broken.template: line 2: pad takes 1 argument(s), not 0")
@@ -364,7 +363,7 @@ func test_template_errors_stop_the_export() -> void:
 			o.target = ExportOptions.Target.CUSTOM
 			o.custom_template = broken
 	)
-	assert_false(await main.files.export_to(dir.path_join("broken.png")))
+	assert_false(await main.files.exports.export_to(dir.path_join("broken.png")))
 	assert_true(Notify.message_dialog.visible, "says why")
 	assert_true("line 2" in Notify.message_dialog.dialog_text, Notify.message_dialog.dialog_text)
 	Notify.message_dialog.hide()
@@ -378,7 +377,7 @@ func test_data_formats_list_the_users_templates() -> void:
 	file.store_string("{{! name: Tiles\nextension: tiles\nlayouts: grid\n}}\n{{frame_count}}")
 	file.close()
 	Actions.run(&"export")
-	dialog.select_target(ExportOptions.Target.DATA)
+	dialog.select_type(ExportOptions.Target.DATA)
 	var listed := func(button: OptionButton) -> Array:
 		return range(button.item_count).map(button.get_item_metadata)
 	assert_eq(listed.call(dialog.grid_data)[-1], "tiles", "after a separator")

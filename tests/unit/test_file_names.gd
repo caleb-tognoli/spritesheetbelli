@@ -28,7 +28,7 @@ func add_linked(paths: Array[String], mode := Spritesheet.AddMode.FIRST_FREE) ->
 func export_path(target := ExportOptions.Target.IMAGE) -> String:
 	var options := ExportOptions.new()
 	options.target = target
-	return FileController.suggested_export_path(options)
+	return ExportController.suggested_path(options)
 
 
 func test_first_linked_frame_in_reading_order() -> void:
@@ -128,15 +128,17 @@ func test_dialogs_get_a_name_and_keep_their_folder() -> void:
 	files.open_file_dialogs.clear()
 
 	add_linked([folder.path_join("walk_0.png")])
-	var options := ExportOptions.new()
-	options.target = ExportOptions.Target.SPRITES
-	Global.spritesheet.set_export_settings(options.to_dictionary())
-	files.save_sprites_dialog.current_dir = "C:/"
-	files.choose_export_path()
-	assert_eq(files.save_sprites_dialog.current_dir, folder)
-	assert_eq(files.save_sprites_dialog.title, "Export Sprites")
-	files.save_sprites_dialog.hide()
-	files.open_file_dialogs.clear()
+	var dialog: ExportDialog = main.export_dialog
+	dialog.popup_centered()
+	dialog.select_type(ExportOptions.Target.SPRITES)
+	var sprites_dialog := dialog.output.file_dialog
+	sprites_dialog.current_dir = "C:/"
+	dialog.browse()
+	assert_eq(sprites_dialog.current_dir, folder)
+	assert_eq(sprites_dialog.title, "Export Sprites")
+	assert_eq(sprites_dialog.file_mode, FileDialog.FILE_MODE_OPEN_DIR, "a folder")
+	sprites_dialog.hide()
+	dialog.hide()
 	main.queue_free()
 
 

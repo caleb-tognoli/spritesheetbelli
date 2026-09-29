@@ -25,11 +25,6 @@ var export_path := "":
 	set(v):
 		export_path = v
 		changed.emit()
-## Where the last export went (a file, or a folder of sprites), for exporting again
-var last_export := "":
-	set(v):
-		last_export = v
-		changed.emit()
 ## Whether there are changes since the last save or open
 var is_dirty: bool:
 	get:
@@ -143,7 +138,6 @@ func load_state(state: Dictionary, file_path := "", image_path := "", view := {}
 	folder_files.clear()
 	path = file_path
 	export_path = image_path
-	last_export = ""
 	var opened := file_path if file_path else image_path
 	history_start = "Opened %s" % opened.get_file() if opened else "New spritesheet"
 	mark_saved()

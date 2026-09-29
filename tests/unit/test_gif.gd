@@ -76,15 +76,15 @@ func test_export_writes_a_gif() -> void:
 	options.target = ExportOptions.Target.GIF
 	options.gif_animation = "walk"
 	sheet.set_export_settings(options.to_dictionary())
-	assert_true(FileController.suggested_export_path(options).ends_with("_walk.gif"))
+	assert_true(ExportController.suggested_path(options).ends_with("_walk.gif"))
 	var path := temp_path("walk.gif")
 	DirAccess.remove_absolute(path)
-	assert_true(await main.files.export_to(path))
+	assert_true(await main.files.exports.export_to(path))
 	assert_true(FileAccess.file_exists(path))
 	# Other extensions are part of the name
 	var typed := path.get_basename() + ".png"
 	DirAccess.remove_absolute(typed + ".gif")
-	assert_true(await main.files.export_to(typed))
+	assert_true(await main.files.exports.export_to(typed))
 	assert_true(FileAccess.file_exists(typed + ".gif"))
 	DirAccess.remove_absolute(typed + ".gif")
 	main.queue_free()

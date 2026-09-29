@@ -363,3 +363,50 @@ func test_data_formats_from_templates() -> void:
 		["--pack", frames, "--out", out, "--template", template, "--metadata", "json"]
 	)
 	assert_eq(result[0], "2", "one or the other")
+
+
+func test_export_writes_the_projects_exports() -> void:
+	var sheet := Spritesheet.new()
+	var images: Array[Image] = []
+	for i in 3:
+		images.append(make_image(Color.from_hsv(i / 3.0, 1, 1), Vector2i(8, 8)))
+	sheet.add_frames(images)
+	var no_targets := dir.path_join("none.sbelli")
+	assert_eq(ProjectFile.save(sheet, no_targets), OK)
+	var result := await run(["--export", no_targets])
+	assert_eq(result[0], "1", str(result))
+	assert_true("has no exports" in result[1], result[1])
+
+	var targets: Array[ExportTarget] = []
+	for settings: Dictionary in [
+		{"target": ExportOptions.Target.IMAGE, "image_format": "webp", "path": "out/hero.png"},
+		{"target": ExportOptions.Target.DATA, "grid_data": "godot", "path": "out/data.png"},
+		{"target": ExportOptions.Target.SPRITES, "path": "out/sprites"},
+		{"target": ExportOptions.Target.GIF, "gif_scale": 2, "path": "out/hero.gif"},
+	]:
+		settings.path = dir.path_join("targets").path_join(settings.path)
+		targets.append(ExportTarget.create(sheet, settings))
+	sheet.set_export_settings(ExportTarget.settings_with(sheet, targets))
+	# Moved after saving: the exports go next to it
+	var saved_at := dir.path_join("targets/project/hero.sbelli")
+	DirAccess.make_dir_recursive_absolute(saved_at.get_base_dir())
+	assert_eq(ProjectFile.save(sheet, saved_at), OK)
+	var project := dir.path_join("moved/project/hero.sbelli")
+	DirAccess.make_dir_recursive_absolute(project.get_base_dir())
+	DirAccess.copy_absolute(saved_at, project)
+	result = await run(["--export", project, "--padding", "1"])
+	assert_eq(result[0], "0", str(result))
+	var out := dir.path_join("moved/out")
+	assert_eq(Image.load_from_file(out.path_join("hero.webp")).get_size(), Vector2i(26, 10))
+	assert_true(FileAccess.file_exists(out.path_join("data.png")))
+	assert_true(FileAccess.file_exists(out.path_join("data.tres")))
+	assert_eq(DirAccess.get_files_at(out.path_join("sprites")).size(), 3)
+	var gif := GifDecoder.load_file(out.path_join("hero.gif"))
+	assert_eq(gif.frames[0].get_size(), Vector2i(16, 16), "twice as big")
+	assert_false(DirAccess.dir_exists_absolute(dir.path_join("targets/out")), "not where saved")
+
+	# What --out is written as doesn't apply to the project's exports
+	result = await run(["--export", project, "--metadata", "godot"])
+	assert_eq(result[0], "2", str(result))
+	assert_true("--metadata needs --out" in result[1], result[1])
+	assert_true("every export the project has" in Cli.USAGE)

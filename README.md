@@ -67,11 +67,13 @@ A small desktop tool made with Godot.</p>
   play it, double-click to rename it, right-click for more.
 - **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names
   like `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or
-  its pages as images; or an animation as an animated GIF. The Export button sits at the
-  top of the sidebar with the size of what it writes, and the Export dialog shows only the
-  settings that matter for what you export, with a Tokens… list for file names and the
-  files an export will write. Padding, spacing and edge extrusion are set in the sidebar,
-  where the preview shows them, for the grid and the atlas.
+  its pages as images; or an animation as an animated GIF. A project keeps a list of
+  exports, each with its settings and where it writes (relative to the project), so Export
+  Again or the command line writes them all at once. The Export button sits at the top of
+  the sidebar with the size of what it writes and how many exports there are, and the
+  Export dialog shows only the settings that matter for each, with a Tokens… list for file
+  names and the files it will write. Padding, spacing and edge extrusion are set in the
+  sidebar, where the preview shows them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (hash or array, with
   Aseprite-style tags), a Phaser 3 multi-atlas, a libGDX / Spine `.atlas`, Sparrow /
   Starling XML or a Godot `SpriteFrames` resource with the sheet's animations (or every
@@ -125,6 +127,9 @@ spritesheetbelli --headless -- --pack ./frames --out hero.png --columns 8 --meta
 
 # Export a saved project, also writing every frame as its own PNG
 spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./hero_frames
+
+# Write every export the project has, as set up in the Export dialog
+spritesheetbelli --headless -- --export hero.sbelli
 
 # Cut a packed sheet into frames by the space around the sprites
 spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames

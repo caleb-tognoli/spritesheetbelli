@@ -4,6 +4,7 @@ class_name Cli
 ## [codeblock]
 ## spritesheetbelli --headless -- --pack ./frames --out sheet.png --columns 8
 ## spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./hero_frames
+## spritesheetbelli --headless -- --export hero.sbelli
 ## spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
 ## spritesheetbelli --headless -- --cut atlas.json --layout packed --out atlas.sbelli
 ## [/codeblock]
@@ -12,7 +13,10 @@ const USAGE := """Usage: spritesheetbelli --headless -- <command> [options]
 
 Commands:
   --pack <folder or images...>   Pack images (sorted by name) into a spritesheet
-  --export <project.sbelli>      Export a saved project
+  --export <project.sbelli>      Export a saved project: to --out or --sprites, or
+                                 without them to every export the project has, as
+                                 set up in the Export dialog (paths are relative to
+                                 the project)
   --cut <image>                  Cut a spritesheet or animated GIF into frames: with the
                                  data file next to it (TexturePacker, Aseprite or Phaser
                                  JSON, libGDX / Spine .atlas), else a grid guessed from
@@ -70,6 +74,10 @@ const COMMANDS: Array[String] = ["--pack", "--export", "--cut", "--help"]
 ## Options without a value
 const FLAGS: Array[String] = [
 	"--help", "--atlas", "--detect", "--rotate", "--repack", "--keep-background"
+]
+## Options of what --out is written as, which the exports of a project have their own of
+const OUT_OPTIONS: Array[String] = [
+	"--metadata", "--template", "--atlas-data", "--atlas", "--fps", "--animation", "--scale"
 ]
 
 
@@ -152,6 +160,8 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 			return 2
 		sheet.resize_sprites(size)
 
+	if not options.has("--out") and not options.has("--sprites"):
+		return await _run_targets(sheet, say)
 	var code := 0
 	if options.has("--out"):
 		var out: String = options["--out"]
@@ -169,15 +179,48 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 		else:
 			code = _write(sheet, out, export, say)
 	if options.has("--sprites") and code == 0:
-		var folder: String = options["--sprites"]
-		DirAccess.make_dir_recursive_absolute(folder)
-		var errors: PackedStringArray = []
-		var written := SpritesheetExporter.export_sprites(sheet, folder, errors, 0, export)
-		for error in errors:
-			say.call("Error: could not write %s" % error)
-		say.call("Wrote %d sprites to %s" % [written.size(), folder])
-		code = 1 if errors else code
+		code = _write_sprites(sheet, options["--sprites"], export, say)
 	return code
+
+
+## Writes every export of the project, see [ExportTarget]. Returns the exit code.
+static func _run_targets(sheet: Spritesheet, say: Callable) -> int:
+	var targets := ExportTarget.list(sheet)
+	if targets.is_empty():
+		say.call(
+			(
+				"Error: the project has no exports. Add them in the Export dialog, or say "
+				+ "where to write with --out or --sprites."
+			)
+		)
+		return 1
+	var code := 0
+	for target in targets:
+		if target.path.is_empty():
+			say.call("Error: no file is picked for an export (%s)." % target.get_format_name())
+			code = 1
+		elif await _write_target(sheet, target, say) != 0:
+			code = 1
+	return code
+
+
+## Writes one export of the project the way the app does. Returns the exit code.
+static func _write_target(sheet: Spritesheet, target: ExportTarget, say: Callable) -> int:
+	var export := target.options
+	var path := ExportTarget.fit_path(target.path, export)
+	if export.get_template_error():
+		say.call("Error: " + export.get_template_error())
+		return 1
+	if export.target == ExportOptions.Target.SPRITES:
+		return _write_sprites(sheet, path, export, say)
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	if export.packs(sheet):
+		return _write_atlas(sheet, path, export, say)
+	if export.target == ExportOptions.Target.GIF:
+		return await _write_gif(sheet, path, export, say)
+	if sheet.layout == Spritesheet.Layout.PACKED:
+		return _write_pages(sheet, path, export, say)
+	return _write(sheet, path, export, say)
 
 
 ## Sets the data files of [param export] from --metadata, --atlas-data and --template in
@@ -229,8 +272,14 @@ static func _parse(args: PackedStringArray) -> Dictionary:
 	)
 	if commands.size() != 1:
 		return {"error": "use one of --pack, --export or --cut."}
-	if not options.has("--out") and not options.has("--sprites"):
+	if options.has("--out") or options.has("--sprites"):
+		return options
+	# A project without them writes its own exports
+	if not options.has("--export"):
 		return {"error": "say where to write with --out or --sprites."}
+	for option in OUT_OPTIONS:
+		if options.has(option):
+			return {"error": "%s needs --out: the project's exports have their own." % option}
 	return options
 
 
@@ -397,6 +446,33 @@ static func _write(sheet: Spritesheet, path: String, export: ExportOptions, say:
 			% [path, sheet.frames.size(), sheet.grid_size.x, sheet.grid_size.y, size.x, size.y]
 		)
 	)
+	return 0
+
+
+static func _write_sprites(
+	sheet: Spritesheet, folder: String, export: ExportOptions, say: Callable
+) -> int:
+	DirAccess.make_dir_recursive_absolute(folder)
+	var errors: PackedStringArray = []
+	var written := SpritesheetExporter.export_sprites(sheet, folder, errors, 0, export)
+	for error in errors:
+		say.call("Error: could not write %s" % error)
+	say.call("Wrote %d sprites to %s" % [written.size(), folder])
+	return 1 if errors else 0
+
+
+## Writes each page of a packed sheet as an image, numbered when there are more
+static func _write_pages(
+	sheet: Spritesheet, path: String, export: ExportOptions, say: Callable
+) -> int:
+	var pages := SpritesheetExporter.build_pages(sheet, export)
+	var paths := SpritesheetExporter.get_page_paths(path, pages.size())
+	for i in pages.size():
+		var error := SpritesheetExporter.save_image(pages[i], paths[i], export)
+		if error != OK:
+			say.call("Error: could not write %s (%s)" % [paths[i], error_string(error)])
+			return 1
+	say.call("Wrote %s: %s" % [", ".join(paths), PackedLayout.describe(sheet)])
 	return 0
 
 
