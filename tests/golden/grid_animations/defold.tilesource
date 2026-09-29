@@ -1,0 +1,38 @@
+image: "defold.png"
+tile_width: 10
+tile_height: 12
+tile_margin: 2
+tile_spacing: 0
+collision: ""
+material_tag: "tile"
+collision_groups: "default"
+animations {
+  id: "walk"
+  start_tile: 1
+  end_tile: 3
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 12
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "jump & \"fall\""
+  start_tile: 2
+  end_tile: 4
+  playback: PLAYBACK_ONCE_BACKWARD
+  fps: 8
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "bob"
+  start_tile: 1
+  end_tile: 6
+  playback: PLAYBACK_LOOP_PINGPONG
+  fps: 10
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+extrude_borders: 2
+inner_padding: 0
+sprite_trim_mode: SPRITE_TRIM_MODE_OFF

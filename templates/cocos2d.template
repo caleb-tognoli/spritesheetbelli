@@ -1,0 +1,59 @@
+{{! spritesheetbelli template
+name: Cocos2d-x plist
+extension: plist
+per_page: true
+rotation: clockwise
+layouts: grid, packed
+
+TexturePacker's cocos2d-x property list, format 3, which SpriteFrameCache reads. Cocos2d
+measures up from the bottom: spriteOffset is how far the middle of a frame's packed
+pixels is from the middle of the whole frame, right and up. textureRect and spriteSize
+have the size before turning, and turned frames are stored turned clockwise. anchor is
+the pivot from the bottom left, for frames that have one.
+}}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>frames</key>
+		<dict>
+{{#frames}}
+			<key>{{file_name | xml-escape}}</key>
+			<dict>
+				<key>aliases</key>
+				<array/>
+{{#has_pivot}}
+				<key>anchor</key>
+				<string>{{{pivot_x | round 6}},{{pivot_y | negate | plus 1 | round 6}}}</string>
+{{/has_pivot}}
+				<key>spriteOffset</key>
+				<string>{{{trim_left | minus trim_right | divide 2 | round 1}},{{trim_bottom | minus trim_top | divide 2 | round 1}}}</string>
+				<key>spriteSize</key>
+				<string>{{{w}},{{h}}}</string>
+				<key>spriteSourceSize</key>
+				<string>{{{source_w}},{{source_h}}}</string>
+				<key>textureRect</key>
+				<string>{{{{x}},{{y}}},{{{w}},{{h}}}}</string>
+				<key>textureRotated</key>
+				<{{rotated}}/>
+			</dict>
+{{/frames}}
+		</dict>
+		<key>metadata</key>
+		<dict>
+			<key>format</key>
+			<integer>3</integer>
+			<key>pixelFormat</key>
+			<string>RGBA8888</string>
+			<key>premultiplyAlpha</key>
+			<false/>
+			<key>realTextureFileName</key>
+			<string>{{image | xml-escape}}</string>
+			<key>size</key>
+			<string>{{{image_w}},{{image_h}}}</string>
+			<key>textureFileName</key>
+			<string>{{image | xml-escape}}</string>
+		</dict>
+	</dict>
+</plist>
+

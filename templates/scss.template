@@ -1,0 +1,75 @@
+{{! spritesheetbelli template
+name: SCSS sprites
+extension: scss
+per_page: false
+rotation: none
+layouts: grid, packed
+
+A Sass map of the frames by name, a sprite() mixin that gives an element one of them, and
+a class for every frame (.sprite- and its name as a CSS identifier) unless the file is
+used with ($sprite-classes: false). A trimmed frame's margins put back its transparent
+borders. For Dart Sass. CSS can't show turned frames.
+}}
+// Written by {{app}}. @include sprite("walk_0") gives an element that frame, and so does
+// the class .sprite-walk_0.
+@use "sass:map";
+
+$sprite-classes: true !default;
+
+// The images, by file name
+$sprite-pages: (
+{{#pages}}
+	"{{image | json-escape}}": (
+		size: {{w}}px {{h}}px,
+{{! Scale variants: a page's "retina_image", its image at twice the size, would be shown
+on screens with two or more pixels to a CSS pixel. Nothing sets it yet. }}
+{{#retina_image}}
+		retina-image: "{{retina_image | json-escape}}",
+{{/retina_image}}
+	),
+{{/pages}}
+);
+
+// The frames, by name
+$sprites: (
+{{#pages}}
+{{#frames}}
+	"{{name | json-escape}}": (
+		image: "{{image | json-escape}}",
+		x: {{x}}px,
+		y: {{y}}px,
+		width: {{w}}px,
+		height: {{h}}px,
+		margin: {{trim_top}}px {{trim_right}}px {{trim_bottom}}px {{trim_left}}px,
+	),
+{{/frames}}
+{{/pages}}
+);
+
+@mixin sprite($name) {
+	$sprite: map.get($sprites, $name);
+	$page: map.get($sprite-pages, map.get($sprite, image));
+	display: inline-block;
+	overflow: hidden;
+	width: map.get($sprite, width);
+	height: map.get($sprite, height);
+	margin: map.get($sprite, margin);
+	background-image: url(map.get($sprite, image));
+	background-repeat: no-repeat;
+	background-position: (-(map.get($sprite, x))) (-(map.get($sprite, y)));
+	@if map.has-key($page, retina-image) {
+		@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+			background-image: url(map.get($page, retina-image));
+			background-size: map.get($page, size);
+		}
+	}
+}
+
+@if $sprite-classes {
+{{#frames}}
+	.sprite-{{name | css-ident}} {
+		@include sprite("{{name | json-escape}}");
+	}
+{{/frames}}
+}
+

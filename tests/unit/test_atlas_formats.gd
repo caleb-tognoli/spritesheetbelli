@@ -204,7 +204,9 @@ func test_bundled_templates() -> void:
 	var files := DirAccess.get_files_at(AtlasFormats.BUNDLED_DIR)
 	var formats := AtlasFormats.get_formats()
 	# Project files and command lines name formats by these ids
-	for id: String in ["json", "json-array", "phaser", "atlas", "sparrow", "godot"]:
+	var ids := ["json", "json-array", "phaser", "atlas", "sparrow", "godot", "unity", "defold"]
+	ids.append_array(["construct3", "cocos2d", "css", "scss"])
+	for id: String in ids:
 		assert_true(AtlasFormats.is_bundled(id), id)
 	for file in files:
 		var format := file.get_basename()
@@ -217,8 +219,11 @@ func test_bundled_templates() -> void:
 		assert_true(header.get("rotation") in ["clockwise", "counter-clockwise", "none"], file)
 		assert_true(header.get("layouts") is String, file)
 	var names := Array(formats).map(AtlasFormats.get_format_name)
-	assert_eq(names[0], "Godot SpriteFrames", "by name")
-	assert_eq(names[-1], "TexturePacker JSON (hash)")
+	var sorted := names.duplicate()
+	sorted.sort_custom(func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0)
+	assert_eq(names, sorted, "by name")
+	assert_eq(names[0], "Cocos2d-x plist")
+	assert_eq(names[-1], "Unity (TexturePacker Importer)")
 
 
 ## Templates in the user's folder are listed after the bundled ones, where they fit

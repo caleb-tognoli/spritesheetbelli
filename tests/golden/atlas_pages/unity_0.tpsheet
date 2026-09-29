@@ -1,0 +1,17 @@
+#
+# Sprite sheet data for Unity.
+#
+# To import these sprites into your Unity project, install the free "TexturePacker Importer":
+# https://www.codeandweb.com/texturepacker/unity
+#
+# Written by spritesheetbelli
+#
+:format=40300
+:texture=unity_0.png
+:size=60x60
+:pivotpoints=enabled
+:borders=disabled
+
+plank0;0;40;60;20; 0.5;0.5; 0;0;0;0
+plank1;0;20;60;20; 0.5;0.5; 0;0;0;0
+plank2;0;0;60;20; 0.5;0.5; 0;0;0;0

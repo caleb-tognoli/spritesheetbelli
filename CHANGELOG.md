@@ -241,6 +241,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   copy of every bundled template to start from.
 - Command line: `--template <file>` writes the data file from a template, and `--metadata`
   and `--atlas-data` take any format, templates in the templates folder included.
+- More data file formats for game engines: a Unity `.tpsheet` for the free TexturePacker
+  Importer package, a Defold tile source (grid sheets, with the animations as tile
+  ranges), Construct 3's `c3-import-settings.json` (grid sheets), a Cocos2d-x `.plist`
+  (format 3, with trimmed and turned frames and pivots) and CSS or SCSS sprites (a class
+  for every frame, and a Sass map and mixin). Templates get the `minus`, `times`,
+  `divide`, `css-ident` and `tpsheet-escape` filters, a grid sheet's columns, rows, cell
+  size, padding, spacing and extrusion, each frame's cell, and each animation's
+  from_cell, to_cell and reversed.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

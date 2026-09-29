@@ -39,19 +39,32 @@ const FILTERS := {
 	"json-escape": 0,
 	## Text escaped for XML, quotes too
 	"xml-escape": 0,
+	## Text as a CSS identifier, escaped where it has to be, like CSS.escape() in browsers:
+	## "a&b" gives a\&b, which a selector like .sprite-{{name | css-ident}} can hold
+	"css-ident": 0,
+	## Text as a .tpsheet sprite name: %, #, : and ; written as %25, %23, %3A and %3B
+	"tpsheet-escape": 0,
 	"lower": 0,
 	"upper": 0,
 	## A number with zeros in front up to the given number of digits: {{index | pad 3}}
 	"pad": 1,
 	## A number plus the argument: {{index | plus 1}}, {{x | plus w}}
 	"plus": 1,
+	## A number minus the argument: {{image_h | minus y}}
+	"minus": 1,
+	## A number times the argument: {{row | times columns}}
+	"times": 1,
+	## A number divided by the argument, always with decimals: {{pivot_px_x | divide w}}
+	"divide": 1,
 	## A number the other way round: 3 gives -3
 	"negate": 0,
 	## A number with at most the given number of decimals and no trailing zeros
 	"round": 1,
 }
 ## The filters that work on any value; the others take numbers
-const TEXT_FILTERS: Array[String] = ["json", "json-escape", "xml-escape", "lower", "upper"]
+const TEXT_FILTERS: Array[String] = [
+	"json", "json-escape", "xml-escape", "css-ident", "tpsheet-escape", "lower", "upper"
+]
 
 ## The parts a template is read into
 enum Token { TEXT, VARIABLE, SECTION, INVERTED, CLOSE, COMMENT }
@@ -372,6 +385,10 @@ func _apply(filter: Dictionary, value: Variant, stack: Array, line: int) -> Vari
 				% [line, filter.name, var_to_str(argument if _is_number(value) else value)]
 			)
 		return value
+	if filter.name == "divide" and value != null and argument == 0:
+		if not error:
+			error = "line %d: divide by 0" % line
+		return null
 	return null if value == null else _apply_number(filter.name, value, argument)
 
 
@@ -384,6 +401,11 @@ static func _apply_text(filter_name: String, value: Variant) -> String:
 			text = text.json_escape()
 		"xml-escape":
 			text = text.xml_escape(true)
+		"css-ident":
+			text = _css_ident(text)
+		"tpsheet-escape":
+			text = text.replace("%", "%25").replace("#", "%23").replace(":", "%3A")
+			text = text.replace(";", "%3B")
 		"lower":
 			text = text.to_lower()
 		"upper":
@@ -399,6 +421,12 @@ static func _apply_number(filter_name: String, value: Variant, argument: Variant
 			result = ("-" if value < 0 else "") + digits.lpad(argument, "0")
 		"plus":
 			result = value + argument
+		"minus":
+			result = value - argument
+		"times":
+			result = value * argument
+		"divide":
+			result = float(value) / argument
 		"negate":
 			result = -value
 		"round":
@@ -407,6 +435,33 @@ static func _apply_number(filter_name: String, value: Variant, argument: Variant
 			else:
 				result = String.num(value, argument)
 	return result
+
+
+## [param text] as a CSS identifier, the way CSS.escape() serializes one
+static func _css_ident(text: String) -> String:
+	var out := PackedStringArray()
+	for i in text.length():
+		var code := text.unicode_at(i)
+		var c := text[i]
+		var digit := code >= 0x30 and code <= 0x39
+		var letter := (code >= 0x41 and code <= 0x5A) or (code >= 0x61 and code <= 0x7A)
+		if code == 0:
+			out.append(char(0xFFFD))
+		elif (
+			(code >= 0x01 and code <= 0x1F)
+			or code == 0x7F
+			or (i == 0 and digit)
+			or (i == 1 and digit and text[0] == "-")
+		):
+			# A code point escape ends at a space, so a letter or digit after it isn't read too
+			out.append("\\%x " % code)
+		elif i == 0 and c == "-" and text.length() == 1:
+			out.append("\\-")
+		elif code >= 0x80 or c in ["-", "_"] or digit or letter:
+			out.append(c)
+		else:
+			out.append("\\" + c)
+	return "".join(out)
 
 
 static func _is_number(value: Variant) -> bool:

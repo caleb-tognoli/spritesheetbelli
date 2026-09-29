@@ -1,0 +1,115 @@
+// Written by spritesheetbelli. @include sprite("walk_0") gives an element that frame, and so does
+// the class .sprite-walk_0.
+@use "sass:map";
+
+$sprite-classes: true !default;
+
+// The images, by file name
+$sprite-pages: (
+	"scss.png": (
+		size: 85px 80px,
+	),
+);
+
+// The frames, by name
+$sprites: (
+	"plank0": (
+		image: "scss.png",
+		x: 0px,
+		y: 0px,
+		width: 60px,
+		height: 20px,
+		margin: 2px 2px 2px 2px,
+	),
+	"plank1": (
+		image: "scss.png",
+		x: 0px,
+		y: 20px,
+		width: 60px,
+		height: 20px,
+		margin: 2px 2px 2px 2px,
+	),
+	"plank2": (
+		image: "scss.png",
+		x: 0px,
+		y: 40px,
+		width: 60px,
+		height: 20px,
+		margin: 2px 2px 2px 2px,
+	),
+	"plank3": (
+		image: "scss.png",
+		x: 0px,
+		y: 60px,
+		width: 60px,
+		height: 20px,
+		margin: 2px 2px 2px 2px,
+	),
+	"post0": (
+		image: "scss.png",
+		x: 60px,
+		y: 0px,
+		width: 20px,
+		height: 58px,
+		margin: 3px 2px 3px 2px,
+	),
+	"post1": (
+		image: "scss.png",
+		x: 60px,
+		y: 0px,
+		width: 20px,
+		height: 58px,
+		margin: 3px 2px 3px 2px,
+	),
+	"a&b": (
+		image: "scss.png",
+		x: 80px,
+		y: 0px,
+		width: 5px,
+		height: 6px,
+		margin: 1px 4px 2px 3px,
+	),
+);
+
+@mixin sprite($name) {
+	$sprite: map.get($sprites, $name);
+	$page: map.get($sprite-pages, map.get($sprite, image));
+	display: inline-block;
+	overflow: hidden;
+	width: map.get($sprite, width);
+	height: map.get($sprite, height);
+	margin: map.get($sprite, margin);
+	background-image: url(map.get($sprite, image));
+	background-repeat: no-repeat;
+	background-position: (-(map.get($sprite, x))) (-(map.get($sprite, y)));
+	@if map.has-key($page, retina-image) {
+		@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+			background-image: url(map.get($page, retina-image));
+			background-size: map.get($page, size);
+		}
+	}
+}
+
+@if $sprite-classes {
+	.sprite-plank0 {
+		@include sprite("plank0");
+	}
+	.sprite-plank1 {
+		@include sprite("plank1");
+	}
+	.sprite-plank2 {
+		@include sprite("plank2");
+	}
+	.sprite-plank3 {
+		@include sprite("plank3");
+	}
+	.sprite-post0 {
+		@include sprite("post0");
+	}
+	.sprite-post1 {
+		@include sprite("post1");
+	}
+	.sprite-a\&b {
+		@include sprite("a&b");
+	}
+}

@@ -1,0 +1,19 @@
+#
+# Sprite sheet data for Unity.
+#
+# To import these sprites into your Unity project, install the free "TexturePacker Importer":
+# https://www.codeandweb.com/texturepacker/unity
+#
+# Written by spritesheetbelli
+#
+:format=40300
+:texture=unity.png
+:size=42x32
+:pivotpoints=enabled
+:borders=disabled
+
+idle;2;18;10;12; 0.5;0.5; 0;0;0;0
+a&b;16;18;10;12; 0.5;0.5; 0;0;0;0
+it's;30;18;10;12; 0.5;0.5; 0;0;0;0
+_up_;2;2;10;12; 0.5;0.5; 0;0;0;0
+dot;30;2;10;12; 0.5;0.5; 0;0;0;0

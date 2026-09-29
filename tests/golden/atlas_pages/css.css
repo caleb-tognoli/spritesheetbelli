@@ -1,0 +1,68 @@
+/* Written by spritesheetbelli. Give an element the "sprite" class and a frame's class:
+   <span class="sprite sprite-walk_0"></span> */
+
+.sprite {
+	display: inline-block;
+	overflow: hidden;
+	background-image: url("css_0.png");
+	background-repeat: no-repeat;
+}
+
+.sprite-plank3,
+.sprite-a\&b {
+	background-image: url("css_1.png");
+}
+
+.sprite-post0,
+.sprite-post1 {
+	background-image: url("css_2.png");
+}
+
+.sprite-plank0 {
+	width: 60px;
+	height: 20px;
+	background-position: 0px 0px;
+	margin: 22px 2px 22px 2px;
+}
+
+.sprite-plank1 {
+	width: 60px;
+	height: 20px;
+	background-position: 0px -20px;
+	margin: 22px 2px 22px 2px;
+}
+
+.sprite-plank2 {
+	width: 60px;
+	height: 20px;
+	background-position: 0px -40px;
+	margin: 22px 2px 22px 2px;
+}
+
+.sprite-plank3 {
+	width: 60px;
+	height: 20px;
+	background-position: 0px 0px;
+	margin: 22px 2px 22px 2px;
+}
+
+.sprite-post0 {
+	width: 20px;
+	height: 58px;
+	background-position: 0px 0px;
+	margin: 3px 22px 3px 22px;
+}
+
+.sprite-post1 {
+	width: 20px;
+	height: 58px;
+	background-position: 0px 0px;
+	margin: 3px 22px 3px 22px;
+}
+
+.sprite-a\&b {
+	width: 5px;
+	height: 6px;
+	background-position: 0px -20px;
+	margin: 28px 30px 30px 29px;
+}

@@ -10,12 +10,14 @@ class_name TemplateData
 ## The values of an export of [param frames] on [param pages], from
 ## [method Metadata.grid_frames] or [method AtlasFormats.get_frames] and
 ## [code]{"file": String, "size": Vector2i}[/code]. [param animation_list] is from
-## [method Metadata.animations], and [param fps] is the export's speed.
+## [method Metadata.animations], and [param fps] is the export's speed. A grid sheet's
+## export gives [param grid], see [method grid_values].
 static func build(
 	frames: Array[Dictionary],
 	animation_list: Array[Dictionary],
 	pages: Array[Dictionary],
 	fps: float,
+	grid := {},
 ) -> Dictionary:
 	var durations := frame_durations(animation_list, fps)
 	var frame_values: Array[Dictionary] = []
@@ -56,7 +58,7 @@ static func build(
 	for animation in animation_list:
 		animation_values.append(_animation(animation, frame_values, fps))
 	var first_page: Dictionary = page_values[0] if page_values else {}
-	return {
+	var values := {
 		## The app that wrote the file, "spritesheetbelli", and its version
 		"app": "spritesheetbelli",
 		"version": ProjectSettings.get_setting("application/config/version", ""),
@@ -86,6 +88,27 @@ static func build(
 		"image_h": first_page.get("h", 0),
 		## File names of the data files of the other pages, for a file written for each page
 		"related": PackedStringArray(),
+	}
+	values.merge(grid)
+	return values
+
+
+## The values of a grid sheet's export, not set for an atlas: how the image is laid out,
+## for formats that cut it into tiles themselves
+static func grid_values(sheet: Spritesheet, options: ExportOptions) -> Dictionary:
+	return {
+		## How many columns and rows of cells the grid has, empty ones too
+		"columns": sheet.grid_size.x,
+		"rows": sheet.grid_size.y,
+		## The size of a cell, and so of every frame
+		"cell_w": sheet.sprite_size.x,
+		"cell_h": sheet.sprite_size.y,
+		## Transparent pixels around the image, between cells, and edge pixels repeated
+		## around each cell (inside the spacing): the first cell is at padding + extrude,
+		## and each next one cell_w + 2 × extrude + spacing further
+		"padding": options.padding,
+		"spacing": options.spacing,
+		"extrude": options.extrude,
 	}
 
 
@@ -144,6 +167,9 @@ static func _frame(frame: Dictionary, index: int, duration: Variant) -> Dictiona
 		## The cell the frame is in on the sheet's grid, from 0
 		"column": coord.x,
 		"row": coord.y,
+		## The position of that cell in reading order from 0, counting empty cells too, as
+		## tile sets number their tiles. For an atlas, the same as index.
+		"cell": frame.get("cell", index),
 		## The page it's on, from 0
 		"page": frame.get("page", 0),
 		## Where it is on its page, and its size before it was turned. For a grid sheet,
@@ -233,6 +259,12 @@ static func _animation(
 		"from": mini(indices[0], indices[-1]),
 		"to": maxi(indices[0], indices[-1]),
 		"direction": direction,
+		## Whether its last frame comes before its first, even when it ping-pongs
+		"reversed": indices[-1] < indices[0],
+		## The cells (see [method _frame]) of the frames at from and to, for formats that
+		## play a range of tiles
+		"from_cell": frame_values[mini(indices[0], indices[-1])].cell,
+		"to_cell": frame_values[maxi(indices[0], indices[-1])].cell,
 	}
 
 

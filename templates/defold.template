@@ -1,0 +1,40 @@
+{{! spritesheetbelli template
+name: Defold tile source
+extension: tilesource
+per_page: false
+rotation: none
+layouts: grid
+
+Defold numbers tiles from 1, in reading order with empty cells, and plays an animation
+from one tile to another: from the first of its frames on the sheet to the last, at one
+speed, backward when its last frame comes first. Frames held longer play once. Defold
+measures a margin around every tile rather than the image, so the sheet's padding goes
+in each tile's margin and comes off the spacing: export with a padding of at most half
+the spacing (none is simplest; Defold extrudes and pads tiles itself when it builds the
+game). The image is named relative to the tile source, which the Defold editor
+understands; saving the tile source in the editor makes it a project path, which
+command-line builds need.
+}}
+image: "{{image | json-escape}}"
+tile_width: {{cell_w}}
+tile_height: {{cell_h}}
+tile_margin: {{padding | plus extrude}}
+tile_spacing: {{spacing | minus padding | minus padding}}
+collision: ""
+material_tag: "tile"
+collision_groups: "default"
+{{#animations}}
+animations {
+  id: "{{name | json-escape}}"
+  start_tile: {{from_cell | plus 1}}
+  end_tile: {{to_cell | plus 1}}
+  playback: PLAYBACK_{{#once}}ONCE{{/once}}{{^once}}LOOP{{/once}}_{{#ping_pong}}PINGPONG{{/ping_pong}}{{^ping_pong}}{{#reversed}}BACKWARD{{/reversed}}{{^reversed}}FORWARD{{/reversed}}{{/ping_pong}}
+  fps: {{fps | round 0}}
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+{{/animations}}
+extrude_borders: 2
+inner_padding: 0
+sprite_trim_mode: SPRITE_TRIM_MODE_OFF
+

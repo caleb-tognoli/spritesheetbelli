@@ -1,0 +1,11 @@
+image: "defold.png"
+tile_width: 10
+tile_height: 12
+tile_margin: 2
+tile_spacing: 0
+collision: ""
+material_tag: "tile"
+collision_groups: "default"
+extrude_borders: 2
+inner_padding: 0
+sprite_trim_mode: SPRITE_TRIM_MODE_OFF

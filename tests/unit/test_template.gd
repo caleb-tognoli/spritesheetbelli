@@ -109,6 +109,40 @@ func test_filters() -> void:
 		'"Walk" 0.5 32.0 true'
 	)
 	assert_eq(render("[{{missing | plus 1}}]", values), "[]", "not set stays not set")
+	assert_eq(render("{{index | minus 2}} {{index | minus w}}", values), "5 -13")
+	assert_eq(render("{{index | times 3}} {{half | times w}}", values), "21 10.0")
+	assert_eq(render("{{index | divide 2}} {{w | divide 4}}", values), "3.5 5.0", "always decimals")
+	assert_eq(render("{{index | divide w | round 3}} {{w | divide 4 | round 3}}", values), "0.35 5")
+
+
+func test_divide_by_zero() -> void:
+	assert_eq(error_of("\n{{x | divide 0}}", {"x": 3}), "line 2: divide by 0")
+	assert_eq(error_of("{{x | divide y}}", {"x": 3, "y": 0}), "line 1: divide by 0")
+
+
+## Names made CSS identifiers the way browsers' CSS.escape() does
+func test_css_identifiers() -> void:
+	var cases := {
+		"walk_0": "walk_0",
+		"a&b": "a\\&b",
+		"it's": "it\\'s",
+		"<up> down": "\\<up\\>\\ down",
+		"0walk": "\\30 walk",
+		"-1": "-\\31 ",
+		"-": "\\-",
+		"--x": "--x",
+		"é-ü": "é-ü",
+		"a.b/c": "a\\.b\\/c",
+		"tab\there": "tab\\9 here",
+	}
+	for text: String in cases:
+		assert_eq(render("{{text | css-ident}}", {"text": text}), cases[text], text)
+	assert_eq(render("{{n | css-ident}}", {"n": 7}), "\\37 ", "numbers are text")
+
+
+func test_tpsheet_escape() -> void:
+	var values := {"name": "50%;#1:a&b"}
+	assert_eq(render("{{name | tpsheet-escape}}", values), "50%25%3B%231%3Aa&b")
 
 
 func test_errors_say_where() -> void:

@@ -22,7 +22,8 @@ static func write_for_image(
 		grid_frames(sheet, options, index_start),
 		animations(sheet, false),
 		[page] as Array[Dictionary],
-		options.animation_fps
+		options.animation_fps,
+		TemplateData.grid_values(sheet, options)
 	)
 	var file := FileAccess.open(get_path_for_image(image_path, options), FileAccess.WRITE)
 	if file == null:
@@ -57,6 +58,7 @@ static func grid_frames(
 				{
 					"name": unique_name(name, used) + ".png",
 					"coord": coord,
+					"cell": coord.y * sheet.grid_size.x + coord.x,
 					"rect": SpritesheetExporter.get_cell_rect(sheet, coord, options),
 				}
 			)

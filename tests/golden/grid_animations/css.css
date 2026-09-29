@@ -1,0 +1,39 @@
+/* Written by spritesheetbelli. Give an element the "sprite" class and a frame's class:
+   <span class="sprite sprite-walk_0"></span> */
+
+.sprite {
+	display: inline-block;
+	overflow: hidden;
+	background-image: url("css.png");
+	background-repeat: no-repeat;
+}
+
+.sprite-idle {
+	width: 10px;
+	height: 12px;
+	background-position: -2px -2px;
+}
+
+.sprite-a\&b {
+	width: 10px;
+	height: 12px;
+	background-position: -16px -2px;
+}
+
+.sprite-it\'s {
+	width: 10px;
+	height: 12px;
+	background-position: -30px -2px;
+}
+
+.sprite-_up_ {
+	width: 10px;
+	height: 12px;
+	background-position: -2px -18px;
+}
+
+.sprite-dot {
+	width: 10px;
+	height: 12px;
+	background-position: -30px -18px;
+}

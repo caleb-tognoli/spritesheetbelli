@@ -166,7 +166,12 @@ func test_atlas_turned_on_several_pages() -> void:
 	assert_true(
 		sheet.placements.values().any(func(place: Dictionary) -> bool: return place.rotated)
 	)
-	check(export_atlas(sheet, "atlas_turned", ExportOptions.FrameSize.FRAME, ["godot"]))
+	# Formats that can't describe turned frames refuse to write them
+	var unturned := Array(bundled_formats("packed")).filter(
+		func(format: String) -> bool: return not AtlasFormats.can_rotate(format)
+	)
+	assert_true("godot" in unturned and "unity" in unturned and "css" in unturned)
+	check(export_atlas(sheet, "atlas_turned", ExportOptions.FrameSize.FRAME, unturned))
 
 
 func test_atlas_on_several_pages() -> void:

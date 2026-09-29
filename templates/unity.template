@@ -1,0 +1,32 @@
+{{! spritesheetbelli template
+name: Unity (TexturePacker Importer)
+extension: tpsheet
+per_page: true
+rotation: none
+layouts: grid, packed
+
+The .tpsheet file of TexturePacker, format 40300, which the free TexturePacker Importer
+package reads to cut the PNG next to it into sprites. Unity measures from the bottom
+left: y is from the bottom of the page, and the pivot is across the packed pixels from
+their bottom left, so a trimmed frame's pivot stays where it was in the whole frame and
+can be below 0 or above 1. Frames without a pivot, a grid sheet's, turn around their
+middle. Names escape %, #, : and ; as the importer expects. There are no borders for
+9-slicing, and Unity can't use turned frames.
+}}
+#
+# Sprite sheet data for Unity.
+#
+# To import these sprites into your Unity project, install the free "TexturePacker Importer":
+# https://www.codeandweb.com/texturepacker/unity
+#
+# Written by {{app}}
+#
+:format=40300
+:texture={{image}}
+:size={{image_w}}x{{image_h}}
+:pivotpoints=enabled
+:borders=disabled
+
+{{#frames}}
+{{name | tpsheet-escape}};{{x}};{{image_h | minus y | minus h}};{{w}};{{h}}; {{#has_pivot}}{{pivot_px_x | minus trim_left | divide w | round 6}};{{source_h | minus pivot_px_y | minus trim_bottom | divide h | round 6}}{{/has_pivot}}{{^has_pivot}}0.5;0.5{{/has_pivot}}; 0;0;0;0
+{{/frames}}

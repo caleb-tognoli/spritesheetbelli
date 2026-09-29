@@ -1,0 +1,93 @@
+// Written by spritesheetbelli. @include sprite("walk_0") gives an element that frame, and so does
+// the class .sprite-walk_0.
+@use "sass:map";
+
+$sprite-classes: true !default;
+
+// The images, by file name
+$sprite-pages: (
+	"scss.png": (
+		size: 42px 32px,
+	),
+);
+
+// The frames, by name
+$sprites: (
+	"idle": (
+		image: "scss.png",
+		x: 2px,
+		y: 2px,
+		width: 10px,
+		height: 12px,
+		margin: 0px 0px 0px 0px,
+	),
+	"a&b": (
+		image: "scss.png",
+		x: 16px,
+		y: 2px,
+		width: 10px,
+		height: 12px,
+		margin: 0px 0px 0px 0px,
+	),
+	"it's": (
+		image: "scss.png",
+		x: 30px,
+		y: 2px,
+		width: 10px,
+		height: 12px,
+		margin: 0px 0px 0px 0px,
+	),
+	"_up_": (
+		image: "scss.png",
+		x: 2px,
+		y: 18px,
+		width: 10px,
+		height: 12px,
+		margin: 0px 0px 0px 0px,
+	),
+	"dot": (
+		image: "scss.png",
+		x: 30px,
+		y: 18px,
+		width: 10px,
+		height: 12px,
+		margin: 0px 0px 0px 0px,
+	),
+);
+
+@mixin sprite($name) {
+	$sprite: map.get($sprites, $name);
+	$page: map.get($sprite-pages, map.get($sprite, image));
+	display: inline-block;
+	overflow: hidden;
+	width: map.get($sprite, width);
+	height: map.get($sprite, height);
+	margin: map.get($sprite, margin);
+	background-image: url(map.get($sprite, image));
+	background-repeat: no-repeat;
+	background-position: (-(map.get($sprite, x))) (-(map.get($sprite, y)));
+	@if map.has-key($page, retina-image) {
+		@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+			background-image: url(map.get($page, retina-image));
+			background-size: map.get($page, size);
+		}
+	}
+}
+
+@if $sprite-classes {
+	.sprite-idle {
+		@include sprite("idle");
+	}
+	.sprite-a\&b {
+		@include sprite("a&b");
+	}
+	.sprite-it\'s {
+		@include sprite("it's");
+	}
+	.sprite-_up_ {
+		@include sprite("_up_");
+	}
+	.sprite-dot {
+		@include sprite("dot");
+	}
+}

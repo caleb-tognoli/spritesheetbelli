@@ -76,11 +76,17 @@ A small desktop tool made with Godot.</p>
   sidebar, where the preview shows them, for the grid and the atlas.
 - **Metadata for game engines:** TexturePacker-style JSON (hash or array, with
   Aseprite-style tags), a Phaser 3 multi-atlas, a libGDX / Spine `.atlas`, Sparrow /
-  Starling XML or a Godot `SpriteFrames` resource with the sheet's animations (or every
-  frame in one "default" animation when there are none), for a grid sheet or every page
-  of a packed atlas, with pivots and turned frames where the format has them. Every data
-  file comes from a template, and your own templates can add formats (see
-  [Data file templates](#data-file-templates)).
+  Starling XML, a Godot `SpriteFrames` resource with the sheet's animations (or every
+  frame in one "default" animation when there are none), a Unity `.tpsheet`, a Cocos2d-x
+  `.plist`, CSS or SCSS sprites, and for grid sheets a Defold tile source and Construct 3
+  import settings, for a grid sheet or every page of a packed atlas, with pivots and
+  turned frames where the format has them. Every data file comes from a template, and
+  your own templates can add formats (see [Data file templates](#data-file-templates)).
+  For Unity, install the free
+  [TexturePacker Importer](https://assetstore.unity.com/packages/tools/sprite-management/texturepacker-importer-16641)
+  package and export with the Unity data file into your project's Assets folder, next to
+  the PNG: Unity cuts it into one sprite per frame, named after the frames, with their
+  pivots, and cuts it again whenever you export over it.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
   size and the view you left them at.
 - Light and dark themes, an accent colour, interface scaling and keyboard shortcuts.
@@ -174,8 +180,9 @@ are looked up in the current item, then in the sections around it, then in the e
 Inside a list, `@index` is the item's position from 0, and `@first` and `@last` say
 whether it's the first or the last: `{{#frames}}"{{name}}"{{^@last}}, {{/@last}}{{/frames}}`.
 A line holding only sections and comments is left out, and so is the line break at the
-very end. Filters: `json`, `json-escape`, `xml-escape`, `lower`, `upper`, `pad N`,
-`plus N`, `negate`, `round N`; N is a number or a value's name (`{{x | plus w}}`).
+very end. Filters: `json`, `json-escape`, `xml-escape`, `css-ident`, `tpsheet-escape`,
+`lower`, `upper`, `pad N`, `plus N`, `minus N`, `times N`, `divide N`, `negate`,
+`round N`; N is a number or a value's name (`{{x | plus w}}`).
 
 A template starts with a header comment of `key: value` lines, up to an empty line:
 
@@ -196,12 +203,14 @@ extension comes from the file name (`list.csv.template`), else txt.
 
 Values:
 - the export: app, version, fps, frames, frame_count, animations, animation_count, pages,
-  page_count, page, image, image_w, image_h, all_frames, related;
-- each frame: index, name, file_name, column, row, page, x, y, w, h, packed_w, packed_h,
-  rotated, trimmed, source_w, source_h, trim_left/top/right/bottom, has_pivot, pivot_x,
-  pivot_y, pivot_px_x, pivot_px_y, duration;
+  page_count, page, image, image_w, image_h, all_frames, related, and for a grid sheet
+  columns, rows, cell_w, cell_h, padding, spacing, extrude;
+- each frame: index, name, file_name, column, row, cell, page, x, y, w, h, packed_w,
+  packed_h, rotated, trimmed, source_w, source_h, trim_left/top/right/bottom, has_pivot,
+  pivot_x, pivot_y, pivot_px_x, pivot_px_y, duration;
 - each animation: name, fps, mode, loop, ping_pong, once, frames, frame_count,
-  played_frames, from, to, direction; its frames also have relative_duration;
+  played_frames, from, to, direction, reversed, from_cell, to_cell; its frames also have
+  relative_duration;
 - each page: index, image, w, h, frames, frame_count.
 
 The comments in `scripts/export/template_data.gd` describe each one.
