@@ -256,8 +256,10 @@ func test_duplicate_animation() -> void:
 	var copy := sheet.animations[1]
 	var original := sheet.animations[0]
 	assert_eq(copy.name, "run_2")
-	for property: String in ["cells", "durations", "fps", "mode", "show_label"]:
+	for property: String in ["cells", "durations", "fps", "mode"]:
 		assert_eq(copy.get(property), original.get(property), property)
+	assert_false(original.show_label)
+	assert_true(copy.show_label, "the copy's label is shown")
 	assert_ne(copy.color, original.color, "a colour of its own")
 	assert_eq(sheet.duplicate_animation(5), -1, "no such animation")
 	assert_eq(sheet.animations.size(), 2)

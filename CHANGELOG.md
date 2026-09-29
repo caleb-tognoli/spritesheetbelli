@@ -224,9 +224,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Join parts within or the colour made transparent finds the sprites again; Undo brings
   back boxes edited by hand, and Reset starts over.
 - Duplicate an animation: a copy with the same frames, timing, speed and type, named
-  walk_2 after walk, with a colour of its own. New sits above the animation list, with
-  Duplicate, Mirror and Delete next to it while an animation is chosen; Duplicate is also
-  in the Animation menu and in an animation name's right-click menu on the grid.
+  walk_2 after walk, with a colour of its own and its name shown on the grid. New sits
+  above the animation list, with Duplicate, Mirror and Delete next to it while an
+  animation is chosen; Duplicate is also in the Animation menu and in an animation name's
+  right-click menu on the grid.
 - The command line's `--cut` makes a solid background colour, like magenta, transparent,
   as Add Spritesheet does, for a grid, a data file and `--detect`. `--keep-background`
   keeps it (the grid and sprites are still found as if it were transparent), and
