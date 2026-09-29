@@ -249,6 +249,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   `divide`, `css-ident` and `tpsheet-escape` filters, a grid sheet's columns, rows, cell
   size, padding, spacing and extrusion, each frame's cell, and each animation's
   from_cell, to_cell and reversed.
+- A GIF of each animation: "Every animation" in the Animated GIF export's Animation list
+  writes a GIF of each animation, at its own speed, into a folder, named with a pattern
+  (`{animation}` by default, or with `{count}`). On the command line, `--gifs <folder>`.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

@@ -28,6 +28,7 @@ Options:
   --out <file>                   Image (.png, .jpg, .webp), animated GIF (.gif) or
                                  project (.sbelli) to write
   --sprites <folder>             Also export every frame as its own PNG
+  --gifs <folder>                Also write a GIF of each animation, named after it
   --columns <n>                  Frames per row when packing (default: all in one row)
   --sprite-size <width>x<height> Resize the sprites
   --padding <px>                 Empty pixels around the sheet (or each atlas page)
@@ -49,7 +50,7 @@ Options:
                                  describes packed atlases.
   --animation <name>             The animation a GIF plays (default: the first one, or
                                  every frame when there are none)
-  --scale <n>                    Make a GIF n times bigger
+  --scale <n>                    Make GIFs n times bigger
 
 Packed layout:
   --layout <grid|packed>         Lay the frames out in a grid or packed on pages. A packed
@@ -75,6 +76,8 @@ const COMMANDS: Array[String] = ["--pack", "--export", "--cut", "--help"]
 const FLAGS: Array[String] = [
 	"--help", "--atlas", "--detect", "--rotate", "--repack", "--keep-background"
 ]
+## Options saying where to write, without which a project writes its own exports
+const OUTPUTS: Array[String] = ["--out", "--sprites", "--gifs"]
 ## Options of what --out is written as, which the exports of a project have their own of
 const OUT_OPTIONS: Array[String] = [
 	"--metadata", "--template", "--atlas-data", "--atlas", "--fps", "--animation", "--scale"
@@ -160,7 +163,7 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 			return 2
 		sheet.resize_sprites(size)
 
-	if not options.has("--out") and not options.has("--sprites"):
+	if not _has_output(options):
 		return await _run_targets(sheet, say)
 	var code := 0
 	if options.has("--out"):
@@ -180,6 +183,8 @@ static func run(args: PackedStringArray, output: Array[String] = []) -> int:
 			code = _write(sheet, out, export, say)
 	if options.has("--sprites") and code == 0:
 		code = _write_sprites(sheet, options["--sprites"], export, say)
+	if options.has("--gifs") and code == 0:
+		code = await _write_gifs(sheet, options["--gifs"], export, say)
 	return code
 
 
@@ -216,6 +221,8 @@ static func _write_target(sheet: Spritesheet, target: ExportTarget, say: Callabl
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	if export.packs(sheet):
 		return _write_atlas(sheet, path, export, say)
+	if export.target == ExportOptions.Target.GIF and export.gif_every_animation:
+		return await _write_gifs(sheet, path, export, say)
 	if export.target == ExportOptions.Target.GIF:
 		return await _write_gif(sheet, path, export, say)
 	if sheet.layout == Spritesheet.Layout.PACKED:
@@ -242,6 +249,11 @@ static func _set_data_format(export: ExportOptions, options: Dictionary) -> Stri
 		export.target = ExportOptions.Target.CUSTOM
 		export.custom_template = options["--template"]
 	return ""
+
+
+## Whether [param options] say where to write, see [constant OUTPUTS]
+static func _has_output(options: Dictionary) -> bool:
+	return OUTPUTS.any(func(option: String) -> bool: return options.has(option))
 
 
 static func _parse(args: PackedStringArray) -> Dictionary:
@@ -272,7 +284,7 @@ static func _parse(args: PackedStringArray) -> Dictionary:
 	)
 	if commands.size() != 1:
 		return {"error": "use one of --pack, --export or --cut."}
-	if options.has("--out") or options.has("--sprites"):
+	if _has_output(options):
 		return options
 	# A project without them writes its own exports
 	if not options.has("--export"):
@@ -515,6 +527,21 @@ static func _write_gif(
 		say.call("Error: could not write %s (%s)" % [result.path, error_string(result.error)])
 		return 1
 	say.call("Wrote %s: %d frames" % [result.path, result.frames])
+	return 0
+
+
+## Writes a GIF of each animation into [param folder]
+static func _write_gifs(
+	sheet: Spritesheet, folder: String, export: ExportOptions, say: Callable
+) -> int:
+	var result := await GifEncoder.write_every(sheet, export, folder)
+	if result.error == ERR_DOES_NOT_EXIST:
+		say.call("Error: no animation has frames, so there's no GIF to write.")
+		return 1
+	if result.error != OK:
+		say.call("Error: could not write %s (%s)" % [result.path, error_string(result.error)])
+		return 1
+	say.call("Wrote %d GIFs to %s" % [result.paths.size(), folder])
 	return 0
 
 

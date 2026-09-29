@@ -87,6 +87,13 @@ func test_files_listed_are_the_files_written() -> void:
 	)
 	await export_and_compare("json", target.call(ExportOptions.Target.DATA), "hero.json")
 	await export_and_compare("gif", target.call(ExportOptions.Target.GIF))
+	await export_and_compare(
+		"gifs",
+		func(o: ExportOptions) -> void:
+			o.target = ExportOptions.Target.GIF
+			o.gif_every_animation = true,
+		"out"
+	)
 	await export_and_compare("atlas", target.call(ExportOptions.Target.ATLAS))
 
 	# Sprites: names taken by a file already there or by a frame before are numbered

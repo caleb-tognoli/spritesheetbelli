@@ -202,3 +202,51 @@ func test_add_sprites_gives_each_gif_an_animation() -> void:
 	assert_eq(sheet.frame_sources[first].gif_frame, 0)
 	main.queue_free()
 	Global.document.reset()
+
+
+func test_a_gif_of_each_animation() -> void:
+	var sheet := moving_block_sheet()
+	var coords := sheet.get_sorted_coords()
+	sheet.add_animation(SheetAnimation.create("walk", coords.slice(0, 3)))
+	var jump := SheetAnimation.create("Jump", coords.slice(2, 4), 5)
+	jump.mode = SheetAnimation.Mode.PING_PONG
+	sheet.add_animation(jump)
+	sheet.add_animation(SheetAnimation.create("empty", [] as Array[Vector2i]))
+	var folder := temp_path("gifs")
+	var options := ExportOptions.new()
+	options.target = ExportOptions.Target.GIF
+	options.gif_every_animation = true
+	options.gif_scale = 2
+	assert_eq(options.get_file_extension(), "", "a folder")
+	var result := await GifEncoder.write_every(sheet, options, folder)
+	assert_eq(result.error, OK)
+	var names := Array(result.paths).map(func(p: String) -> String: return p.get_file())
+	assert_eq(names, ["walk.gif", "Jump.gif"], "animations without frames are left out")
+	assert_eq(result.frames, 5)
+	var walk := GifDecoder.load_file(folder.path_join("walk.gif"))
+	assert_eq(walk.frames.size(), 3)
+	assert_eq(walk.frames[0].get_size(), Vector2i(32, 32), "scaled")
+	var played := GifDecoder.load_file(folder.path_join("Jump.gif"))
+	assert_eq(played.delays, [0.2, 0.2] as Array[float], "at its own speed")
+	var files := ExportFiles.get_paths(sheet, options, folder)
+	assert_eq(files, result.paths, "listed as written")
+
+	# Names from the pattern: the extension is added, taken names are numbered
+	options.gif_name_pattern = "{animation}_{count:2}.gif"
+	names = GifEncoder.get_animation_files(sheet, options, folder).map(
+		func(f: Dictionary) -> String: return f.path.get_file()
+	)
+	assert_eq(names, ["walk_03.gif", "Jump_02.gif"])
+	options.gif_name_pattern = "anim"
+	names = GifEncoder.get_animation_files(sheet, options, folder).map(
+		func(f: Dictionary) -> String: return f.path.get_file()
+	)
+	assert_eq(names, ["anim.gif", "anim(1).gif"])
+	options.gif_name_pattern = "{nope}"
+	assert_eq(AnimationFiles.format_name("{nope}", "walk", 3, "gif"), "{nope}", "kept")
+	assert_eq(AnimationFiles.format_name("", "a/b", 3, "gif"), "a_b", "a file name")
+
+	var none := moving_block_sheet()
+	result = await GifEncoder.write_every(none, options, folder)
+	assert_eq(result.error, ERR_DOES_NOT_EXIST, "no animation")
+	remove_dir(folder)

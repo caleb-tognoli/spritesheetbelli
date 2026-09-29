@@ -9,7 +9,7 @@ enum Target {
 	SPRITES,  ## Every frame as its own image, in a folder
 	DATA,  ## The spritesheet image and a data file in [member grid_data]'s format
 	ATLAS,  ## Trimmed frames packed tightly, with a data file in [member atlas_data]'s format
-	GIF,  ## One animation as an animated GIF
+	GIF,  ## One animation as an animated GIF, or each in a folder
 	## A data file from [member custom_template], next to the spritesheet image or the pages
 	## of a packed atlas, see [method packs]
 	CUSTOM,
@@ -62,6 +62,10 @@ var animation_fps := 12.0
 var gif_animation := ""
 ## How many times bigger GIF frames are than the sprites
 var gif_scale := 1
+## A GIF of each animation, in a folder, in place of the one of [member gif_animation]
+var gif_every_animation := false
+## File name of each GIF of [member gif_every_animation], see [AnimationFiles]
+var gif_name_pattern := "{animation}"
 
 const _SHEET_KEYS: Array[StringName] = [
 	&"target",
@@ -80,6 +84,8 @@ const _SHEET_KEYS: Array[StringName] = [
 	&"animation_fps",
 	&"gif_animation",
 	&"gif_scale",
+	&"gif_every_animation",
+	&"gif_name_pattern",
 ]
 
 ## Whether the settings applied had a pattern, which is then kept even when it's the default
@@ -182,7 +188,7 @@ func get_file_extension() -> String:
 		Target.SPRITES:
 			return ""
 		Target.GIF:
-			return "gif"
+			return "" if gif_every_animation else "gif"
 	return "png"
 
 

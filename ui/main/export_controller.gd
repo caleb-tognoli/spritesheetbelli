@@ -71,7 +71,9 @@ static func suggested_path(options: ExportOptions) -> String:
 	var base_name := FileController.suggested_name(base)
 	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
 		base_name += "_atlas"
-	if options.target == ExportOptions.Target.GIF and options.gif_animation:
+	if options.target == ExportOptions.Target.GIF and options.gif_every_animation:
+		base_name += "_gifs"
+	elif options.target == ExportOptions.Target.GIF and options.gif_animation:
 		base_name += "_" + options.gif_animation.validate_filename()
 	var path := folder.path_join(base_name)
 	var extension := options.get_file_extension()
@@ -97,6 +99,8 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 			return await Notify.run_busy(
 				"Packing the atlas", _export_atlas.bind(path, options), slow
 			)
+		ExportOptions.Target.GIF when options.gif_every_animation:
+			return await _export_gifs(path, options)
 		ExportOptions.Target.GIF:
 			return await _export_gif(path, options)
 		ExportOptions.Target.SPRITES:
@@ -139,11 +143,7 @@ func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
 					)
 				)
 			}
-	# A browser downloads the folder, which only has this export
-	if in_browser:
-		DirAccess.make_dir_recursive_absolute(folder)
-		for file in DirAccess.get_files_at(folder):
-			DirAccess.remove_absolute(folder.path_join(file))
+	_empty_download_folder(folder)
 	var written := SpritesheetExporter.export_sprites(
 		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
 	)
@@ -172,6 +172,35 @@ func _export_gif(path: String, options: ExportOptions) -> Dictionary:
 	unlink_overwritten([result.path])
 	WebFiles.download(result.path)
 	return {"message": tr("Exported %s (%d frames).") % [result.path.get_file(), result.frames]}
+
+
+## Writes a GIF of each animation into [param folder]
+func _export_gifs(folder: String, options: ExportOptions) -> Dictionary:
+	_empty_download_folder(folder)
+	var result := await GifEncoder.write_every(
+		Global.spritesheet,
+		options,
+		folder,
+		func(done: int, total: int) -> void: Notify.progress("Making the GIFs", done, total)
+	)
+	Notify.hide_progress()
+	if result.error == ERR_DOES_NOT_EXIST:
+		return {"error": tr("No animation has frames.")}
+	if result.error != OK:
+		return {
+			"error": tr("Could not export to %s (%s).") % [result.path, error_string(result.error)]
+		}
+	unlink_overwritten(result.paths)
+	WebFiles.download_folder(folder, folder.get_file() + ".zip")
+	return {"message": tr("Saved %d GIFs to %s.") % [result.paths.size(), folder.get_file()]}
+
+
+## A browser downloads the folder an export writes, which only has this export
+static func _empty_download_folder(folder: String) -> void:
+	if in_browser:
+		DirAccess.make_dir_recursive_absolute(folder)
+		for file in DirAccess.get_files_at(folder):
+			DirAccess.remove_absolute(folder.path_join(file))
 
 
 func _export_image(path: String, options: ExportOptions) -> Dictionary:

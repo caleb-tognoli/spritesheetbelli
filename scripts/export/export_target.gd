@@ -76,7 +76,8 @@ func copy(sheet: Spritesheet) -> ExportTarget:
 	return create(sheet, to_dictionary())
 
 
-## What the target writes, in a few words: "PNG", "Sprites" or the name of its data format
+## What the target writes, in a few words: "PNG", "Sprites", "GIFs" or the name of its data
+## format
 func get_format_name() -> String:
 	var name := options.image_format.to_upper()
 	match options.target:
@@ -91,6 +92,8 @@ func get_format_name() -> String:
 			)
 		ExportOptions.Target.GIF:
 			name = "GIF"
+			if options.gif_every_animation:
+				name = TranslationServer.translate("GIFs")
 		ExportOptions.Target.CUSTOM:
 			name = options.custom_template.strip_edges().get_file()
 			if name.is_empty():

@@ -52,8 +52,9 @@ const TYPES := [
 		"icon": preload("res://assets/icons/Animation.svg"),
 		"about":
 		(
-			"One animation as a GIF, to share or put on a page. GIF has no partial "
-			+ "transparency and at most 255 colours; sheets with more are reduced."
+			"One animation as a GIF, or a GIF of each in a folder, to share or put on a "
+			+ "page. GIF has no partial transparency and at most 255 colours; sheets with "
+			+ "more are reduced."
 		),
 	},
 	{
@@ -79,6 +80,8 @@ const LABEL_WIDTH := 170
 const EXPORT_ALL := &"export_all"
 ## Files named in the list of what an export writes, before "… 3 more"
 const FILES_SHOWN := 5
+## The item of [member gif_animation] for a GIF of each animation, after "All frames"
+const EVERY_ANIMATION := 1
 
 ## The frames selected in the preview, for exporting only those
 var get_selected_coords := func() -> Array[Vector2i]: return []
@@ -114,6 +117,8 @@ var template_file := TemplateFileField.new()
 var templates_folder := Button.new()
 var gif_animation := OptionButton.new()
 var gif_scale := SpinBox.new()
+## The settings of exports that write a file per animation
+var animation_files := AnimationFilesRows.new()
 ## Why the template of the data file can't be used, which stops the export
 var template_error := Label.new()
 ## The files an export writes, when it writes more than one
@@ -184,7 +189,7 @@ func _init() -> void:
 	for entry: Dictionary in TYPES:
 		type.add_icon_item(entry.icon, entry.name)
 	type.tooltip_text = "What the export writes"
-	_add_row(head, "Type", type, every_type)
+	add_row(head, "Type", type, every_type)
 	about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# A wrapped label needs a width, or it's measured one word per line
 	about.custom_minimum_size = Vector2(420, 0)
@@ -197,19 +202,19 @@ func _init() -> void:
 		+ "are named after it."
 	)
 	output.line_edit.tooltip_text = output.tooltip_text
-	_output_label = _add_row(_settings, "Export to", output, every_type)
+	_output_label = add_row(_settings, "Export to", output, every_type)
 
 	for format: String in ExportOptions.IMAGE_FORMATS:
 		image_format.add_item(format.to_upper())
-	_add_row(_settings, "Format", image_format, [T.IMAGE])
+	add_row(_settings, "Format", image_format, [T.IMAGE])
 	jpg_quality.min_value = 1
 	jpg_quality.max_value = 100
 	jpg_quality.suffix = "%"
-	_add_row(_settings, "JPG quality", jpg_quality, [T.IMAGE], "jpg")
+	add_row(_settings, "JPG quality", jpg_quality, [T.IMAGE], "jpg")
 	jpg_background.edit_alpha = false
 	jpg_background.custom_minimum_size = Vector2(60, 0)
 	jpg_background.tooltip_text = "JPG has no transparency, so transparent areas get this colour"
-	_add_row(_settings, "Fill transparency with", jpg_background, [T.IMAGE], "jpg")
+	add_row(_settings, "Fill transparency with", jpg_background, [T.IMAGE], "jpg")
 
 	background_picker.tooltip_text = (
 		"A colour behind the sprites. Fully transparent (the default) leaves the "
@@ -225,25 +230,26 @@ func _init() -> void:
 	transparent_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	transparent_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background_picker.add_child(transparent_label)
-	_add_row(_settings, "Background", background_picker, [T.IMAGE, T.DATA, T.GIF])
+	add_row(_settings, "Background", background_picker, [T.IMAGE, T.DATA, T.GIF])
 	gif_animation.tooltip_text = "Which animation the GIF plays"
-	_add_row(_settings, "Animation", gif_animation, [T.GIF])
+	add_row(_settings, "Animation", gif_animation, [T.GIF])
 	gif_scale.min_value = 1
 	gif_scale.max_value = 16
 	gif_scale.suffix = "×"
 	gif_scale.tooltip_text = "Makes the GIF bigger, keeping pixels sharp"
-	_add_row(_settings, "Scale", gif_scale, [T.GIF])
+	add_row(_settings, "Scale", gif_scale, [T.GIF])
+	animation_files.add_to(self, _settings)
 	grid_data.tooltip_text = "The file next to the image that says where each frame is"
-	_format_rows.append(_add_row(_settings, "Data file", grid_data, [T.DATA]))
+	_format_rows.append(add_row(_settings, "Data file", grid_data, [T.DATA]))
 	_format_rows.append(grid_data)
 	atlas_data.tooltip_text = "The file next to the atlas that says where each frame is"
-	_format_rows.append(_add_row(_settings, "Data file", atlas_data, [T.ATLAS]))
+	_format_rows.append(add_row(_settings, "Data file", atlas_data, [T.ATLAS]))
 	_format_rows.append(atlas_data)
 	template_file.tooltip_text = (
 		"The template the data file is written from. Its header says the file's " + "extension."
 	)
 	template_file.line_edit.tooltip_text = template_file.tooltip_text
-	_add_row(_settings, "Template", template_file, [T.CUSTOM])
+	add_row(_settings, "Template", template_file, [T.CUSTOM])
 	templates_folder.text = "Open templates folder"
 	templates_folder.icon = FOLDER_ICON
 	templates_folder.tooltip_text = (
@@ -252,7 +258,7 @@ func _init() -> void:
 	)
 	# Browsers can't open a folder of the user's
 	var folder_targets := [] if WebFiles.is_web() else [T.DATA, T.ATLAS, T.CUSTOM]
-	_add_row(_settings, "", templates_folder, folder_targets)
+	add_row(_settings, "", templates_folder, folder_targets)
 	templates_folder.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	frame_size.add_item("Their cell", ExportOptions.FrameSize.CELL)
 	frame_size.add_item("Their own", ExportOptions.FrameSize.FRAME)
@@ -263,29 +269,29 @@ func _init() -> void:
 		+ "Their own: each frame is as big as it is, for sprites that have nothing to do "
 		+ "with each other."
 	)
-	_add_row(_settings, "Frame size in data", frame_size, [T.ATLAS])
+	add_row(_settings, "Frame size in data", frame_size, [T.ATLAS])
 
 	animation_fps.min_value = 1
 	animation_fps.max_value = 120
 	animation_fps.step = 0.5
 	animation_fps.suffix = "fps"
 	animation_fps.tooltip_text = "Frames per second of the animations"
-	_fps_label = _add_row(_settings, "Animation speed", animation_fps, [T.DATA, T.GIF])
+	_fps_label = add_row(_settings, "Animation speed", animation_fps, [T.DATA, T.GIF])
 
 	pattern.line_edit.custom_minimum_size = Vector2(120, 0)
 	pattern.tooltip_text = "How each frame is named, with tokens such as {index} filled in"
 	pattern.line_edit.tooltip_text = pattern.tooltip_text
-	_pattern_label = _add_row(_settings, "File names", pattern, [T.SPRITES, T.DATA, T.ATLAS])
+	_pattern_label = add_row(_settings, "File names", pattern, [T.SPRITES, T.DATA, T.ATLAS])
 	pattern_example.theme_type_variation = &"StatusLabel"
 	pattern_example.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	pattern_example.custom_minimum_size = Vector2(200, 0)
 	# Sprites have the list of files instead
-	_add_row(_settings, "", pattern_example, [T.DATA, T.ATLAS])
+	add_row(_settings, "", pattern_example, [T.DATA, T.ATLAS])
 	only_selected.text = "Only selected frames"
-	_add_row(_settings, "", only_selected, [T.SPRITES])
+	add_row(_settings, "", only_selected, [T.SPRITES])
 	for label: String in ["Add a number", "Overwrite it", "Skip the sprite"]:
 		existing.add_item(label)
-	_add_row(_settings, "When a file exists", existing, [T.SPRITES])
+	add_row(_settings, "When a file exists", existing, [T.SPRITES])
 
 	template_error.theme_type_variation = &"ErrorLabel"
 	template_error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -314,6 +320,7 @@ func _init() -> void:
 	template_file.path_changed.connect(_changed.unbind(1))
 	output.path_changed.connect(_changed.unbind(1))
 	output.browse_pressed.connect(browse)
+	animation_files.changed.connect(_changed)
 	templates_folder.pressed.connect(open_templates_folder)
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
@@ -438,7 +445,10 @@ func get_options() -> ExportOptions:
 ## Asks where the selected target writes, then runs [param then] with the path picked
 func browse(then := Callable()) -> void:
 	var options := get_options()
-	output.browse(ExportController.suggested_path(options), options.get_file_extension(), then)
+	var folder_title := "Export GIFs" if options.target == T.GIF else "Export Sprites"
+	output.browse(
+		ExportController.suggested_path(options), options.get_file_extension(), then, folder_title
+	)
 
 
 ## Exports the selected target, asking where first when it doesn't know
@@ -492,10 +502,15 @@ func _show(target: ExportTarget) -> void:
 	frame_size.select(frame_size.get_item_index(options.atlas_frame_size))
 	gif_animation.clear()
 	gif_animation.add_item("All frames")
+	gif_animation.add_item("Every animation")
+	gif_animation.set_item_tooltip(EVERY_ANIMATION, "A GIF of each animation, in a folder")
+	if options.gif_every_animation:
+		gif_animation.select(EVERY_ANIMATION)
 	for animation in Global.spritesheet.animations:
 		gif_animation.add_item(animation.name)
-		if animation.name == options.gif_animation:
+		if animation.name == options.gif_animation and not options.gif_every_animation:
 			gif_animation.select(gif_animation.item_count - 1)
+	animation_files.show_options(options)
 	gif_scale.set_value_no_signal(options.gif_scale)
 	_fill_formats(grid_data, "grid", options.grid_data)
 	_fill_formats(atlas_data, "packed", options.atlas_data)
@@ -542,9 +557,10 @@ func _options() -> ExportOptions:
 	options.existing_files = existing.selected as ExportOptions.Existing
 	options.animation_fps = animation_fps.value
 	options.atlas_frame_size = frame_size.get_selected_id() as ExportOptions.FrameSize
-	options.gif_animation = (
-		gif_animation.get_item_text(gif_animation.selected) if gif_animation.selected > 0 else ""
-	)
+	options.gif_every_animation = gif_animation.selected == EVERY_ANIMATION
+	var named := gif_animation.selected > EVERY_ANIMATION
+	options.gif_animation = gif_animation.get_item_text(gif_animation.selected) if named else ""
+	animation_files.apply(options)
 	options.gif_scale = int(gif_scale.value)
 	options.grid_data = _selected_format(grid_data)
 	options.atlas_data = _selected_format(atlas_data)
@@ -597,6 +613,7 @@ func _update_labels(options: ExportOptions) -> void:
 	var files := _files(options)
 	files_info.visible = files.size() > 1
 	files_info.text = tr("Files: %s") % _list_files(files)
+	animation_files.update(options, files)
 	template_error.text = options.get_template_error()
 	template_error.visible = template_error.text != ""
 	get_ok_button().disabled = template_error.visible
@@ -609,6 +626,9 @@ func _update_labels(options: ExportOptions) -> void:
 			)
 		_ when options.packs(sheet):
 			output_info.text = _atlas_info(options)
+		T.GIF when options.gif_every_animation:
+			var gif_size := sheet.sprite_size * options.gif_scale
+			output_info.text = (tr("%d GIFs of %d×%d px") % [files.size(), gif_size.x, gif_size.y])
 		T.GIF:
 			var animation := options.get_gif_animation(sheet)
 			var count := (
@@ -640,6 +660,8 @@ func _update_visibility(options: ExportOptions) -> void:
 		var shown: bool = row.targets.any(func(target: int) -> bool: return target in like)
 		if row.format and options.image_format != row.format:
 			shown = false
+		if row.condition.is_valid() and not row.condition.call(options):
+			shown = false
 		for control: Control in row.controls:
 			control.visible = shown
 	if options.target == T.CUSTOM:
@@ -651,16 +673,23 @@ func _update_visibility(options: ExportOptions) -> void:
 	output.visible = _output_label.visible
 	# Animations have their own speed; this one is for animations made from rows, and
 	# for a GIF of every frame
-	var own_speed := options.target == T.GIF and options.gif_animation != ""
+	var own_speed := (
+		options.target == T.GIF and (options.gif_animation != "" or options.gif_every_animation)
+	)
 	if not Global.spritesheet.animations.is_empty() and options.target != T.GIF or own_speed:
 		_fps_label.visible = false
 		animation_fps.visible = false
 
 
 ## Adds a labelled control shown only for [param for_targets] and, when given, only for
-## the image [param format]
-func _add_row(
-	grid: GridContainer, text: String, control: Control, for_targets: Array, format := ""
+## the image [param format] and when [param condition] returns true for the options
+func add_row(
+	grid: GridContainer,
+	text: String,
+	control: Control,
+	for_targets: Array,
+	format := "",
+	condition := Callable(),
 ) -> Label:
 	var label := Label.new()
 	label.text = text
@@ -677,6 +706,7 @@ func _add_row(
 				"controls": [label, control],
 				"targets": for_targets,
 				"format": format,
+				"condition": condition,
 			}
 		)
 	)

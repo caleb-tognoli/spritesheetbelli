@@ -169,8 +169,15 @@ static func format_sprite_name(
 	# Only looked up when asked for, as it goes through every animation
 	var values := get_sprite_name_values(sheet, coord, index_start, "{animation" in pattern)
 	# The extension is added when saving: "{index}.png" names "0.png", not "0.png.png"
-	var result := without_extension(pattern, "png")
-	for found in _token_regex().search_all(result):
+	return fill_tokens(without_extension(pattern, "png"), values, str(values.index))
+
+
+## [param pattern] with its tokens filled in from [param values], by token name, as a file
+## name, or [param fallback] when that's empty. A width pads numbers with zeros: {index:3}
+## gives 007. Other tokens are kept as they are.
+static func fill_tokens(pattern: String, values: Dictionary, fallback: String) -> String:
+	var result := pattern
+	for found in _token_regex().search_all(pattern):
 		var key := found.get_string(1)
 		if not values.has(key):
 			continue
@@ -180,7 +187,7 @@ static func format_sprite_name(
 			text = text.pad_zeros(int(found.get_string(2)))
 		result = result.replace(found.get_string(), text)
 	# Keep the name usable as a file name
-	return result.validate_filename() if result.strip_edges() else str(values.index)
+	return result.validate_filename() if result.strip_edges() else fallback
 
 
 ## What each token of [constant SPRITE_NAME_TOKENS] gives for the frame at [param coord].
@@ -212,19 +219,18 @@ static func get_sprite_name_values(
 	return values
 
 
-## The tokens of [param pattern] that aren't in [constant SPRITE_NAME_TOKENS] or are
-## written wrong, like {anim} or {index:}, each once. Names keep them as they are.
-static func get_unknown_tokens(pattern: String) -> PackedStringArray:
+## The tokens of [param pattern] that aren't in [param known] (by default
+## [constant SPRITE_NAME_TOKENS]) or are written wrong, like {anim} or {index:}, each once.
+## Names keep them as they are.
+static func get_unknown_tokens(pattern: String, known := SPRITE_NAME_TOKENS) -> PackedStringArray:
 	var unknown := PackedStringArray()
 	for found in RegEx.create_from_string("\\{[^{}]*\\}").search_all(pattern):
 		var text := found.get_string()
 		var token := _token_regex().search(text)
-		var known := (
-			token != null
-			and token.get_string() == text
-			and SPRITE_NAME_TOKENS.has(token.get_string(1))
+		var is_known := (
+			token != null and token.get_string() == text and known.has(token.get_string(1))
 		)
-		if not known and text not in unknown:
+		if not is_known and text not in unknown:
 			unknown.append(text)
 	return unknown
 
@@ -294,14 +300,14 @@ static func get_sprite_paths(
 				ExportOptions.Existing.SKIP:
 					continue
 				ExportOptions.Existing.ADD_NUMBER:
-					path = _unique_path(base, ".png", taken)
+					path = unique_path(base, ".png", taken)
 		used[path.to_lower()] = true
 		sprites.append({"coord": coord, "path": path})
 	return sprites
 
 
 ## Adds (1), (2)... before the extension while the path is [param taken]
-static func _unique_path(base: String, extension: String, taken: Callable) -> String:
+static func unique_path(base: String, extension: String, taken: Callable) -> String:
 	if not taken.call(base + extension):
 		return base + extension
 	var i := 1

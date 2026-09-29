@@ -410,3 +410,46 @@ func test_export_writes_the_projects_exports() -> void:
 	assert_eq(result[0], "2", str(result))
 	assert_true("--metadata needs --out" in result[1], result[1])
 	assert_true("every export the project has" in Cli.USAGE)
+
+
+func test_a_gif_of_each_animation() -> void:
+	var sheet := Spritesheet.new()
+	var images: Array[Image] = []
+	for i in 3:
+		images.append(make_image(Color.from_hsv(i / 3.0, 1, 1), Vector2i(8, 8)))
+	sheet.add_frames(images)
+	var coords := sheet.get_sorted_coords()
+	sheet.add_animation(SheetAnimation.create("walk", coords.slice(0, 2)))
+	sheet.add_animation(SheetAnimation.create("idle", coords.slice(2, 3)))
+	var target := (
+		ExportTarget
+		. create(
+			sheet,
+			{
+				"target": ExportOptions.Target.GIF,
+				"gif_every_animation": true,
+				"gif_name_pattern": "hero_{animation}",
+				"path": dir.path_join("anims/out/hero"),
+			}
+		)
+	)
+	sheet.set_export_settings(ExportTarget.settings_with(sheet, [target]))
+	var project := dir.path_join("anims/hero.sbelli")
+	DirAccess.make_dir_recursive_absolute(project.get_base_dir())
+	assert_eq(ProjectFile.save(sheet, project), OK)
+	var result := await run(["--export", project])
+	assert_eq(result[0], "0", str(result))
+	var out := dir.path_join("anims/out/hero")
+	assert_eq(Array(DirAccess.get_files_at(out)), ["hero_idle.gif", "hero_walk.gif"])
+
+	var gifs := dir.path_join("anims/gifs")
+	result = await run(["--export", project, "--gifs", gifs, "--scale", "2"])
+	assert_eq(result[0], "0", str(result))
+	assert_eq(result[1], "Wrote 2 GIFs to %s" % gifs)
+	var walk := GifDecoder.load_file(gifs.path_join("walk.gif"))
+	assert_eq(walk.frames.size(), 2)
+	assert_eq(walk.frames[0].get_size(), Vector2i(16, 16), "twice as big")
+	assert_true("--gifs <folder>" in Cli.USAGE)
+
+	result = await run(["--pack", dir.path_join("frames"), "--gifs", gifs])
+	assert_eq(result[0], "1", "no animations")

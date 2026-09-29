@@ -5,7 +5,8 @@ class_name ExportFiles
 
 ## The paths an export of [param sheet] as [param options] say writes, in the order it
 ## writes them, when [param path] is picked: the file, with the export's extension added
-## as [method SpritesheetExporter.with_extension] does, or the folder for sprites.
+## as [method SpritesheetExporter.with_extension] does, or the folder of an export that
+## writes one, like sprites.
 ## [param coords] are the frames of a sprites export (every frame when empty), which is
 ## looked at as if the folder were empty unless [param on_disk]. [param page_count] is how
 ## many pages an atlas has, when known: finding out packs a sheet in the grid layout.
@@ -37,6 +38,11 @@ static func get_paths(
 					lowercase[sprite.path.to_lower()] = true
 					sprites.append(sprite.path)
 			return sprites
+		ExportOptions.Target.GIF when options.gif_every_animation:
+			var gifs := PackedStringArray()
+			for file in GifEncoder.get_animation_files(sheet, options, path):
+				gifs.append(file.path)
+			return gifs
 		ExportOptions.Target.GIF:
 			return PackedStringArray([path])
 	# A packed sheet is written as its pages

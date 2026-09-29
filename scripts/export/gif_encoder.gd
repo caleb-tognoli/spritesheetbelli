@@ -80,12 +80,71 @@ static func write(
 	sheet: Spritesheet, options: ExportOptions, path: String, on_progress := Callable()
 ) -> Dictionary:
 	path = SpritesheetExporter.with_extension(path, GifDecoder.EXTENSION)
+	return await _write_animation(
+		sheet, options.get_gif_animation(sheet), options, path, on_progress
+	)
+
+
+## Writes a GIF of each animation of [param sheet] with frames into [param folder], named
+## as [method get_animation_files] says. Returns [code]{"error": Error, "path": String,
+## "paths": PackedStringArray, "frames": int}[/code] with the GIFs written, the last one
+## tried and every frame of them; the error is ERR_DOES_NOT_EXIST when there's no
+## animation with frames. [param on_progress] gets how many GIFs are written.
+static func write_every(
+	sheet: Spritesheet, options: ExportOptions, folder: String, on_progress := Callable()
+) -> Dictionary:
+	var files := get_animation_files(sheet, options, folder)
+	var result := {"error": OK, "path": folder, "paths": PackedStringArray(), "frames": 0}
+	if files.is_empty():
+		result.error = ERR_DOES_NOT_EXIST
+		return result
+	DirAccess.make_dir_recursive_absolute(folder)
+	for i in files.size():
+		var written := await _write_animation(sheet, files[i].animation, options, files[i].path)
+		result.path = written.path
+		result.error = written.error
+		if written.error != OK:
+			return result
+		result.paths.append(written.path)
+		result.frames += written.frames
+		if on_progress.is_valid():
+			on_progress.call(i + 1, files.size())
+	return result
+
+
+## The GIFs [method write_every] writes in [param folder]: one for each animation with
+## frames, named with the pattern of [param options], as [code]{"animation":
+## SheetAnimation, "path": String}[/code]
+static func get_animation_files(
+	sheet: Spritesheet, options: ExportOptions, folder: String
+) -> Array[Dictionary]:
+	var animations: Array[SheetAnimation] = []
+	var entries: Array[Dictionary] = []
+	for animation in sheet.animations:
+		var count := animation.get_playback_cells(sheet).size()
+		if count > 0:
+			animations.append(animation)
+			entries.append({"name": animation.name, "count": count})
+	var paths := AnimationFiles.get_paths(
+		folder, options.gif_name_pattern, GifDecoder.EXTENSION, entries
+	)
+	var files: Array[Dictionary] = []
+	for i in animations.size():
+		files.append({"animation": animations[i], "path": paths[i]})
+	return files
+
+
+## Writes [param animation] of [param sheet] (every frame when null) as a GIF at
+## [param path], see [method write]
+static func _write_animation(
+	sheet: Spritesheet,
+	animation: SheetAnimation,
+	options: ExportOptions,
+	path: String,
+	on_progress := Callable()
+) -> Dictionary:
 	var data := animation_frames(
-		sheet,
-		options.get_gif_animation(sheet),
-		options.animation_fps,
-		options.gif_scale,
-		options.background
+		sheet, animation, options.animation_fps, options.gif_scale, options.background
 	)
 	var frames: Array[Image] = data.frames
 	var result := {"error": OK, "path": path, "frames": frames.size()}

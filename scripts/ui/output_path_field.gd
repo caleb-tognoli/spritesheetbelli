@@ -47,14 +47,16 @@ func _init() -> void:
 
 ## Asks where to export a file with [param extension], or a folder when it's empty,
 ## starting from the path in the field or else [param suggested]. [param then] runs with
-## the path picked.
-func browse(suggested: String, extension: String, then := Callable()) -> void:
+## the path picked. A folder is asked for with [param folder_title].
+func browse(
+	suggested: String, extension: String, then := Callable(), folder_title := "Export Sprites"
+) -> void:
 	var start := path if path else suggested
 	file_dialog.file_mode = (
 		FileDialog.FILE_MODE_OPEN_DIR if extension.is_empty() else FileDialog.FILE_MODE_SAVE_FILE
 	)
 	# After the mode, which sets a title of its own
-	file_dialog.title = "Export Sprites" if extension.is_empty() else "Export"
+	file_dialog.title = folder_title if extension.is_empty() else "Export"
 	file_dialog.filters = []
 	if extension:
 		var pattern: String = PATTERNS.get(extension, "*." + extension)

@@ -189,6 +189,62 @@ func test_export_all_writes_every_target() -> void:
 	assert_true("Exported walk.gif (3 frames)." in toasts, toasts)
 
 
+func test_a_gif_of_each_animation() -> void:
+	var coords := sheet.get_sorted_coords()
+	sheet.add_animation(SheetAnimation.create("walk", coords.slice(0, 2)))
+	sheet.add_animation(SheetAnimation.create("idle", coords.slice(2, 3)))
+	set_targets([make_target(ExportOptions.Target.GIF, "hero.gif")])
+	Actions.run(&"export")
+	var rows := dialog.animation_files
+	assert_false(rows.gif_pattern.visible, "one GIF")
+	assert_eq(dialog.gif_animation.get_item_text(ExportDialog.EVERY_ANIMATION), "Every animation")
+	dialog.gif_animation.select(ExportDialog.EVERY_ANIMATION)
+	dialog.gif_animation.item_selected.emit(ExportDialog.EVERY_ANIMATION)
+	assert_eq(dialog.output.path, dir.path_join("hero"), "a folder")
+	assert_true(rows.gif_pattern.visible)
+	assert_false(dialog.animation_fps.visible, "animations have their own speed")
+	assert_eq(dialog.target_list.get_item_text(0), "hero · GIFs")
+	assert_eq(dialog.files_info.text, "Files: walk.gif, idle.gif")
+	assert_eq(rows.gif_example.text, "For example: walk.gif, idle.gif")
+	assert_eq(dialog.output_info.text, "2 GIFs of 8×8 px")
+	rows.gif_pattern.line_edit.text = "hero_{animation}"
+	rows.gif_pattern.line_edit.text_changed.emit(rows.gif_pattern.line_edit.text)
+	assert_eq(dialog.files_info.text, "Files: hero_walk.gif, hero_idle.gif")
+	rows.gif_pattern.line_edit.text = "{anim}"
+	rows.gif_pattern.line_edit.text_changed.emit(rows.gif_pattern.line_edit.text)
+	assert_eq(rows.gif_pattern.warning.text, "Unknown token: {anim}")
+	rows.gif_pattern.tokens_button.pressed.emit()
+	var cells := rows.gif_pattern.tokens.get_children()
+	assert_eq(cells.size(), AnimationFiles.TOKENS.size() * 3, "its own tokens")
+	assert_eq(cells[2].text, "walk", "an example")
+	rows.gif_pattern.line_edit.caret_column = 6
+	rows.gif_pattern.insert_token("animation")
+	assert_eq(rows.gif_pattern.text, "{anim}{animation}")
+	rows.gif_pattern.line_edit.text = "hero_{animation}"
+	rows.gif_pattern.line_edit.text_changed.emit(rows.gif_pattern.line_edit.text)
+	dialog.hide()
+
+	var target := ExportTarget.list(sheet)[0]
+	assert_true(target.options.gif_every_animation)
+	assert_eq(target.options.gif_name_pattern, "hero_{animation}")
+	Actions.run(&"export")
+	assert_eq(dialog.gif_animation.selected, ExportDialog.EVERY_ANIMATION, "shown again")
+	assert_eq(rows.gif_pattern.text, "hero_{animation}")
+	dialog.hide()
+	assert_true(await main.files.exports.export_again())
+	for file: String in ["hero_walk.gif", "hero_idle.gif"]:
+		assert_true(FileAccess.file_exists(dir.path_join("hero").path_join(file)), file)
+	var toasts := "\n".join(Notify.get_toasts())
+	assert_true("Saved 2 GIFs to hero." in toasts, toasts)
+
+	# In a browser, the folder is downloaded
+	ExportController.in_browser = true
+	assert_true(await main.files.exports.export_again())
+	var gifs := WebFiles.OUTPUT_DIR.path_join("spritesheet_gifs")
+	assert_eq(DirAccess.get_files_at(gifs).size(), 2)
+	remove_dir(gifs)
+
+
 func test_export_writes_the_selected_target() -> void:
 	set_targets(
 		[
