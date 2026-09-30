@@ -9,9 +9,10 @@ The .tpsheet file of TexturePacker, format 40300, which the free TexturePacker I
 package reads to cut the PNG next to it into sprites. Unity measures from the bottom
 left: y is from the bottom of the page, and the pivot is across the packed pixels from
 their bottom left, so a trimmed frame's pivot stays where it was in the whole frame and
-can be below 0 or above 1. While pivots are off in Settings, frames turn around their
-middle. Names escape %, #, : and ; as the importer expects. There are no borders for
-9-slicing, and Unity can't use turned frames.
+can be below 0 or above 1. While pivots are off in Settings, frames turn around the
+middle of the whole frame, so every frame of an animation stays in place. Names escape
+%, #, : and ; as the importer expects. There are no borders for 9-slicing, and Unity
+can't use turned frames.
 }}
 #
 # Sprite sheet data for Unity.
@@ -28,5 +29,5 @@ middle. Names escape %, #, : and ; as the importer expects. There are no borders
 :borders=disabled
 
 {{#frames}}
-{{name | tpsheet-escape}};{{x}};{{image_h | minus y | minus h}};{{w}};{{h}}; {{#has_pivot}}{{pivot_px_x | minus trim_left | divide w | round 6}};{{source_h | minus pivot_px_y | minus trim_bottom | divide h | round 6}}{{/has_pivot}}{{^has_pivot}}0.5;0.5{{/has_pivot}}; 0;0;0;0
+{{name | tpsheet-escape}};{{x}};{{image_h | minus y | minus h}};{{w}};{{h}}; {{#has_pivot}}{{pivot_px_x | minus trim_left | divide w | round 6}};{{source_h | minus pivot_px_y | minus trim_bottom | divide h | round 6}}{{/has_pivot}}{{^has_pivot}}{{source_w | divide 2 | minus trim_left | divide w | round 6}};{{source_h | divide 2 | minus trim_bottom | divide h | round 6}}{{/has_pivot}}; 0;0;0;0
 {{/frames}}

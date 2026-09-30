@@ -114,6 +114,22 @@ func test_unity_names_and_turned_frames() -> void:
 	assert_eq(result.error, ERR_UNAVAILABLE)
 
 
+## While pivots are off, Unity's frames turn around the middle of the whole frame, as they
+## do with a pivot there, so every frame of an animation stays in place however much of it
+## is trimmed
+func test_unity_pivot_while_pivots_are_off() -> void:
+	var sheet := Golden.atlas_sheet({"max_size": 256, "default_pivot": Vector2(0.5, 0.5)})
+	var off := FileAccess.get_file_as_string(export_atlas(sheet, "unity").json_path)
+	# The middle (6, 4.5) of the 12×9 frame is 3 px right of the 5×6 packed pixels' left
+	# edge, which start 3 px in, and 2.5 px above their bottom edge, 2 px up from the frame's
+	var trimmed: Array = parse_tpsheet(off)["a&b"]
+	assert_eq(trimmed.slice(2), [5.0, 6.0, 0.6, 0.416667])
+	sheet.set_pivots([coord_named(sheet, "a&b")] as Array[Vector2i], null)
+	Settings.set_value(&"use_pivots", true)
+	var centred := FileAccess.get_file_as_string(export_atlas(sheet, "unity").json_path)
+	assert_eq(off, centred, "the same as a pivot in the middle")
+
+
 ## A property list as dictionaries, arrays, texts, numbers and booleans
 static func parse_plist(text: String) -> Variant:
 	var parser := XMLParser.new()
@@ -258,7 +274,8 @@ func test_grid_sheet_pivots() -> void:
 
 ## An atlas's frames get pivots only when they're turned on, as a grid sheet's do: "a&b"
 ## has one of its own at (4, 3) of its 12×9 frame, and the others the default, the middle
-## of the bottom. Unity's file needs one anyway, so frames turn around their middle.
+## of the bottom. Unity's file needs one anyway, so frames turn around the middle of the
+## whole frame.
 func test_atlas_pivots_follow_the_setting() -> void:
 	var sheet := Golden.atlas_sheet({"max_size": 256, "default_pivot": Vector2(0.5, 1)})
 	var json := FileAccess.get_file_as_string(export_atlas(sheet, "json").json_path)
@@ -273,7 +290,7 @@ func test_atlas_pivots_follow_the_setting() -> void:
 	var tpsheet := parse_tpsheet(
 		FileAccess.get_file_as_string(export_atlas(sheet, "unity").json_path)
 	)
-	assert_eq(tpsheet["a&b"].slice(4), [0.5, 0.5], "the middle")
+	assert_eq(tpsheet["a&b"].slice(4), [0.6, 0.416667], "the middle of the whole frame")
 	assert_eq(tpsheet["plank0"].slice(4), [0.5, 0.5], "the middle")
 
 	Settings.set_value(&"use_pivots", true)

@@ -37,7 +37,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Pivots follow flips and turns, stay on their pixel when trimming, and are exported where
   the format has them, for atlases and grid sheets with a data file, only while they're
   turned on. Frames without one use the atlas's default. Unity's `.tpsheet`, which always
-  needs one, turns frames around their middle while pivots are off.
+  needs one, turns frames around the middle of the whole frame while pivots are off, so
+  trimmed frames of an animation stay in place.
 - View > Sprites lists every frame with a thumbnail, its name and size, under the first
   animation showing it, in play order, with a dot of the animation's colour, and the
   others under "No animation"; in the grid layout, the button next to the search field
