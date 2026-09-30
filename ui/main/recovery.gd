@@ -223,7 +223,7 @@ func recover(leftover: Dictionary) -> bool:
 	files.load_project(result, leftover.path, leftover.dir)
 	var document := Global.document
 	var shown_name: String = leftover.name if leftover.name else tr("Untitled")
-	document.history_start = tr("Recovered %s") % shown_name
+	document.set_history_start(L10n.mark("Recovered %s"), shown_name)
 	document.mark_unsaved()
 	# Written before the old copy is gone, so there's always one
 	save_copy()

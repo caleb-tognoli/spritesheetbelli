@@ -151,7 +151,7 @@ func test_new_files_are_added() -> void:
 	assert_eq(Global.document.get_history().size(), history + 1, "one step")
 	assert_eq(Global.document.get_history()[-1], "Add new sprites")
 	assert_true(Global.document.is_dirty, "unsaved")
-	assert_true("Added 1 new sprites from linked." in Notify.get_toasts())
+	assert_true("Added 1 new sprite from linked." in Notify.get_toasts())
 
 	Global.document.undo()
 	assert_false(sheet.frames.has(added), "undone")
@@ -181,7 +181,7 @@ func test_deleted_files_are_asked_about() -> void:
 	assert_true(folders.has_changes())
 	await folders.apply()
 	assert_true(folders.dialog.visible)
-	assert_true("Remove 1 frames whose files were deleted?" in folders.dialog.dialog_text)
+	assert_true("Remove 1 frame whose file was deleted?" in folders.dialog.dialog_text)
 	assert_true("b.png" in folders.dialog.dialog_text)
 
 	folders.dialog.get_ok_button().pressed.emit()

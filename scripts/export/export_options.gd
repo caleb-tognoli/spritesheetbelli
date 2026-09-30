@@ -111,7 +111,7 @@ const SCALED_TARGETS: Array[Target] = [
 ## The biggest scale
 const MAX_SCALE := 16
 ## The tokens of [member scale_suffix], with what they give
-const SCALE_TOKENS := {"scale": "The scale, like 2"}
+const SCALE_TOKENS := {&"scale": "The scale, like 2"}  # L10n.mark
 
 ## Whether the settings applied had a pattern, which is then kept even when it's the default
 var _name_pattern_set := false

@@ -100,7 +100,7 @@ static func parse(text: String) -> Template:
 static func load_file(path: String) -> Template:
 	if not FileAccess.file_exists(path):
 		var missing := Template.new()
-		missing._parse_error = "%s not found" % path
+		missing._parse_error = TranslationServer.translate("%s not found") % path
 		missing.error = missing._parse_error
 		return missing
 	return parse(FileAccess.get_file_as_string(path))
@@ -146,7 +146,7 @@ func _tokenize(text: String) -> Array[Dictionary]:
 		line = _add_text(tokens, text.substr(position, open - position), line)
 		var close := text.find("}}", open + 2)
 		if close < 0:
-			_fail(line, "{{ without }}")
+			_fail(line, tr("{{ without }}"))
 			return tokens
 		var content := text.substr(open + 2, close - open - 2)
 		var token := _parse_tag(content, line)
@@ -182,13 +182,13 @@ func _parse_tag(content: String, line: int) -> Dictionary:
 	var parts := tag.split("|")
 	var name := parts[0].strip_edges()
 	if unsupported:
-		_fail(line, "{{%s}} isn't supported" % tag)
+		_fail(line, tr("{{%s}} isn't supported") % tag)
 	elif not name:
-		_fail(line, "{{%s}} has no name" % content)
+		_fail(line, tr("{{%s}} has no name") % content)
 	elif not _name_regex.search(name):
-		_fail(line, '"%s" isn\'t a name' % name)
+		_fail(line, tr('"%s" isn\'t a name') % name)
 	elif parts.size() > 1 and type != Token.VARIABLE:
-		_fail(line, "{{%s}}: only values take filters, not sections" % content.strip_edges())
+		_fail(line, tr("{{%s}}: only values take filters, not sections") % content.strip_edges())
 	var token := {"type": type, "name": name, "line": line}
 	if type == Token.VARIABLE:
 		token.filters = []
@@ -201,25 +201,29 @@ func _parse_tag(content: String, line: int) -> Dictionary:
 func _parse_filter(text: String, line: int) -> Dictionary:
 	var words := text.strip_edges().split(" ", false)
 	if words.is_empty():
-		_fail(line, "empty filter after |")
+		_fail(line, tr("empty filter after |"))
 		return {}
 	var filter_name := words[0]
 	if not FILTERS.has(filter_name):
-		_fail(line, 'unknown filter "%s"' % filter_name)
+		_fail(line, tr('unknown filter "%s"') % filter_name)
 		return {}
 	var arguments := Array(words.slice(1))
 	if arguments.size() != FILTERS[filter_name]:
 		_fail(
 			line,
 			(
-				"%s takes %d argument(s), not %d"
+				tr_n(
+					"%s takes %d argument, not %d",
+					"%s takes %d arguments, not %d",
+					FILTERS[filter_name]
+				)
 				% [filter_name, FILTERS[filter_name], arguments.size()]
 			)
 		)
 		return {}
 	for argument: String in arguments:
 		if not (_number_regex.search(argument) or _name_regex.search(argument)):
-			_fail(line, '%s: "%s" is neither a number nor a name' % [filter_name, argument])
+			_fail(line, tr('%s: "%s" is neither a number nor a name') % [filter_name, argument])
 			return {}
 	return {"name": filter_name, "arguments": arguments}
 
@@ -285,14 +289,14 @@ func _build_tree(tokens: Array[Dictionary]) -> void:
 				children = token.children
 			Token.CLOSE:
 				if stack.is_empty():
-					_fail(token.line, "{{/%s}} closes no section" % token.name)
+					_fail(token.line, tr("{{/%s}} closes no section") % token.name)
 					return
 				var open: Dictionary = stack.pop_back()
 				if open.name != token.name:
 					_fail(
 						token.line,
 						(
-							"{{/%s}} doesn't close {{%s%s}} from line %d"
+							tr("{{/%s}} doesn't close {{%s%s}} from line %d")
 							% [
 								token.name,
 								"#" if open.type == Token.SECTION else "^",
@@ -307,13 +311,13 @@ func _build_tree(tokens: Array[Dictionary]) -> void:
 		var open: Dictionary = stack[-1]
 		_fail(
 			open.line,
-			"{{%s%s}} is never closed" % ["#" if open.type == Token.SECTION else "^", open.name]
+			tr("{{%s%s}} is never closed") % ["#" if open.type == Token.SECTION else "^", open.name]
 		)
 
 
 func _fail(line: int, message: String) -> void:
 	if not _parse_error:
-		_parse_error = "line %d: %s" % [line, message]
+		_parse_error = tr("line %d: %s") % [line, message]
 
 
 func _render_nodes(nodes: Array, stack: Array, out: PackedStringArray) -> void:
@@ -381,13 +385,13 @@ func _apply(filter: Dictionary, value: Variant, stack: Array, line: int) -> Vari
 	if value != null and (not _is_number(value) or (filter.arguments and not _is_number(argument))):
 		if not error:
 			error = (
-				"line %d: %s needs numbers, not %s"
+				tr("line %d: %s needs numbers, not %s")
 				% [line, filter.name, var_to_str(argument if _is_number(value) else value)]
 			)
 		return value
 	if filter.name == "divide" and value != null and argument == 0:
 		if not error:
-			error = "line %d: divide by 0" % line
+			error = tr("line %d: divide by 0") % line
 		return null
 	return null if value == null else _apply_number(filter.name, value, argument)
 

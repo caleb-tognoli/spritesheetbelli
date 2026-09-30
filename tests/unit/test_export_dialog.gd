@@ -199,7 +199,7 @@ func test_dialog_lists_the_files_of_an_export() -> void:
 	dialog.only_selected.toggled.emit(true)
 	assert_eq(dialog.files_info.text, "Files: 2.png")
 	assert_false(dialog.files_info.visible, "one file")
-	assert_true(dialog.output_info.text.begins_with("1 images"), dialog.output_info.text)
+	assert_true(dialog.output_info.text.begins_with("1 image of"), dialog.output_info.text)
 
 
 func test_tokens_list_and_insert() -> void:
@@ -394,7 +394,7 @@ func test_template_errors_stop_the_export() -> void:
 	dialog.select_type(ExportOptions.Target.CUSTOM)
 	pick_template(broken)
 	assert_true(dialog.template_error.visible)
-	assert_eq(dialog.template_error.text, "broken.template: line 2: pad takes 1 argument(s), not 0")
+	assert_eq(dialog.template_error.text, "broken.template: line 2: pad takes 1 argument, not 0")
 	assert_true(dialog.get_ok_button().disabled)
 	pick_template(dir.path_join("nowhere.template"))
 	assert_true(dialog.template_error.text.begins_with("Could not find"), "a file that isn't there")

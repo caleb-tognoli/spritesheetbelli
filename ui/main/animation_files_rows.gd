@@ -20,9 +20,11 @@ func add_to(dialog: ExportDialog, grid: GridContainer) -> void:
 	var every := func(options: ExportOptions) -> bool:
 		return options.target != T.GIF or options.gif_every_animation
 	var defaults := ExportOptions.new()
-	_set_up(gif_pattern, "How each GIF is named, with tokens such as {animation} filled in")
+	_set_up(
+		gif_pattern, L10n.mark("How each GIF is named, with tokens such as {animation} filled in")
+	)
 	gif_pattern.line_edit.placeholder_text = defaults.gif_name_pattern
-	dialog.add_row(grid, "File names", gif_pattern, [T.GIF], "", every)
+	dialog.add_row(grid, L10n.mark("File names"), gif_pattern, [T.GIF], "", every)
 	_set_up(
 		strip_pattern,
 		(
@@ -31,7 +33,7 @@ func add_to(dialog: ExportDialog, grid: GridContainer) -> void:
 		)
 	)
 	strip_pattern.line_edit.placeholder_text = defaults.strip_name_pattern
-	dialog.add_row(grid, "File names", strip_pattern, [T.STRIPS])
+	dialog.add_row(grid, L10n.mark("File names"), strip_pattern, [T.STRIPS])
 	example.theme_type_variation = &"StatusLabel"
 	example.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	example.custom_minimum_size = Vector2(200, 0)

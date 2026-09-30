@@ -198,7 +198,7 @@ func _make_card(file: String) -> Button:
 	close.pressed.connect(forget.bind(file))
 	name_row.add_child(close)
 	var folder_label := Label.new()
-	folder_label.text = file.get_base_dir() if found else "Not found"
+	folder_label.text = file.get_base_dir() if found else L10n.mark("Not found")
 	folder_label.theme_type_variation = &"StatusLabel" if found else &"ErrorLabel"
 	folder_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if found:

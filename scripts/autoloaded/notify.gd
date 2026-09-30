@@ -1,5 +1,6 @@
 extends Node
-## Message and confirmation dialogs usable from anywhere.
+## Message and confirmation dialogs usable from anywhere. Their text is shown as given, so
+## translate it first.
 
 var message_dialog := AcceptDialog.new()
 var confirm_dialog := ConfirmationDialog.new()
@@ -49,7 +50,7 @@ func message(title: String, text: String) -> void:
 
 
 func error(text: String) -> void:
-	message("Error", text)
+	message(tr("Error"), text)
 
 
 ## A short message that fades away on its own, for things that went well
@@ -77,7 +78,7 @@ func progress(text: String, done: int, total: int) -> void:
 		return
 	_progress_overlay.visible = true
 	_progress_bar.indeterminate = false
-	_progress_label.text = "%s %d of %d" % [text, done, total]
+	_progress_label.text = tr("%s %d of %d") % [text, done, total]
 	_progress_bar.max_value = maxi(total, 1)
 	_progress_bar.value = done
 

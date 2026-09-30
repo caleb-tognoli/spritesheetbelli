@@ -4,79 +4,86 @@ extends AcceptDialog
 ## settings on the right, and a search over all of them. Changes apply immediately; a
 ## setting that differs from its default has a button to revert it.
 
-## Categories with rows of [key, label, control type, options...]
-const CATEGORIES := [
+## Categories with rows of [key, label, control type, options...]. Ids are StringNames:
+## the text is translated where it's shown.
+const CATEGORIES := [  # L10n.mark
 	[
 		"General",
 		[
 			[
 				&"add_mode",
 				"New sprites go to",
-				"option",
+				&"option",
 				["The first free cell", "After the last frame", "A new row"]
 			],
 			[
 				&"resize_filter",
 				"Resize filter",
-				"option",
+				&"option",
 				["Nearest (pixel art)", "Bilinear", "Cubic", "Trilinear", "Lanczos"]
 			],
-			[&"watch_sources", "Reload changed files", "check"],
-			[&"use_pivots", "Pivots", "check"],
-			[&"confirm_grid_shrink", "Confirm grid shrinking", "check"],
-			[&"restore_session", "Reopen last project", "check"],
-			[&"recovery_minutes", "Recovery copy every", "spin", [0, 60, 1, "min"]],
+			[&"watch_sources", "Reload changed files", &"check"],
+			[&"use_pivots", "Pivots", &"check"],
+			[&"confirm_grid_shrink", "Confirm grid shrinking", &"check"],
+			[&"restore_session", "Reopen last project", &"check"],
+			[&"recovery_minutes", "Recovery copy every", &"spin", [0, 60, 1, "min"]],
 		]
 	],
 	[
 		"Preview",
 		[
-			[&"index_start", "Number frames from", "option", ["0", "1"]],
-			[&"show_grid", "Show grid", "check"],
-			[&"show_pixel_grid", "Show pixel grid", "check"],
-			[&"show_indices", "Show frame numbers", "check"],
-			[&"show_checkerboard", "Show checkerboard", "check"],
-			[&"grid_color", "Grid colour", "color"],
-			[&"background_color", "Background colour", "color"],
-			[&"selection_tint", "Selection tint", "spin", [0, 100, 1, "%"]],
-			[&"checker_size", "Checker size", "spin", [2, 64, 1, "px"]],
-			[&"zoom_speed", "Zoom speed", "spin", [0.05, 1.0, 0.05, ""]],
+			[&"index_start", "Number frames from", &"option", ["0", "1"]],
+			[&"show_grid", "Show grid", &"check"],
+			[&"show_pixel_grid", "Show pixel grid", &"check"],
+			[&"show_indices", "Show frame numbers", &"check"],
+			[&"show_checkerboard", "Show checkerboard", &"check"],
+			[&"grid_color", "Grid colour", &"color"],
+			[&"background_color", "Background colour", &"color"],
+			[&"selection_tint", "Selection tint", &"spin", [0, 100, 1, "%"]],
+			[&"checker_size", "Checker size", &"spin", [2, 64, 1, "px"]],
+			[&"zoom_speed", "Zoom speed", &"spin", [0.05, 1.0, 0.05, ""]],
 			[
 				&"pixel_perfect_zoom",
 				"Pixel-perfect zoom",
-				"option",
+				&"option",
 				["Auto", "On", "Off"],
-				["auto", "on", "off"]
+				[&"auto", &"on", &"off"]
 			],
 		]
 	],
 	[
 		"Atlas",
 		[
-			[&"atlas_dedupe", "Share identical frames", "check"],
-			[&"atlas_power_of_two", "Power-of-two pages", "check"],
-			[&"atlas_square", "Square pages", "check"],
+			[&"atlas_dedupe", "Share identical frames", &"check"],
+			[&"atlas_power_of_two", "Power-of-two pages", &"check"],
+			[&"atlas_square", "Square pages", &"check"],
 		]
 	],
 	[
 		"Interface",
 		[
-			[&"theme", "Theme", "option", ["System", "Dark", "Light"], ["system", "dark", "light"]],
-			[&"accent_color", "Accent colour", "color"],
-			[&"system_accent", "System accent colour", "check"],
+			[
+				&"theme",
+				"Theme",
+				&"option",
+				["System", "Dark", "Light"],
+				[&"system", &"dark", &"light"]
+			],
+			[&"accent_color", "Accent colour", &"color"],
+			[&"system_accent", "System accent colour", &"check"],
 			[
 				&"ui_scale",
 				"Interface scale",
-				"option",
+				&"option",
 				["Automatic", "75%", "100%", "125%", "150%", "200%"],
 				[0.0, 0.75, 1.0, 1.25, 1.5, 2.0]
 			],
-			[&"show_status_bar", "Show status bar", "check"],
+			[&"show_status_bar", "Show status bar", &"check"],
 		]
 	],
 ]
 ## What settings do, shown when hovering them, for the ones whose name doesn't say it all
-const DETAILS := {
+const DETAILS := {  # L10n.mark
 	&"add_mode": "Where added sprites are placed in the grid",
 	&"resize_filter": "How new sheets smooth resized sprites. Nearest keeps pixel art sharp.",
 	&"watch_sources":
@@ -137,10 +144,10 @@ func _init() -> void:
 	custom_action.connect(
 		func(_action: StringName) -> void:
 			Notify.confirm(
-				"Reset settings",
-				"Restore every setting to its default?",
+				tr("Reset settings"),
+				tr("Restore every setting to its default?"),
 				Settings.reset_to_defaults,
-				"Reset"
+				tr("Reset")
 			)
 	)
 
@@ -293,7 +300,7 @@ func _create_control(key: StringName, kind: String, options: Array) -> Control:
 			spin.min_value = options[0][0]
 			spin.max_value = options[0][1]
 			spin.step = options[0][2]
-			spin.suffix = options[0][3]
+			spin.suffix = tr(options[0][3])
 			spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			spin.value_changed.connect(func(value: float) -> void: Settings.set_value(key, value))
 			_refreshers[key] = func() -> void: spin.set_value_no_signal(Settings.get_value(key))
@@ -323,7 +330,7 @@ func _filter() -> void:
 	var category := _category
 	var shown_categories := {}
 	for row in _rows:
-		var described := "%s %s" % [row.text, row.details]
+		var described := "%s %s" % [tr(row.text), tr(row.details) if row.details else ""]
 		var shown: bool = query in described.to_lower() if query else row.category == category
 		(row.row as Control).visible = shown
 		if shown:

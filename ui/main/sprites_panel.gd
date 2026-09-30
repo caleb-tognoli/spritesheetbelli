@@ -71,7 +71,9 @@ func _init() -> void:
 	header.add_child(title)
 	close_button.flat = true
 	close_button.icon = preload("res://assets/icons/Close.svg")
-	close_button.tooltip_text = Actions.get_tooltip(&"toggle_sprites", "Hide the sprites")
+	close_button.tooltip_text = Actions.get_tooltip(
+		&"toggle_sprites", L10n.mark("Hide the sprites")
+	)
 	header.add_child(close_button)
 
 	search.placeholder_text = "Search by name"
@@ -215,7 +217,9 @@ func _show_folders() -> void:
 		unlink.pressed.connect(
 			func() -> void:
 				var sheet := Global.spritesheet
-				Global.document.perform("Unlink folder", sheet.unlink_folder.bind(folder))
+				Global.document.perform(
+					L10n.mark("Unlink folder"), sheet.unlink_folder.bind(folder)
+				)
 		)
 		row.add_child(unlink)
 		folders_box.add_child(row)
@@ -499,7 +503,7 @@ func _rename(item: TreeItem) -> void:
 	var sheet := Global.spritesheet
 	var new_name := item.get_text(0).strip_edges()
 	if new_name != sheet.frames[coord].resource_name:
-		Global.document.perform("Rename frame", sheet.rename_frame.bind(coord, new_name))
+		Global.document.perform(L10n.mark("Rename frame"), sheet.rename_frame.bind(coord, new_name))
 	else:
 		refresh()
 
@@ -511,7 +515,7 @@ func _on_button_clicked(item: TreeItem, _column: int, id: int, _button: int) -> 
 	var sheet := Global.spritesheet
 	var pin: bool = not sheet.placements[coord].get("pinned", false)
 	Global.document.perform(
-		"Pin frame" if pin else "Unpin frame",
+		L10n.mark("Pin frame") if pin else L10n.mark("Unpin frame"),
 		sheet.set_pinned.bind([coord] as Array[Vector2i], pin)
 	)
 

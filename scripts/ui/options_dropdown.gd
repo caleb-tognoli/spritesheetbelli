@@ -68,7 +68,7 @@ func add_field(
 		var button := Button.new()
 		button.icon = RESET_ICON
 		button.flat = true
-		button.tooltip_text = tr("Reset %s") % label_text
+		button.tooltip_text = tr("Reset %s") % tr(label_text)
 		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(reset)
 		button.pressed.connect(update_text)

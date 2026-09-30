@@ -44,7 +44,7 @@ var detect_box := HBoxContainer.new()
 var merge_distance := SpinBox.new()
 var align_option := OptionButton.new()
 ## Opens the rarely needed offset and spacing fields in a floating panel
-var more_options_btn := OptionsDropdown.new("Offset & Spacing")
+var more_options_btn := OptionsDropdown.new(L10n.mark("Offset & Spacing"))
 ## Keeps the sprites where they are in the image, in the packed layout
 var keep_layout := CheckBox.new()
 ## Makes a colour transparent before cutting, on for sheets drawn on a solid colour, in a
@@ -497,9 +497,11 @@ func _show_cut(sheet: Spritesheet) -> void:
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
 	preview_area.show_notice("")
-	slice_info.text = tr("%d frames") % spritesheet.frames.size()
-	if not spritesheet.animations.is_empty():
-		slice_info.text += tr(" · %d animations") % spritesheet.animations.size()
+	var count := spritesheet.frames.size()
+	slice_info.text = tr_n("%d frame", "%d frames", count) % count
+	var animations := spritesheet.animations.size()
+	if animations > 0:
+		slice_info.text += " · " + tr_n("%d animation", "%d animations", animations) % animations
 
 
 func _build_cut_controls() -> void:
@@ -630,7 +632,7 @@ func add_spritesheet_to_global() -> void:
 	if get_cut() == Cut.DATA:
 		own_colors = sheet_data.get_own_colors()
 	Global.document.perform(
-		"Add spritesheet", add_sheet.bind(target, spritesheet, lock_empty, own_colors)
+		L10n.mark("Add spritesheet"), add_sheet.bind(target, spritesheet, lock_empty, own_colors)
 	)
 	frames_added.emit()
 	close_requested.emit()
@@ -699,24 +701,24 @@ func add_selected_frames_to_global() -> void:
 		cells.append(spritesheet.get_cell_data(coord))
 	var target := Global.spritesheet
 	Global.document.perform(
-		"Add frames", target.add_cells.bind(cells, Settings.get_value(&"add_mode"))
+		L10n.mark("Add frames"), target.add_cells.bind(cells, Settings.get_value(&"add_mode"))
 	)
 	frames_added.emit()
 	close_requested.emit()
 
 
 func _show_slice_info(unused: Vector2i) -> void:
-	slice_info.text = tr("%d frames") % spritesheet.frames.size()
+	var count := spritesheet.frames.size()
+	slice_info.text = tr_n("%d frame", "%d frames", count) % count
 	# Over the preview, so the bar above doesn't change width
-	var parts: PackedStringArray = []
-	if unused.x > 0:
-		parts.append(tr("%d px on the right") % unused.x)
-	if unused.y > 0:
-		parts.append(tr("%d px at the bottom") % unused.y)
-	preview_area.show_notice(
-		tr("%s not used") % " and ".join(parts) if parts else "",
-		"The image doesn't divide evenly into this grid"
-	)
+	var notice := ""
+	if unused.x > 0 and unused.y > 0:
+		notice = (tr("%d px on the right and %d px at the bottom not used") % [unused.x, unused.y])
+	elif unused.x > 0:
+		notice = tr("%d px on the right not used") % unused.x
+	elif unused.y > 0:
+		notice = tr("%d px at the bottom not used") % unused.y
+	preview_area.show_notice(notice, L10n.mark("The image doesn't divide evenly into this grid"))
 
 
 ## Sets the most [param field] takes without cutting the image again

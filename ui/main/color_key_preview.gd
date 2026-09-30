@@ -84,8 +84,8 @@ func remove(color: Color, tolerance: float) -> void:
 	if coords.is_empty():
 		return
 	await _edit_in_background.call(
-		"Remove background",
-		"Removing background",
+		L10n.mark("Remove background"),
+		tr("Removing background"),
 		func(img: Image) -> Image:
 			ImageUtils.color_key(img, color, tolerance)
 			return img,
@@ -111,9 +111,9 @@ func _on_canceled() -> void:
 func _update_note() -> void:
 	var count := get_target_coords().size()
 	dropdown.note.text = (
-		tr("In %d selected frames") % count
+		tr_n("In %d selected frame", "In %d selected frames", count) % count
 		if not preview.get_selected_coords().is_empty()
-		else tr("In all %d frames") % count
+		else tr_n("In %d frame", "In all %d frames", count) % count
 	)
 	dropdown.note.visible = true
 	dropdown.confirm_button.disabled = count == 0

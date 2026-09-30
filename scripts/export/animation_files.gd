@@ -4,9 +4,9 @@ class_name AnimationFiles
 ## names of sprites (see [method SpritesheetExporter.fill_tokens]).
 
 ## The tokens of their name patterns, with what they give
-const TOKENS := {
-	"animation": "The animation's name",
-	"count": "How many frames its file has",
+const TOKENS := {  # L10n.mark
+	&"animation": "The animation's name",
+	&"count": "How many frames its file has",
 }
 
 

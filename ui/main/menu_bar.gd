@@ -5,7 +5,7 @@ extends MenuBar
 const POPUP_THEME := preload("res://resources/themes/popup_menu_theme.tres")
 ## Submenus of actions, shown when hovering them: [code][label, action ids, icon][/code],
 ## and for a toolbar button that opens one, a description for its tooltip
-const SUBMENUS := {
+const SUBMENUS := {  # L10n.mark
 	&"transform_menu":
 	[
 		"Transform",
@@ -49,7 +49,7 @@ const SUBMENUS := {
 		preload("res://assets/icons/Animation.svg"),
 	],
 }
-const MENUS := {
+const MENUS := {  # L10n.mark
 	"File":
 	[
 		&"new",
@@ -168,5 +168,5 @@ func build() -> void:
 		var ids: Array[StringName] = []
 		ids.assign(MENUS[title])
 		var submenus := SUBMENUS.duplicate()
-		submenus[&"open_recent"] = ["Open Recent", recent_files]
+		submenus[&"open_recent"] = [L10n.mark("Open Recent"), recent_files]
 		popup.set_actions(ids, submenus)

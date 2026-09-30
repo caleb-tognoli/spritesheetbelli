@@ -258,7 +258,7 @@ func test_gamemaker_strips() -> void:
 	assert_true(dialog.background_picker.visible)
 	assert_eq(dialog.target_list.get_item_text(0), "hero · GameMaker strips")
 	assert_eq(rows.example.text, "For example: walk_strip2.png")
-	assert_eq(dialog.output_info.text, "1 strips of 8×8 px frames")
+	assert_eq(dialog.output_info.text, "1 strip of 8×8 px frames")
 	rows.strip_pattern.line_edit.text = "spr_{animation}_strip{count}"
 	rows.strip_pattern.line_edit.text_changed.emit(rows.strip_pattern.line_edit.text)
 	assert_eq(rows.example.text, "For example: spr_walk_strip2.png")
@@ -266,7 +266,7 @@ func test_gamemaker_strips() -> void:
 	assert_true(dialog.scale_rows.scales.visible)
 	type_scales("1, 2")
 	assert_eq(rows.example.text, "For example: spr_walk_strip2.png, spr_walk@2x_strip2.png")
-	assert_eq(dialog.output_info.text, "1 strips of 8×8 px frames", "at each scale")
+	assert_eq(dialog.output_info.text, "1 strip of 8×8 px frames", "at each scale")
 	dialog.hide()
 	assert_eq(
 		ExportTarget.list(sheet)[0].options.strip_name_pattern, "spr_{animation}_strip{count}"

@@ -58,6 +58,8 @@ func _init() -> void:
 	search.keep_editing_on_text_submit = true
 	box.add_child(search)
 	list.columns = 2
+	# Entries are translated when listed, and have names of animations and exports
+	list.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	list.hide_root = true
 	list.select_mode = Tree.SELECT_ROW
 	list.focus_mode = Control.FOCUS_NONE
@@ -131,7 +133,7 @@ func get_entries() -> Array[Entry]:
 		var entry := Entry.new()
 		entry.key = id
 		entry.name = tr(action.label)
-		entry.text = tr(paths[id]) + " › " + entry.name if paths.has(id) else entry.name
+		entry.text = "%s › %s" % [paths[id], entry.name] if paths.has(id) else entry.name
 		entry.shortcut = Actions.get_shortcut_text(id)
 		entry.tooltip = Actions.get_tooltip(id)
 		entry.icon = action.icon
@@ -159,19 +161,21 @@ func get_entries() -> Array[Entry]:
 	return entries
 
 
-## Where each action is in the main menu, like "Frame › Align in Cell" for Top, by id, in
-## the order of the menus
+## Where each action is in the main menu, translated, like "Frame › Align in Cell" for Top,
+## by id, in the order of the menus
 static func get_menu_paths() -> Dictionary:
 	var paths := {}
 	for menu: String in MainMenuBar.MENUS:
+		var menu_name := TranslationServer.translate(menu)
 		for id: StringName in MainMenuBar.MENUS[menu]:
 			if MainMenuBar.SUBMENUS.has(id):
 				var submenu: Array = MainMenuBar.SUBMENUS[id]
+				var submenu_name := TranslationServer.translate(submenu[0])
 				for inside: StringName in submenu[1]:
 					if inside and not paths.has(inside):
-						paths[inside] = "%s › %s" % [menu, submenu[0]]
+						paths[inside] = "%s › %s" % [menu_name, submenu_name]
 			elif id and not paths.has(id):
-				paths[id] = menu
+				paths[id] = menu_name
 	return paths
 
 

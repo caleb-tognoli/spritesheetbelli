@@ -5,7 +5,11 @@ extends RefCounted
 
 enum Mode { LOOP, PING_PONG, ONCE }
 
-const MODE_NAMES := {Mode.ONCE: "Once", Mode.LOOP: "Loop", Mode.PING_PONG: "Ping-pong"}
+const MODE_NAMES := {  # L10n.mark
+	Mode.ONCE: "Once",
+	Mode.LOOP: "Loop",
+	Mode.PING_PONG: "Ping-pong",
+}
 ## The colour of an animation that has none yet, see [member color]
 const NO_COLOR := Color(0, 0, 0, 0)
 ## Colours new animations get, see [method pick_color]: hues evenly around the wheel, all

@@ -25,10 +25,10 @@ static func load_file(path: String) -> Dictionary:
 static func decode(bytes: PackedByteArray) -> Dictionary:
 	var header := bytes.slice(0, 6).get_string_from_ascii()
 	if bytes.size() < 13 or header not in ["GIF87a", "GIF89a"]:
-		return {"error": "This isn't a GIF image."}
+		return {"error": TranslationServer.translate("This isn't a GIF image.")}
 	var size := Vector2i(bytes.decode_u16(6), bytes.decode_u16(8))
 	if size.x <= 0 or size.y <= 0:
-		return {"error": "This GIF is empty."}
+		return {"error": TranslationServer.translate("This GIF is empty.")}
 	var flags := bytes[10]
 	var at := 13
 	var global_palette := PackedByteArray()
@@ -105,7 +105,7 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 		transparent = -1
 		disposal = 0
 	if frames.is_empty():
-		return {"error": "This GIF has no frames."}
+		return {"error": TranslationServer.translate("This GIF has no frames.")}
 	return {"frames": frames, "delays": delays, "loop": loop}
 
 

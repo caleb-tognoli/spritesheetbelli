@@ -14,17 +14,23 @@ var _updating := false
 
 
 func _init() -> void:
-	super("Spacing & Padding")
+	super(L10n.mark("Spacing & Padding"))
 	tooltip_text = "Empty pixels between frames and around the sheet, and extruded edges"
 	for entry: Array in [
-		[spacing, "Spacing", "Empty pixels between frames"],
-		[padding, "Padding", "Empty pixels around the whole sheet or each page"],
+		[spacing, L10n.mark("Spacing"), L10n.mark("Empty pixels between frames")],
+		[
+			padding,
+			L10n.mark("Padding"),
+			L10n.mark("Empty pixels around the whole sheet or each page")
+		],
 		[
 			extrude,
-			"Extrude edges",
-			(
-				"Repeats each frame's edge pixels outward, so scaled or filtered sprites "
-				+ "don't pick up their neighbours' colours"
+			L10n.mark("Extrude edges"),
+			L10n.mark(
+				(
+					"Repeats each frame's edge pixels outward, so scaled or filtered sprites "
+					+ "don't pick up their neighbours' colours"
+				)
 			)
 		],
 	]:
@@ -68,7 +74,11 @@ func _changed() -> void:
 
 func _summary() -> String:
 	var parts: PackedStringArray = []
-	for entry: Array in [[spacing, "Spacing %d"], [padding, "Padding %d"], [extrude, "Extrude %d"]]:
+	for entry: Array in [
+		[spacing, L10n.mark("Spacing %d")],
+		[padding, L10n.mark("Padding %d")],
+		[extrude, L10n.mark("Extrude %d")],
+	]:
 		var spin: SpinBox = entry[0]
 		if spin.value > 0:
 			parts.append(tr(entry[1]) % spin.value)

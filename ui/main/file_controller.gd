@@ -3,8 +3,10 @@ extends Node
 ## Opening, saving and adding files, with the dialogs they need. [member exports] writes
 ## exports.
 
-const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"
-const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp, *.gif ; Images"
+## Filters of file dialogs, which translate what comes after the ;
+const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"  # L10n.mark
+const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp, *.gif ; Images"  # L10n.mark
+# L10n.mark
 const DATA_FILTER := "*.json, *.atlas ; Spritesheet data (TexturePacker, Aseprite, Phaser, libGDX)"
 ## Work above these sizes shows a "please wait" overlay first
 const SLOW_PIXELS := 4_000_000
@@ -21,14 +23,16 @@ var unsaved_changes_dialog := ConfirmationDialog.new()
 var after_unsaved_changes: Callable
 var open_file_dialogs: Array[FileDialog] = []
 var open_dialog := _create_file_dialog(
-	"Open", FileDialog.FILE_MODE_OPEN_FILE, [PROJECT_FILTER, IMAGE_FILTER, DATA_FILTER]
+	L10n.mark("Open"), FileDialog.FILE_MODE_OPEN_FILE, [PROJECT_FILTER, IMAGE_FILTER, DATA_FILTER]
 )
 var save_project_dialog := _create_file_dialog(
-	"Save Project", FileDialog.FILE_MODE_SAVE_FILE, [PROJECT_FILTER]
+	L10n.mark("Save Project"), FileDialog.FILE_MODE_SAVE_FILE, [PROJECT_FILTER]
 )
-var open_folder_dialog := _create_file_dialog("Add Folder", FileDialog.FILE_MODE_OPEN_DIR, [])
+var open_folder_dialog := _create_file_dialog(
+	L10n.mark("Add Folder"), FileDialog.FILE_MODE_OPEN_DIR, []
+)
 var replace_image_dialog := _create_file_dialog(
-	"Replace Image", FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
+	L10n.mark("Replace Image"), FileDialog.FILE_MODE_OPEN_FILE, [IMAGE_FILTER]
 )
 var _replace_coord := Vector2i.ZERO
 ## Writes exports, see [ExportController]
@@ -64,7 +68,7 @@ func _ready() -> void:
 			_linking(path)
 			var sheet := Global.spritesheet
 			Global.document.perform(
-				"Replace image",
+				L10n.mark("Replace image"),
 				sheet.replace_frame.bind(_replace_coord, img, FrameSource.for_file(path))
 			)
 	)
@@ -159,7 +163,9 @@ func add_sprites_from_paths(paths: PackedStringArray) -> void:
 ## undoable step named [param action_name] that also links [param folders] (see
 ## [FolderWatcher]). Returns how many files were added.
 static func add_image_files(
-	paths: PackedStringArray, action_name := "Add sprites", folders: PackedStringArray = []
+	paths: PackedStringArray,
+	action_name := L10n.mark("Add sprites"),
+	folders: PackedStringArray = []
 ) -> int:
 	# The OS dialog doesn't return files in the order they were selected
 	# (Windows puts the last clicked file first), so sort them by name instead.
@@ -173,7 +179,8 @@ static func add_image_files(
 
 	var loaded := await ImageLoader.load_all_frames(
 		PackedStringArray(sorted_paths),
-		func(done: int, total: int) -> void: Notify.progress("Loading images", done, total)
+		func(done: int, total: int) -> void:
+			Notify.progress(TranslationServer.translate("Loading images"), done, total)
 	)
 	Notify.hide_progress()
 	var imgs: Array[Image] = []
@@ -239,7 +246,7 @@ func add_sprites_from_folder(folder: String) -> void:
 		if not link_empty_folders([folder]):
 			Notify.error(tr("There are no images in %s.") % folder.get_file())
 		return
-	await add_image_files(paths, "Add sprites", _to_link([folder]))
+	await add_image_files(paths, L10n.mark("Add sprites"), _to_link([folder]))
 
 
 ## Links [param folders], which have no images, as one undoable step, so images saved there
@@ -251,7 +258,7 @@ static func link_empty_folders(folders: PackedStringArray) -> bool:
 		return false
 	var sheet := Global.spritesheet
 	Global.document.perform(
-		"Link folder",
+		L10n.mark("Link folder"),
 		func() -> void:
 			for folder in linked:
 				sheet.link_folder(folder)
@@ -300,7 +307,10 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 	var folders: PackedStringArray = []
 	for path in paths:
 		if ProjectFile.is_project_path(path):
-			confirm_unsaved_changes("opening another file", open_project.bind(path))
+			confirm_unsaved_changes(
+				L10n.mark("Save changes to %s before opening another file?"),
+				open_project.bind(path)
+			)
 			return
 		if DirAccess.dir_exists_absolute(path):
 			images.append_array(get_images_in_folder(path))
@@ -310,16 +320,18 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 
 	if images.is_empty():
 		if not link_empty_folders(folders):
-			Notify.error("Drop images, folders of images, a spritesheet data file or a project.")
+			Notify.error(
+				tr("Drop images, folders of images, a spritesheet data file or a project.")
+			)
 	elif images.size() == 1 and not DirAccess.dir_exists_absolute(paths[0]):
 		await show_add_spritesheet_window(images[0])
 	else:
-		await add_image_files(images, "Add sprites", _to_link(folders))
+		await add_image_files(images, L10n.mark("Add sprites"), _to_link(folders))
 
 
 func show_add_spritesheet_window(spritesheet_path: String) -> void:
 	await Notify.run_busy(
-		"Opening %s" % spritesheet_path.get_file(),
+		tr("Opening %s") % spritesheet_path.get_file(),
 		_show_add_spritesheet_window.bind(spritesheet_path),
 		is_big_file(spritesheet_path)
 	)
@@ -346,10 +358,11 @@ func add_gif(path: String) -> void:
 		opened.set_frame_scale(Vector2.ONE, Settings.get_value(&"resize_filter"))
 		GifDecoder.add_to_sheet(opened, gif, anim_name, path)
 		Global.document.load_state(opened.get_state())
-		Global.document.history_start = "Opened %s" % path.get_file()
+		Global.document.set_history_start(L10n.mark("Opened %s"), path)
 	else:
 		Global.document.perform(
-			"Add GIF", GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, anim_name, path)
+			L10n.mark("Add GIF"),
+			GifDecoder.add_to_sheet.bind(Global.spritesheet, gif, anim_name, path)
 		)
 
 
@@ -410,14 +423,18 @@ func _create_unsaved_changes_dialog() -> void:
 	)
 
 
-## Runs [param then] right away, or after asking to save when there are unsaved changes
-func confirm_unsaved_changes(before: String, then: Callable) -> void:
+## Runs [param then] right away, or after asking to save when there are unsaved changes,
+## with [param question], untranslated, like "Save changes to %s before quitting?", with
+## the file's name in its %s
+func confirm_unsaved_changes(question: String, then: Callable) -> void:
 	if not Global.document.is_dirty or Global.spritesheet.is_empty():
 		then.call()
 		return
 	after_unsaved_changes = then
-	var file_name := Global.document.path.get_file() if Global.document.path else "the spritesheet"
-	unsaved_changes_dialog.dialog_text = tr("Save changes to %s before %s?") % [file_name, before]
+	var file_name := Global.document.path.get_file()
+	if not file_name:
+		file_name = tr("the spritesheet")
+	unsaved_changes_dialog.dialog_text = tr(question) % file_name
 	unsaved_changes_dialog.popup_centered()
 
 
@@ -459,7 +476,7 @@ static func _suggest(dialog: FileDialog, path: String) -> void:
 
 
 func save_project(path: String) -> bool:
-	return await Notify.run_busy("Saving", _save_project.bind(path), is_big_sheet())
+	return await Notify.run_busy(tr("Saving"), _save_project.bind(path), is_big_sheet())
 
 
 func _save_project(path: String) -> bool:
@@ -487,7 +504,7 @@ func _save_project(path: String) -> bool:
 
 func open_project(path: String) -> bool:
 	return await Notify.run_busy(
-		"Opening %s" % path.get_file(), _open_project.bind(path), is_big_file(path)
+		tr("Opening %s") % path.get_file(), _open_project.bind(path), is_big_file(path)
 	)
 
 
@@ -623,20 +640,27 @@ static func view_from_json(value: Variant) -> Dictionary:
 
 
 func new_spritesheet() -> void:
-	confirm_unsaved_changes("creating a new one", Global.document.reset)
+	confirm_unsaved_changes(
+		L10n.mark("Save changes to %s before creating a new one?"), Global.document.reset
+	)
 
 
 ## Opens a recent file, asking to save changes first
 func open_recent(path: String) -> void:
 	if not FileAccess.file_exists(path):
-		Notify.error("%s no longer exists." % path)
+		Notify.error(tr("%s no longer exists.") % path)
 		return
-	confirm_unsaved_changes("opening another file", open_path.bind(path))
+	confirm_unsaved_changes(
+		L10n.mark("Save changes to %s before opening another file?"), open_path.bind(path)
+	)
 
 
 func open_spritesheet() -> void:
 	# The spritesheet is only reset once a file is picked, so canceling keeps the current one
-	confirm_unsaved_changes("opening another file", popup_file_dialog.bind(open_dialog))
+	confirm_unsaved_changes(
+		L10n.mark("Save changes to %s before opening another file?"),
+		popup_file_dialog.bind(open_dialog)
+	)
 
 
 static func is_big_file(path: String) -> bool:

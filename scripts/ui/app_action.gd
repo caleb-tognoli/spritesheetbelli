@@ -1,6 +1,7 @@
 class_name AppAction
 extends RefCounted
-## A user command registered in [code]Actions[/code].
+## A user command registered in [code]Actions[/code]. Its texts are untranslated, marked
+## with [method L10n.mark], and translated where they're shown.
 
 var id: StringName
 var label: String

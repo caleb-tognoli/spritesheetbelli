@@ -57,26 +57,26 @@ func _fill() -> void:
 		child.free()
 	_rows.clear()
 	for menu: String in MainMenuBar.MENUS:
-		_add_row(menu, "", true)
+		_add_row(tr(menu), "", true)
 		for id: StringName in MainMenuBar.MENUS[menu]:
 			# Actions in submenus are listed where the submenu is, named after it
 			if MainMenuBar.SUBMENUS.has(id):
 				var submenu: Array = MainMenuBar.SUBMENUS[id]
 				for inside: StringName in submenu[1]:
-					_add_action_row(inside, submenu[0] + ": ")
+					_add_action_row(inside, submenu[0])
 			else:
 				_add_action_row(id)
-	_add_row("Preview", "", true)
-	_add_row("Pan", "Middle mouse drag or Space+drag")
-	_add_row("Zoom", "Mouse wheel")
-	_add_row("Select frames", "Click or drag")
-	_add_row("Select or unselect a frame", "Ctrl+click")
-	_add_row("Select a range of frames", "Shift+click")
-	_add_row("Select the next frame", "Arrow keys (Shift adds)")
-	_add_row("Copy frames in the grid (move mode)", "Alt+drag")
-	_add_row("Move frames in their cells (move mode)", "Arrow keys (Shift: 8 px)")
-	_add_row("Lock or unlock an empty cell", "Click it")
-	_add_row("Frame actions", "Right-click")
+	_add_row(tr("Preview"), "", true)
+	_add_row(tr("Pan"), tr("Middle mouse drag or Space+drag"))
+	_add_row(tr("Zoom"), tr("Mouse wheel"))
+	_add_row(tr("Select frames"), tr("Click or drag"))
+	_add_row(tr("Select or unselect a frame"), tr("Ctrl+click"))
+	_add_row(tr("Select a range of frames"), tr("Shift+click"))
+	_add_row(tr("Select the next frame"), tr("Arrow keys (Shift adds)"))
+	_add_row(tr("Copy frames in the grid (move mode)"), tr("Alt+drag"))
+	_add_row(tr("Move frames in their cells (move mode)"), tr("Arrow keys (Shift: 8 px)"))
+	_add_row(tr("Lock or unlock an empty cell"), tr("Click it"))
+	_add_row(tr("Frame actions"), tr("Right-click"))
 	search.clear()
 	filter()
 	search.grab_focus.call_deferred()
@@ -148,11 +148,15 @@ func _show_row(row: Dictionary, shown: bool) -> void:
 		label.visible = shown
 
 
-func _add_action_row(id: StringName, prefix := "") -> void:
+## Adds a row for the action [param id], named after [param submenu] when it's in one
+func _add_action_row(id: StringName, submenu := "") -> void:
 	if not id.is_empty() and Actions.has(id):
-		var label := Actions.get_action(id).label.trim_suffix("…")
+		var label := tr(Actions.get_action(id).label).trim_suffix("…")
+		if submenu:
+			# Like "Align in Cell: Top"
+			label = tr("%s: %s") % [tr(submenu), label]
 		var keys := Actions.get_shortcut_texts(id)
-		_add_row(prefix + label, ", ".join(keys), false, keys)
+		_add_row(label, ", ".join(keys), false, keys)
 
 
 ## Adds a row of [param text] and [param shortcut]. [param keys] are those of an action,

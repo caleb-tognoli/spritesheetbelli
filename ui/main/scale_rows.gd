@@ -18,7 +18,7 @@ func add_to(dialog: ExportDialog, grid: GridContainer) -> void:
 		+ "bigger, with its own data file. Frames are resized from their original images "
 		+ "with the sheet's filter; padding, spacing and extrusion grow with them."
 	)
-	dialog.add_row(grid, "Scales", scales, ExportOptions.SCALED_TARGETS)
+	dialog.add_row(grid, L10n.mark("Scales"), scales, ExportOptions.SCALED_TARGETS)
 	suffix.use_tokens(
 		ExportOptions.SCALE_TOKENS, func() -> Dictionary: return {"scale": 2}, "scale"
 	)
@@ -31,7 +31,9 @@ func add_to(dialog: ExportDialog, grid: GridContainer) -> void:
 	suffix.line_edit.tooltip_text = suffix.tooltip_text
 	var several := func(options: ExportOptions) -> bool:
 		return options.get_scales() != PackedInt32Array([1])
-	dialog.add_row(grid, "Scale suffix", suffix, ExportOptions.SCALED_TARGETS, "", several)
+	dialog.add_row(
+		grid, L10n.mark("Scale suffix"), suffix, ExportOptions.SCALED_TARGETS, "", several
+	)
 	scales.text_changed.connect(changed.emit.unbind(1))
 	suffix.text_changed.connect(changed.emit.unbind(1))
 

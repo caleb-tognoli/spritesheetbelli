@@ -7,8 +7,12 @@ extends HBoxContainer
 signal path_changed(path: String)
 signal browse_pressed
 
-const NAMES := {
-	"png": "PNG Images", "jpg": "JPEG Images", "webp": "WebP Images", "gif": "GIF Images"
+## What file dialogs call files of each extension
+const NAMES := {  # L10n.mark
+	&"png": "PNG Images",
+	&"jpg": "JPEG Images",
+	&"webp": "WebP Images",
+	&"gif": "GIF Images",
 }
 const PATTERNS := {"jpg": "*.jpg, *.jpeg, *.jpe"}
 
@@ -47,20 +51,23 @@ func _init() -> void:
 
 ## Asks where to export a file with [param extension], or a folder when it's empty,
 ## starting from the path in the field or else [param suggested]. [param then] runs with
-## the path picked. A folder is asked for with [param folder_title].
-func browse(
-	suggested: String, extension: String, then := Callable(), folder_title := "Export Sprites"
-) -> void:
+## the path picked. A folder is asked for with [param folder_title], translated, or else
+## "Export Sprites".
+func browse(suggested: String, extension: String, then := Callable(), folder_title := "") -> void:
 	var start := path if path else suggested
 	file_dialog.file_mode = (
 		FileDialog.FILE_MODE_OPEN_DIR if extension.is_empty() else FileDialog.FILE_MODE_SAVE_FILE
 	)
 	# After the mode, which sets a title of its own
-	file_dialog.title = folder_title if extension.is_empty() else "Export"
+	if extension:
+		file_dialog.title = tr("Export")
+	else:
+		file_dialog.title = folder_title if folder_title else tr("Export Sprites")
 	file_dialog.filters = []
 	if extension:
 		var pattern: String = PATTERNS.get(extension, "*." + extension)
-		file_dialog.filters = ["%s ; %s" % [pattern, NAMES.get(extension, extension.to_upper())]]
+		var kind := tr(NAMES[extension]) if NAMES.has(extension) else extension.to_upper()
+		file_dialog.filters = ["%s ; %s" % [pattern, kind]]
 	# Cancelling a native dialog clears the name, so it's always set
 	if start.get_base_dir():
 		file_dialog.current_dir = start.get_base_dir()

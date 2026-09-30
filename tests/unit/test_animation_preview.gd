@@ -495,7 +495,7 @@ func test_frames_past_the_end_are_outside_the_sheet() -> void:
 	panel.new_button.pressed.emit()
 	window.frames_edit.text = "0-3"
 	window.frames_edit.text_submitted.emit(window.frames_edit.text)
-	assert_true("1 empty cells are skipped" in window.frames_info.text, window.frames_info.text)
+	assert_true("1 empty cell is skipped" in window.frames_info.text, window.frames_info.text)
 	assert_false("outside" in window.frames_info.text)
 	window.frames_edit.text = "0, 1, 8, 9"
 	window.frames_edit.text_submitted.emit(window.frames_edit.text)
@@ -504,7 +504,7 @@ func test_frames_past_the_end_are_outside_the_sheet() -> void:
 	window.frames_edit.text = "3, 9"
 	window.frames_edit.text_submitted.emit(window.frames_edit.text)
 	assert_true(
-		"(1 empty cells are skipped, 1 are outside the sheet)" in window.frames_info.text,
+		"(1 empty cell is skipped, 1 is outside the sheet)" in window.frames_info.text,
 		window.frames_info.text
 	)
 

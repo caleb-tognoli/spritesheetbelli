@@ -170,10 +170,15 @@ func apply() -> void:
 		_follow_renames(new_names)
 	if not added.is_empty():
 		working = true
-		var count := await FileController.add_image_files(added, "Add new sprites")
+		var count := await FileController.add_image_files(added, L10n.mark("Add new sprites"))
 		working = false
 		if count > 0:
-			Notify.toast(tr("Added %d new sprites from %s.") % [count, ", ".join(folder_names)])
+			Notify.toast(
+				(
+					tr_n("Added %d new sprite from %s.", "Added %d new sprites from %s.", count)
+					% [count, ", ".join(folder_names)]
+				)
+			)
 	_ask_about_deleted(deleted)
 
 
@@ -187,7 +192,7 @@ func _follow_renames(new_names: Dictionary) -> void:
 			document.source_hashes[new_names[path]] = document.source_hashes[path]
 			document.source_hashes.erase(path)
 	document.perform(
-		"Follow renamed files",
+		L10n.mark("Follow renamed files"),
 		func() -> void:
 			for coord: Vector2i in sheet.frame_sources.keys():
 				var source: Dictionary = sheet.frame_sources[coord]
@@ -213,7 +218,16 @@ func _ask_about_deleted(paths: PackedStringArray) -> void:
 	if _deleted_paths.size() > MAX_NAMES:
 		names.append("…")
 	dialog.dialog_text = (
-		tr("Remove %d frames whose files were deleted?") % frames + "\n\n" + ", ".join(names)
+		(
+			tr_n(
+				"Remove %d frame whose file was deleted?",
+				"Remove %d frames whose files were deleted?",
+				frames
+			)
+			% frames
+		)
+		+ "\n\n"
+		+ ", ".join(names)
 	)
 	dialog.popup_centered()
 
@@ -231,5 +245,5 @@ func _remove_deleted() -> void:
 		coords.append_array(FrameSource.get_linked(Global.spritesheet, path))
 	_deleted_paths.clear()
 	Global.document.perform(
-		"Remove frames of deleted files", Global.spritesheet.remove_frames.bind(coords)
+		L10n.mark("Remove frames of deleted files"), Global.spritesheet.remove_frames.bind(coords)
 	)

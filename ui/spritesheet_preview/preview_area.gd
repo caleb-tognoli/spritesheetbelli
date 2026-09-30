@@ -465,7 +465,7 @@ static func describe_packed_frame(
 static func describe_link(link: Dictionary, short_path := false) -> String:
 	var text: String = shorten_path(link.path) if short_path else link.path
 	if FrameSource.has_edits(link):
-		text += " " + TranslationServer.translate("(edited here)")
+		text = TranslationServer.translate("%s (edited here)") % text
 	return text
 
 

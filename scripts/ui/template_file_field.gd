@@ -29,7 +29,6 @@ func _init() -> void:
 	file_dialog.title = "Pick a Template"
 	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-	file_dialog.filters = ["*.template ; Templates", "* ; All files"]
 	file_dialog.use_native_dialog = true
 	add_child(file_dialog)
 
@@ -51,6 +50,7 @@ func pick() -> void:
 		return
 	if path:
 		file_dialog.current_path = path
+	file_dialog.filters = ["*.template ; " + tr("Templates"), "* ; " + tr("All files")]
 	file_dialog.popup_centered()
 
 

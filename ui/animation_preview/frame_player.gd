@@ -14,10 +14,10 @@ const ONION_ICON := preload("res://assets/icons/Onion.svg")
 const FIT_ICON := preload("res://assets/icons/CenterView.svg")
 ## The background choices, in the menu's order, with the value of the
 ## animation_background setting for each
-const BACKGROUNDS := [
-	[FrameStage.Background.CHECKERBOARD, "Checkerboard", "checkerboard"],
-	[FrameStage.Background.COLOR, "Colour…", "color"],
-	[FrameStage.Background.EXPORT, "Export Background", "export"],
+const BACKGROUNDS := [  # L10n.mark
+	[FrameStage.Background.CHECKERBOARD, "Checkerboard", &"checkerboard"],
+	[FrameStage.Background.COLOR, "Colour…", &"color"],
+	[FrameStage.Background.EXPORT, "Export Background", &"export"],
 ]
 
 var sheet: Spritesheet:

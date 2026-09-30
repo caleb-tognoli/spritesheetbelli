@@ -7,7 +7,7 @@ extends Node
 
 ## Pivots the pivot presets put frames at, from 0 to 1 across each frame, with the icon
 ## of the action to borrow
-const PIVOT_PRESETS := [
+const PIVOT_PRESETS := [  # L10n.mark
 	[&"pivot_center", "Centre", Vector2(0.5, 0.5), &"align_center"],
 	[&"pivot_top", "Top", Vector2(0.5, 0), &"align_top"],
 	[&"pivot_bottom", "Bottom", Vector2(0.5, 1), &"align_bottom"],
@@ -26,7 +26,7 @@ const GRID_ONLY_ACTIONS: Array[StringName] = [
 	&"move_row_down",
 ]
 ## What tooltips say after an action's name and shortcut, see [member AppAction.description]
-const DESCRIPTIONS := {
+const DESCRIPTIONS := {  # L10n.mark
 	&"layout_grid": "Frames in the cells of a grid",
 	&"layout_packed": "Frames packed tightly on pages",
 	&"tool_pivot": "Drag on a frame to put the pivot of the selected frames there",
@@ -132,8 +132,8 @@ func _build_sidebar() -> void:
 	var row := HBoxContainer.new()
 	var group := ButtonGroup.new()
 	for entry: Array in [
-		[layout_grid_btn, "Grid", &"layout_grid"],
-		[layout_packed_btn, "Packed", &"layout_packed"],
+		[layout_grid_btn, L10n.mark("Grid"), &"layout_grid"],
+		[layout_packed_btn, L10n.mark("Packed"), &"layout_packed"],
 	]:
 		var button: Button = entry[0]
 		button.text = entry[1]
@@ -155,7 +155,7 @@ func _build_sidebar() -> void:
 	atlas_panel.settings_changed.connect(
 		func(settings: AtlasSettings) -> void:
 			Global.document.perform(
-				"Atlas settings", Global.spritesheet.set_atlas_settings.bind(settings)
+				L10n.mark("Atlas settings"), Global.spritesheet.set_atlas_settings.bind(settings)
 			)
 	)
 	atlas_panel.repack_requested.connect(Actions.run.bind(&"repack"))
@@ -165,7 +165,7 @@ func _build_sidebar() -> void:
 			if key in [&"atlas_dedupe", &"atlas_power_of_two", &"atlas_square"]:
 				var sheet := Global.spritesheet
 				if sheet.layout == Spritesheet.Layout.PACKED:
-					Global.document.perform("Atlas settings", sheet.refresh_layout)
+					Global.document.perform(L10n.mark("Atlas settings"), sheet.refresh_layout)
 	)
 
 
@@ -196,7 +196,7 @@ func _on_grid_gaps_changed() -> void:
 	options.spacing = int(grid_gaps.spacing.value)
 	options.extrude = int(grid_gaps.extrude.value)
 	Global.document.perform(
-		"Spacing & padding", sheet.set_export_settings.bind(options.to_dictionary())
+		L10n.mark("Spacing & padding"), sheet.set_export_settings.bind(options.to_dictionary())
 	)
 
 
@@ -218,24 +218,33 @@ func register_actions() -> void:
 		Actions.get_action(id).is_available = grid
 	Actions.add(
 		&"layout_grid",
-		"Grid Layout",
+		L10n.mark("Grid Layout"),
 		func() -> void:
-			Global.document.perform("Grid layout", sheet.set_layout.bind(Spritesheet.Layout.GRID)),
+			Global.document.perform(
+				L10n.mark("Grid layout"), sheet.set_layout.bind(Spritesheet.Layout.GRID)
+			),
 		Callable(),
 		main.ICONS[&"layout_grid"],
 		grid
 	)
 	var pack := func() -> void:
-		Global.document.perform("Pack frames", sheet.set_layout.bind(Spritesheet.Layout.PACKED))
+		Global.document.perform(
+			L10n.mark("Pack frames"), sheet.set_layout.bind(Spritesheet.Layout.PACKED)
+		)
 		main.preview.fit_to_view()
 		# Without cells, the list is the way to find frames
 		Settings.set_value(&"show_sprites", true)
 	Actions.add(
-		&"layout_packed", "Packed Layout", pack, Callable(), main.ICONS[&"layout_packed"], packed
+		&"layout_packed",
+		L10n.mark("Packed Layout"),
+		pack,
+		Callable(),
+		main.ICONS[&"layout_packed"],
+		packed
 	)
 	Actions.add(
 		&"toggle_sprites",
-		"Sprites",
+		L10n.mark("Sprites"),
 		func() -> void: Settings.set_value(&"show_sprites", not sprites_panel.visible),
 		Callable(),
 		preload("res://assets/icons/FileList.svg"),
@@ -243,7 +252,7 @@ func register_actions() -> void:
 	)
 	Actions.add(
 		&"tool_pivot",
-		"Pivot Mode",
+		L10n.mark("Pivot Mode"),
 		main.preview_area.set_tool.bind(SpritesheetPreview.Tool.PIVOT),
 		Callable(),
 		main.ICONS[&"tool_pivot"],
@@ -252,10 +261,10 @@ func register_actions() -> void:
 	)
 	Actions.add(
 		&"repack",
-		"Pack Again",
+		L10n.mark("Pack Again"),
 		func() -> void:
 			Global.document.perform(
-				"Pack again",
+				L10n.mark("Pack again"),
 				func() -> void: sheet.set_placements(PackedLayout.arrange(sheet, true).placements)
 			),
 		func() -> bool: return not sheet.is_empty(),
@@ -274,12 +283,12 @@ func register_actions() -> void:
 	var toggle_pins := func() -> void:
 		var pin: bool = not all_pinned.call()
 		Global.document.perform(
-			"Pin frames" if pin else "Unpin frames",
+			L10n.mark("Pin frames") if pin else L10n.mark("Unpin frames"),
 			sheet.set_pinned.bind(main.get_target_coords(), pin)
 		)
 	Actions.add(
 		&"pin_toggle",
-		"Pinned",
+		L10n.mark("Pinned"),
 		toggle_pins,
 		has_frames,
 		main.ICONS[&"pin_toggle"],
@@ -295,7 +304,7 @@ func register_actions() -> void:
 		Actions.add(
 			preset[0],
 			preset[1],
-			main.edit_targets.bind("Set pivot", set_pivots),
+			main.edit_targets.bind(L10n.mark("Set pivot"), set_pivots),
 			has_frames,
 			main.ICONS.get(preset[3]),
 			Callable(),
@@ -303,9 +312,10 @@ func register_actions() -> void:
 		)
 	Actions.add(
 		&"pivot_clear",
-		"Remove Pivot",
+		L10n.mark("Remove Pivot"),
 		main.edit_targets.bind(
-			"Remove pivot", func(coords: Array[Vector2i]) -> void: sheet.set_pivots(coords, null)
+			L10n.mark("Remove pivot"),
+			func(coords: Array[Vector2i]) -> void: sheet.set_pivots(coords, null)
 		),
 		has_frames,
 		main.ICONS[&"pivot_clear"],

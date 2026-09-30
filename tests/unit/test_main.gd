@@ -374,20 +374,26 @@ func test_selecting_is_in_the_menu_not_the_toolbar() -> void:
 
 func test_closing_with_unsaved_changes_asks_first() -> void:
 	var quits := [0]
-	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)
+	main.files.confirm_unsaved_changes(
+		"Save changes to %s before closing?", func() -> void: quits[0] += 1
+	)
 	assert_eq(quits[0], 1, "nothing to save: closes right away")
 
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
-	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)
+	main.files.confirm_unsaved_changes(
+		"Save changes to %s before closing?", func() -> void: quits[0] += 1
+	)
 	assert_true(main.files.unsaved_changes_dialog.visible, "asks")
 	assert_eq(quits[0], 1)
 	main.files.unsaved_changes_dialog.custom_action.emit(&"discard")
 	assert_eq(quits[0], 2, "Don't Save closes")
 
 	Global.document.path = dir.path_join("close_save.sbelli")
-	main.files.confirm_unsaved_changes("closing", func() -> void: quits[0] += 1)
+	main.files.confirm_unsaved_changes(
+		"Save changes to %s before closing?", func() -> void: quits[0] += 1
+	)
 	main.files.unsaved_changes_dialog.confirmed.emit()
 	assert_eq(quits[0], 3, "Save saves, then closes")
 	assert_false(Global.document.is_dirty)
@@ -581,7 +587,10 @@ func test_pixel_perfect_zoom_with_the_interface_scaled() -> void:
 func test_formatted_text_is_translatable() -> void:
 	var german := Translation.new()
 	german.locale = "de"
-	german.add_message("%d frames · %d×%d grid · %d×%d px", "%d Frames · %d×%d Raster · %d×%d px")
+	german.add_plural_message(
+		"%d frame · %d×%d grid · %d×%d px",
+		["%d Frame · %d×%d Raster · %d×%d px", "%d Frames · %d×%d Raster · %d×%d px"]
+	)
 	TranslationServer.add_translation(german)
 	var previous := TranslationServer.get_locale()
 	TranslationServer.set_locale("de")
@@ -590,7 +599,7 @@ func test_formatted_text_is_translatable() -> void:
 	var text: String = main.sheet_info.text
 	TranslationServer.set_locale(previous)
 	TranslationServer.remove_translation(german)
-	assert_eq(text, "1 Frames · 1×1 Raster · 16×16 px")
+	assert_eq(text, "1 Frame · 1×1 Raster · 16×16 px")
 
 
 func test_view_fits_when_first_frames_appear() -> void:

@@ -114,9 +114,9 @@ func setup(sheet_preview: SpritesheetPreview) -> void:
 			)
 	)
 	dock = get_parent() as BottomDock
-	dock_button = dock.add_dock(self, "Animation", ANIMATION_ICON)
+	dock_button = dock.add_dock(self, L10n.mark("Animation"), ANIMATION_ICON)
 	dock_button.tooltip_text = Actions.get_tooltip(
-		&"toggle_animation", "Show or hide the animation panel"
+		&"toggle_animation", L10n.mark("Show or hide the animation panel")
 	)
 	dock.dock_changed.connect(_on_dock_changed)
 	columns.drag_ended.connect(_on_preview_width_dragged)
@@ -188,7 +188,8 @@ func add_animation() -> void:
 		cells = sheet.get_sorted_coords()
 	var anim_name := sheet.get_unique_animation_name()
 	var index: int = Global.document.perform(
-		"New animation", sheet.add_animation.bind(SheetAnimation.create(anim_name, cells))
+		L10n.mark("New animation"),
+		sheet.add_animation.bind(SheetAnimation.create(anim_name, cells))
 	)
 	select_animation(index)
 	detail.focus_name()
@@ -200,7 +201,8 @@ func duplicate_animation() -> void:
 	if _selected >= 0:
 		select_animation(
 			Global.document.perform(
-				"Duplicate animation", Global.spritesheet.duplicate_animation.bind(_selected)
+				L10n.mark("Duplicate animation"),
+				Global.spritesheet.duplicate_animation.bind(_selected)
 			)
 		)
 
@@ -211,7 +213,7 @@ func mirror_animation() -> void:
 	if _selected < 0:
 		return
 	var added: int = Global.document.perform(
-		"Mirror animation", SheetAnimation.mirror.bind(Global.spritesheet, _selected)
+		L10n.mark("Mirror animation"), SheetAnimation.mirror.bind(Global.spritesheet, _selected)
 	)
 	if added >= 0:
 		select_animation(added)
@@ -220,7 +222,7 @@ func mirror_animation() -> void:
 func remove_animation() -> void:
 	if _selected >= 0:
 		Global.document.perform(
-			"Delete animation", Global.spritesheet.remove_animation.bind(_selected)
+			L10n.mark("Delete animation"), Global.spritesheet.remove_animation.bind(_selected)
 		)
 
 

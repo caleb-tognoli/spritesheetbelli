@@ -152,9 +152,10 @@ func reload(paths: PackedStringArray, keep_edits: bool) -> void:
 		for coord in FrameSource.get_linked(Global.spritesheet, path):
 			if coord not in coords:
 				coords.append(coord)
-	var action_name := (
-		"Reload %s" % paths[0].get_file() if paths.size() == 1 else "Reload %d files" % paths.size()
-	)
+	# Translated here, having a name in it
+	var action_name := tr("Reload %s") % paths[0].get_file()
+	if paths.size() > 1:
+		action_name = tr_n("Reload %d file", "Reload %d files", paths.size()) % paths.size()
 	await reload_frames(coords, keep_edits, action_name)
 
 
@@ -173,7 +174,8 @@ func reload_frames(coords: Array[Vector2i], keep_edits: bool, action_name: Strin
 		if key not in keys:
 			keys.append(key)
 	_reloading = true
-	var progress := func(done: int, total: int) -> void: Notify.progress("Reloading", done, total)
+	var progress := func(done: int, total: int) -> void:
+		Notify.progress(tr("Reloading"), done, total)
 	var files := await Parallel.map(
 		keys.size(), func(i: int) -> Variant: return FrameSource.load_key(keys[i]), progress
 	)
@@ -210,7 +212,11 @@ func reload_frames(coords: Array[Vector2i], keep_edits: bool, action_name: Strin
 	if reloaded < coords.size():
 		Notify.toast(
 			(
-				tr("%d frames weren't found in the changed files and were left as they were.")
+				tr_n(
+					"%d frame wasn't found in the changed files and was left as it was.",
+					"%d frames weren't found in the changed files and were left as they were.",
+					coords.size() - reloaded
+				)
 				% (coords.size() - reloaded)
 			),
 			6.0

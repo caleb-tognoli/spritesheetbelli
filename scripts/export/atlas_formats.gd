@@ -127,7 +127,7 @@ static func get_template(format: String) -> Template:
 static func get_error(format: String) -> String:
 	var path := get_template_path(format)
 	if not FileAccess.file_exists(path):
-		return "Could not find %s." % path
+		return TranslationServer.translate("Could not find %s.") % path
 	var error := get_template(format).error
 	return "%s: %s" % [path.get_file(), error] if error else ""
 
@@ -147,7 +147,7 @@ static func get_header(format: String) -> Dictionary:
 static func get_format_name(format: String) -> String:
 	var fallback := get_template_path(format).get_file().trim_suffix("." + EXTENSION)
 	var name := str(get_header(format).get("name", fallback))
-	return name + " (yours)" if replaces_bundled(format) else name
+	return TranslationServer.translate("%s (yours)") % name if replaces_bundled(format) else name
 
 
 ## The extension of the format's file, or else the one in its template's file name, like

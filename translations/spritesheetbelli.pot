@@ -1,0 +1,3023 @@
+# Template for translations of spritesheetbelli.
+# Made by _dev/generate_pot.gd from the files in Project Settings > Localization.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: spritesheetbelli\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8-bit\n"
+
+#: res://scripts/autoloaded/actions.gd
+#: res://ui/main/main_ui.gd
+msgid "No frames yet"
+msgstr ""
+
+#: res://scripts/autoloaded/actions.gd
+msgid "Not available now"
+msgstr ""
+
+#: res://scripts/autoloaded/global.gd
+#: res://ui/main/recovery.gd
+#: res://ui/main/recovery_notice.gd
+msgid "Untitled"
+msgstr ""
+
+#: res://scripts/autoloaded/notify.gd
+msgid "Error"
+msgstr ""
+
+#: res://scripts/autoloaded/notify.gd
+msgid "%s %d of %d"
+msgstr ""
+
+#: res://scripts/document.gd
+msgid "New spritesheet"
+msgstr ""
+
+#: res://scripts/document.gd
+#: res://ui/main/file_controller.gd
+msgid "Opened %s"
+msgstr ""
+
+#: res://scripts/export/animation_files.gd
+msgid "The animation's name"
+msgstr ""
+
+#: res://scripts/export/animation_files.gd
+msgid "How many frames its file has"
+msgstr ""
+
+#: res://scripts/export/atlas_formats.gd
+msgid "Could not find %s."
+msgstr ""
+
+#: res://scripts/export/atlas_formats.gd
+msgid "%s (yours)"
+msgstr ""
+
+#: res://scripts/export/atlas_packer.gd
+msgid "%s can't describe turned frames. Pack without turning them."
+msgstr ""
+
+#: res://scripts/export/export_options.gd
+msgid "The scale, like 2"
+msgstr ""
+
+#: res://scripts/export/export_options.gd
+msgid "Pick a template file."
+msgstr ""
+
+#: res://scripts/export/export_options.gd
+msgid "Scales are whole numbers from 1 to %d, like 1, 2."
+msgstr ""
+
+#: res://scripts/export/export_options.gd
+msgid "The scale suffix needs {scale} to name each scale's files apart."
+msgstr ""
+
+#: res://scripts/export/export_target.gd
+#: res://ui/main/export_dialog.gd
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/sprites_panel.gd
+msgid "Sprites"
+msgstr ""
+
+#: res://scripts/export/export_target.gd
+msgid "%s atlas"
+msgstr ""
+
+#: res://scripts/export/export_target.gd
+msgid "GIFs"
+msgstr ""
+
+#: res://scripts/export/export_target.gd
+#: res://ui/main/export_dialog.gd
+msgid "GameMaker strips"
+msgstr ""
+
+#: res://scripts/export/export_target.gd
+#: res://ui/main/export_dialog.gd
+msgid "Custom template"
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "The frame's number, as in the preview"
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "Its row, from 0"
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "Its column, from 0"
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "Its place in its row"
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "The first animation it's in, or \"frame\""
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "Its place in that animation, or else its number"
+msgstr ""
+
+#: res://scripts/export/spritesheet_exporter.gd
+msgid "The name of the file it came from"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "%s not found"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{ without }}"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{%s}} isn't supported"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{%s}} has no name"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "\"%s\" isn't a name"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{%s}}: only values take filters, not sections"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "empty filter after |"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "unknown filter \"%s\""
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "%s takes %d argument, not %d"
+msgid_plural "%s takes %d arguments, not %d"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://scripts/export/template.gd
+msgid "%s: \"%s\" is neither a number nor a name"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{/%s}} closes no section"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{/%s}} doesn't close {{%s%s}} from line %d"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "{{%s%s}} is never closed"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "line %d: %s"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "line %d: %s needs numbers, not %s"
+msgstr ""
+
+#: res://scripts/export/template.gd
+msgid "line %d: divide by 0"
+msgstr ""
+
+#: res://scripts/image_utils.gd
+msgid "The image would be %d×%d px, but %s images can be at most %d px wide and tall."
+msgstr ""
+
+#: res://scripts/image_utils.gd
+msgid "The image would be %d×%d px, more than the %d million pixels Godot can handle."
+msgstr ""
+
+#: res://scripts/import/gif_decoder.gd
+#: res://scripts/import/sheet_data.gd
+#: res://scripts/project_file.gd
+msgid "Could not open %s."
+msgstr ""
+
+#: res://scripts/import/gif_decoder.gd
+msgid "This isn't a GIF image."
+msgstr ""
+
+#: res://scripts/import/gif_decoder.gd
+msgid "This GIF is empty."
+msgstr ""
+
+#: res://scripts/import/gif_decoder.gd
+msgid "This GIF has no frames."
+msgstr ""
+
+#: res://scripts/import/libgdx_atlas.gd
+#: res://scripts/import/sheet_data.gd
+msgid "There are no frames in this data file."
+msgstr ""
+
+#: res://scripts/import/sheet_data.gd
+msgid "This isn't a spritesheet data file."
+msgstr ""
+
+#: res://scripts/project_file.gd
+msgid "Not a spritesheetbelli project."
+msgstr ""
+
+#: res://scripts/project_file.gd
+msgid "This project was made with a newer version of spritesheetbelli."
+msgstr ""
+
+#: res://scripts/project_file.gd
+msgid "The frames image is damaged."
+msgstr ""
+
+#: res://scripts/project_file.gd
+msgid "A frame image is missing or damaged (%s)."
+msgstr ""
+
+#: res://scripts/resources/packed_layout.gd
+msgid "%s no longer fits where it was pinned."
+msgstr ""
+
+#: res://scripts/resources/packed_layout.gd
+msgid "%s is bigger than a page."
+msgstr ""
+
+#: res://scripts/resources/packed_layout.gd
+msgid "%d page of %d×%d px, %d%% filled"
+msgid_plural "%d pages of up to %d×%d px, %d%% filled"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://scripts/resources/packed_layout.gd
+msgid "Sprite %d"
+msgstr ""
+
+#: res://scripts/resources/sheet_animation.gd
+msgid "Once"
+msgstr ""
+
+#: res://scripts/resources/sheet_animation.gd
+msgid "Loop"
+msgstr ""
+
+#: res://scripts/resources/sheet_animation.gd
+msgid "Ping-pong"
+msgstr ""
+
+#: res://scripts/ui/command_palette.gd
+msgid "Search actions, animations and exports"
+msgstr ""
+
+#: res://scripts/ui/command_palette.gd
+msgid "Nothing matches"
+msgstr ""
+
+#: res://scripts/ui/command_palette.gd
+msgid "Play: %s"
+msgstr ""
+
+#: res://scripts/ui/command_palette.gd
+msgid "Export: %s"
+msgstr ""
+
+#: res://scripts/ui/name_pattern_field.gd
+msgid "Tokens…"
+msgstr ""
+
+#: res://scripts/ui/name_pattern_field.gd
+msgid "The tokens a name can have, to insert one"
+msgstr ""
+
+#: res://scripts/ui/name_pattern_field.gd
+msgid "Add :3 to pad numbers with zeros: {%s:3} gives 007"
+msgstr ""
+
+#: res://scripts/ui/name_pattern_field.gd
+msgid "Unknown token: %s"
+msgstr ""
+
+#: res://scripts/ui/name_pattern_field.gd
+msgid "Unknown tokens: %s"
+msgstr ""
+
+#: res://scripts/ui/options_dropdown.gd
+msgid "Reset %s"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "PNG Images"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "JPEG Images"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "WebP Images"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "GIF Images"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "Asked when exporting"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "Browse…"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+msgid "Pick where to export"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+#: res://ui/main/export_dialog.gd
+msgid "Export"
+msgstr ""
+
+#: res://scripts/ui/output_path_field.gd
+#: res://ui/main/export_dialog.gd
+msgid "Export Sprites"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+#: res://ui/main/main_ui.gd
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Search by name or key"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "No shortcuts match"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+#: res://ui/settings/settings_window.gd
+msgid "Preview"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Pan"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Middle mouse drag or Space+drag"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Zoom"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Mouse wheel"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Select frames"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Click or drag"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Select or unselect a frame"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Ctrl+click"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Select a range of frames"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Shift+click"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Select the next frame"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Arrow keys (Shift adds)"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Copy frames in the grid (move mode)"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Alt+drag"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move frames in their cells (move mode)"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Arrow keys (Shift: 8 px)"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Lock or unlock an empty cell"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Click it"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Frame actions"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Right-click"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "%s: %s"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
+msgid "No template picked"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
+msgid "Pick…"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
+msgid "Pick a template file"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
+msgid "Pick a Template"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
+msgid "Templates"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
+msgid "All files"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Offset & Spacing"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "For sheets with a margin around or gaps between the frames"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Makes a colour transparent before cutting, like a background the sheet is drawn on instead of transparency"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main.tscn
+msgid "Grid"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Find sprites"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Data: %s"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/animation_preview/animation_detail.gd
+#: res://ui/spritesheet_preview/animation_labels.gd
+msgid "%d frame"
+msgid_plural "%d frames"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "%d animation"
+msgid_plural "%d animations"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/main/main_ui.gd
+msgid "Cut"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Grid: equal cells. Find sprites: every group of pixels surrounded by transparency, in a box that can be moved, resized, merged or deleted. Data: where the data file exported with the image says."
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Join parts within"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Parts of a sprite closer than this, like a spark, stay together"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/main/main_ui.gd
+msgid "Align"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Centre"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Bottom"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Bottom keeps the feet of characters on one line"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Keep the packed layout"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Keeps every sprite where it is in the image, in the packed layout, so an atlas exported again has its frames in the same places"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Add selected frames (%d)"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Add spritesheet"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Add frames"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "%d px on the right and %d px at the bottom not used"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "%d px on the right not used"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "%d px at the bottom not used"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "The image doesn't divide evenly into this grid"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Offset %d×%d"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Spacing %d×%d"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/main.tscn
+msgid "Add Spritesheet"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/main.tscn
+msgid "Columns"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/main.tscn
+#: res://ui/main/menu_bar.gd
+msgid "Rows"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Cell"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Cell width"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Cell height"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Offset"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Pixels to skip at the top-left (horizontal)"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Pixels to skip at the top-left (vertical)"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/spacing_dropdown.gd
+msgid "Spacing"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Pixels between cells (horizontal)"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Pixels between cells (vertical)"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "0 frames"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Sprites added later skip the empty cells of this sheet. Click a locked cell to unlock it."
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Lock empty cells"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+msgid "Add Selected Frames (0)"
+msgstr ""
+
+#: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/color_key_dropdown.gd
+msgid "Cancel"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+#: res://ui/main/main_ui.gd
+msgid "Undo"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+#: res://ui/main/main_ui.gd
+msgid "Redo"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "Merge"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "Joins the selected boxes into one. Ctrl+drag across boxes also does."
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+#: res://ui/main/main_ui.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Delete"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "Delete the selected boxes"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+#: res://ui/settings/settings_window.gd
+msgid "Reset"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "Finds the sprites again, without the changes made by hand"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "Sprites found again. Undo brings back the boxes edited by hand."
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "%d, %d · %d×%d px"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+msgid "Frame %d · %d, %d · %d×%d px"
+msgstr ""
+
+#: res://ui/add_spritesheet/sprite_box_editor.gd
+#: res://ui/main/main_ui.gd
+msgid "%d selected"
+msgid_plural "%d selected"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid ""
+"Sprite numbers as shown in the sheet, or sprite names, in playing order. Ranges like 0-7 count up, 7-0 counts down. Separate them with commas: 0-3, 5, 8, idle\n"
+"Names with spaces go in quotes: \"jump up\", walk_0-walk_3\n"
+"Add *2 to show a frame twice as long: 0-3, 4*2, 5*0.5"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Choose an animation to edit it."
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid ""
+"No animations yet.\n"
+"Select frames in the sheet and press New."
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "walk"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Name"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Speed, in frames per second"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Once plays to the end, Loop starts over, Ping-pong plays back"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Colour: of its label on the grid, and in the list"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Frames as text: numbers, names and ranges like 0-3, 5*2"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Recolour animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "Can't read \"%s\". Use numbers, names and ranges like 0-3, 5*2"
+msgstr ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "%d frame, %.2f s"
+msgid_plural "%d frames, %.2f s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "%d empty cell is skipped"
+msgid_plural "%d empty cells are skipped"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/animation_preview/animation_detail.gd
+msgid "%d is outside the sheet"
+msgid_plural "%d are outside the sheet"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/animation_preview/animation_detail.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Edit animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+#: res://ui/main/main_ui.gd
+msgid "New"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "A new animation of the selected frames, or of every frame"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Duplicate the animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Mirrored copy: the frames flipped into a new row"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Delete the animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+#: res://ui/main/export_dialog.gd
+#: res://ui/main/menu_bar.gd
+msgid "Animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Show or hide the animation panel"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+#: res://ui/main/animation_commands.gd
+msgid "New animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Duplicate animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Mirror animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Delete animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
+msgid "Plays the selected frames, or every frame"
+msgstr ""
+
+#: res://ui/animation_preview/animation_preview.gd
+#: res://ui/main/export_dialog.gd
+msgid "All frames"
+msgstr ""
+
+#: res://ui/animation_preview/animation_preview.gd
+msgid "Selected frames"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Drag frames here from the sheet or the Sprites panel"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+#: res://ui/main/main_ui.gd
+msgid "Move frames"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Remove frames"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Frame duration"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Empty"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Outside"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Cell %d is outside the sheet: skipped"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Cell %d is empty: skipped"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+#: res://ui/main/sprites_panel.gd
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "Frame %d"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Checkerboard"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Colour…"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Export Background"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Drag to go through the frames, or click to jump to one"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Back to the first frame"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Previous frame"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Next frame"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Onion skin: show the previous frame faintly"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Fit the frames in the preview. Scroll to zoom."
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Background: a checkerboard, a colour or the export's"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Pause"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+msgid "Play"
+msgstr ""
+
+#: res://ui/animation_preview/frame_player.gd
+#: res://ui/main/main.tscn
+msgid "No frames"
+msgstr ""
+
+#: res://ui/animation_preview/timeline_tile.gd
+msgid "Take the frame out"
+msgstr ""
+
+#: res://ui/animation_preview/timeline_tile.gd
+msgid "How long it's shown: 2 is twice as long as a frame"
+msgstr ""
+
+#: res://ui/main/about_dialog.gd
+msgid "Combine sprites into spritesheets and cut spritesheets into sprites."
+msgstr ""
+
+#: res://ui/main/about_dialog.gd
+#: res://ui/main/main_ui.gd
+msgid "About spritesheetbelli"
+msgstr ""
+
+#: res://ui/main/about_dialog.gd
+msgid "Made with Godot %s · MIT License"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Animation from Row…"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Animation from Column…"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Animation from Selection…"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Duplicate Animation"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Mirror Animation"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Delete Animation"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Animation Labels…"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Name animations on the grid"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+msgid "Onion Skin"
+msgstr ""
+
+#: res://ui/main/animation_commands.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Rename animation"
+msgstr ""
+
+#: res://ui/main/animation_files_rows.gd
+msgid "How each GIF is named, with tokens such as {animation} filled in"
+msgstr ""
+
+#: res://ui/main/animation_files_rows.gd
+#: res://ui/main/export_dialog.gd
+msgid "File names"
+msgstr ""
+
+#: res://ui/main/animation_files_rows.gd
+#: res://ui/main/export_dialog.gd
+msgid "For example: %s"
+msgstr ""
+
+#: res://ui/main/animation_name_dialog.gd
+msgid "For example: walk"
+msgstr ""
+
+#: res://ui/main/animation_name_dialog.gd
+msgid "Rename Animation"
+msgstr ""
+
+#: res://ui/main/animation_name_dialog.gd
+msgid "New Animation"
+msgstr ""
+
+#: res://ui/main/animation_name_dialog.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Rename"
+msgstr ""
+
+#: res://ui/main/animation_name_dialog.gd
+msgid "Create"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Keep places"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Always tight"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Best short side"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Best long side"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Best area"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Bottom left"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Most contact"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Repack"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+#: res://ui/settings/settings_window.gd
+msgid "Atlas"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Pages up to"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Neither side of a page is longer"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Packing"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Keep places: when frames are added or change, the others stay where they are, so the atlas stays the same between exports. Always tight: everything is packed again."
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "Place by"
+msgstr ""
+
+#: res://ui/main/atlas_panel.gd
+msgid "How the free place for a frame is picked"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "Make transparent"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "Makes this colour transparent before cutting"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+#: res://ui/main/outline_dialog.gd
+msgid "Colour"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "The colour to make transparent. Click to choose it."
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "Pick the colour by clicking the preview"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "Tolerance"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "How different a pixel can be and still be made transparent"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "Confirm"
+msgstr ""
+
+#: res://ui/main/color_key_preview.gd
+msgid "Remove background"
+msgstr ""
+
+#: res://ui/main/color_key_preview.gd
+msgid "Removing background"
+msgstr ""
+
+#: res://ui/main/color_key_preview.gd
+msgid "In %d selected frame"
+msgid_plural "In %d selected frames"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/color_key_preview.gd
+msgid "In %d frame"
+msgid_plural "In all %d frames"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "Pick where to export %s."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Packing the atlas"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Exporting sprites"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Exporting strips"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Exporting"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "No frames are selected. Select frames or turn off \"Only selected frames\" when exporting."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Could not save: %s."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Saved %d image to %s."
+msgid_plural "Saved %d images to %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "The spritesheet is empty."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Could not export to %s (%s)."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Saved %d strip to %s."
+msgid_plural "Saved %d strips to %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "Making the GIF"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "The animation has no frames."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Exported %s (%d frame)."
+msgid_plural "Exported %s (%d frames)."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "Making the GIFs"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "No animation has frames."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Saved %d GIF to %s."
+msgid_plural "Saved %d GIFs to %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "Make the sprites smaller or use fewer cells."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Exported %s in %s."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Could not write the metadata (%s)."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Also wrote %s."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "JPG doesn't support transparency, so transparent areas were filled with white."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "JPG doesn't support transparency, so transparent areas were filled with the background colour."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Exported %d page, from %s."
+msgid_plural "Exported %d pages, from %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "The frames don't fit in a %d px atlas."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Could not export the atlas (%s)."
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "Packed %d frame on %d pages, from %s, and %s."
+msgid_plural "Packed %d frames on %d pages, from %s, and %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "Packed %d frame into %s (%d×%d px) and %s."
+msgid_plural "Packed %d frames into %s (%d×%d px) and %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
+msgid "Frames from %s are no longer linked to it, since the export wrote over it."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Spritesheet image"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The whole sheet as one PNG, JPG or WebP image. Packed sheets give an image per page."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Every frame as its own PNG, in a folder."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Spritesheet and data file"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The sheet as a PNG and a file next to it that says where each frame is, with the animations: a Godot SpriteFrames, TexturePacker or Aseprite JSON, and more."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Packed atlas"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Frames with their transparent borders trimmed, packed as tightly as possible into PNG pages, with a file that says where each one is for TexturePacker, Phaser, libGDX, Spine, Starling or Godot."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Animated GIF"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "One animation as a GIF, or a GIF of each in a folder, to share or put on a page. GIF has no partial transparency and at most 255 colours; sheets with more are reduced."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Each animation as a PNG of its frames side by side, in a folder, named for GameMaker to cut it into frames when imported (walk_strip8.png). Frames in no animation are left out."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The sheet as a PNG and a data file written from a template of your own. Packed sheets, and templates only for packed atlases, give atlas pages."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+#: res://ui/settings/settings_window.gd
+msgid "Close"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Export All"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Export every one in the list"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+#: res://ui/main/main.tscn
+#: res://ui/main/outline_dialog.gd
+msgid "Add"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Add an export, to write more than one at once"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Duplicate the selected export"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Remove the selected export"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "What the export writes"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Type"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Where the export writes. The files written next to it, like data files and pages, are named after it."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Export to"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Format"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "JPG quality"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "JPG has no transparency, so transparent areas get this colour"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Fill transparency with"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "A colour behind the sprites. Fully transparent (the default) leaves the background transparent."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Transparent"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Background"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Which animation the GIF plays"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Makes the GIF bigger, keeping pixels sharp"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Scale"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The file next to the image that says where each frame is"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Data file"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The file next to the atlas that says where each frame is"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The template the data file is written from. Its header says the file's extension."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Template"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Open templates folder"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Templates put in this folder are listed with the bundled ones, and one named like a bundled one replaces it. It has a copy of every bundled template to start from."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Their cell"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Their own"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid ""
+"The size the data file gives each frame, which engines line frames up by.\n"
+"Their cell: the frames of an animation line up like in the grid, even when trimmed or of different sizes.\n"
+"Their own: each frame is as big as it is, for sprites that have nothing to do with each other."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Frame size in data"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Frames per second of the animations"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Animation speed"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "How each frame is named, with tokens such as {index} filled in"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Only selected frames"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Add a number"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Overwrite it"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Skip the sprite"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "When a file exists"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Only in the grid layout"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Export GIFs"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Export Strips"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Export targets"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Every animation"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "A GIF of each animation, in a folder"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Files: %s"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%d image of %d×%d px"
+msgid_plural "%d images of %d×%d px"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%d GIF of %d×%d px"
+msgid_plural "%d GIFs of %d×%d px"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%d strip of %d×%d px frames"
+msgid_plural "%d strips of %d×%d px frames"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%d frame of %d×%d px"
+msgid_plural "%d frames of %d×%d px"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Image size: %d×%d px"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%d image, the first %d×%d px"
+msgid_plural "%d images, the first %d×%d px"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Frame names"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%s … %d more"
+msgid_plural "%s … %d more"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "The size is found when packing"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "This format can't describe turned frames. Pack without turning them."
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "Atlas size: %d×%d px"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "%d page, the first %d×%d px"
+msgid_plural "%d pages, the first %d×%d px"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_dialog.gd
+msgid "No file picked yet"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "spritesheetbelli projects"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Images"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Spritesheet data (TexturePacker, Aseprite, Phaser, libGDX)"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+#: res://ui/main/main.tscn
+msgid "Open"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Save Project"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Add Folder"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Replace Image"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Could not load %s."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Replace image"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Add sprites"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Loading images"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Could not load: %s."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "There are no images in %s."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Link folder"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Watching %s for new images."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Linked %s, paused: Reload changed files is off."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to %s before opening another file?"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Drop images, folders of images, a spritesheet data file or a project."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Opening %s"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Add GIF"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Unsaved changes"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Save"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Don't Save"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "the spritesheet"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Saving"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Could not save %s (%s)."
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Saved %s"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to %s before creating a new one?"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "%s no longer exists."
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Files Deleted"
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Remove"
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Keep"
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Add new sprites"
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Added %d new sprite from %s."
+msgid_plural "Added %d new sprites from %s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Follow renamed files"
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Remove %d frame whose file was deleted?"
+msgid_plural "Remove %d frames whose files were deleted?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/folder_watcher.gd
+msgid "Remove frames of deleted files"
+msgstr ""
+
+#: res://ui/main/history_panel.gd
+#: res://ui/main/main_ui.gd
+msgid "History"
+msgstr ""
+
+#: res://ui/main/history_panel.gd
+msgid "Hide the history"
+msgstr ""
+
+#: res://ui/main/history_panel.gd
+msgid "Click a step to go back or forward to it"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Top"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Left"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Right"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Top Left"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Bottom Left"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Frames in the cells of a grid"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Frames packed tightly on pages"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Drag on a frame to put the pivot of the selected frames there"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pack every frame that isn't pinned again, as tightly as possible"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pins the selected frames, or every frame when none are selected, so packing again keeps their place"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Layout"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Packed"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Atlas settings"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Spacing & padding"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Grid Layout"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Grid layout"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pack frames"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Packed Layout"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pivot Mode"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pack Again"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pack again"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pin frames"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Unpin frames"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Pinned"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Set pivot"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Remove Pivot"
+msgstr ""
+
+#: res://ui/main/layout_controller.gd
+msgid "Remove pivot"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Open File(s)"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Open a File"
+msgstr ""
+
+#: res://ui/main/main.tscn
+#: res://ui/main/main_ui.gd
+msgid "Export…"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Size of the exported image"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "0 × 0 px"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Add Sprite(s)"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Sprite size"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Width"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Height"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Keep aspect ratio"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Half size"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Double size"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Triple size"
+msgstr ""
+
+#: res://ui/main/main.tscn
+#: res://ui/main/main_ui.gd
+msgid "Original size"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Filter"
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "How pixels are blended when resizing. Nearest keeps pixel art sharp."
+msgstr ""
+
+#: res://ui/main/main.tscn
+msgid "Nearest"
+msgstr ""
+
+#: res://ui/main/main.tscn
+#: res://ui/settings/settings_window.gd
+msgid "Bilinear"
+msgstr ""
+
+#: res://ui/main/main.tscn
+#: res://ui/settings/settings_window.gd
+msgid "Cubic"
+msgstr ""
+
+#: res://ui/main/main.tscn
+#: res://ui/settings/settings_window.gd
+msgid "Trilinear"
+msgstr ""
+
+#: res://ui/main/main.tscn
+#: res://ui/settings/settings_window.gd
+msgid "Lanczos"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "The spritesheet as an image, as sprites or for a game engine"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Every export of the project, or else the Export dialog"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Image files as sprites"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Cut a spritesheet image into frames and add them"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Click or drag to select frames"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys move the selected frames inside their cells."
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+#: res://ui/main/menu_bar.gd
+msgid "Of the selected frames, or of every frame when none are selected"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "From the selected frames, or from every frame when none are selected"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+#: res://ui/settings/settings_window.gd
+msgid "Resize filter"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid ""
+"Drop images, folders or a .sbelli project here\n"
+"or use Add Sprite(s) and Add Spritesheet (%s, %s)"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Copy frames"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Nudge frames"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Lock cell"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Unlock cell"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "No frames selected"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Nothing copied"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Nothing to undo"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Nothing to redo"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Open…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Save As…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Export Again"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Add Sprite(s)…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Add Folder…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Add Spritesheet…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Settings…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Quit"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Save changes to %s before quitting?"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Select Mode"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Move Mode"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Select All"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Select None"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Flip Horizontally"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Flip"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Flip Vertically"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Rotate 90° CW"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Rotate"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Rotate 90° CCW"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Copy"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Paste"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Duplicate"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Trim Transparent Borders"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Trim"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Remove Background Colour…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Add Outline…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Replace Image…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Reload from File"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Reload from file"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Insert Empty Cell"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Insert cell"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Remove Cell"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Remove cells"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Insert Row"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Insert row"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Remove Row"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Remove rows"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Move Row Up"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Move Row Down"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Move row"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Zoom In"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Zoom Out"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Actual Size"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Fit to View"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Status Bar"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+#: res://ui/main/menu_bar.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Edit"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Animation Panel"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Grid Lines"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Pixel Grid"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Frame Numbers"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Command Palette…"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Outline"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Adding outlines"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Resize sprites"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Sprites can be at most %d×%d px, and these would be %d×%d px."
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Resizing sprites"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Export… (%d)"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "%d export, written by Export Again (%s)"
+msgid_plural "%d exports, written by Export Again (%s)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/main_ui.gd
+msgid "No frames. Add sprites or drop images here."
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "%d frame · %s"
+msgid_plural "%d frames · %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/main_ui.gd
+msgid "%d frame · %d×%d grid · %d×%d px"
+msgid_plural "%d frames · %d×%d grid · %d×%d px"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/main_ui.gd
+msgid "Cells with a lock stay empty"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Locked cells are kept empty when adding sprites. Click one to unlock it."
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Resize grid"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Confirm resize"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Resizing the grid to %d×%d would delete %d sprite."
+msgid_plural "Resizing the grid to %d×%d would delete %d sprites."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/main_ui.gd
+msgid "Save changes to %s before closing?"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "Transform"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "Align in Cell"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "Pivot"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "File"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "Frame"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "View"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "Help"
+msgstr ""
+
+#: res://ui/main/menu_bar.gd
+msgid "Open Recent"
+msgstr ""
+
+#: res://ui/main/outline_dialog.gd
+msgid "Add Outline"
+msgstr ""
+
+#: res://ui/main/outline_dialog.gd
+msgid "Thickness"
+msgstr ""
+
+#: res://ui/main/outline_dialog.gd
+msgid "Fill corners"
+msgstr ""
+
+#: res://ui/main/outline_dialog.gd
+msgid "Also outline diagonally, for square corners instead of round ones"
+msgstr ""
+
+#: res://ui/main/recent_files_menu.gd
+msgid "No recent files"
+msgstr ""
+
+#: res://ui/main/recent_files_menu.gd
+msgid "Clear Recent Files"
+msgstr ""
+
+#: res://ui/main/recovery.gd
+msgid "Recovered %s"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Recover Unsaved Work"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Never saved"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Recover"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Open it with its unsaved changes"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Save changes to %s before recovering unsaved work?"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Discard"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Delete this copy"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Discard unsaved work"
+msgstr ""
+
+#: res://ui/main/recovery_notice.gd
+msgid "Delete the unsaved changes to %s? This can't be undone."
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "File Changed"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload, Reset"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload the file as it is, without the edits made here"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Ignore"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Keep the frames as they are"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload the file and make the edits made here again"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "%s changed on disk. Reload it?"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "%d of its %d frames was edited here (flipped, trimmed, moved…)."
+msgid_plural "%d of its %d frames were edited here (flipped, trimmed, moved…)."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Do the same for the other changed file"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Do the same for the other %d changed file"
+msgid_plural "Do the same for the other %d changed files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload, Keep Edits"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload"
+msgstr ""
+
+#: res://ui/main/scale_rows.gd
+msgid "The sizes to write the export at, like 1, 2: each is the sheet that many times bigger, with its own data file. Frames are resized from their original images with the sheet's filter; padding, spacing and extrusion grow with them."
+msgstr ""
+
+#: res://ui/main/scale_rows.gd
+msgid "Scales"
+msgstr ""
+
+#: res://ui/main/scale_rows.gd
+msgid "Added to the names of the files of each scale but 1, before the extension: hero@2x.png and hero@2x.json, pages hero_0@2x.png, strips walk@2x_strip8.png"
+msgstr ""
+
+#: res://ui/main/scale_rows.gd
+msgid "Scale suffix"
+msgstr ""
+
+#: res://ui/main/source_watcher.gd
+msgid "Reload %s"
+msgstr ""
+
+#: res://ui/main/source_watcher.gd
+msgid "Reload %d file"
+msgid_plural "Reload %d files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/source_watcher.gd
+msgid "Reloading"
+msgstr ""
+
+#: res://ui/main/source_watcher.gd
+msgid "%d frame wasn't found in the changed files and was left as it was."
+msgid_plural "%d frames weren't found in the changed files and were left as they were."
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Spacing & Padding"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Empty pixels between frames and around the sheet, and extruded edges"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Empty pixels between frames"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Padding"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Empty pixels around the whole sheet or each page"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Extrude edges"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Repeats each frame's edge pixels outward, so scaled or filtered sprites don't pick up their neighbours' colours"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Spacing %d"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Padding %d"
+msgstr ""
+
+#: res://ui/main/spacing_dropdown.gd
+msgid "Extrude %d"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Hide the sprites"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Search by name"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Group by row instead of by animation"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Double-click a name to rename the frame"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "The folder wasn't found."
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Images added to it are added here."
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Paused: Reload changed files is off."
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Unlink folder"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Row %d"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "No animation"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Click to select these frames"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Unpin"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Pin"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Rename frame"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Pin frame"
+msgstr ""
+
+#: res://ui/main/sprites_panel.gd
+msgid "Unpin frame"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Recent Files"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Drop images, folders or a .sbelli project here"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Remove from Recent Files"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Not found"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "General"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "New sprites go to"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "The first free cell"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "After the last frame"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "A new row"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Nearest (pixel art)"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Reload changed files"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Pivots"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Confirm grid shrinking"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Reopen last project"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Recovery copy every"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "min"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Number frames from"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Show grid"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Show pixel grid"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Show frame numbers"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Show checkerboard"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Grid colour"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Background colour"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Selection tint"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Checker size"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "px"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Zoom speed"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Pixel-perfect zoom"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Auto"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "On"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Off"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Share identical frames"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Power-of-two pages"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Square pages"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Interface"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Theme"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "System"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Dark"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Light"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Accent colour"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "System accent colour"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Interface scale"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Automatic"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Show status bar"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Where added sprites are placed in the grid"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "How new sheets smooth resized sprites. Nearest keeps pixel art sharp."
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Ask to reload sprites when the image files they came from change, and add the new images in linked folders"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Show the pivot tool (E) and the Pivot menu, to set the point engines anchor each frame at, like a character's feet"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Ask before making the grid smaller deletes sprites"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Open the last project again when the app starts"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes unexpectedly. 0 turns it off."
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "A checkerboard behind sprites shows their transparent pixels"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "The size of the checkerboard's squares"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Fit and zoom to 200%, 300%… or 50%, 33%… so every pixel is the same size on screen. Auto does when the sheet's resize filter is Nearest."
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "How strongly the accent colour covers selected frames. At 0% only their outline shows."
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Frames that look the same are packed once and share their place"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Pages are 256, 512, 1024… px wide and tall, for older engines"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Pages are as wide as they're tall"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "System follows the operating system's dark or light mode"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Use the operating system's accent colour, where it has one"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Automatic follows the screen's scale"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Settings"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Reset All…"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Restore every setting to its default"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Reset settings"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Restore every setting to its default?"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Filter settings"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Revert to the default"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Show all"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Hide all"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Only the playing animation"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Name only the animation chosen in the animation panel"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Can't be named: their frames are out of order or not one area"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Hide its name"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Show its name"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "%d more"
+msgid_plural "%d more"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Show label"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Hide label"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Show all labels"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Hide all labels"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Label only the playing animation"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Label the chosen animations"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Speed"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Mirror"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Hide Label"
+msgstr ""
+
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "%s fps"
+msgstr ""
+
+#: res://ui/spritesheet_preview/packed_view.gd
+msgid "Page %d · %d×%d"
+msgstr ""
+
+#: res://ui/spritesheet_preview/packed_view.gd
+msgid "New page"
+msgstr ""
+
+#: res://ui/spritesheet_preview/pixel_grid.gd
+msgid "%d, %d on the sheet"
+msgstr ""
+
+#: res://ui/spritesheet_preview/pixel_grid.gd
+msgid "%d, %d on page %d"
+msgstr ""
+
+#: res://ui/spritesheet_preview/pixel_grid.gd
+msgid "%d, %d in the frame (%s)"
+msgstr ""
+
+#: res://ui/spritesheet_preview/pixel_grid.gd
+msgid "#%s, alpha %d"
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "Cell %d (column %d, row %d)"
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "Locked: kept empty when adding sprites. Click to unlock."
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "Empty. Click to lock it so added sprites skip it."
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "Page %d at %d, %d · %d×%d px"
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "turned"
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "pinned"
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "shares its place with a frame that looks the same"
+msgstr ""
+
+#: res://ui/spritesheet_preview/preview_area.gd
+msgid "%s (edited here)"
+msgstr ""

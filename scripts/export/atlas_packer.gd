@@ -146,7 +146,9 @@ static func write(
 			if region.rotated:
 				result.error = ERR_UNAVAILABLE
 				result.message = (
-					"%s can't describe turned frames. Pack without turning them."
+					TranslationServer.translate(
+						"%s can't describe turned frames. Pack without turning them."
+					)
 					% AtlasFormats.get_format_name(format)
 				)
 				return result

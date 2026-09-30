@@ -78,7 +78,8 @@ func _make_row(leftover: Dictionary) -> Control:
 	recover.pressed.connect(
 		func() -> void:
 			recovery.files.confirm_unsaved_changes(
-				"recovering unsaved work", recovery.recover.bind(leftover)
+				L10n.mark("Save changes to %s before recovering unsaved work?"),
+				recovery.recover.bind(leftover)
 			)
 	)
 	row.add_child(recover)
@@ -89,10 +90,10 @@ func _make_row(leftover: Dictionary) -> Control:
 	discard.pressed.connect(
 		func() -> void:
 			Notify.confirm(
-				"Discard unsaved work",
+				tr("Discard unsaved work"),
 				tr("Delete the unsaved changes to %s? This can't be undone.") % _name_of(leftover),
 				recovery.discard.bind(leftover),
-				"Discard"
+				tr("Discard")
 			)
 	)
 	row.add_child(discard)

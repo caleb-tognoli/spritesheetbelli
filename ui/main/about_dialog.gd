@@ -3,6 +3,11 @@ extends AcceptDialog
 ## Shows the logo, version and links.
 
 const REPOSITORY := "https://github.com/caleb-tognoli/spritesheetbelli"
+# L10n.mark
+## The project's description in project.godot, here to be translated
+const DESCRIPTION := "Combine sprites into spritesheets and cut spritesheets into sprites."
+
+var _engine := Label.new()
 
 
 func _init() -> void:
@@ -27,15 +32,19 @@ func _init() -> void:
 	box.add_child(name_label)
 
 	var description := Label.new()
-	description.text = ProjectSettings.get_setting("application/config/description", "")
+	description.text = DESCRIPTION
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(description)
 
-	var engine := Label.new()
-	engine.text = "Made with Godot %s · MIT License" % Engine.get_version_info().string
-	engine.theme_type_variation = &"StatusLabel"
-	engine.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(engine)
+	_engine.theme_type_variation = &"StatusLabel"
+	_engine.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(_engine)
+	about_to_popup.connect(
+		func() -> void:
+			_engine.text = (
+				tr("Made with Godot %s · MIT License") % Engine.get_version_info().string
+			)
+	)
 
 	var link := LinkButton.new()
 	link.text = REPOSITORY.trim_prefix("https://")

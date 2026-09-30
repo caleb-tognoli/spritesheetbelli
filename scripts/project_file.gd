@@ -116,12 +116,17 @@ static func load(path: String) -> Dictionary:
 
 static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	if not zip.file_exists(JSON_FILE):
-		return {"error": "Not a spritesheetbelli project."}
+		return {"error": TranslationServer.translate("Not a spritesheetbelli project.")}
 	var data: Variant = JSON.parse_string(zip.read_file(JSON_FILE).get_string_from_utf8())
 	if not data is Dictionary or data.get("format") != FORMAT:
-		return {"error": "Not a spritesheetbelli project."}
+		return {"error": TranslationServer.translate("Not a spritesheetbelli project.")}
 	if int(data.get("version", 0)) > VERSION:
-		return {"error": "This project was made with a newer version of spritesheetbelli."}
+		return {
+			"error":
+			TranslationServer.translate(
+				"This project was made with a newer version of spritesheetbelli."
+			)
+		}
 
 	var atlas := Image.new()
 	if zip.file_exists(FRAMES_FILE):

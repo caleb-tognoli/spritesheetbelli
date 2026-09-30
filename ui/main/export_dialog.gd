@@ -10,25 +10,25 @@ extends ConfirmationDialog
 const T := ExportOptions.Target
 const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
 ## What can be exported, in the order the Type list has them
-const TYPES := [
+const TYPES := [  # L10n.mark
 	{
-		"target": T.IMAGE,
-		"name": "Spritesheet image",
-		"icon": preload("res://assets/icons/Image.svg"),
-		"about":
+		&"target": T.IMAGE,
+		&"name": "Spritesheet image",
+		&"icon": preload("res://assets/icons/Image.svg"),
+		&"about":
 		"The whole sheet as one PNG, JPG or WebP image. Packed sheets give an image " + "per page.",
 	},
 	{
-		"target": T.SPRITES,
-		"name": "Sprites",
-		"icon": FOLDER_ICON,
-		"about": "Every frame as its own PNG, in a folder.",
+		&"target": T.SPRITES,
+		&"name": "Sprites",
+		&"icon": FOLDER_ICON,
+		&"about": "Every frame as its own PNG, in a folder.",
 	},
 	{
-		"target": T.DATA,
-		"name": "Spritesheet and data file",
-		"icon": preload("res://assets/icons/SpriteFrames.svg"),
-		"about":
+		&"target": T.DATA,
+		&"name": "Spritesheet and data file",
+		&"icon": preload("res://assets/icons/SpriteFrames.svg"),
+		&"about":
 		(
 			"The sheet as a PNG and a file next to it that says where each frame is, "
 			+ "with the animations: a Godot SpriteFrames, TexturePacker or Aseprite JSON, "
@@ -36,10 +36,10 @@ const TYPES := [
 		),
 	},
 	{
-		"target": T.ATLAS,
-		"name": "Packed atlas",
-		"icon": preload("res://assets/icons/AtlasTexture.svg"),
-		"about":
+		&"target": T.ATLAS,
+		&"name": "Packed atlas",
+		&"icon": preload("res://assets/icons/AtlasTexture.svg"),
+		&"about":
 		(
 			"Frames with their transparent borders trimmed, packed as tightly as "
 			+ "possible into PNG pages, with a file that says where each one is for "
@@ -47,10 +47,10 @@ const TYPES := [
 		),
 	},
 	{
-		"target": T.GIF,
-		"name": "Animated GIF",
-		"icon": preload("res://assets/icons/Animation.svg"),
-		"about":
+		&"target": T.GIF,
+		&"name": "Animated GIF",
+		&"icon": preload("res://assets/icons/Animation.svg"),
+		&"about":
 		(
 			"One animation as a GIF, or a GIF of each in a folder, to share or put on a "
 			+ "page. GIF has no partial transparency and at most 255 colours; sheets with "
@@ -58,10 +58,10 @@ const TYPES := [
 		),
 	},
 	{
-		"target": T.STRIPS,
-		"name": "GameMaker strips",
-		"icon": preload("res://assets/icons/ImageStrip.svg"),
-		"about":
+		&"target": T.STRIPS,
+		&"name": "GameMaker strips",
+		&"icon": preload("res://assets/icons/ImageStrip.svg"),
+		&"about":
 		(
 			"Each animation as a PNG of its frames side by side, in a folder, named for "
 			+ "GameMaker to cut it into frames when imported (walk_strip8.png). Frames in no "
@@ -69,10 +69,10 @@ const TYPES := [
 		),
 	},
 	{
-		"target": T.CUSTOM,
-		"name": "Custom template",
-		"icon": preload("res://assets/icons/TextFile.svg"),
-		"about":
+		&"target": T.CUSTOM,
+		&"name": "Custom template",
+		&"icon": preload("res://assets/icons/TextFile.svg"),
+		&"about":
 		(
 			"The sheet as a PNG and a data file written from a template of your own. "
 			+ "Packed sheets, and templates only for packed atlases, give atlas pages."
@@ -203,7 +203,7 @@ func _init() -> void:
 	for entry: Dictionary in TYPES:
 		type.add_icon_item(entry.icon, entry.name)
 	type.tooltip_text = "What the export writes"
-	add_row(head, "Type", type, every_type)
+	add_row(head, L10n.mark("Type"), type, every_type)
 	about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# A wrapped label needs a width, or it's measured one word per line
 	about.custom_minimum_size = Vector2(420, 0)
@@ -216,19 +216,19 @@ func _init() -> void:
 		+ "are named after it."
 	)
 	output.line_edit.tooltip_text = output.tooltip_text
-	_output_label = add_row(_settings, "Export to", output, every_type)
+	_output_label = add_row(_settings, L10n.mark("Export to"), output, every_type)
 
 	for format: String in ExportOptions.IMAGE_FORMATS:
 		image_format.add_item(format.to_upper())
-	add_row(_settings, "Format", image_format, [T.IMAGE])
+	add_row(_settings, L10n.mark("Format"), image_format, [T.IMAGE])
 	jpg_quality.min_value = 1
 	jpg_quality.max_value = 100
 	jpg_quality.suffix = "%"
-	add_row(_settings, "JPG quality", jpg_quality, [T.IMAGE], "jpg")
+	add_row(_settings, L10n.mark("JPG quality"), jpg_quality, [T.IMAGE], "jpg")
 	jpg_background.edit_alpha = false
 	jpg_background.custom_minimum_size = Vector2(60, 0)
 	jpg_background.tooltip_text = "JPG has no transparency, so transparent areas get this colour"
-	add_row(_settings, "Fill transparency with", jpg_background, [T.IMAGE], "jpg")
+	add_row(_settings, L10n.mark("Fill transparency with"), jpg_background, [T.IMAGE], "jpg")
 
 	background_picker.tooltip_text = (
 		"A colour behind the sprites. Fully transparent (the default) leaves the "
@@ -244,26 +244,28 @@ func _init() -> void:
 	transparent_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	transparent_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background_picker.add_child(transparent_label)
-	add_row(_settings, "Background", background_picker, [T.IMAGE, T.DATA, T.GIF, T.STRIPS])
+	add_row(
+		_settings, L10n.mark("Background"), background_picker, [T.IMAGE, T.DATA, T.GIF, T.STRIPS]
+	)
 	gif_animation.tooltip_text = "Which animation the GIF plays"
-	add_row(_settings, "Animation", gif_animation, [T.GIF])
+	add_row(_settings, L10n.mark("Animation"), gif_animation, [T.GIF])
 	gif_scale.min_value = 1
 	gif_scale.max_value = 16
 	gif_scale.suffix = "×"
 	gif_scale.tooltip_text = "Makes the GIF bigger, keeping pixels sharp"
-	add_row(_settings, "Scale", gif_scale, [T.GIF])
+	add_row(_settings, L10n.mark("Scale"), gif_scale, [T.GIF])
 	animation_files.add_to(self, _settings)
 	grid_data.tooltip_text = "The file next to the image that says where each frame is"
-	_format_rows.append(add_row(_settings, "Data file", grid_data, [T.DATA]))
+	_format_rows.append(add_row(_settings, L10n.mark("Data file"), grid_data, [T.DATA]))
 	_format_rows.append(grid_data)
 	atlas_data.tooltip_text = "The file next to the atlas that says where each frame is"
-	_format_rows.append(add_row(_settings, "Data file", atlas_data, [T.ATLAS]))
+	_format_rows.append(add_row(_settings, L10n.mark("Data file"), atlas_data, [T.ATLAS]))
 	_format_rows.append(atlas_data)
 	template_file.tooltip_text = (
 		"The template the data file is written from. Its header says the file's " + "extension."
 	)
 	template_file.line_edit.tooltip_text = template_file.tooltip_text
-	add_row(_settings, "Template", template_file, [T.CUSTOM])
+	add_row(_settings, L10n.mark("Template"), template_file, [T.CUSTOM])
 	templates_folder.text = "Open templates folder"
 	templates_folder.icon = FOLDER_ICON
 	templates_folder.tooltip_text = (
@@ -283,7 +285,7 @@ func _init() -> void:
 		+ "Their own: each frame is as big as it is, for sprites that have nothing to do "
 		+ "with each other."
 	)
-	add_row(_settings, "Frame size in data", frame_size, [T.ATLAS])
+	add_row(_settings, L10n.mark("Frame size in data"), frame_size, [T.ATLAS])
 	scale_rows.add_to(self, _settings)
 
 	animation_fps.min_value = 1
@@ -291,12 +293,14 @@ func _init() -> void:
 	animation_fps.step = 0.5
 	animation_fps.suffix = "fps"
 	animation_fps.tooltip_text = "Frames per second of the animations"
-	_fps_label = add_row(_settings, "Animation speed", animation_fps, [T.DATA, T.GIF])
+	_fps_label = add_row(_settings, L10n.mark("Animation speed"), animation_fps, [T.DATA, T.GIF])
 
 	pattern.line_edit.custom_minimum_size = Vector2(120, 0)
 	pattern.tooltip_text = "How each frame is named, with tokens such as {index} filled in"
 	pattern.line_edit.tooltip_text = pattern.tooltip_text
-	_pattern_label = add_row(_settings, "File names", pattern, [T.SPRITES, T.DATA, T.ATLAS])
+	_pattern_label = add_row(
+		_settings, L10n.mark("File names"), pattern, [T.SPRITES, T.DATA, T.ATLAS]
+	)
 	pattern_example.theme_type_variation = &"StatusLabel"
 	pattern_example.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	pattern_example.custom_minimum_size = Vector2(200, 0)
@@ -304,9 +308,11 @@ func _init() -> void:
 	add_row(_settings, "", pattern_example, [T.DATA, T.ATLAS])
 	only_selected.text = "Only selected frames"
 	add_row(_settings, "", only_selected, [T.SPRITES])
-	for label: String in ["Add a number", "Overwrite it", "Skip the sprite"]:
+	for label: String in [
+		L10n.mark("Add a number"), L10n.mark("Overwrite it"), L10n.mark("Skip the sprite")
+	]:
 		existing.add_item(label)
-	add_row(_settings, "When a file exists", existing, [T.SPRITES])
+	add_row(_settings, L10n.mark("When a file exists"), existing, [T.SPRITES])
 
 	template_error.theme_type_variation = &"ErrorLabel"
 	template_error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -461,8 +467,8 @@ func get_options() -> ExportOptions:
 ## Asks where the selected target writes, then runs [param then] with the path picked
 func browse(then := Callable()) -> void:
 	var options := get_options()
-	var folder_titles := {T.GIF: "Export GIFs", T.STRIPS: "Export Strips"}
-	var folder_title: String = folder_titles.get(options.target, "Export Sprites")
+	var folder_titles := {T.GIF: tr("Export GIFs"), T.STRIPS: tr("Export Strips")}
+	var folder_title: String = folder_titles.get(options.target, tr("Export Sprites"))
 	output.browse(
 		ExportController.suggested_path(options), options.get_file_extension(), then, folder_title
 	)
@@ -499,7 +505,9 @@ func _store() -> void:
 		kept = _targets
 	var settings := ExportTarget.settings_with(sheet, kept)
 	if settings != sheet.export_settings:
-		Global.document.perform("Export targets", sheet.set_export_settings.bind(settings))
+		Global.document.perform(
+			L10n.mark("Export targets"), sheet.set_export_settings.bind(settings)
+		)
 
 
 ## Shows the settings of [param target]
@@ -635,33 +643,50 @@ func _update_labels(options: ExportOptions) -> void:
 
 	match options.target:
 		T.SPRITES:
+			var count := _sprite_coords(options).size()
 			output_info.text = (
-				tr("%d images of %d×%d px")
-				% [_sprite_coords(options).size(), sheet.sprite_size.x, sheet.sprite_size.y]
+				tr_n("%d image of %d×%d px", "%d images of %d×%d px", count)
+				% [count, sheet.sprite_size.x, sheet.sprite_size.y]
 			)
 		_ when options.packs(sheet):
 			output_info.text = _atlas_info(options)
 		T.GIF when options.gif_every_animation:
 			var gif_size := sheet.sprite_size * options.gif_scale
-			output_info.text = (tr("%d GIFs of %d×%d px") % [files.size(), gif_size.x, gif_size.y])
+			output_info.text = (
+				tr_n("%d GIF of %d×%d px", "%d GIFs of %d×%d px", files.size())
+				% [files.size(), gif_size.x, gif_size.y]
+			)
 		T.STRIPS:
 			var cell := sheet.sprite_size
 			# At each scale
 			var count := files.size() / options.get_scales().size()
-			output_info.text = tr("%d strips of %d×%d px frames") % [count, cell.x, cell.y]
+			output_info.text = (
+				tr_n("%d strip of %d×%d px frames", "%d strips of %d×%d px frames", count)
+				% [count, cell.x, cell.y]
+			)
 		T.GIF:
 			var animation := options.get_gif_animation(sheet)
 			var count := (
 				animation.get_playback_cells(sheet).size() if animation else sheet.frames.size()
 			)
 			var gif_size := sheet.sprite_size * options.gif_scale
-			output_info.text = tr("%d frames of %d×%d px") % [count, gif_size.x, gif_size.y]
+			output_info.text = (
+				tr_n("%d frame of %d×%d px", "%d frames of %d×%d px", count)
+				% [count, gif_size.x, gif_size.y]
+			)
 		T.IMAGE when _is_packed():
 			var sizes := PackedLayout.get_page_sizes(sheet)
 			output_info.text = (
 				tr("Image size: %d×%d px") % [sizes[0].x, sizes[0].y]
 				if sizes.size() == 1
-				else tr("%d images, the first %d×%d px") % [sizes.size(), sizes[0].x, sizes[0].y]
+				else (
+					tr_n(
+						"%d image, the first %d×%d px",
+						"%d images, the first %d×%d px",
+						sizes.size()
+					)
+					% [sizes.size(), sizes[0].x, sizes[0].y]
+				)
 			)
 		_:
 			var image_size := SpritesheetExporter.get_image_size(sheet, options)
@@ -769,7 +794,8 @@ func _list_files(paths: PackedStringArray) -> String:
 	if names.size() <= FILES_SHOWN:
 		return ", ".join(names)
 	var shown := names.slice(0, FILES_SHOWN - 1)
-	return ", ".join(shown) + " " + tr("… %d more") % (names.size() - shown.size())
+	var more := names.size() - shown.size()
+	return tr_n("%s … %d more", "%s … %d more", more) % [", ".join(shown), more]
 
 
 ## What a packed atlas export will write, or why it can't
@@ -786,7 +812,10 @@ func _atlas_info(options: ExportOptions) -> String:
 		return ""
 	if sizes.size() == 1:
 		return tr("Atlas size: %d×%d px") % [sizes[0].x, sizes[0].y]
-	return tr("%d pages, the first %d×%d px") % [sizes.size(), sizes[0].x, sizes[0].y]
+	return (
+		tr_n("%d page, the first %d×%d px", "%d pages, the first %d×%d px", sizes.size())
+		% [sizes.size(), sizes[0].x, sizes[0].y]
+	)
 
 
 ## Lists in [param button] the formats that can describe [param layout], the user's own

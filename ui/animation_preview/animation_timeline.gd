@@ -192,7 +192,7 @@ func insert_cells(cells: Array[Vector2i], at := -1) -> void:
 	for i in cells.size():
 		_selected[at + i] = true
 	_anchor = at
-	frames_edited.emit("Add frames", new_cells, new_durations)
+	frames_edited.emit(L10n.mark("Add frames"), new_cells, new_durations)
 
 
 ## Moves the frames at [param indices] to [param to], counted before moving them, keeping
@@ -222,7 +222,7 @@ func move_frames(indices: Array[int], to: int) -> void:
 	if new_cells == _cells and new_durations == _durations:
 		_show_selection()
 		return
-	frames_edited.emit("Move frames", new_cells, new_durations)
+	frames_edited.emit(L10n.mark("Move frames"), new_cells, new_durations)
 
 
 ## Takes the frames at [param indices] out
@@ -238,7 +238,7 @@ func remove_frames(indices: Array[int]) -> void:
 			new_durations.append(_durations[i])
 	_selected.clear()
 	_anchor = -1
-	frames_edited.emit("Remove frames", new_cells, new_durations)
+	frames_edited.emit(L10n.mark("Remove frames"), new_cells, new_durations)
 
 
 ## Shows the frame at [param index] [param duration] frames long
@@ -247,7 +247,7 @@ func set_duration(index: int, duration: float) -> void:
 		return
 	var new_durations := _durations.duplicate()
 	new_durations[index] = duration
-	frames_edited.emit("Frame duration", _cells.duplicate(), new_durations)
+	frames_edited.emit(L10n.mark("Frame duration"), _cells.duplicate(), new_durations)
 
 
 #endregion

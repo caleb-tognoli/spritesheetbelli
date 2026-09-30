@@ -63,7 +63,7 @@ static func parse(text: String) -> SheetData:
 				index = values[0]
 	_finish(data, frame, index)
 	if data.frames.is_empty():
-		data.error = "There are no frames in this data file."
+		data.error = TranslationServer.translate("There are no frames in this data file.")
 		return data
 	data.image_file = data.pages[0]
 	return data

@@ -430,6 +430,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   "Spritesheet and data file" export with a list of formats.
 - Cancelling the Add Spritesheet window after File > Open leaves nothing open, instead of
   an empty sheet named after the image.
+- Counts say "1 frame" and "2 frames", "1 empty cell is skipped", and so on, rather than
+  "1 frames".
 
 ### Removed
 - Named rows: Frame > Rows > Name Row… (F2), double-clicking left of a row, the names

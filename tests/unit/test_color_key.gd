@@ -112,7 +112,7 @@ func test_the_preview_leaves_the_sheet_alone() -> void:
 	await settle()
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0).a, 0.0)
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "no longer selected")
-	assert_eq(dropdown.note.text, "In 1 selected frames")
+	assert_eq(dropdown.note.text, "In 1 selected frame")
 
 
 func test_confirm_is_one_step_on_the_selected_frames() -> void:
@@ -288,7 +288,7 @@ func test_clicks_on_the_canvas_select_and_the_preview_follows() -> void:
 	assert_eq(color_key.get_target_coords(), [Vector2i(2, 0)] as Array[Vector2i])
 	assert_eq(shown(Vector2i(2, 0)).get_pixel(0, 0).a, 0.0, "previewed")
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "no longer selected")
-	assert_eq(dropdown.note.text, "In 1 selected frames")
+	assert_eq(dropdown.note.text, "In 1 selected frame")
 
 	click.call(at.call(Vector2i(1, 0)), true)
 	await settle()

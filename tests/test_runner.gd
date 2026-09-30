@@ -30,6 +30,8 @@ func _ready() -> void:
 	# Undo what the real settings did at startup
 	Global.apply_ui_scale()
 	Global.apply_theme()
+	# Tests check English text, whatever the machine's language
+	TranslationServer.set_locale("en")
 
 	var filter := ""
 	for arg in OS.get_cmdline_user_args():

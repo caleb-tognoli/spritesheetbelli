@@ -52,8 +52,8 @@ func _register_actions() -> void:
 	var sheet := Global.spritesheet
 	var grid := func() -> bool: return sheet.layout == Spritesheet.Layout.GRID
 	for line: Array in [
-		[&"animation_from_row", "Animation from Row…", false],
-		[&"animation_from_column", "Animation from Column…", true],
+		[&"animation_from_row", L10n.mark("Animation from Row…"), false],
+		[&"animation_from_column", L10n.mark("Animation from Column…"), true],
 	]:
 		var column: bool = line[2]
 		var cells := func() -> Array[Vector2i]: return line_cells(sheet, _target_cell(), column)
@@ -68,7 +68,7 @@ func _register_actions() -> void:
 		)
 	Actions.add(
 		&"animation_from_selection",
-		"Animation from Selection…",
+		L10n.mark("Animation from Selection…"),
 		func() -> void: name_frames(main.preview.get_selected_coords()),
 		func() -> bool: return not main.preview.get_selected_coords().is_empty()
 	)
@@ -76,24 +76,24 @@ func _register_actions() -> void:
 	var panel: AnimationPanel = main.animation_panel
 	var has_current := func() -> bool: return panel.get_selected() >= 0
 	for action: Array in [
-		[&"duplicate_animation", "Duplicate Animation", panel.duplicate_animation],
-		[&"mirror_animation", "Mirror Animation", panel.mirror_animation],
-		[&"delete_animation", "Delete Animation", panel.remove_animation],
+		[&"duplicate_animation", L10n.mark("Duplicate Animation"), panel.duplicate_animation],
+		[&"mirror_animation", L10n.mark("Mirror Animation"), panel.mirror_animation],
+		[&"delete_animation", L10n.mark("Delete Animation"), panel.remove_animation],
 	]:
 		Actions.add(action[0], action[1], action[2], has_current, ICONS[action[0]])
 	Actions.add(
 		&"animation_labels",
-		"Animation Labels…",
+		L10n.mark("Animation Labels…"),
 		func() -> void: main.preview_area.label_controls.open_flyover(),
 		func() -> bool: return not sheet.animations.is_empty(),
 		ICONS[&"animation_labels"],
 		Callable(),
 		grid
 	)
-	Actions.get_action(&"animation_labels").description = "Name animations on the grid"
+	Actions.get_action(&"animation_labels").description = L10n.mark("Name animations on the grid")
 	Actions.add(
 		&"toggle_onion_skin",
-		"Onion Skin",
+		L10n.mark("Onion Skin"),
 		func() -> void: Settings.set_value(&"onion_skin", not Settings.get_value(&"onion_skin")),
 		Callable(),
 		ICONS[&"toggle_onion_skin"],
@@ -186,10 +186,13 @@ func _on_name_chosen(animation_name: String) -> void:
 	if index >= 0 and index < sheet.animations.size():
 		var animation := sheet.animations[index]
 		animation.name = animation_name
-		Global.document.perform("Rename animation", sheet.set_animation.bind(index, animation))
+		Global.document.perform(
+			L10n.mark("Rename animation"), sheet.set_animation.bind(index, animation)
+		)
 	else:
 		index = Global.document.perform(
-			"New animation", sheet.add_animation.bind(SheetAnimation.create(animation_name, _cells))
+			L10n.mark("New animation"),
+			sheet.add_animation.bind(SheetAnimation.create(animation_name, _cells))
 		)
 	_choose_animation(index)
 

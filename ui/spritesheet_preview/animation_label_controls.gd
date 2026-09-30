@@ -116,7 +116,10 @@ func _build_flyover() -> void:
 	box.add_theme_constant_override("separation", 6)
 	flyover.add_child(box)
 	var buttons := HBoxContainer.new()
-	for entry: Array in [[show_all_button, "Show all", true], [hide_all_button, "Hide all", false]]:
+	for entry: Array in [
+		[show_all_button, L10n.mark("Show all"), true],
+		[hide_all_button, L10n.mark("Hide all"), false],
+	]:
 		var all_button: Button = entry[0]
 		all_button.text = entry[1]
 		all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -181,7 +184,7 @@ func _fill_flyover() -> void:
 	playing_only_check.set_pressed_no_signal(sheet.label_playing_only)
 	var missing := animations.size() - labelled.size()
 	left_out.visible = missing > 0
-	left_out.text = tr("%d more") % missing
+	left_out.text = tr_n("%d more", "%d more", missing) % missing
 	# At most as tall as a dozen names, scrolling past them
 	var scroll := list.get_parent() as ScrollContainer
 	scroll.custom_minimum_size.y = minf(list.get_combined_minimum_size().y, 12 * 28)
@@ -196,7 +199,8 @@ func set_label_shown(index: int, shown: bool) -> void:
 	var animation := sheet.animations[index]
 	animation.show_label = shown
 	Global.document.perform(
-		"Show label" if shown else "Hide label", sheet.set_animation.bind(index, animation)
+		L10n.mark("Show label") if shown else L10n.mark("Hide label"),
+		sheet.set_animation.bind(index, animation)
 	)
 
 
@@ -204,7 +208,7 @@ func set_label_shown(index: int, shown: bool) -> void:
 func show_all(shown: bool) -> void:
 	var sheet := Global.spritesheet
 	Global.document.perform(
-		"Show all labels" if shown else "Hide all labels",
+		L10n.mark("Show all labels") if shown else L10n.mark("Hide all labels"),
 		func() -> void:
 			sheet.set_label_playing_only(false)
 			var animations := sheet.animations
@@ -217,7 +221,11 @@ func show_all(shown: bool) -> void:
 func set_playing_only(on: bool) -> void:
 	var sheet := Global.spritesheet
 	Global.document.perform(
-		"Label only the playing animation" if on else "Label the chosen animations",
+		(
+			L10n.mark("Label only the playing animation")
+			if on
+			else L10n.mark("Label the chosen animations")
+		),
 		sheet.set_label_playing_only.bind(on)
 	)
 
@@ -262,7 +270,9 @@ func _finish_rename(apply: bool) -> void:
 		return
 	var animation := sheet.animations[index]
 	animation.name = new_name
-	Global.document.perform("Rename animation", sheet.set_animation.bind(index, animation))
+	Global.document.perform(
+		L10n.mark("Rename animation"), sheet.set_animation.bind(index, animation)
+	)
 
 
 func _build_menu() -> void:
@@ -366,7 +376,9 @@ func _apply_color() -> void:
 		return
 	var animation := sheet.animations[index]
 	animation.color = color_picker.color
-	Global.document.perform("Recolour animation", sheet.set_animation.bind(index, animation))
+	Global.document.perform(
+		L10n.mark("Recolour animation"), sheet.set_animation.bind(index, animation)
+	)
 
 
 ## Changes the right-clicked animation with [param change] as one undoable step
@@ -376,6 +388,8 @@ func _edit_animation(change: Callable) -> void:
 		return
 	var animation := sheet.animations[_menu_index]
 	change.call(animation)
-	Global.document.perform("Edit animation", sheet.set_animation.bind(_menu_index, animation))
+	Global.document.perform(
+		L10n.mark("Edit animation"), sheet.set_animation.bind(_menu_index, animation)
+	)
 
 #endregion

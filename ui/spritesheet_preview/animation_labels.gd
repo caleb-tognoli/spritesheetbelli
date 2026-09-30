@@ -107,9 +107,7 @@ static func describe(sheet: Spritesheet, index: int) -> String:
 		return ""
 	var animation := sheet.animations[index]
 	var count := animation.get_frame_cells(sheet).size()
-	var frames := TranslationServer.translate("%d frames") % count
-	if count == 1:
-		frames = TranslationServer.translate("1 frame")
+	var frames := TranslationServer.translate_plural("%d frame", "%d frames", count) % count
 	var fps := animation.fps
 	var speed := str(roundi(fps)) if is_equal_approx(fps, roundf(fps)) else String.num(fps, 2)
 	var mode: String = SheetAnimation.MODE_NAMES[animation.mode]

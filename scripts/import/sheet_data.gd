@@ -107,7 +107,7 @@ static func parse_json(text: String) -> SheetData:
 	var data := SheetData.new()
 	var parsed: Variant = JSON.parse_string(text)
 	if not parsed is Dictionary:
-		data.error = "This isn't a spritesheet data file."
+		data.error = TranslationServer.translate("This isn't a spritesheet data file.")
 		return data
 	var meta: Dictionary = parsed.get("meta", {}) if parsed.get("meta") is Dictionary else {}
 	var entries: Variant = parsed.get("frames")
@@ -125,7 +125,7 @@ static func parse_json(text: String) -> SheetData:
 		if not data.pages.is_empty():
 			data.image_file = data.pages[0]
 	if data.frames.is_empty():
-		data.error = "There are no frames in this data file."
+		data.error = TranslationServer.translate("There are no frames in this data file.")
 		return data
 	if meta.get("image") is String:
 		data.image_file = meta.image

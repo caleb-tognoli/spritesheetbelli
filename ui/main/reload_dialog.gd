@@ -53,7 +53,11 @@ func _init() -> void:
 func ask(path: String, frames: int, edited: int, others: int, others_edited: bool) -> void:
 	var text := tr("%s changed on disk. Reload it?") % path.get_file()
 	if edited > 0:
-		var detail := tr("%d of its %d frames were edited here (flipped, trimmed, moved…).")
+		var detail := tr_n(
+			"%d of its %d frames was edited here (flipped, trimmed, moved…).",
+			"%d of its %d frames were edited here (flipped, trimmed, moved…).",
+			edited
+		)
 		text += "\n\n" + detail % [edited, frames]
 	message.text = text
 	message.tooltip_text = path
@@ -64,7 +68,14 @@ func ask(path: String, frames: int, edited: int, others: int, others_edited: boo
 	for_all_check.text = (
 		tr("Do the same for the other changed file")
 		if others == 1
-		else tr("Do the same for the other %d changed files") % others
+		else (
+			tr_n(
+				"Do the same for the other %d changed file",
+				"Do the same for the other %d changed files",
+				others
+			)
+			% others
+		)
 	)
 	_update_buttons()
 	popup_centered()

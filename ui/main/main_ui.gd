@@ -68,7 +68,7 @@ const ICONS := {
 	&"pivot_bottom_left": preload("res://assets/icons/ControlAlignBottomLeft.svg"),
 }
 ## What tooltips say after an action's name and shortcut, see [member AppAction.description]
-const DESCRIPTIONS := {
+const DESCRIPTIONS := {  # L10n.mark
 	&"export": "The spritesheet as an image, as sprites or for a game engine",
 	&"export_again": "Every export of the project, or else the Export dialog",
 	&"add_sprites": "Image files as sprites",
@@ -217,14 +217,14 @@ func _ready() -> void:
 	original_size_btn.pressed.connect(
 		func() -> void:
 			Global.document.perform(
-				"Original size", Global.spritesheet.set_frame_scale.bind(Vector2.ONE)
+				L10n.mark("Original size"), Global.spritesheet.set_frame_scale.bind(Vector2.ONE)
 			)
 	)
 	resize_filter.item_selected.connect(
 		func(filter: int) -> void:
 			var sheet := Global.spritesheet
 			Global.document.perform(
-				"Resize filter", sheet.set_frame_scale.bind(sheet.frame_scale, filter)
+				L10n.mark("Resize filter"), sheet.set_frame_scale.bind(sheet.frame_scale, filter)
 			)
 	)
 	# Clicking the Filter label opens the list, like clicking the list itself
@@ -302,7 +302,7 @@ func _ready() -> void:
 	preview.move_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i, copy: bool) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
-				"Copy frames" if copy else "Move frames",
+				L10n.mark("Copy frames") if copy else L10n.mark("Move frames"),
 				Global.spritesheet.move_frames.bind(coords, offset, copy)
 			)
 			preview.set_selected_coords(targets)
@@ -310,13 +310,13 @@ func _ready() -> void:
 	preview.nudge_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i) -> void:
 			Global.document.perform(
-				"Nudge frames", Global.spritesheet.nudge_frames.bind(coords, offset)
+				L10n.mark("Nudge frames"), Global.spritesheet.nudge_frames.bind(coords, offset)
 			)
 	)
 	preview.lock_requested.connect(
 		func(coord: Vector2i, locked: bool) -> void:
 			Global.document.perform(
-				"Lock cell" if locked else "Unlock cell",
+				L10n.mark("Lock cell") if locked else L10n.mark("Unlock cell"),
 				Global.spritesheet.set_locked.bind(coord, locked)
 			)
 	)
@@ -325,11 +325,13 @@ func _ready() -> void:
 			var sheet := Global.spritesheet
 			var places := PackedLayout.moved(sheet, coords, page, offset)
 			if places:
-				Global.document.perform("Move frames", sheet.set_placements.bind(places))
+				Global.document.perform(L10n.mark("Move frames"), sheet.set_placements.bind(places))
 	)
 	preview.pivot_requested.connect(
 		func(coords: Array[Vector2i], pivot: Vector2) -> void:
-			Global.document.perform("Set pivot", Global.spritesheet.set_pivots.bind(coords, pivot))
+			Global.document.perform(
+				L10n.mark("Set pivot"), Global.spritesheet.set_pivots.bind(coords, pivot)
+			)
 	)
 
 
@@ -360,39 +362,52 @@ func _register_actions() -> void:
 	var has_selection := func() -> bool: return not preview.get_selected_coords().is_empty()
 	# Why actions can't run, by what they need, see [member AppAction.disabled_reason]
 	var reasons := {
-		has_frames: "No frames yet",
-		has_selection: "No frames selected",
-		clipboard.has_content: "Nothing copied",
-		Global.document.can_undo: "Nothing to undo",
-		Global.document.can_redo: "Nothing to redo",
+		has_frames: L10n.mark("No frames yet"),
+		has_selection: L10n.mark("No frames selected"),
+		clipboard.has_content: L10n.mark("Nothing copied"),
+		Global.document.can_undo: L10n.mark("Nothing to undo"),
+		Global.document.can_redo: L10n.mark("Nothing to redo"),
 	}
 	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()) -> void:
 		var action := Actions.add(id, label, run, can_run, ICONS.get(id))
 		action.disabled_reason = reasons.get(can_run, "")
 
-	add.call(&"new", "New", files.new_spritesheet)
-	add.call(&"open", "Open…", files.open_spritesheet)
-	add.call(&"save", "Save", files.save, has_frames)
-	add.call(&"save_as", "Save As…", files.save_as, has_frames)
-	add.call(&"export", "Export…", func() -> void: export_dialog.popup_centered(), has_frames)
-	add.call(&"export_again", "Export Again", files.exports.export_again, has_frames)
+	add.call(&"new", L10n.mark("New"), files.new_spritesheet)
+	add.call(&"open", L10n.mark("Open…"), files.open_spritesheet)
+	add.call(&"save", L10n.mark("Save"), files.save, has_frames)
+	add.call(&"save_as", L10n.mark("Save As…"), files.save_as, has_frames)
 	add.call(
-		&"add_sprites", "Add Sprite(s)…", files.popup_file_dialog.bind(files.open_sprites_dialog)
+		&"export", L10n.mark("Export…"), func() -> void: export_dialog.popup_centered(), has_frames
 	)
-	add.call(&"add_folder", "Add Folder…", files.popup_file_dialog.bind(files.open_folder_dialog))
+	add.call(&"export_again", L10n.mark("Export Again"), files.exports.export_again, has_frames)
+	add.call(
+		&"add_sprites",
+		L10n.mark("Add Sprite(s)…"),
+		files.popup_file_dialog.bind(files.open_sprites_dialog)
+	)
+	add.call(
+		&"add_folder",
+		L10n.mark("Add Folder…"),
+		files.popup_file_dialog.bind(files.open_folder_dialog)
+	)
 	add.call(
 		&"add_spritesheet",
-		"Add Spritesheet…",
+		L10n.mark("Add Spritesheet…"),
 		files.popup_file_dialog.bind(files.open_spritesheet_dialog)
 	)
-	add.call(&"settings", "Settings…", func() -> void: settings_window.popup_centered())
+	add.call(&"settings", L10n.mark("Settings…"), func() -> void: settings_window.popup_centered())
 	add.call(
-		&"quit", "Quit", func() -> void: files.confirm_unsaved_changes("quitting", get_tree().quit)
+		&"quit",
+		L10n.mark("Quit"),
+		func() -> void:
+			files.confirm_unsaved_changes(
+				L10n.mark("Save changes to %s before quitting?"), get_tree().quit
+			)
 	)
 
 	for tool: Array in [
-		[&"tool_select", "Select Mode", SpritesheetPreview.Tool.SELECT],
-		[&"tool_move", "Move Mode", SpritesheetPreview.Tool.MOVE],
+		[&"tool_select", L10n.mark("Select Mode"), SpritesheetPreview.Tool.SELECT],
+		[&"tool_move", L10n.mark("Move Mode"), SpritesheetPreview.Tool.MOVE],
 	]:
 		Actions.add(
 			tool[0],
@@ -402,115 +417,119 @@ func _register_actions() -> void:
 			ICONS[tool[0]],
 			func() -> bool: return preview.tool == tool[2]
 		)
-	add.call(&"select_all", "Select All", preview_area.select_all.bind(true), has_frames)
-	add.call(&"select_none", "Select None", preview_area.select_all.bind(false), has_selection)
+	add.call(&"select_all", L10n.mark("Select All"), preview_area.select_all.bind(true), has_frames)
+	add.call(
+		&"select_none", L10n.mark("Select None"), preview_area.select_all.bind(false), has_selection
+	)
 	add.call(
 		&"flip_h",
-		"Flip Horizontally",
-		edit_selection.bind("Flip", _edit_with(FrameEdits.flip, [true])),
+		L10n.mark("Flip Horizontally"),
+		edit_selection.bind(L10n.mark("Flip"), _edit_with(FrameEdits.flip, [true])),
 		has_selection
 	)
 	add.call(
 		&"flip_v",
-		"Flip Vertically",
-		edit_selection.bind("Flip", _edit_with(FrameEdits.flip, [false])),
+		L10n.mark("Flip Vertically"),
+		edit_selection.bind(L10n.mark("Flip"), _edit_with(FrameEdits.flip, [false])),
 		has_selection
 	)
 	add.call(
 		&"rotate_cw",
-		"Rotate 90° CW",
-		edit_selection.bind("Rotate", _edit_with(FrameEdits.rotate, [true])),
+		L10n.mark("Rotate 90° CW"),
+		edit_selection.bind(L10n.mark("Rotate"), _edit_with(FrameEdits.rotate, [true])),
 		has_selection
 	)
 	add.call(
 		&"rotate_ccw",
-		"Rotate 90° CCW",
-		edit_selection.bind("Rotate", _edit_with(FrameEdits.rotate, [false])),
+		L10n.mark("Rotate 90° CCW"),
+		edit_selection.bind(L10n.mark("Rotate"), _edit_with(FrameEdits.rotate, [false])),
 		has_selection
 	)
 	add.call(
 		&"delete_frames",
-		"Delete",
-		edit_selection.bind("Delete", sheet.remove_frames),
+		L10n.mark("Delete"),
+		edit_selection.bind(L10n.mark("Delete"), sheet.remove_frames),
 		has_selection
 	)
 
-	add.call(&"copy", "Copy", copy_selection, has_selection)
+	add.call(&"copy", L10n.mark("Copy"), copy_selection, has_selection)
 	add.call(
 		&"cut",
-		"Cut",
+		L10n.mark("Cut"),
 		func() -> void:
 			copy_selection()
-			edit_selection("Cut", sheet.remove_frames),
+			edit_selection(L10n.mark("Cut"), sheet.remove_frames),
 		has_selection
 	)
 	add.call(
 		&"paste",
-		"Paste",
-		func() -> void: add_cells("Paste", clipboard.get_cells()),
+		L10n.mark("Paste"),
+		func() -> void: add_cells(L10n.mark("Paste"), clipboard.get_cells()),
 		clipboard.has_content
 	)
 	add.call(
 		&"duplicate",
-		"Duplicate",
-		func() -> void: add_cells("Duplicate", get_selected_cells()),
+		L10n.mark("Duplicate"),
+		func() -> void: add_cells(L10n.mark("Duplicate"), get_selected_cells()),
 		has_selection
 	)
 	add.call(
 		&"trim",
-		"Trim Transparent Borders",
-		edit_targets.bind("Trim", _edit_with(FrameEdits.trim)),
+		L10n.mark("Trim Transparent Borders"),
+		edit_targets.bind(L10n.mark("Trim"), _edit_with(FrameEdits.trim)),
 		has_frames
 	)
 	for align: Array in [
-		[&"align_top", "Top", Spritesheet.Alignment.TOP],
-		[&"align_bottom", "Bottom", Spritesheet.Alignment.BOTTOM],
-		[&"align_left", "Left", Spritesheet.Alignment.LEFT],
-		[&"align_right", "Right", Spritesheet.Alignment.RIGHT],
-		[&"align_center", "Centre", Spritesheet.Alignment.CENTER],
+		[&"align_top", L10n.mark("Top"), Spritesheet.Alignment.TOP],
+		[&"align_bottom", L10n.mark("Bottom"), Spritesheet.Alignment.BOTTOM],
+		[&"align_left", L10n.mark("Left"), Spritesheet.Alignment.LEFT],
+		[&"align_right", L10n.mark("Right"), Spritesheet.Alignment.RIGHT],
+		[&"align_center", L10n.mark("Centre"), Spritesheet.Alignment.CENTER],
 	]:
 		add.call(
 			align[0],
 			align[1],
-			edit_targets.bind("Align", _edit_with(FrameEdits.align, [align[2]])),
+			edit_targets.bind(L10n.mark("Align"), _edit_with(FrameEdits.align, [align[2]])),
 			has_frames
 		)
-	add.call(&"color_key", "Remove Background Colour…", color_key.open, has_frames)
+	add.call(&"color_key", L10n.mark("Remove Background Colour…"), color_key.open, has_frames)
 	add.call(
 		&"add_outline",
-		"Add Outline…",
+		L10n.mark("Add Outline…"),
 		func() -> void: outline_dialog.popup_centered(),
 		has_selection
 	)
 	add.call(
 		&"replace_image",
-		"Replace Image…",
+		L10n.mark("Replace Image…"),
 		func() -> void: files.replace_frame_image(preview.get_selected_coords()[0]),
 		func() -> bool: return preview.get_selected_coords().size() == 1
 	)
 	add.call(
 		&"reload_source",
-		"Reload from File",
+		L10n.mark("Reload from File"),
 		func() -> void:
-			source_watcher.reload_frames(get_selected_linked_coords(), true, "Reload from file"),
+			source_watcher.reload_frames(
+				get_selected_linked_coords(), true, L10n.mark("Reload from file")
+			),
 		func() -> bool: return not get_selected_linked_coords().is_empty()
 	)
 	add.call(
 		&"insert_cell",
-		"Insert Empty Cell",
+		L10n.mark("Insert Empty Cell"),
 		func() -> void:
 			var coord := preview.get_selected_coords()[0]
-			Global.document.perform("Insert cell", sheet.insert_empty_cell.bind(coord)),
+			Global.document.perform(L10n.mark("Insert cell"), sheet.insert_empty_cell.bind(coord)),
 		has_selection
 	)
 	add.call(
 		&"remove_cell",
-		"Remove Cell",
+		L10n.mark("Remove Cell"),
 		func() -> void:
 			var coords := preview.get_selected_coords()
 			coords.reverse()
 			Global.document.perform(
-				"Remove cells",
+				L10n.mark("Remove cells"),
 				func() -> void:
 					for coord in coords:
 						sheet.remove_cell(coord)
@@ -520,25 +539,25 @@ func _register_actions() -> void:
 
 	add.call(
 		&"insert_row",
-		"Insert Row",
+		L10n.mark("Insert Row"),
 		func() -> void:
 			var row := preview.get_selected_coords()[0].y
 			var moved: Array[Vector2i] = []
 			for coord in preview.get_selected_coords():
 				moved.append(coord + Vector2i.DOWN if coord.y >= row else coord)
-			Global.document.perform("Insert row", sheet.insert_row.bind(row))
+			Global.document.perform(L10n.mark("Insert row"), sheet.insert_row.bind(row))
 			preview.set_selected_coords(moved),
 		has_selection
 	)
 	add.call(
 		&"remove_row",
-		"Remove Row",
+		L10n.mark("Remove Row"),
 		func() -> void:
 			var rows := _selected_rows()
 			rows.reverse()
 			preview.set_selected_coords([] as Array[Vector2i])
 			Global.document.perform(
-				"Remove rows",
+				L10n.mark("Remove rows"),
 				func() -> void:
 					for row in rows:
 						sheet.remove_row(row)
@@ -546,7 +565,8 @@ func _register_actions() -> void:
 		has_selection
 	)
 	for move: Array in [
-		[&"move_row_up", "Move Row Up", -1], [&"move_row_down", "Move Row Down", 1]
+		[&"move_row_up", L10n.mark("Move Row Up"), -1],
+		[&"move_row_down", L10n.mark("Move Row Down"), 1]
 	]:
 		add.call(
 			move[0],
@@ -557,7 +577,7 @@ func _register_actions() -> void:
 				var moved: Array[Vector2i] = []
 				for coord in preview.get_selected_coords():
 					moved.append(coord + Vector2i(0, by) if coord.y == row else coord)
-				Global.document.perform("Move row", sheet.move_row.bind(row, by))
+				Global.document.perform(L10n.mark("Move row"), sheet.move_row.bind(row, by))
 				preview.set_selected_coords(moved),
 			func() -> bool:
 				if preview.get_selected_coords().is_empty():
@@ -566,13 +586,13 @@ func _register_actions() -> void:
 				return target >= 0 and target < sheet.grid_size.y
 		)
 
-	add.call(&"zoom_in", "Zoom In", preview.zoom_by.bind(1.25))
-	add.call(&"zoom_out", "Zoom Out", preview.zoom_by.bind(0.8))
-	add.call(&"zoom_reset", "Actual Size", preview.reset_zoom)
-	add.call(&"zoom_fit", "Fit to View", preview.fit_to_view)
+	add.call(&"zoom_in", L10n.mark("Zoom In"), preview.zoom_by.bind(1.25))
+	add.call(&"zoom_out", L10n.mark("Zoom Out"), preview.zoom_by.bind(0.8))
+	add.call(&"zoom_reset", L10n.mark("Actual Size"), preview.reset_zoom)
+	add.call(&"zoom_fit", L10n.mark("Fit to View"), preview.fit_to_view)
 	Actions.add(
 		&"toggle_status_bar",
-		"Status Bar",
+		L10n.mark("Status Bar"),
 		func() -> void: Settings.set_value(&"show_status_bar", not status_bar.visible),
 		Callable(),
 		null,
@@ -580,25 +600,25 @@ func _register_actions() -> void:
 	)
 	Actions.add(
 		&"toggle_history",
-		"History",
+		L10n.mark("History"),
 		func() -> void: Settings.set_value(&"show_history", not history_panel.visible),
 		Callable(),
 		ICONS[&"toggle_history"],
 		func() -> bool: return history_panel.visible
 	)
-	add.call(&"edit_animations", "Edit", animation_panel.edit, has_frames)
+	add.call(&"edit_animations", L10n.mark("Edit"), animation_panel.edit, has_frames)
 	Actions.add(
 		&"toggle_animation",
-		"Animation Panel",
+		L10n.mark("Animation Panel"),
 		animation_panel.toggle,
 		Callable(),
 		ICONS[&"toggle_animation"],
 		animation_panel.is_expanded
 	)
 	for toggle: Array in [
-		[&"toggle_grid", "Grid Lines", &"show_grid"],
-		[&"toggle_pixel_grid", "Pixel Grid", &"show_pixel_grid"],
-		[&"toggle_indices", "Frame Numbers", &"show_indices"],
+		[&"toggle_grid", L10n.mark("Grid Lines"), &"show_grid"],
+		[&"toggle_pixel_grid", L10n.mark("Pixel Grid"), &"show_pixel_grid"],
+		[&"toggle_indices", L10n.mark("Frame Numbers"), &"show_indices"],
 	]:
 		Actions.add(
 			toggle[0],
@@ -609,14 +629,20 @@ func _register_actions() -> void:
 			func() -> bool: return Settings.get_value(toggle[2])
 		)
 
-	add.call(&"undo", "Undo", Global.document.undo, Global.document.can_undo)
-	add.call(&"redo", "Redo", Global.document.redo, Global.document.can_redo)
+	add.call(&"undo", L10n.mark("Undo"), Global.document.undo, Global.document.can_undo)
+	add.call(&"redo", L10n.mark("Redo"), Global.document.redo, Global.document.can_redo)
 
-	add.call(&"about", "About spritesheetbelli", func() -> void: about_dialog.popup_centered())
 	add.call(
-		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
+		&"about", L10n.mark("About spritesheetbelli"), func() -> void: about_dialog.popup_centered()
 	)
-	add.call(&"command_palette", "Command Palette…", command_palette.open.bind(preview_area))
+	add.call(
+		&"show_shortcuts",
+		L10n.mark("Keyboard Shortcuts"),
+		func() -> void: shortcuts_dialog.popup_centered()
+	)
+	add.call(
+		&"command_palette", L10n.mark("Command Palette…"), command_palette.open.bind(preview_area)
+	)
 	for id: StringName in DESCRIPTIONS:
 		Actions.get_action(id).description = DESCRIPTIONS[id]
 
@@ -670,8 +696,8 @@ func add_cells(action_name: String, cells: Array[Dictionary]) -> void:
 ## Outlines the selected frames, see [method FrameEdits.outline]
 func add_outline(color: Color, thickness: int, corners: bool) -> void:
 	await edit_selection_in_background(
-		"Outline",
-		"Adding outlines",
+		L10n.mark("Outline"),
+		tr("Adding outlines"),
 		func(img: Image) -> Image: return ImageUtils.outline(img, color, thickness, corners),
 		FrameEdits.outline_move(thickness),
 		FrameEdits.outline_op(color, thickness, corners)
@@ -771,7 +797,8 @@ func resize_sprites(new_size: Vector2i) -> void:
 		set_text_params(Global.spritesheet)
 		return
 	Global.document.perform(
-		"Resize sprites", Global.spritesheet.resize_sprites.bind(new_size, get_resize_filter())
+		L10n.mark("Resize sprites"),
+		Global.spritesheet.resize_sprites.bind(new_size, get_resize_filter())
 	)
 
 
@@ -781,7 +808,7 @@ func scale_sprites(factor: float) -> void:
 	if not _check_sprite_size(Vector2i((Vector2(sheet.sprite_size) * factor).round())):
 		return
 	Global.document.perform(
-		"Resize sprites",
+		L10n.mark("Resize sprites"),
 		sheet.set_frame_scale.bind(sheet.frame_scale * factor, get_resize_filter())
 	)
 
@@ -811,7 +838,7 @@ func _prepare_scaled_images() -> void:
 	):
 		return
 	await sheet.scaled_frames.prepare(
-		func(done: int, total: int) -> void: Notify.progress("Resizing sprites", done, total)
+		func(done: int, total: int) -> void: Notify.progress(tr("Resizing sprites"), done, total)
 	)
 	Notify.hide_progress()
 	if not is_inside_tree():
@@ -850,35 +877,37 @@ func _update_export_button(count: int) -> void:
 	if count:
 		var again := Actions.get_shortcut_text(&"export_again")
 		export_btn.tooltip_text += (
-			"\n" + tr("%d exports, written by Export Again (%s)") % [count, again]
+			"\n"
+			+ (
+				tr_n(
+					"%d export, written by Export Again (%s)",
+					"%d exports, written by Export Again (%s)",
+					count
+				)
+				% [count, again]
+			)
 		)
 
 
 ## Frame count, grid and image size in the status bar
 func update_sheet_info() -> void:
 	var sheet := Global.spritesheet
+	var count := sheet.frames.size()
+	var selected := preview.get_selected_coords().size()
 	if sheet.is_empty():
 		sheet_info.text = tr("No frames. Add sprites or drop images here.")
 	elif sheet.layout == Spritesheet.Layout.PACKED:
-		sheet_info.text = tr("%d frames · %s") % [sheet.frames.size(), PackedLayout.describe(sheet)]
-		var selected := preview.get_selected_coords().size()
-		if selected:
-			sheet_info.text += " · " + tr("%d selected") % selected
+		sheet_info.text = (
+			tr_n("%d frame · %s", "%d frames · %s", count) % [count, PackedLayout.describe(sheet)]
+		)
 	else:
-		var selected := preview.get_selected_coords().size()
 		var image_size := SpritesheetExporter.get_image_size(sheet, ExportOptions.from_sheet(sheet))
 		sheet_info.text = (
-			tr("%d frames · %d×%d grid · %d×%d px")
-			% [
-				sheet.frames.size(),
-				sheet.grid_size.x,
-				sheet.grid_size.y,
-				image_size.x,
-				image_size.y
-			]
+			tr_n("%d frame · %d×%d grid · %d×%d px", "%d frames · %d×%d grid · %d×%d px", count)
+			% [count, sheet.grid_size.x, sheet.grid_size.y, image_size.x, image_size.y]
 		)
-		if selected:
-			sheet_info.text += " · " + tr("%d selected") % selected
+	if selected:
+		sheet_info.text += " · " + tr_n("%d selected", "%d selected", selected) % selected
 	legend.text = (
 		tr("Cells with a lock stay empty") if not sheet.locked_coordinates.is_empty() else ""
 	)
@@ -913,14 +942,18 @@ func disable_if_empty() -> void:
 func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 	var frames_outside_count := Global.spritesheet.count_frames_outside(Vector2i(columns, rows))
 	var spritesheet_set_size := Global.document.perform.bind(
-		"Resize grid", Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))
+		L10n.mark("Resize grid"), Global.spritesheet.set_grid_size.bind(Vector2i(columns, rows))
 	)
 
 	if frames_outside_count > 0 and Settings.get_value(&"confirm_grid_shrink"):
 		Notify.confirm(
-			"Confirm resize",
+			tr("Confirm resize"),
 			(
-				tr("Resizing the grid to %d×%d would delete %d sprites.")
+				tr_n(
+					"Resizing the grid to %d×%d would delete %d sprite.",
+					"Resizing the grid to %d×%d would delete %d sprites.",
+					frames_outside_count
+				)
 				% [columns, rows, frames_outside_count]
 			),
 			spritesheet_set_size
@@ -933,7 +966,9 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		files.confirm_unsaved_changes("closing", get_tree().quit)
+		files.confirm_unsaved_changes(
+			L10n.mark("Save changes to %s before closing?"), get_tree().quit
+		)
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		clipboard.on_focus_in()
 		source_watcher.on_focus_in()

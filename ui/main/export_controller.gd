@@ -115,17 +115,19 @@ func _export_at_scale(path: String, options: ExportOptions) -> Dictionary:
 	match options.target:
 		_ when options.packs(Global.spritesheet):
 			return await Notify.run_busy(
-				"Packing the atlas", _export_atlas.bind(path, options), slow
+				tr("Packing the atlas"), _export_atlas.bind(path, options), slow
 			)
 		ExportOptions.Target.GIF:
 			return await _export_gif(path, options)
 		ExportOptions.Target.SPRITES:
 			return await Notify.run_busy(
-				"Exporting sprites", _save_sprites.bind(path, options), slow
+				tr("Exporting sprites"), _save_sprites.bind(path, options), slow
 			)
 		ExportOptions.Target.STRIPS:
-			return await Notify.run_busy("Exporting strips", _save_strips.bind(path, options), slow)
-	return await Notify.run_busy("Exporting", _export_image.bind(path, options), slow)
+			return await Notify.run_busy(
+				tr("Exporting strips"), _save_strips.bind(path, options), slow
+			)
+	return await Notify.run_busy(tr("Exporting"), _export_image.bind(path, options), slow)
 
 
 ## Says what [param results] of [method _export] wrote, and what went wrong. Returns
@@ -169,7 +171,13 @@ func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
 	if not errors.is_empty():
 		return {"error": tr("Could not save: %s.") % ", ".join(errors)}
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
-	return {"message": tr("Saved %d images to %s.") % [written.size(), folder.get_file()]}
+	return {
+		"message":
+		(
+			tr_n("Saved %d image to %s.", "Saved %d images to %s.", written.size())
+			% [written.size(), folder.get_file()]
+		)
+	}
 
 
 ## Writes a GameMaker strip of each animation into [param folder]
@@ -186,7 +194,13 @@ func _save_strips(folder: String, options: ExportOptions) -> Dictionary:
 		}
 	unlink_overwritten(result.paths)
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
-	return {"message": tr("Saved %d strips to %s.") % [result.paths.size(), folder.get_file()]}
+	return {
+		"message":
+		(
+			tr_n("Saved %d strip to %s.", "Saved %d strips to %s.", result.paths.size())
+			% [result.paths.size(), folder.get_file()]
+		)
+	}
 
 
 ## Writes the animation chosen in [param options] as an animated GIF, or a GIF of each
@@ -198,7 +212,7 @@ func _export_gif(path: String, options: ExportOptions) -> Dictionary:
 		Global.spritesheet,
 		options,
 		path,
-		func(done: int, total: int) -> void: Notify.progress("Making the GIF", done, total)
+		func(done: int, total: int) -> void: Notify.progress(tr("Making the GIF"), done, total)
 	)
 	Notify.hide_progress()
 	if result.error == ERR_DOES_NOT_EXIST:
@@ -209,7 +223,13 @@ func _export_gif(path: String, options: ExportOptions) -> Dictionary:
 		}
 	unlink_overwritten([result.path])
 	WebFiles.download(result.path)
-	return {"message": tr("Exported %s (%d frames).") % [result.path.get_file(), result.frames]}
+	return {
+		"message":
+		(
+			tr_n("Exported %s (%d frame).", "Exported %s (%d frames).", result.frames)
+			% [result.path.get_file(), result.frames]
+		)
+	}
 
 
 ## Writes a GIF of each animation into [param folder]
@@ -219,7 +239,7 @@ func _export_gifs(folder: String, options: ExportOptions) -> Dictionary:
 		Global.spritesheet,
 		options,
 		folder,
-		func(done: int, total: int) -> void: Notify.progress("Making the GIFs", done, total)
+		func(done: int, total: int) -> void: Notify.progress(tr("Making the GIFs"), done, total)
 	)
 	Notify.hide_progress()
 	if result.error == ERR_DOES_NOT_EXIST:
@@ -230,7 +250,13 @@ func _export_gifs(folder: String, options: ExportOptions) -> Dictionary:
 		}
 	unlink_overwritten(result.paths)
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
-	return {"message": tr("Saved %d GIFs to %s.") % [result.paths.size(), folder.get_file()]}
+	return {
+		"message":
+		(
+			tr_n("Saved %d GIF to %s.", "Saved %d GIFs to %s.", result.paths.size())
+			% [result.paths.size(), folder.get_file()]
+		)
+	}
 
 
 ## A browser downloads the folder an export writes, which only has this export
@@ -268,7 +294,7 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 	if options.get_image_data():
 		var data_path := Metadata.get_path_for_image(path, options)
 		unlink_overwritten([data_path])
-		message += tr("\nAlso wrote %s.") % data_path.get_file()
+		message += "\n" + tr("Also wrote %s.") % data_path.get_file()
 		WebFiles.download(data_path)
 	if (
 		not SpritesheetExporter.supports_transparency(path)
@@ -277,11 +303,16 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 	):
 		warned_about_jpg_transparency = true
 		message += (
-			tr("\nJPG doesn't support transparency, so transparent areas were filled with %s.")
-			% (
-				tr("white")
+			"\n"
+			+ (
+				tr("JPG doesn't support transparency, so transparent areas were filled with white.")
 				if options.opaque_background == Color.WHITE
-				else tr("the background colour")
+				else tr(
+					(
+						"JPG doesn't support transparency, so transparent areas were filled with "
+						+ "the background colour."
+					)
+				)
 			)
 		)
 	if options.scale == 1:
@@ -310,7 +341,13 @@ func _export_pages(path: String, options: ExportOptions) -> Dictionary:
 		return {
 			"message": tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
 		}
-	return {"message": tr("Exported %d pages, from %s.") % [paths.size(), paths[0].get_file()]}
+	return {
+		"message":
+		(
+			tr_n("Exported %d page, from %s.", "Exported %d pages, from %s.", paths.size())
+			% [paths.size(), paths[0].get_file()]
+		)
+	}
 
 
 ## Packs trimmed frames tightly and writes the atlas's pages with a data file
@@ -332,14 +369,22 @@ func _export_atlas(path: String, options: ExportOptions) -> Dictionary:
 		return {
 			"message":
 			(
-				tr("Packed %d frames on %d pages, from %s, and %s.")
+				tr_n(
+					"Packed %d frame on %d pages, from %s, and %s.",
+					"Packed %d frames on %d pages, from %s, and %s.",
+					result.frames
+				)
 				% [result.frames, result.pages, result.path.get_file(), result.json_path.get_file()]
 			)
 		}
 	return {
 		"message":
 		(
-			tr("Packed %d frames into %s (%d×%d px) and %s.")
+			tr_n(
+				"Packed %d frame into %s (%d×%d px) and %s.",
+				"Packed %d frames into %s (%d×%d px) and %s.",
+				result.frames
+			)
 			% [result.frames, result.path.get_file(), size.x, size.y, result.json_path.get_file()]
 		)
 	}

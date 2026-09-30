@@ -259,7 +259,8 @@ func _apply_color() -> void:
 	if _index >= 0 and _index < Global.spritesheet.animations.size():
 		var color := color_button.color
 		_edit(
-			func(animation: SheetAnimation) -> void: animation.color = color, "Recolour animation"
+			func(animation: SheetAnimation) -> void: animation.color = color,
+			L10n.mark("Recolour animation")
 		)
 
 
@@ -298,18 +299,29 @@ func _show_frames_info(animation: SheetAnimation, sheet: Spritesheet) -> void:
 	var with_frames := animation.get_frame_cells(sheet).size()
 	var total := animation.cells.size()
 	frames_info.theme_type_variation = &"StatusLabel"
-	frames_info.text = tr("%d frames") % with_frames
+	frames_info.text = tr_n("%d frame", "%d frames", with_frames) % with_frames
 	if with_frames > 0:
-		frames_info.text += tr(", %.2f s") % animation.get_length(sheet)
+		frames_info.text = (
+			tr_n("%d frame, %.2f s", "%d frames, %.2f s", with_frames)
+			% [with_frames, animation.get_length(sheet)]
+		)
 	# Numbers past the end of the sheet aren't empty cells of it
 	var outside := animation.cells.filter(
 		func(cell: Vector2i) -> bool: return not sheet.is_inside(cell)
 	)
 	var skipped := PackedStringArray()
-	if total - outside.size() > with_frames:
-		skipped.append(tr("%d empty cells are skipped") % (total - outside.size() - with_frames))
+	var empty := total - outside.size() - with_frames
+	if empty > 0:
+		skipped.append(
+			tr_n("%d empty cell is skipped", "%d empty cells are skipped", empty) % empty
+		)
 	if outside:
-		skipped.append(tr("%d are outside the sheet") % outside.size())
+		skipped.append(
+			(
+				tr_n("%d is outside the sheet", "%d are outside the sheet", outside.size())
+				% outside.size()
+			)
+		)
 	if skipped:
 		frames_info.text += " (%s)" % ", ".join(skipped)
 
@@ -354,7 +366,7 @@ func _frame_names() -> Dictionary:
 
 ## Changes the animation with [param change] as one undoable step called
 ## [param action_name]
-func _edit(change: Callable, action_name := "Edit animation") -> void:
+func _edit(change: Callable, action_name := L10n.mark("Edit animation")) -> void:
 	var sheet := Global.spritesheet
 	var animation := sheet.animations[_index]
 	change.call(animation)

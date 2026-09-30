@@ -27,7 +27,9 @@ func _init() -> void:
 	header.add_child(title)
 	close_button.flat = true
 	close_button.icon = preload("res://assets/icons/Close.svg")
-	close_button.tooltip_text = Actions.get_tooltip(&"toggle_history", "Hide the history")
+	close_button.tooltip_text = Actions.get_tooltip(
+		&"toggle_history", L10n.mark("Hide the history")
+	)
 	header.add_child(close_button)
 
 	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -61,7 +63,7 @@ func refresh() -> void:
 	var steps := document.get_history()
 	var current := document.get_history_position()
 	list.clear()
-	list.add_item(tr(document.history_start))
+	list.add_item(document.get_history_start())
 	for step in steps:
 		list.add_item(tr(step))
 	var muted := get_theme_color("font_color", &"StatusLabel")

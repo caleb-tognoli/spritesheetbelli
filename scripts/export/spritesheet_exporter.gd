@@ -4,14 +4,14 @@ class_name SpritesheetExporter
 ## File extensions that can be exported, lowercase
 const IMAGE_EXTENSIONS: PackedStringArray = ["png", "webp", "jpg", "jpeg", "jpe"]
 ## The tokens of sprite name patterns, see [method format_sprite_name], with what they give
-const SPRITE_NAME_TOKENS := {
-	"index": "The frame's number, as in the preview",
-	"row": "Its row, from 0",
-	"column": "Its column, from 0",
-	"frame": "Its place in its row",
-	"animation": 'The first animation it\'s in, or "frame"',
-	"animation_frame": "Its place in that animation, or else its number",
-	"name": "The name of the file it came from",
+const SPRITE_NAME_TOKENS := {  # L10n.mark
+	&"index": "The frame's number, as in the preview",
+	&"row": "Its row, from 0",
+	&"column": "Its column, from 0",
+	&"frame": "Its place in its row",
+	&"animation": 'The first animation it\'s in, or "frame"',
+	&"animation_frame": "Its place in that animation, or else its number",
+	&"name": "The name of the file it came from",
 }
 
 

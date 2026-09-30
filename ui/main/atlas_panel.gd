@@ -9,18 +9,18 @@ signal settings_changed(settings: AtlasSettings)
 signal repack_requested
 
 const PAGE_SIZES: Array[int] = [256, 512, 1024, 2048, 4096, 8192, 16384]
-const PACK_MODES := {
+const PACK_MODES := {  # L10n.mark
 	AtlasSettings.PackMode.KEEP: "Keep places",
 	AtlasSettings.PackMode.AUTO: "Always tight",
 }
-const HEURISTICS := {
+const HEURISTICS := {  # L10n.mark
 	AtlasSettings.Heuristic.BEST_SHORT_SIDE: "Best short side",
 	AtlasSettings.Heuristic.BEST_LONG_SIDE: "Best long side",
 	AtlasSettings.Heuristic.BEST_AREA: "Best area",
 	AtlasSettings.Heuristic.BOTTOM_LEFT: "Bottom left",
 	AtlasSettings.Heuristic.CONTACT: "Most contact",
 }
-const REPACK_TEXT := "Repack"
+const REPACK_TEXT := "Repack"  # L10n.mark
 
 var page_size := OptionButton.new()
 var pack_mode := OptionButton.new()
@@ -47,19 +47,23 @@ func _init() -> void:
 
 	for pixels in PAGE_SIZES:
 		page_size.add_item("%d px" % pixels)
-	_add_row("Pages up to", page_size, "Neither side of a page is longer")
+	_add_row(L10n.mark("Pages up to"), page_size, L10n.mark("Neither side of a page is longer"))
 	_fill(pack_mode, PACK_MODES)
 	_add_row(
-		"Packing",
+		L10n.mark("Packing"),
 		pack_mode,
-		(
-			"Keep places: when frames are added or change, the others stay where they "
-			+ "are, so the atlas stays the same between exports. Always tight: everything "
-			+ "is packed again."
+		L10n.mark(
+			(
+				"Keep places: when frames are added or change, the others stay where they "
+				+ "are, so the atlas stays the same between exports. Always tight: everything "
+				+ "is packed again."
+			)
 		),
 	)
 	_fill(heuristic, HEURISTICS)
-	_add_row("Place by", heuristic, "How the free place for a frame is picked")
+	_add_row(
+		L10n.mark("Place by"), heuristic, L10n.mark("How the free place for a frame is picked")
+	)
 	gaps.values_changed.connect(_changed)
 	add_child(gaps)
 

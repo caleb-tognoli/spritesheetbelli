@@ -71,15 +71,17 @@ func _build_toolbar() -> void:
 	toolbar.add_child(bar)
 	add_child(toolbar)
 
-	undo_btn.tooltip_text = Actions.get_tooltip(&"undo", "Undo")
+	undo_btn.tooltip_text = Actions.get_tooltip(&"undo", L10n.mark("Undo"))
 	undo_btn.pressed.connect(undo)
-	redo_btn.tooltip_text = Actions.get_tooltip(&"redo", "Redo")
+	redo_btn.tooltip_text = Actions.get_tooltip(&"redo", L10n.mark("Redo"))
 	redo_btn.pressed.connect(redo)
 	merge_btn.text = "Merge"
 	merge_btn.tooltip_text = "Joins the selected boxes into one. Ctrl+drag across boxes also does."
 	merge_btn.pressed.connect(view.merge_selected)
 	delete_btn.text = "Delete"
-	delete_btn.tooltip_text = Actions.get_tooltip(&"delete_frames", "Delete the selected boxes")
+	delete_btn.tooltip_text = Actions.get_tooltip(
+		&"delete_frames", L10n.mark("Delete the selected boxes")
+	)
 	delete_btn.pressed.connect(view.remove_selected)
 	find_btn.text = "Reset"
 	find_btn.tooltip_text = "Finds the sprites again, without the changes made by hand"
@@ -264,7 +266,7 @@ func _update_info() -> void:
 			% [view.get_number(selected[0]), box.position.x, box.position.y, box.size.x, box.size.y]
 		)
 	elif selected.size() > 1:
-		info_label.text = tr("%d selected") % selected.size()
+		info_label.text = tr_n("%d selected", "%d selected", selected.size()) % selected.size()
 	else:
 		info_label.text = ""
 

@@ -30,8 +30,10 @@ var is_dirty: bool:
 	get:
 		return undo_redo.get_version() != _saved_version or _export_choices() != _saved_choices
 
-## What the history starts from, e.g. "Opened walk.png"
-var history_start := "New spritesheet"
+## What the history starts from, untranslated, with [member history_start_file] in its
+## %s, e.g. "Opened %s". See [method get_history_start].
+var history_start := L10n.mark("New spritesheet")
+var history_start_file := ""
 ## The MD5 of each file linked frames came from, when they were last cut from it, to tell
 ## when it changes. Not part of the undo history.
 var source_hashes: Dictionary[String, String] = {}
@@ -56,6 +58,8 @@ func _notification(what: int) -> void:
 
 ## Runs [param edit] as one undoable step named [param action_name] and returns its result.
 ## Nothing is recorded when the spritesheet didn't change, or only its export choices did.
+## The name is untranslated, marked with [method L10n.mark], so the History translates it
+## in the language it shows, unless it has a file's name in it.
 func perform(action_name: String, edit: Callable) -> Variant:
 	var before := _undoable_state()
 	var choices := _export_choices()
@@ -104,6 +108,19 @@ func get_history() -> PackedStringArray:
 	return names
 
 
+## Sets what the history starts from: [param text], untranslated, with the name of
+## [param file] in its %s
+func set_history_start(text: String, file := "") -> void:
+	history_start = text
+	history_start_file = file.get_file()
+
+
+## What the history starts from, translated, e.g. "Opened walk.png"
+func get_history_start() -> String:
+	var text := tr(history_start)
+	return text % history_start_file if "%s" in text else text
+
+
 ## How many steps of [method get_history] are applied
 func get_history_position() -> int:
 	return undo_redo.get_current_action() + 1
@@ -146,7 +163,7 @@ func load_state(state: Dictionary, file_path := "", image_path := "", view := {}
 	path = file_path
 	export_path = image_path
 	var opened := file_path if file_path else image_path
-	history_start = "Opened %s" % opened.get_file() if opened else "New spritesheet"
+	set_history_start(L10n.mark("Opened %s") if opened else L10n.mark("New spritesheet"), opened)
 	mark_saved()
 	loaded.emit(view)
 

@@ -209,7 +209,7 @@ func test_recover() -> void:
 	var document := Global.document
 	assert_eq(document.path, project, "Save writes to its file")
 	assert_true(document.is_dirty, "unsaved")
-	assert_eq(document.history_start, "Recovered walk.sbelli")
+	assert_eq(document.get_history_start(), "Recovered walk.sbelli")
 	assert_color(Global.spritesheet.frames[Vector2i.ZERO], Vector2i.ZERO, Color.BLUE)
 	assert_false(DirAccess.dir_exists_absolute(left), "the old copy is gone")
 	assert_true(recovery.has_copy(), "it's this run's copy now")
@@ -226,7 +226,7 @@ func test_recover() -> void:
 	assert_true(recovery.recover(recovery.leftovers[0]))
 	assert_eq(document.path, "")
 	assert_true(document.is_dirty)
-	assert_eq(document.history_start, "Recovered Untitled")
+	assert_eq(document.get_history_start(), "Recovered Untitled")
 
 
 func test_discard() -> void:

@@ -85,7 +85,11 @@ func _init(optional := false) -> void:
 			changed.emit()
 	)
 	swatch.draw.connect(_draw_hex)
-	var slot := add_field("Colour", swatch, "The colour to make transparent. Click to choose it.")
+	var slot := add_field(
+		L10n.mark("Colour"),
+		swatch,
+		L10n.mark("The colour to make transparent. Click to choose it.")
+	)
 	eyedropper.icon = EYEDROPPER_ICON
 	eyedropper.flat = true
 	eyedropper.toggle_mode = true
@@ -106,9 +110,9 @@ func _init(optional := false) -> void:
 	)
 	var default_percent := roundf(SheetBackground.DEFAULT_TOLERANCE * 100.0)
 	add_field(
-		"Tolerance",
+		L10n.mark("Tolerance"),
 		tolerance_field,
-		"How different a pixel can be and still be made transparent",
+		L10n.mark("How different a pixel can be and still be made transparent"),
 		func() -> void: tolerance_field.value = default_percent,
 		func() -> bool: return tolerance_field.value == default_percent
 	)

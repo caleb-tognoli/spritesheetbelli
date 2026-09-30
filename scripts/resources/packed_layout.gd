@@ -80,7 +80,11 @@ static func arrange(sheet: Spritesheet, repack := false, include_pinned := false
 				continue
 			if group.pinned:
 				group.pinned = false
-				warnings.append(_warning("%s no longer fits where it was pinned.", group))
+				warnings.append(
+					_warning(
+						TranslationServer.translate("%s no longer fits where it was pinned."), group
+					)
+				)
 		waiting.append(group)
 
 	if not waiting.is_empty():
@@ -94,7 +98,9 @@ static func arrange(sheet: Spritesheet, repack := false, include_pinned := false
 				"page": found.page, "position": found.position, "rotated": found.rotated
 			}
 		for index: int in packing.oversize:
-			warnings.append(_warning("%s is bigger than a page.", waiting[index]))
+			warnings.append(
+				_warning(TranslationServer.translate("%s is bigger than a page."), waiting[index])
+			)
 
 	var result := _placements_of(groups, accepted, include_pinned)
 	sheet.pack_cache.signature = signature if not repack else 0
@@ -267,13 +273,12 @@ static func describe(sheet: Spritesheet) -> String:
 	for size in sizes:
 		biggest = biggest.max(size)
 	var filled := roundi(PackedLayout.get_occupancy(sheet) * 100)
-	if sizes.size() == 1:
-		return (
-			TranslationServer.translate("1 page of %d×%d px, %d%% filled")
-			% [biggest.x, biggest.y, filled]
-		)
 	return (
-		TranslationServer.translate("%d pages of up to %d×%d px, %d%% filled")
+		TranslationServer.translate_plural(
+			"%d page of %d×%d px, %d%% filled",
+			"%d pages of up to %d×%d px, %d%% filled",
+			sizes.size()
+		)
 		% [sizes.size(), biggest.x, biggest.y, filled]
 	)
 
@@ -343,7 +348,7 @@ static func get_source_rect(sheet: Spritesheet, coord: Vector2i, trim := true) -
 
 
 static func _warning(message: String, group: Dictionary) -> String:
-	return TranslationServer.translate(message) % group.name
+	return message % group.name
 
 
 ## Frames grouped by what they show, each group with the frame that leads it, the part of
