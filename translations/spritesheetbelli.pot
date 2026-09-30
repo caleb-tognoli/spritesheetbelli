@@ -458,6 +458,10 @@ msgid "%s: %s"
 msgstr ""
 
 #: res://scripts/ui/template_file_field.gd
+msgid "Templates"
+msgstr ""
+
+#: res://scripts/ui/template_file_field.gd
 msgid "No template picked"
 msgstr ""
 
@@ -471,14 +475,6 @@ msgstr ""
 
 #: res://scripts/ui/template_file_field.gd
 msgid "Pick a Template"
-msgstr ""
-
-#: res://scripts/ui/template_file_field.gd
-msgid "Templates"
-msgstr ""
-
-#: res://scripts/ui/template_file_field.gd
-msgid "All files"
 msgstr ""
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd

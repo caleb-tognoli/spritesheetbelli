@@ -458,6 +458,10 @@ msgid "%s: %s"
 msgstr "%s: %s"
 
 #: res://scripts/ui/template_file_field.gd
+msgid "Templates"
+msgstr "Modelli"
+
+#: res://scripts/ui/template_file_field.gd
 msgid "No template picked"
 msgstr "Nessun modello scelto"
 
@@ -472,14 +476,6 @@ msgstr "Scegli un file modello"
 #: res://scripts/ui/template_file_field.gd
 msgid "Pick a Template"
 msgstr "Scegli un modello"
-
-#: res://scripts/ui/template_file_field.gd
-msgid "Templates"
-msgstr "Modelli"
-
-#: res://scripts/ui/template_file_field.gd
-msgid "All files"
-msgstr "Tutti i file"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "Offset & Spacing"

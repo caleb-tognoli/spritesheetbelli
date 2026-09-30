@@ -6,6 +6,9 @@ extends HBoxContainer
 
 signal path_changed(path: String)
 
+## The file dialog's filter, which it translates. It adds one of all files itself.
+const FILTER := "*.template ; Templates"  # L10n.mark
+
 var line_edit := LineEdit.new()
 var pick_button := Button.new()
 var file_dialog := FileDialog.new()
@@ -30,6 +33,7 @@ func _init() -> void:
 	file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	file_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	file_dialog.use_native_dialog = true
+	file_dialog.filters = [FILTER]
 	add_child(file_dialog)
 
 	line_edit.text_changed.connect(func(_text: String) -> void: path_changed.emit(path))
@@ -50,7 +54,6 @@ func pick() -> void:
 		return
 	if path:
 		file_dialog.current_path = path
-	file_dialog.filters = ["*.template ; " + tr("Templates"), "* ; " + tr("All files")]
 	file_dialog.popup_centered()
 
 
