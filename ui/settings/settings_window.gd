@@ -25,6 +25,7 @@ const CATEGORIES := [
 			[&"use_pivots", "Pivots", "check"],
 			[&"confirm_grid_shrink", "Confirm grid shrinking", "check"],
 			[&"restore_session", "Reopen last project", "check"],
+			[&"recovery_minutes", "Recovery copy every", "spin", [0, 60, 1, "min"]],
 		]
 	],
 	[
@@ -90,6 +91,11 @@ const DETAILS := {
 	),
 	&"confirm_grid_shrink": "Ask before making the grid smaller deletes sprites",
 	&"restore_session": "Open the last project again when the app starts",
+	&"recovery_minutes":
+	(
+		"How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes "
+		+ "unexpectedly. 0 turns it off."
+	),
 	&"show_checkerboard": "A checkerboard behind sprites shows their transparent pixels",
 	&"checker_size": "The size of the checkerboard's squares",
 	&"pixel_perfect_zoom":
@@ -216,6 +222,9 @@ func _build() -> void:
 
 func _add_row(category: String, row: Array) -> void:
 	var key: StringName = row[0]
+	# A browser keeps no recovery copies, see Recovery
+	if key == &"recovery_minutes" and not Recovery.enabled:
+		return
 	var box := HBoxContainer.new()
 	box.custom_minimum_size.y = 32
 	box.add_theme_constant_override("separation", 8)

@@ -46,6 +46,9 @@ const DEFAULTS := {
 	&"ui_scale": 0.0,
 	&"confirm_grid_shrink": true,
 	&"restore_session": false,
+	# Minutes between copies of unsaved work to recover after a crash, 0 for none, see
+	# Recovery
+	&"recovery_minutes": 2,
 	&"show_status_bar": true,
 	# Remembered between runs
 	&"last_session": "",

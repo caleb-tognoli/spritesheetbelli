@@ -464,13 +464,7 @@ func save_project(path: String) -> bool:
 
 func _save_project(path: String) -> bool:
 	path = ProjectFile.with_extension(path)
-	var extra := {
-		"export_path": Global.document.export_path,
-		"source_hashes": _hashes_to_json(Global.document.source_hashes, path.get_base_dir()),
-		"folder_files": _folder_files_to_json(path.get_base_dir()),
-		"view": view_to_json(get_view.call()),
-	}
-	var error := ProjectFile.save(Global.spritesheet, path, extra)
+	var error := ProjectFile.save(Global.spritesheet, path, project_extra(path.get_base_dir()))
 	if error != OK:
 		Notify.error(tr("Could not save %s (%s).") % [path.get_file(), error_string(error)])
 		after_save = Callable()
@@ -502,22 +496,35 @@ func _open_project(path: String) -> bool:
 	if result.has("error"):
 		Notify.error(result.error)
 		return false
+	load_project(result, path, path.get_base_dir())
+	Settings.set_value(&"last_session", path)
+	Settings.add_recent_file(path)
+	Thumbnails.make_for_sheet(path, Global.spritesheet, false)
+	return true
+
+
+## What a project saved in [param folder] holds besides the sheet: the document's export
+## path, what it knows of the files its frames come from, and the preview's view
+func project_extra(folder: String) -> Dictionary:
+	return {
+		"export_path": Global.document.export_path,
+		"source_hashes": _hashes_to_json(Global.document.source_hashes, folder),
+		"folder_files": _folder_files_to_json(folder),
+		"view": view_to_json(get_view.call()),
+	}
+
+
+## Makes [param result] of [method ProjectFile.load] the document, as the file at
+## [param path]. [param folder] is where it was saved, which its relative paths start from.
+func load_project(result: Dictionary, path: String, folder: String) -> void:
 	Global.document.load_state(
 		result.state,
 		path,
 		result.extra.get("export_path", ""),
 		view_from_json(result.extra.get("view"))
 	)
-	Global.document.source_hashes = _hashes_from_json(
-		result.extra.get("source_hashes"), path.get_base_dir()
-	)
-	Global.document.folder_files = _folder_files_from_json(
-		result.extra.get("folder_files"), path.get_base_dir()
-	)
-	Settings.set_value(&"last_session", path)
-	Settings.add_recent_file(path)
-	Thumbnails.make_for_sheet(path, Global.spritesheet, false)
-	return true
+	Global.document.source_hashes = _hashes_from_json(result.extra.get("source_hashes"), folder)
+	Global.document.folder_files = _folder_files_from_json(result.extra.get("folder_files"), folder)
 
 
 ## Reopens the last project when the setting is on

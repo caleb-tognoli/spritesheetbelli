@@ -19,7 +19,8 @@ const THUMBNAIL_SIZE := Vector2(168, 126)
 
 ## Whether it's in a browser, which has no recent files to list
 var in_browser := WebFiles.is_web()
-## Above the recent files, for notices about them. Hidden while it has none.
+## Above the recent files, for notices like work to recover (see [RecoveryNotice]), added
+## with [method add_notice]. Hidden while none shows.
 var notices := VBoxContainer.new()
 var buttons := HFlowContainer.new()
 var recent_heading := Label.new()
@@ -124,6 +125,19 @@ func refresh() -> void:
 		_show_thumbnail(file)
 	recent_heading.visible = not files.is_empty()
 	recent_list.visible = not files.is_empty()
+
+
+## Shows [param notice] above the recent files while it's visible
+func add_notice(notice: Control) -> void:
+	notices.add_child(notice)
+	notice.visibility_changed.connect(_update_notices)
+	_update_notices()
+
+
+func _update_notices() -> void:
+	notices.visible = notices.get_children().any(
+		func(notice: Control) -> bool: return notice.visible
+	)
 
 
 ## Takes [param file] off the recent files, with its thumbnail

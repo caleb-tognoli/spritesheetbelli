@@ -127,6 +127,13 @@ func mark_saved() -> void:
 	changed.emit()
 
 
+## Makes it unsaved until the next save, whatever is undone, like work recovered after a
+## crash, see [Recovery]
+func mark_unsaved() -> void:
+	_saved_version = -1
+	changed.emit()
+
+
 ## Replaces the whole state without undo history, e.g. when opening a file. [param view]
 ## is where the preview looked when the project was saved (see
 ## [method SpritesheetPreview.get_view]), or empty to show the whole sheet.

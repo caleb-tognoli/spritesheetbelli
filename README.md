@@ -93,6 +93,8 @@ A small desktop tool made with Godot.</p>
   pivots, and cuts it again whenever you export over it.
 - **Start screen.** With nothing open, the canvas shows your recent projects and sheets
   with thumbnails, to open with a click, and buttons to open a file or add sprites.
+- **Crash recovery.** Unsaved work is copied every few minutes and offered on the start
+  screen after a crash.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
   size and the view you left them at.
 - Light and dark themes, or the system's as it changes, an accent colour of your choice or

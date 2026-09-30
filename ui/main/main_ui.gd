@@ -152,6 +152,7 @@ var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 var animation_commands := AnimationCommands.new()
 var start_screen := StartScreen.new()
+var recovery := Recovery.new()
 ## The settings and export on the left, and the sprites and history on the right
 var sidebar_split: SidebarSplit
 var panels_split: SidebarSplit
@@ -247,7 +248,6 @@ func _ready() -> void:
 	add_child(source_watcher)
 	animation_panel.setup(preview)
 	outline_dialog.outline_chosen.connect(add_outline)
-	files.restore_session.call_deferred()
 	files.exports.get_selected_coords = preview.get_selected_coords
 	export_dialog.get_selected_coords = preview.get_selected_coords
 	files.get_view = preview.get_view
@@ -259,6 +259,11 @@ func _ready() -> void:
 	# Over the canvas while nothing is open, with buttons for the actions registered above
 	preview_area.add_child(start_screen)
 	start_screen.file_chosen.connect(files.open_recent)
+	add_child(recovery)
+	recovery.setup(files, start_screen)
+	# Work left unsaved by a crash is offered on the start screen instead
+	if recovery.leftovers.is_empty():
+		files.restore_session.call_deferred()
 	add_sprites_btn.tooltip_text = Actions.get_tooltip(&"add_sprites")
 	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
 	_update_export_button(ExportTarget.list(Global.spritesheet).size())

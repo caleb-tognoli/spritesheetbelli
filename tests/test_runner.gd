@@ -26,6 +26,7 @@ func _ready() -> void:
 	Settings.load_settings(TestCase.temp_path("settings.cfg"))
 	AtlasFormats.user_dir = TestCase.temp_path("templates")
 	Thumbnails.folder = TestCase.temp_path("thumbnails")
+	Recovery.folder = TestCase.temp_path("recovery")
 	# Undo what the real settings did at startup
 	Global.apply_ui_scale()
 	Global.apply_theme()

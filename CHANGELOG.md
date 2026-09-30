@@ -288,6 +288,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Command palette (Ctrl+Shift+P, or Ctrl+K): type part of any action's name to run it,
   play an animation or write one export. What you ran last comes first; actions that
   can't run now are greyed out with the reason.
+- Crash recovery: while there are unsaved changes, a copy of the work is kept every few
+  minutes (Settings > General > Recovery copy every, 0 turns it off) and right after big
+  changes, like adding a spritesheet or repacking. If spritesheetbelli closes
+  unexpectedly, the start screen offers to recover it next time, as unsaved changes to
+  its file, or to discard it. Saving or quitting deletes the copy. Not in the web version.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
