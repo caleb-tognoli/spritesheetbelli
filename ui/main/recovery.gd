@@ -7,7 +7,9 @@ extends Node
 ## repacking. It's written on a worker thread, so editing goes on meanwhile. Saving, or
 ## replacing the document, deletes it, and so does quitting.
 ## A folder left by a run that's no longer running is from a crash or an unclean exit:
-## [member leftovers] lists those, see [RecoveryNotice], to recover or discard.
+## [member leftovers] lists those, see [RecoveryNotice], to recover or discard. A run
+## writes the time in its folder every minute, see [constant ALIVE_FILE], so a folder whose
+## process ID has since been given to another program counts as left too.
 ## Not in a browser, which never quits cleanly and has no process to check.
 
 ## Emitted when [member leftovers] changes
@@ -16,6 +18,14 @@ signal leftovers_changed
 const COPY_FILE := "copy.sbelli"
 ## The path and name of the copy's file and when it was written
 const INFO_FILE := "copy.json"
+## When the run last said it's running, in seconds since 1970. It says so every
+## [constant ALIVE_SECONDS]; a folder whose time is [constant ALIVE_TIMEOUT] old is left
+## by a crash, even when a process with its ID is running: another program that got the
+## ID, which operating systems give out again.
+const ALIVE_FILE := "alive"
+const ALIVE_SECONDS := 60.0
+## Long enough for a busy run to catch up, as its time is written on the main thread
+const ALIVE_TIMEOUT := 300
 ## Changing this many frames since the last copy, or moving them in the packed layout,
 ## writes a copy right away
 const BIG_CHANGE_FRAMES := 16
@@ -27,6 +37,8 @@ static var enabled := not WebFiles.is_web()
 ## The folders of runs in this process, which are running even though their process ID
 ## may be an older run's
 static var _sessions: PackedStringArray = []
+## Whether a process with the given ID is running. Tests stand in for it.
+static var is_process_running: Callable = OS.is_process_running
 
 ## Copies left by runs that didn't quit cleanly, newest first: [code]{"dir": String,
 ## "path": String, "name": String, "time": int}[/code], with the folder the copy is in,
@@ -37,6 +49,9 @@ var leftovers: Array[Dictionary] = []
 var session_dir := ""
 ## Writes a copy every [code]recovery_minutes[/code]
 var timer := Timer.new()
+## Writes the time in [member session_dir] every [constant ALIVE_SECONDS], see
+## [constant ALIVE_FILE]
+var alive_timer := Timer.new()
 var files: FileController
 ## Offers [member leftovers] on the start screen
 var notice: RecoveryNotice
@@ -56,18 +71,21 @@ var _placements: Dictionary = {}
 func _init() -> void:
 	# Freed with it, also when it's never added, as in a browser or on the command line
 	add_child(timer)
+	add_child(alive_timer)
 
 
 func _ready() -> void:
 	set_process(false)
 	if not enabled:
 		return
-	var started := int(Time.get_unix_time_from_system())
+	var started := _now()
 	session_dir = folder.path_join("%d_%d_%d" % [OS.get_process_id(), started, _sessions.size()])
 	_sessions.append(session_dir)
 	find_leftovers()
 	timer.timeout.connect(save_copy_if_changed)
 	_update_timer()
+	alive_timer.timeout.connect(say_alive)
+	alive_timer.start(ALIVE_SECONDS)
 	Settings.changed.connect(
 		func(key: StringName) -> void:
 			if key == &"recovery_minutes":
@@ -138,12 +156,32 @@ static func read_info(dir: String) -> Dictionary:
 
 
 ## Whether the run that made [param dir] is still running: one in this process, or in
-## another process that is, named by its ID
+## another process that is, named by its ID, and that said so lately
 static func _is_running(dir: String) -> bool:
 	if dir in _sessions:
 		return true
 	var pid := dir.get_file().get_slice("_", 0).to_int()
-	return pid > 0 and pid != OS.get_process_id() and OS.is_process_running(pid)
+	if pid <= 0 or pid == OS.get_process_id() or not is_process_running.call(pid):
+		return false
+	var said := FileAccess.get_file_as_string(dir.path_join(ALIVE_FILE))
+	return said.is_valid_int() and _now() - said.to_int() < ALIVE_TIMEOUT
+
+
+## Writes the time in [member session_dir], while it has a copy, see [constant ALIVE_FILE]
+func say_alive() -> void:
+	if session_dir and DirAccess.dir_exists_absolute(session_dir):
+		write_alive(session_dir, _now())
+
+
+## Writes [param time] in [param dir] as when its run last said it's running
+static func write_alive(dir: String, time: int) -> void:
+	var file := FileAccess.open(dir.path_join(ALIVE_FILE), FileAccess.WRITE)
+	if file:
+		file.store_string(str(time))
+
+
+static func _now() -> int:
+	return int(Time.get_unix_time_from_system())
 
 
 ## Whether a copy of the document is to be kept: when it has unsaved changes, and frames,
@@ -181,8 +219,11 @@ func save_copy() -> void:
 	var info := {
 		"path": document.path,
 		"name": document.get_display_name(),
-		"time": int(Time.get_unix_time_from_system()),
+		"time": _now(),
 	}
+	# The folder says the run is running before the copy is in it
+	DirAccess.make_dir_recursive_absolute(session_dir)
+	say_alive()
 	_task = WorkerThreadPool.add_task(
 		_write.bind(sheet, extra, info, session_dir), false, "Recovery copy"
 	)

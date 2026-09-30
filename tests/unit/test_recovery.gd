@@ -17,6 +17,7 @@ func after_each() -> void:
 	Global.document.reset()
 	Settings.reset_to_defaults()
 	Settings.set_value(&"last_session", "")
+	Recovery.is_process_running = OS.is_process_running
 	remove_dir(dir)
 	if DirAccess.dir_exists_absolute(Recovery.folder):
 		remove_dir(Recovery.folder)
@@ -253,6 +254,50 @@ func test_running_runs_are_not_offered() -> void:
 	other.queue_free()
 	await get_tree().process_frame
 	assert_true(recovery.has_copy(), "and it stays")
+
+
+## A process ID is given out again once its process ends: a folder whose ID another
+## program has now counts as left by a crash, unless its run said it's running lately
+func test_a_reused_process_id_doesnt_hide_the_copy() -> void:
+	Recovery.is_process_running = func(pid: int) -> bool: return pid == 4242
+	var now := int(Time.get_unix_time_from_system())
+	var never_said := leave_copy("", "never said", 1000, "4242_1_0")
+	var long_ago := leave_copy("", "long ago", 2000, "4242_2_0")
+	Recovery.write_alive(long_ago, now - Recovery.ALIVE_TIMEOUT)
+	var lately := leave_copy("", "lately", 3000, "4242_3_0")
+	Recovery.write_alive(lately, now - 90)
+	recovery.find_leftovers()
+	var names := recovery.leftovers.map(func(leftover: Dictionary) -> String: return leftover.name)
+	assert_eq(names, ["long ago", "never said"], "another program has the ID")
+	assert_true(DirAccess.dir_exists_absolute(lately), "a running run's is left alone")
+	assert_true(DirAccess.dir_exists_absolute(never_said))
+
+
+## A run says it's running every minute while it has a copy, see Recovery.ALIVE_FILE
+func test_a_run_says_its_running() -> void:
+	var alive := func() -> int:
+		var path := recovery.session_dir.path_join(Recovery.ALIVE_FILE)
+		return FileAccess.get_file_as_string(path).to_int()
+	assert_eq(recovery.alive_timer.wait_time, 60.0)
+	assert_false(recovery.alive_timer.is_stopped())
+	recovery.alive_timer.timeout.emit()
+	assert_false(DirAccess.dir_exists_absolute(recovery.session_dir), "no folder without a copy")
+	add_frames(1)
+	recovery.save_copy()
+	recovery.wait()
+	var now := int(Time.get_unix_time_from_system())
+	assert_true(absi(alive.call() - now) < 60, "with its first copy")
+	Recovery.write_alive(recovery.session_dir, 0)
+	recovery.alive_timer.timeout.emit()
+	assert_true(absi(alive.call() - now) < 60, "again every minute")
+	# Seen from another process, as a live run, whose ID is running
+	Recovery.is_process_running = func(_pid: int) -> bool: return true
+	var other := recovery.session_dir.get_base_dir().path_join("4242_1_0")
+	DirAccess.make_dir_recursive_absolute(other)
+	for file in DirAccess.get_files_at(recovery.session_dir):
+		DirAccess.copy_absolute(recovery.session_dir.path_join(file), other.path_join(file))
+	recovery.find_leftovers()
+	assert_true(recovery.leftovers.is_empty(), "not offered")
 
 
 func test_web() -> void:
