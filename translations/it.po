@@ -1545,7 +1545,7 @@ msgstr ""
 
 #: res://ui/main/export_dialog.gd
 msgid "Frame size in data"
-msgstr "Dimensione nei dati"
+msgstr "Dimensione frame nei dati"
 
 #: res://ui/main/export_dialog.gd
 msgid "Frames per second of the animations"
