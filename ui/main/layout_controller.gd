@@ -137,7 +137,7 @@ func _build_sidebar() -> void:
 	]:
 		var button: Button = entry[0]
 		button.text = entry[1]
-		button.icon = main.ICONS[entry[2]]
+		button.icon = MainActions.ICONS[entry[2]]
 		button.toggle_mode = true
 		button.button_group = group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -224,7 +224,7 @@ func register_actions() -> void:
 				L10n.mark("Grid layout"), sheet.set_layout.bind(Spritesheet.Layout.GRID)
 			),
 		Callable(),
-		main.ICONS[&"layout_grid"],
+		MainActions.ICONS[&"layout_grid"],
 		grid
 	)
 	var pack := func() -> void:
@@ -239,7 +239,7 @@ func register_actions() -> void:
 		L10n.mark("Packed Layout"),
 		pack,
 		Callable(),
-		main.ICONS[&"layout_packed"],
+		MainActions.ICONS[&"layout_packed"],
 		packed
 	)
 	Actions.add(
@@ -255,7 +255,7 @@ func register_actions() -> void:
 		L10n.mark("Pivot Mode"),
 		main.preview_area.set_tool.bind(SpritesheetPreview.Tool.PIVOT),
 		Callable(),
-		main.ICONS[&"tool_pivot"],
+		MainActions.ICONS[&"tool_pivot"],
 		func() -> bool: return main.preview.tool == SpritesheetPreview.Tool.PIVOT,
 		pivots
 	)
@@ -268,7 +268,7 @@ func register_actions() -> void:
 				func() -> void: sheet.set_placements(PackedLayout.arrange(sheet, true).placements)
 			),
 		func() -> bool: return not sheet.is_empty(),
-		main.ICONS[&"repack"],
+		MainActions.ICONS[&"repack"],
 		Callable(),
 		packed
 	)
@@ -291,7 +291,7 @@ func register_actions() -> void:
 		L10n.mark("Pinned"),
 		toggle_pins,
 		has_frames,
-		main.ICONS[&"pin_toggle"],
+		MainActions.ICONS[&"pin_toggle"],
 		all_pinned,
 		packed
 	)
@@ -306,7 +306,7 @@ func register_actions() -> void:
 			preset[1],
 			main.edit_targets.bind(L10n.mark("Set pivot"), set_pivots),
 			has_frames,
-			main.ICONS.get(preset[3]),
+			MainActions.ICONS.get(preset[3]),
 			Callable(),
 			pivots
 		)
@@ -318,7 +318,7 @@ func register_actions() -> void:
 			func(coords: Array[Vector2i]) -> void: sheet.set_pivots(coords, null)
 		),
 		has_frames,
-		main.ICONS[&"pivot_clear"],
+		MainActions.ICONS[&"pivot_clear"],
 		Callable(),
 		pivots
 	)
