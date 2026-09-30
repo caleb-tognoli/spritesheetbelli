@@ -97,8 +97,8 @@ A small desktop tool made with Godot.</p>
   screen after a crash.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
   size and the view you left them at.
-- Light and dark themes, or the system's as it changes, an accent colour of your choice or
-  the system's, interface scaling and keyboard shortcuts.
+- English and Italian. Light and dark themes, or the system's as it changes, an accent
+  colour of your choice or the system's, interface scaling and keyboard shortcuts.
 
 <details>
 <summary>Packed layout</summary>
@@ -238,6 +238,31 @@ At scales other than 1, every size and position (and a grid's cell_w, cell_h, pa
 spacing and extrude) is scaled.
 
 The comments in `scripts/export/template_data.gd` describe each one.
+
+## Translations
+
+spritesheetbelli is in English and Italian; pick one in Settings > Interface > Language
+(System follows the operating system). To add a language:
+
+1. Copy `translations/spritesheetbelli.pot` to a file named after the language's code,
+   like `de.po`, and translate it with a gettext editor such as Poedit, with the
+   language's plural forms.
+2. To try it, put it in the translations folder (the folder button next to the Language
+   setting) and reopen Settings: the language is in the list. This works in the released
+   app too, on desktops.
+3. To ship it, put it in `translations/` and add it in Project Settings > Localization >
+   Translations.
+
+The text to translate is collected with
+`godot --headless --path . -s res://_dev/generate_pot.gd`, which writes
+`translations/spritesheetbelli.pot` from the scripts and scenes listed in Project Settings
+> Localization > POT Generation. Run it after changing text (the tests say when it's out
+of date), then update each `.po` from it, e.g.
+`msgmerge --update translations/it.po translations/spritesheetbelli.pot` or Poedit's
+Update from POT. In code, text goes through `tr()` (`tr_n()` for counts, with whole
+sentences as formats like `tr("Saved %s") % name`); text kept to translate where it's
+shown, like action names, is marked with `L10n.mark()`, or with a `# L10n.mark` comment on
+a constant.
 
 ## Building from source
 

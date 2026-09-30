@@ -24,6 +24,45 @@ func test_the_pot_is_up_to_date() -> void:
 	assert_true(pot == PotGenerator.generate(listed), "out of date: run res://_dev/generate_pot.gd")
 
 
+func test_italian_has_every_message_with_the_same_placeholders() -> void:
+	var italian: Translation = load("res://translations/it.po")
+	assert_eq(italian.locale, "it")
+	var placeholder := RegEx.create_from_string("%[-+0#]*\\d*(\\.\\d+)?[sdf]")
+	var listed: PackedStringArray = ProjectSettings.get_setting(PotGenerator.SETTING)
+	for path in listed:
+		for message in PotGenerator.extract(path):
+			var texts: Array[String] = [message.msgid]
+			var translated: Array[String] = [italian.get_message(message.msgid)]
+			if message.plural:
+				texts.append(message.plural)
+				translated = [
+					italian.get_plural_message(message.msgid, message.plural, 1),
+					italian.get_plural_message(message.msgid, message.plural, 2),
+				]
+			for i in translated.size():
+				var source: String = texts[mini(i, texts.size() - 1)]
+				assert_true(translated[i] != "", "not in it.po: " + source)
+				var wanted := placeholder.search_all(source).map(
+					func(found: RegExMatch) -> String: return found.get_string()
+				)
+				var got := placeholder.search_all(translated[i]).map(
+					func(found: RegExMatch) -> String: return found.get_string()
+				)
+				assert_eq(got, wanted, "placeholders of " + source)
+
+
+func test_italian_counts() -> void:
+	TranslationServer.set_locale("it")
+	var texts := [
+		tr("Save"),
+		tr_n("%d frame", "%d frames", 1) % 1,
+		tr_n("%d frame", "%d frames", 2) % 2,
+		tr_n("%d frame", "%d frames", 0) % 0,
+	]
+	TranslationServer.set_locale("en")
+	assert_eq(texts, ["Salva", "1 fotogramma", "2 fotogrammi", "0 fotogrammi"])
+
+
 func test_the_pot_has_what_scripts_translate() -> void:
 	var source := """
 const NAMES := {  # L10n.mark

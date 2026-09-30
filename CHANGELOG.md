@@ -293,6 +293,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   changes, like adding a spritesheet or repacking. If spritesheetbelli closes
   unexpectedly, the start screen offers to recover it next time, as unsaved changes to
   its file, or to discard it. Saving or quitting deletes the copy. Not in the web version.
+- Italian. Settings > Interface > Language picks the interface's language: System (the
+  operating system's), English or Italiano. It changes right away, menus, tooltips and
+  panels included. On desktops, a `.po` file put in the translations folder (the button
+  next to the setting opens it) adds its language to the list.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
