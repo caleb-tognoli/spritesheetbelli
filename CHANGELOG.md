@@ -290,7 +290,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Command palette (Ctrl+Shift+P, or Ctrl+K): type part of any action's name to run it,
   play an animation or write one export. What you ran last comes first; actions that can't
   run now are greyed out with the reason, like "No frames selected", "Select a single
-  frame" or "No animation chosen".
+  frame" or "No animation chosen". Actions that don't apply right now, like the packed
+  layout's in the grid layout or the pivot actions while pivots are off, are listed greyed
+  out at the bottom, saying why.
 - Crash recovery: while there are unsaved changes, a copy of the work is kept every few
   minutes (Settings > General > Recovery copy every, 0 turns it off) and right after big
   changes, like adding a spritesheet or repacking. If spritesheetbelli closes

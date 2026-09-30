@@ -21,6 +21,7 @@ var unavailable_reason: String
 ## For toggles: returns whether the action is on
 var is_checked: Callable
 ## Returns whether the action makes sense at all right now, like grid actions in the grid
-## layout. Unavailable actions are left out of menus and toolbars. Always when not set.
+## layout. Unavailable actions are left out of menus and toolbars, and listed last in the
+## command palette. Always when not set.
 var is_available: Callable
 var icon: Texture2D

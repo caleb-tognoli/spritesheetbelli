@@ -180,7 +180,41 @@ func test_disabled_entries_say_why_and_dont_run() -> void:
 	palette.hide()
 	Global.document.reset()
 	assert_eq(find_entry("File › Save").disabled_reason, "No frames yet")
-	assert_eq(find_entry("Frame › Pivot › Centre"), null, "unavailable actions left out")
+
+
+func test_unavailable_entries_come_last() -> void:
+	var sheet := Global.spritesheet
+	var repack := find_entry("Frame › Pack Again")
+	assert_true(repack.unavailable, "listed in the grid layout")
+	assert_eq(repack.disabled_reason, "Only in the packed layout")
+	assert_eq(find_entry("Frame › Pivot › Centre").disabled_reason, "Pivots are off")
+	assert_false(find_entry("Frame › Rows › Insert Row").unavailable)
+	CommandPalette.remember("repack")
+	palette.open(main.preview_area)
+	var texts := listed()
+	var unavailable := palette._shown.map(
+		func(entry: CommandPalette.Entry) -> bool: return entry.unavailable
+	)
+	var first := unavailable.find(true)
+	assert_true(first > texts.find("View › Zoom In"), "after the available ones")
+	assert_true(first > texts.find("Edit › Paste"), "and the disabled ones")
+	assert_eq(unavailable.slice(first).count(false), 0, "at the bottom")
+	assert_true(texts.find("Frame › Pack Again") >= first, "even when run last")
+	var item: TreeItem = palette.list.get_root().get_child(texts.find("Frame › Pack Again"))
+	assert_eq(item.get_text(1), "Only in the packed layout")
+	assert_eq(item.get_custom_color(0), palette.list.get_theme_color(&"font_disabled_color"))
+	type("pack")
+	assert_eq(listed()[0], "View › Packed Layout")
+	assert_eq(listed()[-1], "Frame › Pack Again", "after the ones that match")
+	palette.select(listed().size() - 1)
+	assert_false(palette.run_selected(), "doesn't run")
+	assert_eq(sheet.layout, Spritesheet.Layout.GRID)
+	palette.hide()
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	assert_false(find_entry("Frame › Pack Again").unavailable)
+	var insert_row := find_entry("Frame › Rows › Insert Row")
+	assert_true(insert_row.unavailable)
+	assert_eq(insert_row.disabled_reason, "Only in the grid layout")
 
 
 func test_disabled_actions_say_their_own_reason() -> void:

@@ -3,7 +3,7 @@ extends PopupPanel
 ## Runs any action found by typing part of its name (see [method fuzzy_score]), plays the
 ## sheet's animations and writes its exports. Opens over the preview, see [method open].
 ## What it ran last comes first, remembered in the [code]command_palette_recent[/code]
-## setting.
+## setting. Actions that don't apply right now come last, greyed out, saying why.
 
 ## The action that opens it
 const ID := &"command_palette"
@@ -36,6 +36,9 @@ class Entry:
 	var run: Callable
 	## Why it can't run, or empty when it can
 	var disabled_reason: String
+	## Whether it doesn't apply at all right now, like grid actions in the packed layout
+	## (see [method Actions.is_available]). Listed last, see [method rank].
+	var unavailable := false
 
 
 var search := LineEdit.new()
@@ -116,8 +119,8 @@ func open(over: Control) -> void:
 	search.grab_focus.call_deferred()
 
 
-## Every entry: the available actions (in the order of the menus, named after where they
-## are in them), then the animations to play and the exports to write
+## Every entry: the actions (in the order of the menus, named after where they are in
+## them), then the animations to play and the exports to write
 func get_entries() -> Array[Entry]:
 	var entries: Array[Entry] = []
 	var paths := get_menu_paths()
@@ -127,7 +130,7 @@ func get_entries() -> Array[Entry]:
 		if id not in ids:
 			ids.append(id)
 	for id in ids:
-		if id == ID or not Actions.has(id) or not Actions.is_available(id):
+		if id == ID or not Actions.has(id):
 			continue
 		var action := Actions.get_action(id)
 		var entry := Entry.new()
@@ -139,6 +142,7 @@ func get_entries() -> Array[Entry]:
 		entry.icon = action.icon
 		entry.run = Actions.run.bind(id)
 		entry.disabled_reason = Actions.get_disabled_reason(id)
+		entry.unavailable = not Actions.is_available(id)
 		entries.append(entry)
 	var sheet := Global.spritesheet
 	for i in sheet.animations.size():
@@ -179,7 +183,8 @@ static func get_menu_paths() -> Dictionary:
 	return paths
 
 
-## Lists the entries that match the search: those run last first, then the best matches
+## Lists the entries that match the search: those run last first, then the best matches,
+## then those that don't apply right now
 func filter() -> void:
 	var query := search.text.strip_edges()
 	_shown = rank(_entries, query, get_recent())
@@ -206,7 +211,8 @@ func filter() -> void:
 
 
 ## [param entries] that match [param query], best first, those whose keys are in
-## [param recent] before the others, in its order
+## [param recent] before the others, in its order. Unavailable ones (see
+## [member Entry.unavailable]) come after all the others, even when run last.
 static func rank(entries: Array[Entry], query: String, recent: PackedStringArray) -> Array[Entry]:
 	var scored: Array[Array] = []
 	for i in entries.size():
@@ -220,11 +226,12 @@ static func rank(entries: Array[Entry], query: String, recent: PackedStringArray
 			if name_score >= 0:
 				score = maxi(score, name_score + NAME_SCORE)
 		var recent_index := recent.find(entry.key)
-		scored.append([recent_index if recent_index >= 0 else recent.size(), -score, i, entry])
+		recent_index = recent_index if recent_index >= 0 else recent.size()
+		scored.append([int(entry.unavailable), recent_index, -score, i, entry])
 	scored.sort()
 	var ranked: Array[Entry] = []
 	for item in scored:
-		ranked.append(item[3])
+		ranked.append(item[-1])
 	return ranked
 
 
