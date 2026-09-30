@@ -64,6 +64,27 @@ func test_italian_counts() -> void:
 	assert_eq(texts, ["Salva", "1 frame", "2 frame", "0 frame"])
 
 
+## Native dialogs get the filters' names as the dialog's own list has them
+func test_file_dialog_filters_are_translated() -> void:
+	var dialog := FileDialog.new()
+	dialog.filters = [FileController.PROJECT_FILTER, FileController.IMAGE_FILTER]
+	add_child(dialog)
+	TranslationServer.set_locale("it")
+	var names: Array[String] = []
+	var list := dialog.find_children("*", "OptionButton", true, false)[0] as OptionButton
+	for i in list.item_count:
+		names.append(list.get_item_text(i).get_slice(" (", 0))
+	TranslationServer.set_locale("en")
+	dialog.free()
+	assert_eq(
+		names,
+		(
+			["File supportati", "Progetti spritesheetbelli", "Immagini", "Tutti i file"]
+			as Array[String]
+		)
+	)
+
+
 func test_the_way_a_sheet_is_cut_is_not_the_clipboards_cut() -> void:
 	var window: AddSpritesheetWindow = (
 		load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()

@@ -8,6 +8,9 @@ const PROJECT_FILTER := "*.sbelli ; spritesheetbelli projects"  # L10n.mark
 const IMAGE_FILTER := "*.png, *.jpg, *.jpeg, *.jpe, *.webp, *.gif ; Images"  # L10n.mark
 # L10n.mark
 const DATA_FILTER := "*.json, *.atlas ; Spritesheet data (TexturePacker, Aseprite, Phaser, libGDX)"
+## What Godot calls the filters its file dialogs add, of every file the other filters take
+## and of all files, which they translate like the others, also in native dialogs
+const DIALOG_FILTER_NAMES := ["All Recognized", "All Files"]  # L10n.mark
 ## Work above these sizes shows a "please wait" overlay first
 const SLOW_PIXELS := 4_000_000
 const SLOW_FILE_BYTES := 4_000_000

@@ -1686,6 +1686,14 @@ msgid "Spritesheet data (TexturePacker, Aseprite, Phaser, libGDX)"
 msgstr "Dati di spritesheet (TexturePacker, Aseprite, Phaser, libGDX)"
 
 #: res://ui/main/file_controller.gd
+msgid "All Recognized"
+msgstr "File supportati"
+
+#: res://ui/main/file_controller.gd
+msgid "All Files"
+msgstr "Tutti i file"
+
+#: res://ui/main/file_controller.gd
 #: res://ui/main/main.tscn
 msgid "Open"
 msgstr "Apri"

@@ -299,7 +299,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Italian. Settings > Interface > Language picks the interface's language: System (the
   operating system's), English or Italiano. It changes right away, menus, tooltips and
   panels included. On desktops, a `.po` file put in the translations folder (the button
-  next to the setting opens it) adds its language to the list.
+  next to the setting opens it) adds its language to the list. File dialogs, native ones
+  included, name their file types in the chosen language too.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,

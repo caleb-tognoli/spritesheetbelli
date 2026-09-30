@@ -35,7 +35,6 @@ size = Vector2i(324, 180)
 ok_button_text = "Open"
 file_mode = 1
 access = 2
-filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
 use_native_dialog = true
 
 [node name="OpenSpritesheetDialog" type="FileDialog" parent="Files" unique_id=1399913805]
@@ -45,7 +44,6 @@ size = Vector2i(312, 175)
 ok_button_text = "Open"
 file_mode = 0
 access = 2
-filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.jpe, *.webp")
 use_native_dialog = true
 
 [node name="Background" type="Panel" parent="." unique_id=941109527]
