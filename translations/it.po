@@ -10,7 +10,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: res://scripts/autoloaded/actions.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/action_reasons.gd
 msgid "No frames yet"
 msgstr "Ancora nessun frame"
 
@@ -988,6 +988,67 @@ msgstr "Informazioni su spritesheetbelli"
 msgid "Made with Godot %s · MIT License"
 msgstr "Fatto con Godot %s · Licenza MIT"
 
+#: res://ui/main/action_reasons.gd
+msgid "No frames selected"
+msgstr "Nessun frame selezionato"
+
+#: res://ui/main/action_reasons.gd
+msgid "No animations yet"
+msgstr "Ancora nessuna animazione"
+
+#: res://ui/main/action_reasons.gd
+msgid "No animation chosen"
+msgstr "Nessuna animazione scelta"
+
+#: res://ui/main/action_reasons.gd
+msgid "Nothing copied"
+msgstr "Niente copiato"
+
+#: res://ui/main/action_reasons.gd
+msgid "Nothing to undo"
+msgstr "Niente da annullare"
+
+#: res://ui/main/action_reasons.gd
+msgid "Nothing to redo"
+msgstr "Niente da ripetere"
+
+#: res://ui/main/action_reasons.gd
+msgid "Select a single frame"
+msgstr "Seleziona un solo frame"
+
+#: res://ui/main/action_reasons.gd
+msgid "Not loaded from a file"
+msgstr "Non caricato da un file"
+
+#: res://ui/main/action_reasons.gd
+msgid "Already the top row"
+msgstr "È già la prima riga"
+
+#: res://ui/main/action_reasons.gd
+msgid "Already the bottom row"
+msgstr "È già l'ultima riga"
+
+#: res://ui/main/action_reasons.gd
+msgid "No frames in this row"
+msgstr "Nessun frame in questa riga"
+
+#: res://ui/main/action_reasons.gd
+msgid "No frames in this column"
+msgstr "Nessun frame in questa colonna"
+
+#: res://ui/main/action_reasons.gd
+#: res://ui/main/export_dialog.gd
+msgid "Only in the grid layout"
+msgstr "Solo nel layout a griglia"
+
+#: res://ui/main/action_reasons.gd
+msgid "Only in the packed layout"
+msgstr "Solo nel layout compatto"
+
+#: res://ui/main/action_reasons.gd
+msgid "Pivots are off"
+msgstr "Pivot disattivati"
+
 #: res://ui/main/animation_commands.gd
 msgid "Animation from Row…"
 msgstr "Animazione dalla riga…"
@@ -1523,10 +1584,6 @@ msgid "When a file exists"
 msgstr "Se un file esiste"
 
 #: res://ui/main/export_dialog.gd
-msgid "Only in the grid layout"
-msgstr "Solo nel layout a griglia"
-
-#: res://ui/main/export_dialog.gd
 msgid "Export GIFs"
 msgstr "Esporta GIF"
 
@@ -2038,22 +2095,6 @@ msgstr "Blocca cella"
 #: res://ui/main/main_ui.gd
 msgid "Unlock cell"
 msgstr "Sblocca cella"
-
-#: res://ui/main/main_ui.gd
-msgid "No frames selected"
-msgstr "Nessun frame selezionato"
-
-#: res://ui/main/main_ui.gd
-msgid "Nothing copied"
-msgstr "Niente copiato"
-
-#: res://ui/main/main_ui.gd
-msgid "Nothing to undo"
-msgstr "Niente da annullare"
-
-#: res://ui/main/main_ui.gd
-msgid "Nothing to redo"
-msgstr "Niente da ripetere"
 
 #: res://ui/main/main_ui.gd
 msgid "Open…"

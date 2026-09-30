@@ -10,7 +10,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8-bit\n"
 
 #: res://scripts/autoloaded/actions.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/action_reasons.gd
 msgid "No frames yet"
 msgstr ""
 
@@ -983,6 +983,67 @@ msgstr ""
 msgid "Made with Godot %s · MIT License"
 msgstr ""
 
+#: res://ui/main/action_reasons.gd
+msgid "No frames selected"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "No animations yet"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "No animation chosen"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Nothing copied"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Nothing to undo"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Nothing to redo"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Select a single frame"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Not loaded from a file"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Already the top row"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Already the bottom row"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "No frames in this row"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "No frames in this column"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+#: res://ui/main/export_dialog.gd
+msgid "Only in the grid layout"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Only in the packed layout"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Pivots are off"
+msgstr ""
+
 #: res://ui/main/animation_commands.gd
 msgid "Animation from Row…"
 msgstr ""
@@ -1515,10 +1576,6 @@ msgid "When a file exists"
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
-msgid "Only in the grid layout"
-msgstr ""
-
-#: res://ui/main/export_dialog.gd
 msgid "Export GIFs"
 msgstr ""
 
@@ -2029,22 +2086,6 @@ msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Unlock cell"
-msgstr ""
-
-#: res://ui/main/main_ui.gd
-msgid "No frames selected"
-msgstr ""
-
-#: res://ui/main/main_ui.gd
-msgid "Nothing copied"
-msgstr ""
-
-#: res://ui/main/main_ui.gd
-msgid "Nothing to undo"
-msgstr ""
-
-#: res://ui/main/main_ui.gd
-msgid "Nothing to redo"
 msgstr ""
 
 #: res://ui/main/main_ui.gd

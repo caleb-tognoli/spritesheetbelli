@@ -10,9 +10,14 @@ var description: String
 var run: Callable
 ## Returns whether the action can run. Always enabled when not set.
 var can_run: Callable
-## Why the action can't run, in a few words like "No frames selected", for the command
-## palette. See [method Actions.get_disabled_reason].
-var disabled_reason: String
+## Returns why the action can't run, in a few words like "No frames selected", marked with
+## [method L10n.mark]: the first of its conditions that fails, or empty when it doesn't
+## know. For the command palette, see [method Actions.get_disabled_reason] and
+## [ActionReasons].
+var why_disabled: Callable
+## Why the action isn't available (see [member is_available]), like "Only in the grid
+## layout", marked with [method L10n.mark]
+var unavailable_reason: String
 ## For toggles: returns whether the action is on
 var is_checked: Callable
 ## Returns whether the action makes sense at all right now, like grid actions in the grid

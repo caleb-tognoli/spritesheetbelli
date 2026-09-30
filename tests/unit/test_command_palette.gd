@@ -167,7 +167,7 @@ func test_disabled_entries_say_why_and_dont_run() -> void:
 	var flip := find_entry("Frame › Flip Horizontally")
 	assert_eq(flip.disabled_reason, "No frames selected")
 	assert_eq(find_entry("Edit › Paste").disabled_reason, "Nothing copied")
-	assert_eq(find_entry("Frame › Replace Image…").disabled_reason, "Not available now")
+	assert_eq(find_entry("Frame › Replace Image…").disabled_reason, "No frames selected")
 	assert_eq(find_entry("View › Zoom In").disabled_reason, "", "enabled")
 	palette.open(main.preview_area)
 	type("flh")
@@ -181,6 +181,35 @@ func test_disabled_entries_say_why_and_dont_run() -> void:
 	Global.document.reset()
 	assert_eq(find_entry("File › Save").disabled_reason, "No frames yet")
 	assert_eq(find_entry("Frame › Pivot › Centre"), null, "unavailable actions left out")
+
+
+func test_disabled_actions_say_their_own_reason() -> void:
+	var reason := func(id: StringName) -> String: return Actions.get_disabled_reason(id)
+	var sheet := Global.spritesheet
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	assert_eq(reason.call(&"replace_image"), "Select a single frame")
+	assert_eq(reason.call(&"move_row_up"), "Already the top row")
+	assert_eq(reason.call(&"move_row_down"), "Already the bottom row")
+	assert_eq(reason.call(&"reload_source"), "Not loaded from a file")
+	assert_eq(reason.call(&"duplicate_animation"), "No animations yet")
+	sheet.add_animation(SheetAnimation.create("walk", sheet.get_sorted_coords()))
+	assert_eq(reason.call(&"mirror_animation"), "No animation chosen")
+	assert_eq(reason.call(&"repack"), "Only in the packed layout")
+	Settings.set_value(&"use_pivots", false)
+	assert_eq(reason.call(&"pivot_center"), "Pivots are off")
+	Settings.set_value(&"use_pivots", Settings.DEFAULTS[&"use_pivots"])
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	assert_eq(reason.call(&"insert_row"), "Only in the grid layout")
+	assert_eq(reason.call(&"animation_labels"), "Only in the grid layout")
+	sheet.set_layout(Spritesheet.Layout.GRID)
+	assert_eq(reason.call(&"animation_labels"), "", "enabled")
+
+	Global.document.reset()
+	await get_tree().process_frame
+	assert_eq(reason.call(&"flip_h"), "No frames yet", "before no frames selected")
+	assert_eq(reason.call(&"animation_from_row"), "No frames yet")
+	assert_eq(reason.call(&"undo"), "Nothing to undo")
+	assert_eq(ActionReasons.first_failing([func() -> bool: return true, "Never"]), "")
 
 
 func test_recent_first() -> void:

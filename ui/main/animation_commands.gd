@@ -56,7 +56,7 @@ func _register_actions() -> void:
 		[&"animation_from_column", L10n.mark("Animation from Column…"), true],
 	]:
 		var column: bool = line[2]
-		var cells := func() -> Array[Vector2i]: return line_cells(sheet, _target_cell(), column)
+		var cells := func() -> Array[Vector2i]: return line_cells(sheet, target_cell(), column)
 		Actions.add(
 			line[0],
 			line[1],
@@ -133,7 +133,7 @@ func _setup_labels() -> void:
 
 ## The cell whose row or column the actions use: the right-clicked one while the preview's
 ## menu is open, otherwise the first selected frame's
-func _target_cell() -> Vector2i:
+func target_cell() -> Vector2i:
 	if menu_cell != NO_CELL:
 		return menu_cell
 	var selected: Array[Vector2i] = main.preview.get_selected_coords()

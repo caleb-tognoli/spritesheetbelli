@@ -256,6 +256,7 @@ func _ready() -> void:
 	layout_controller.register_actions()
 	add_child(animation_commands)
 	animation_commands.setup(self)
+	ActionReasons.apply(self)
 	# Over the canvas while nothing is open, with buttons for the actions registered above
 	preview_area.add_child(start_screen)
 	start_screen.file_chosen.connect(files.open_recent)
@@ -349,17 +350,8 @@ func _register_actions() -> void:
 	var sheet := Global.spritesheet
 	var has_frames := func() -> bool: return not sheet.is_empty()
 	var has_selection := func() -> bool: return not preview.get_selected_coords().is_empty()
-	# Why actions can't run, by what they need, see [member AppAction.disabled_reason]
-	var reasons := {
-		has_frames: L10n.mark("No frames yet"),
-		has_selection: L10n.mark("No frames selected"),
-		clipboard.has_content: L10n.mark("Nothing copied"),
-		Global.document.can_undo: L10n.mark("Nothing to undo"),
-		Global.document.can_redo: L10n.mark("Nothing to redo"),
-	}
 	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()) -> void:
-		var action := Actions.add(id, label, run, can_run, ICONS.get(id))
-		action.disabled_reason = reasons.get(can_run, "")
+		Actions.add(id, label, run, can_run, ICONS.get(id))
 
 	add.call(&"new", L10n.mark("New"), files.new_spritesheet)
 	add.call(&"open", L10n.mark("Open…"), files.open_spritesheet)
