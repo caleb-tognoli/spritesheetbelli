@@ -12,7 +12,7 @@ msgstr ""
 #: res://scripts/autoloaded/actions.gd
 #: res://ui/main/main_ui.gd
 msgid "No frames yet"
-msgstr "Ancora nessun fotogramma"
+msgstr "Ancora nessun frame"
 
 #: res://scripts/autoloaded/actions.gd
 msgid "Not available now"
@@ -47,7 +47,7 @@ msgstr "Il nome dell'animazione"
 
 #: res://scripts/export/animation_files.gd
 msgid "How many frames its file has"
-msgstr "Quanti fotogrammi ha il suo file"
+msgstr "Quanti frame ha il suo file"
 
 #: res://scripts/export/atlas_formats.gd
 msgid "Could not find %s."
@@ -59,7 +59,7 @@ msgstr "%s (tuo)"
 
 #: res://scripts/export/atlas_packer.gd
 msgid "%s can't describe turned frames. Pack without turning them."
-msgstr "%s non può descrivere fotogrammi ruotati. Compatta senza ruotarli."
+msgstr "%s non può descrivere frame ruotati. Compatta senza ruotarli."
 
 #: res://scripts/export/export_options.gd
 msgid "The scale, like 2"
@@ -104,7 +104,7 @@ msgstr "Modello personalizzato"
 
 #: res://scripts/export/spritesheet_exporter.gd
 msgid "The frame's number, as in the preview"
-msgstr "Il numero del fotogramma, come nell'anteprima"
+msgstr "Il numero del frame, come nell'anteprima"
 
 #: res://scripts/export/spritesheet_exporter.gd
 msgid "Its row, from 0"
@@ -220,12 +220,12 @@ msgstr "Questa GIF è vuota."
 
 #: res://scripts/import/gif_decoder.gd
 msgid "This GIF has no frames."
-msgstr "Questa GIF non ha fotogrammi."
+msgstr "Questa GIF non ha frame."
 
 #: res://scripts/import/libgdx_atlas.gd
 #: res://scripts/import/sheet_data.gd
 msgid "There are no frames in this data file."
-msgstr "Questo file di dati non ha fotogrammi."
+msgstr "Questo file di dati non ha frame."
 
 #: res://scripts/import/sheet_data.gd
 msgid "This isn't a spritesheet data file."
@@ -241,11 +241,11 @@ msgstr "Questo progetto è stato creato con una versione più recente di sprites
 
 #: res://scripts/project_file.gd
 msgid "The frames image is damaged."
-msgstr "L'immagine dei fotogrammi è danneggiata."
+msgstr "L'immagine dei frame è danneggiata."
 
 #: res://scripts/project_file.gd
 msgid "A frame image is missing or damaged (%s)."
-msgstr "L'immagine di un fotogramma manca o è danneggiata (%s)."
+msgstr "L'immagine di un frame manca o è danneggiata (%s)."
 
 #: res://scripts/resources/packed_layout.gd
 msgid "%s no longer fits where it was pinned."
@@ -391,7 +391,7 @@ msgstr "Rotellina del mouse"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Select frames"
-msgstr "Selezionare fotogrammi"
+msgstr "Selezionare frame"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Click or drag"
@@ -399,7 +399,7 @@ msgstr "Clic o trascina"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Select or unselect a frame"
-msgstr "Selezionare o deselezionare un fotogramma"
+msgstr "Selezionare o deselezionare un frame"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Ctrl+click"
@@ -407,7 +407,7 @@ msgstr "Ctrl+clic"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Select a range of frames"
-msgstr "Selezionare un intervallo di fotogrammi"
+msgstr "Selezionare un intervallo di frame"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Shift+click"
@@ -415,7 +415,7 @@ msgstr "Shift+clic"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Select the next frame"
-msgstr "Selezionare il fotogramma successivo"
+msgstr "Selezionare il frame successivo"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Arrow keys (Shift adds)"
@@ -423,7 +423,7 @@ msgstr "Tasti freccia (Shift aggiunge)"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Copy frames in the grid (move mode)"
-msgstr "Copiare fotogrammi nella griglia (modalità spostamento)"
+msgstr "Copiare frame nella griglia (modalità spostamento)"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Alt+drag"
@@ -431,7 +431,7 @@ msgstr "Alt+trascina"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Move frames in their cells (move mode)"
-msgstr "Spostare fotogrammi nelle loro celle (modalità spostamento)"
+msgstr "Spostare frame nelle loro celle (modalità spostamento)"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Arrow keys (Shift: 8 px)"
@@ -447,7 +447,7 @@ msgstr "Cliccala"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Frame actions"
-msgstr "Azioni sui fotogrammi"
+msgstr "Azioni sui frame"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Right-click"
@@ -487,7 +487,7 @@ msgstr "Scostamento e spaziatura"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "For sheets with a margin around or gaps between the frames"
-msgstr "Per spritesheet con un margine attorno o spazi tra i fotogrammi"
+msgstr "Per spritesheet con un margine attorno o spazi tra i frame"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "Makes a colour transparent before cutting, like a background the sheet is drawn on instead of transparency"
@@ -513,8 +513,8 @@ msgstr "Dati: %s"
 #: res://ui/spritesheet_preview/animation_labels.gd
 msgid "%d frame"
 msgid_plural "%d frames"
-msgstr[0] "%d fotogramma"
-msgstr[1] "%d fotogrammi"
+msgstr[0] "%d frame"
+msgstr[1] "%d frame"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "%d animation"
@@ -523,9 +523,9 @@ msgstr[0] "%d animazione"
 msgstr[1] "%d animazioni"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
-#: res://ui/main/main_ui.gd
+msgctxt "Cut mode"
 msgid "Cut"
-msgstr "Taglia"
+msgstr "Ritaglio"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "Grid: equal cells. Find sprites: every group of pixels surrounded by transparency, in a box that can be moved, resized, merged or deleted. Data: where the data file exported with the image says."
@@ -566,11 +566,11 @@ msgstr "Mantieni il layout compatto"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "Keeps every sprite where it is in the image, in the packed layout, so an atlas exported again has its frames in the same places"
-msgstr "Tiene ogni sprite dov'è nell'immagine, nel layout compatto, così un atlante esportato di nuovo ha i fotogrammi negli stessi punti"
+msgstr "Tiene ogni sprite dov'è nell'immagine, nel layout compatto, così un atlante esportato di nuovo ha i frame negli stessi punti"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "Add selected frames (%d)"
-msgstr "Aggiungi fotogrammi selezionati (%d)"
+msgstr "Aggiungi frame selezionati (%d)"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "Add spritesheet"
@@ -579,7 +579,7 @@ msgstr "Aggiungi spritesheet"
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 #: res://ui/animation_preview/animation_timeline.gd
 msgid "Add frames"
-msgstr "Aggiungi fotogrammi"
+msgstr "Aggiungi frame"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 msgid "%d px on the right and %d px at the bottom not used"
@@ -660,7 +660,7 @@ msgstr "Pixel tra le celle (verticale)"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.tscn
 msgid "0 frames"
-msgstr "0 fotogrammi"
+msgstr "0 frame"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.tscn
 msgid "Sprites added later skip the empty cells of this sheet. Click a locked cell to unlock it."
@@ -672,7 +672,7 @@ msgstr "Blocca celle vuote"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.tscn
 msgid "Add Selected Frames (0)"
-msgstr "Aggiungi fotogrammi selezionati (0)"
+msgstr "Aggiungi frame selezionati (0)"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.tscn
 #: res://ui/main/color_key_dropdown.gd
@@ -726,7 +726,7 @@ msgstr "%d, %d · %d×%d px"
 
 #: res://ui/add_spritesheet/sprite_box_editor.gd
 msgid "Frame %d · %d, %d · %d×%d px"
-msgstr "Fotogramma %d · %d, %d · %d×%d px"
+msgstr "Frame %d · %d, %d · %d×%d px"
 
 #: res://ui/add_spritesheet/sprite_box_editor.gd
 #: res://ui/main/main_ui.gd
@@ -743,7 +743,7 @@ msgid ""
 msgstr ""
 "Numeri degli sprite come nello spritesheet, o nomi degli sprite, in ordine di riproduzione. Intervalli come 0-7 contano in avanti, 7-0 all'indietro. Separali con virgole: 0-3, 5, 8, idle\n"
 "I nomi con spazi vanno tra virgolette: \"jump up\", walk_0-walk_3\n"
-"Aggiungi *2 per mostrare un fotogramma il doppio del tempo: 0-3, 4*2, 5*0.5"
+"Aggiungi *2 per mostrare un frame il doppio del tempo: 0-3, 4*2, 5*0.5"
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "Choose an animation to edit it."
@@ -755,7 +755,7 @@ msgid ""
 "Select frames in the sheet and press New."
 msgstr ""
 "Ancora nessuna animazione.\n"
-"Seleziona dei fotogrammi nello spritesheet e premi Nuovo."
+"Seleziona dei frame nello spritesheet e premi Nuovo."
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "walk"
@@ -767,7 +767,7 @@ msgstr "Nome"
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "Speed, in frames per second"
-msgstr "Velocità, in fotogrammi al secondo"
+msgstr "Velocità, in frame al secondo"
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "Once plays to the end, Loop starts over, Ping-pong plays back"
@@ -779,7 +779,7 @@ msgstr "Colore: della sua etichetta sulla griglia e nell'elenco"
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "Frames as text: numbers, names and ranges like 0-3, 5*2"
-msgstr "Fotogrammi come testo: numeri, nomi e intervalli come 0-3, 5*2"
+msgstr "Frame come testo: numeri, nomi e intervalli come 0-3, 5*2"
 
 #: res://ui/animation_preview/animation_detail.gd
 #: res://ui/spritesheet_preview/animation_label_controls.gd
@@ -793,8 +793,8 @@ msgstr "Impossibile leggere \"%s\". Usa numeri, nomi e intervalli come 0-3, 5*2"
 #: res://ui/animation_preview/animation_detail.gd
 msgid "%d frame, %.2f s"
 msgid_plural "%d frames, %.2f s"
-msgstr[0] "%d fotogramma, %.2f s"
-msgstr[1] "%d fotogrammi, %.2f s"
+msgstr[0] "%d frame, %.2f s"
+msgstr[1] "%d frame, %.2f s"
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "%d empty cell is skipped"
@@ -820,7 +820,7 @@ msgstr "Nuovo"
 
 #: res://ui/animation_preview/animation_panel.gd
 msgid "A new animation of the selected frames, or of every frame"
-msgstr "Una nuova animazione dei fotogrammi selezionati, o di tutti i fotogrammi"
+msgstr "Una nuova animazione dei frame selezionati, o di tutti i frame"
 
 #: res://ui/animation_preview/animation_panel.gd
 msgid "Duplicate the animation"
@@ -828,7 +828,7 @@ msgstr "Duplica l'animazione"
 
 #: res://ui/animation_preview/animation_panel.gd
 msgid "Mirrored copy: the frames flipped into a new row"
-msgstr "Copia specchiata: i fotogrammi capovolti in una nuova riga"
+msgstr "Copia specchiata: i frame capovolti in una nuova riga"
 
 #: res://ui/animation_preview/animation_panel.gd
 msgid "Delete the animation"
@@ -836,7 +836,7 @@ msgstr "Elimina l'animazione"
 
 #: res://ui/animation_preview/animation_panel.gd
 msgid "Plays the selected frames, or every frame"
-msgstr "Riproduce i fotogrammi selezionati, o tutti i fotogrammi"
+msgstr "Riproduce i frame selezionati, o tutti i frame"
 
 #: res://ui/animation_preview/animation_panel.gd
 #: res://ui/main/export_dialog.gd
@@ -868,28 +868,28 @@ msgstr "Elimina animazione"
 #: res://ui/animation_preview/animation_preview.gd
 #: res://ui/main/export_dialog.gd
 msgid "All frames"
-msgstr "Tutti i fotogrammi"
+msgstr "Tutti i frame"
 
 #: res://ui/animation_preview/animation_preview.gd
 msgid "Selected frames"
-msgstr "Fotogrammi selezionati"
+msgstr "Frame selezionati"
 
 #: res://ui/animation_preview/animation_timeline.gd
 msgid "Drag frames here from the sheet or the Sprites panel"
-msgstr "Trascina qui i fotogrammi dallo spritesheet o dal pannello Sprite"
+msgstr "Trascina qui i frame dallo spritesheet o dal pannello Sprite"
 
 #: res://ui/animation_preview/animation_timeline.gd
 #: res://ui/main/main_ui.gd
 msgid "Move frames"
-msgstr "Sposta fotogrammi"
+msgstr "Sposta frame"
 
 #: res://ui/animation_preview/animation_timeline.gd
 msgid "Remove frames"
-msgstr "Togli fotogrammi"
+msgstr "Togli frame"
 
 #: res://ui/animation_preview/animation_timeline.gd
 msgid "Frame duration"
-msgstr "Durata del fotogramma"
+msgstr "Durata del frame"
 
 #: res://ui/animation_preview/animation_timeline.gd
 msgid "Empty"
@@ -911,7 +911,7 @@ msgstr "La cella %d è vuota: saltata"
 #: res://ui/main/sprites_panel.gd
 #: res://ui/spritesheet_preview/preview_area.gd
 msgid "Frame %d"
-msgstr "Fotogramma %d"
+msgstr "Frame %d"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Checkerboard"
@@ -928,27 +928,27 @@ msgstr "Sfondo dell'esportazione"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Drag to go through the frames, or click to jump to one"
-msgstr "Trascina per scorrere i fotogrammi, o clicca per saltare a uno"
+msgstr "Trascina per scorrere i frame, o clicca per saltare a uno"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Back to the first frame"
-msgstr "Torna al primo fotogramma"
+msgstr "Torna al primo frame"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Previous frame"
-msgstr "Fotogramma precedente"
+msgstr "Frame precedente"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Next frame"
-msgstr "Fotogramma successivo"
+msgstr "Frame successivo"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Onion skin: show the previous frame faintly"
-msgstr "Buccia di cipolla: mostra in trasparenza il fotogramma precedente"
+msgstr "Onion skin: mostra in trasparenza il frame precedente"
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Fit the frames in the preview. Scroll to zoom."
-msgstr "Adatta i fotogrammi all'anteprima. Scorri per lo zoom."
+msgstr "Adatta i frame all'anteprima. Scorri per lo zoom."
 
 #: res://ui/animation_preview/frame_player.gd
 msgid "Background: a checkerboard, a colour or the export's"
@@ -965,15 +965,15 @@ msgstr "Riproduci"
 #: res://ui/animation_preview/frame_player.gd
 #: res://ui/main/main.tscn
 msgid "No frames"
-msgstr "Nessun fotogramma"
+msgstr "Nessun frame"
 
 #: res://ui/animation_preview/timeline_tile.gd
 msgid "Take the frame out"
-msgstr "Togli il fotogramma"
+msgstr "Togli il frame"
 
 #: res://ui/animation_preview/timeline_tile.gd
 msgid "How long it's shown: 2 is twice as long as a frame"
-msgstr "Per quanto è mostrato: 2 è il doppio di un fotogramma"
+msgstr "Per quanto è mostrato: 2 è il doppio di un frame"
 
 #: res://ui/main/about_dialog.gd
 msgid "Combine sprites into spritesheets and cut spritesheets into sprites."
@@ -1022,7 +1022,7 @@ msgstr "Mostra i nomi delle animazioni sulla griglia"
 
 #: res://ui/main/animation_commands.gd
 msgid "Onion Skin"
-msgstr "Buccia di cipolla"
+msgstr "Onion skin"
 
 #: res://ui/main/animation_commands.gd
 #: res://ui/spritesheet_preview/animation_label_controls.gd
@@ -1115,7 +1115,7 @@ msgstr "Compattazione"
 
 #: res://ui/main/atlas_panel.gd
 msgid "Keep places: when frames are added or change, the others stay where they are, so the atlas stays the same between exports. Always tight: everything is packed again."
-msgstr "Mantieni i posti: quando si aggiungono o cambiano fotogrammi, gli altri restano dove sono, così l'atlante resta uguale tra un'esportazione e l'altra. Sempre compatto: tutto viene compattato di nuovo."
+msgstr "Mantieni i posti: quando si aggiungono o cambiano frame, gli altri restano dove sono, così l'atlante resta uguale tra un'esportazione e l'altra. Sempre compatto: tutto viene compattato di nuovo."
 
 #: res://ui/main/atlas_panel.gd
 msgid "Place by"
@@ -1123,7 +1123,7 @@ msgstr "Posiziona per"
 
 #: res://ui/main/atlas_panel.gd
 msgid "How the free place for a frame is picked"
-msgstr "Come viene scelto il posto libero per un fotogramma"
+msgstr "Come viene scelto il posto libero per un frame"
 
 #: res://ui/main/color_key_dropdown.gd
 msgid "Make transparent"
@@ -1169,14 +1169,14 @@ msgstr "Rimozione dello sfondo"
 #: res://ui/main/color_key_preview.gd
 msgid "In %d selected frame"
 msgid_plural "In %d selected frames"
-msgstr[0] "In %d fotogramma selezionato"
-msgstr[1] "In %d fotogrammi selezionati"
+msgstr[0] "In %d frame selezionato"
+msgstr[1] "In %d frame selezionati"
 
 #: res://ui/main/color_key_preview.gd
 msgid "In %d frame"
 msgid_plural "In all %d frames"
-msgstr[0] "In %d fotogramma"
-msgstr[1] "In tutti i %d fotogrammi"
+msgstr[0] "In %d frame"
+msgstr[1] "In tutti i %d frame"
 
 #: res://ui/main/export_controller.gd
 msgid "Pick where to export %s."
@@ -1200,7 +1200,7 @@ msgstr "Esportazione"
 
 #: res://ui/main/export_controller.gd
 msgid "No frames are selected. Select frames or turn off \"Only selected frames\" when exporting."
-msgstr "Nessun fotogramma selezionato. Seleziona dei fotogrammi o disattiva \"Solo fotogrammi selezionati\" nell'esportazione."
+msgstr "Nessun frame selezionato. Seleziona dei frame o disattiva \"Solo frame selezionati\" nell'esportazione."
 
 #: res://ui/main/export_controller.gd
 msgid "Could not save: %s."
@@ -1232,13 +1232,13 @@ msgstr "Creazione della GIF"
 
 #: res://ui/main/export_controller.gd
 msgid "The animation has no frames."
-msgstr "L'animazione non ha fotogrammi."
+msgstr "L'animazione non ha frame."
 
 #: res://ui/main/export_controller.gd
 msgid "Exported %s (%d frame)."
 msgid_plural "Exported %s (%d frames)."
-msgstr[0] "Esportato %s (%d fotogramma)."
-msgstr[1] "Esportato %s (%d fotogrammi)."
+msgstr[0] "Esportato %s (%d frame)."
+msgstr[1] "Esportato %s (%d frame)."
 
 #: res://ui/main/export_controller.gd
 msgid "Making the GIFs"
@@ -1246,7 +1246,7 @@ msgstr "Creazione delle GIF"
 
 #: res://ui/main/export_controller.gd
 msgid "No animation has frames."
-msgstr "Nessuna animazione ha fotogrammi."
+msgstr "Nessuna animazione ha frame."
 
 #: res://ui/main/export_controller.gd
 msgid "Saved %d GIF to %s."
@@ -1286,7 +1286,7 @@ msgstr[1] "Esportate %d pagine, da %s."
 
 #: res://ui/main/export_controller.gd
 msgid "The frames don't fit in a %d px atlas."
-msgstr "I fotogrammi non entrano in un atlante di %d px."
+msgstr "I frame non entrano in un atlante di %d px."
 
 #: res://ui/main/export_controller.gd
 msgid "Could not export the atlas (%s)."
@@ -1295,18 +1295,18 @@ msgstr "Impossibile esportare l'atlante (%s)."
 #: res://ui/main/export_controller.gd
 msgid "Packed %d frame on %d pages, from %s, and %s."
 msgid_plural "Packed %d frames on %d pages, from %s, and %s."
-msgstr[0] "Compattato %d fotogramma su %d pagine, da %s, e %s."
-msgstr[1] "Compattati %d fotogrammi su %d pagine, da %s, e %s."
+msgstr[0] "Compattato %d frame su %d pagine, da %s, e %s."
+msgstr[1] "Compattati %d frame su %d pagine, da %s, e %s."
 
 #: res://ui/main/export_controller.gd
 msgid "Packed %d frame into %s (%d×%d px) and %s."
 msgid_plural "Packed %d frames into %s (%d×%d px) and %s."
-msgstr[0] "Compattato %d fotogramma in %s (%d×%d px) e %s."
-msgstr[1] "Compattati %d fotogrammi in %s (%d×%d px) e %s."
+msgstr[0] "Compattato %d frame in %s (%d×%d px) e %s."
+msgstr[1] "Compattati %d frame in %s (%d×%d px) e %s."
 
 #: res://ui/main/export_controller.gd
 msgid "Frames from %s are no longer linked to it, since the export wrote over it."
-msgstr "I fotogrammi di %s non sono più collegati al file, perché l'esportazione lo ha sovrascritto."
+msgstr "I frame di %s non sono più collegati al file, perché l'esportazione lo ha sovrascritto."
 
 #: res://ui/main/export_dialog.gd
 msgid "Spritesheet image"
@@ -1318,7 +1318,7 @@ msgstr "Tutto lo spritesheet come un'unica immagine PNG, JPG o WebP. Gli sprites
 
 #: res://ui/main/export_dialog.gd
 msgid "Every frame as its own PNG, in a folder."
-msgstr "Ogni fotogramma come PNG a sé, in una cartella."
+msgstr "Ogni frame come PNG a sé, in una cartella."
 
 #: res://ui/main/export_dialog.gd
 msgid "Spritesheet and data file"
@@ -1326,7 +1326,7 @@ msgstr "Spritesheet e file di dati"
 
 #: res://ui/main/export_dialog.gd
 msgid "The sheet as a PNG and a file next to it that says where each frame is, with the animations: a Godot SpriteFrames, TexturePacker or Aseprite JSON, and more."
-msgstr "Lo spritesheet come PNG con accanto un file che dice dov'è ogni fotogramma, con le animazioni: uno SpriteFrames di Godot, un JSON di TexturePacker o Aseprite, e altri."
+msgstr "Lo spritesheet come PNG con accanto un file che dice dov'è ogni frame, con le animazioni: uno SpriteFrames di Godot, un JSON di TexturePacker o Aseprite, e altri."
 
 #: res://ui/main/export_dialog.gd
 msgid "Packed atlas"
@@ -1334,7 +1334,7 @@ msgstr "Atlante compatto"
 
 #: res://ui/main/export_dialog.gd
 msgid "Frames with their transparent borders trimmed, packed as tightly as possible into PNG pages, with a file that says where each one is for TexturePacker, Phaser, libGDX, Spine, Starling or Godot."
-msgstr "I fotogrammi senza i bordi trasparenti, compattati il più possibile in pagine PNG, con un file che dice dov'è ognuno per TexturePacker, Phaser, libGDX, Spine, Starling o Godot."
+msgstr "I frame senza i bordi trasparenti, compattati il più possibile in pagine PNG, con un file che dice dov'è ognuno per TexturePacker, Phaser, libGDX, Spine, Starling o Godot."
 
 #: res://ui/main/export_dialog.gd
 msgid "Animated GIF"
@@ -1346,7 +1346,7 @@ msgstr "Un'animazione come GIF, o una GIF per ciascuna in una cartella, da condi
 
 #: res://ui/main/export_dialog.gd
 msgid "Each animation as a PNG of its frames side by side, in a folder, named for GameMaker to cut it into frames when imported (walk_strip8.png). Frames in no animation are left out."
-msgstr "Ogni animazione come PNG con i suoi fotogrammi affiancati, in una cartella, con un nome che GameMaker usa per tagliarla in fotogrammi all'importazione (walk_strip8.png). I fotogrammi fuori dalle animazioni sono esclusi."
+msgstr "Ogni animazione come PNG con i suoi frame affiancati, in una cartella, con un nome che GameMaker usa per tagliarla in frame all'importazione (walk_strip8.png). I frame fuori dalle animazioni sono esclusi."
 
 #: res://ui/main/export_dialog.gd
 msgid "The sheet as a PNG and a data file written from a template of your own. Packed sheets, and templates only for packed atlases, give atlas pages."
@@ -1442,7 +1442,7 @@ msgstr "Scala"
 
 #: res://ui/main/export_dialog.gd
 msgid "The file next to the image that says where each frame is"
-msgstr "Il file accanto all'immagine che dice dov'è ogni fotogramma"
+msgstr "Il file accanto all'immagine che dice dov'è ogni frame"
 
 #: res://ui/main/export_dialog.gd
 msgid "Data file"
@@ -1450,7 +1450,7 @@ msgstr "File di dati"
 
 #: res://ui/main/export_dialog.gd
 msgid "The file next to the atlas that says where each frame is"
-msgstr "Il file accanto all'atlante che dice dov'è ogni fotogramma"
+msgstr "Il file accanto all'atlante che dice dov'è ogni frame"
 
 #: res://ui/main/export_dialog.gd
 msgid "The template the data file is written from. Its header says the file's extension."
@@ -1482,9 +1482,9 @@ msgid ""
 "Their cell: the frames of an animation line up like in the grid, even when trimmed or of different sizes.\n"
 "Their own: each frame is as big as it is, for sprites that have nothing to do with each other."
 msgstr ""
-"La dimensione che il file di dati dà a ogni fotogramma, con cui i motori allineano i fotogrammi.\n"
-"La loro cella: i fotogrammi di un'animazione si allineano come nella griglia, anche se rifilati o di dimensioni diverse.\n"
-"La propria: ogni fotogramma è grande quanto è, per sprite che non hanno niente a che fare tra loro."
+"La dimensione che il file di dati dà a ogni frame, con cui i motori allineano i frame.\n"
+"La loro cella: i frame di un'animazione si allineano come nella griglia, anche se rifilati o di dimensioni diverse.\n"
+"La propria: ogni frame è grande quanto è, per sprite che non hanno niente a che fare tra loro."
 
 #: res://ui/main/export_dialog.gd
 msgid "Frame size in data"
@@ -1492,7 +1492,7 @@ msgstr "Dimensione nei dati"
 
 #: res://ui/main/export_dialog.gd
 msgid "Frames per second of the animations"
-msgstr "Fotogrammi al secondo delle animazioni"
+msgstr "Frame al secondo delle animazioni"
 
 #: res://ui/main/export_dialog.gd
 msgid "Animation speed"
@@ -1500,11 +1500,11 @@ msgstr "Velocità animazione"
 
 #: res://ui/main/export_dialog.gd
 msgid "How each frame is named, with tokens such as {index} filled in"
-msgstr "Come viene chiamato ogni fotogramma, con segnaposto come {index} sostituiti"
+msgstr "Come viene chiamato ogni frame, con segnaposto come {index} sostituiti"
 
 #: res://ui/main/export_dialog.gd
 msgid "Only selected frames"
-msgstr "Solo fotogrammi selezionati"
+msgstr "Solo frame selezionati"
 
 #: res://ui/main/export_dialog.gd
 msgid "Add a number"
@@ -1565,14 +1565,14 @@ msgstr[1] "%d GIF di %d×%d px"
 #: res://ui/main/export_dialog.gd
 msgid "%d strip of %d×%d px frames"
 msgid_plural "%d strips of %d×%d px frames"
-msgstr[0] "%d striscia di fotogrammi di %d×%d px"
-msgstr[1] "%d strisce di fotogrammi di %d×%d px"
+msgstr[0] "%d striscia di frame di %d×%d px"
+msgstr[1] "%d strisce di frame di %d×%d px"
 
 #: res://ui/main/export_dialog.gd
 msgid "%d frame of %d×%d px"
 msgid_plural "%d frames of %d×%d px"
-msgstr[0] "%d fotogramma di %d×%d px"
-msgstr[1] "%d fotogrammi di %d×%d px"
+msgstr[0] "%d frame di %d×%d px"
+msgstr[1] "%d frame di %d×%d px"
 
 #: res://ui/main/export_dialog.gd
 msgid "Image size: %d×%d px"
@@ -1586,7 +1586,7 @@ msgstr[1] "%d immagini, la prima di %d×%d px"
 
 #: res://ui/main/export_dialog.gd
 msgid "Frame names"
-msgstr "Nomi dei fotogrammi"
+msgstr "Nomi dei frame"
 
 #: res://ui/main/export_dialog.gd
 msgid "%s … %d more"
@@ -1600,7 +1600,7 @@ msgstr "La dimensione si sa quando si compatta"
 
 #: res://ui/main/export_dialog.gd
 msgid "This format can't describe turned frames. Pack without turning them."
-msgstr "Questo formato non può descrivere fotogrammi ruotati. Compatta senza ruotarli."
+msgstr "Questo formato non può descrivere frame ruotati. Compatta senza ruotarli."
 
 #: res://ui/main/export_dialog.gd
 msgid "Atlas size: %d×%d px"
@@ -1763,12 +1763,12 @@ msgstr "Segui file rinominati"
 #: res://ui/main/folder_watcher.gd
 msgid "Remove %d frame whose file was deleted?"
 msgid_plural "Remove %d frames whose files were deleted?"
-msgstr[0] "Rimuovere %d fotogramma il cui file è stato eliminato?"
-msgstr[1] "Rimuovere %d fotogrammi i cui file sono stati eliminati?"
+msgstr[0] "Rimuovere %d frame il cui file è stato eliminato?"
+msgstr[1] "Rimuovere %d frame i cui file sono stati eliminati?"
 
 #: res://ui/main/folder_watcher.gd
 msgid "Remove frames of deleted files"
-msgstr "Rimuovi fotogrammi di file eliminati"
+msgstr "Rimuovi frame di file eliminati"
 
 #: res://ui/main/history_panel.gd
 #: res://ui/main/main_ui.gd
@@ -1808,23 +1808,23 @@ msgstr "In basso a sinistra"
 
 #: res://ui/main/layout_controller.gd
 msgid "Frames in the cells of a grid"
-msgstr "Fotogrammi nelle celle di una griglia"
+msgstr "Frame nelle celle di una griglia"
 
 #: res://ui/main/layout_controller.gd
 msgid "Frames packed tightly on pages"
-msgstr "Fotogrammi compattati su pagine"
+msgstr "Frame compattati su pagine"
 
 #: res://ui/main/layout_controller.gd
 msgid "Drag on a frame to put the pivot of the selected frames there"
-msgstr "Trascina su un fotogramma per mettere lì il pivot dei fotogrammi selezionati"
+msgstr "Trascina su un frame per mettere lì il pivot dei frame selezionati"
 
 #: res://ui/main/layout_controller.gd
 msgid "Pack every frame that isn't pinned again, as tightly as possible"
-msgstr "Compatta di nuovo ogni fotogramma non fissato, il più possibile"
+msgstr "Compatta di nuovo ogni frame non fissato, il più possibile"
 
 #: res://ui/main/layout_controller.gd
 msgid "Pins the selected frames, or every frame when none are selected, so packing again keeps their place"
-msgstr "Fissa i fotogrammi selezionati, o tutti se nessuno è selezionato, così compattando di nuovo restano al loro posto"
+msgstr "Fissa i frame selezionati, o tutti se nessuno è selezionato, così compattando di nuovo restano al loro posto"
 
 #: res://ui/main/layout_controller.gd
 msgid "Layout"
@@ -1852,7 +1852,7 @@ msgstr "Layout a griglia"
 
 #: res://ui/main/layout_controller.gd
 msgid "Pack frames"
-msgstr "Compatta fotogrammi"
+msgstr "Compatta frame"
 
 #: res://ui/main/layout_controller.gd
 msgid "Packed Layout"
@@ -1872,11 +1872,11 @@ msgstr "Compatta di nuovo"
 
 #: res://ui/main/layout_controller.gd
 msgid "Pin frames"
-msgstr "Fissa fotogrammi"
+msgstr "Fissa frame"
 
 #: res://ui/main/layout_controller.gd
 msgid "Unpin frames"
-msgstr "Libera fotogrammi"
+msgstr "Libera frame"
 
 #: res://ui/main/layout_controller.gd
 msgid "Pinned"
@@ -1999,24 +1999,24 @@ msgstr "File di immagini come sprite"
 
 #: res://ui/main/main_ui.gd
 msgid "Cut a spritesheet image into frames and add them"
-msgstr "Taglia un'immagine di spritesheet in fotogrammi e aggiungili"
+msgstr "Taglia un'immagine di spritesheet in frame e aggiungili"
 
 #: res://ui/main/main_ui.gd
 msgid "Click or drag to select frames"
-msgstr "Clicca o trascina per selezionare fotogrammi"
+msgstr "Clicca o trascina per selezionare frame"
 
 #: res://ui/main/main_ui.gd
 msgid "Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys move the selected frames inside their cells."
-msgstr "Trascina per spostare i fotogrammi selezionati, o quello trascinato; Alt+trascina copia. I tasti freccia spostano i fotogrammi selezionati nelle loro celle."
+msgstr "Trascina per spostare i frame selezionati, o quello trascinato; Alt+trascina copia. I tasti freccia spostano i frame selezionati nelle loro celle."
 
 #: res://ui/main/main_ui.gd
 #: res://ui/main/menu_bar.gd
 msgid "Of the selected frames, or of every frame when none are selected"
-msgstr "Dei fotogrammi selezionati, o di tutti se nessuno è selezionato"
+msgstr "Dei frame selezionati, o di tutti se nessuno è selezionato"
 
 #: res://ui/main/main_ui.gd
 msgid "From the selected frames, or from every frame when none are selected"
-msgstr "Dai fotogrammi selezionati, o da tutti se nessuno è selezionato"
+msgstr "Dai frame selezionati, o da tutti se nessuno è selezionato"
 
 #: res://ui/main/main_ui.gd
 #: res://ui/settings/settings_window.gd
@@ -2025,11 +2025,11 @@ msgstr "Filtro di ridimensionamento"
 
 #: res://ui/main/main_ui.gd
 msgid "Copy frames"
-msgstr "Copia fotogrammi"
+msgstr "Copia frame"
 
 #: res://ui/main/main_ui.gd
 msgid "Nudge frames"
-msgstr "Sposta di poco i fotogrammi"
+msgstr "Sposta di poco i frame"
 
 #: res://ui/main/main_ui.gd
 msgid "Lock cell"
@@ -2041,7 +2041,7 @@ msgstr "Sblocca cella"
 
 #: res://ui/main/main_ui.gd
 msgid "No frames selected"
-msgstr "Nessun fotogramma selezionato"
+msgstr "Nessun frame selezionato"
 
 #: res://ui/main/main_ui.gd
 msgid "Nothing copied"
@@ -2134,6 +2134,10 @@ msgstr "Ruota di 90° in senso antiorario"
 #: res://ui/main/main_ui.gd
 msgid "Copy"
 msgstr "Copia"
+
+#: res://ui/main/main_ui.gd
+msgid "Cut"
+msgstr "Taglia"
 
 #: res://ui/main/main_ui.gd
 msgid "Paste"
@@ -2256,11 +2260,11 @@ msgstr "Griglia dei pixel"
 
 #: res://ui/main/main_ui.gd
 msgid "Frame Numbers"
-msgstr "Numeri dei fotogrammi"
+msgstr "Numeri dei frame"
 
 #: res://ui/main/main_ui.gd
 msgid "Command Palette…"
-msgstr "Riquadro comandi…"
+msgstr "Comandi…"
 
 #: res://ui/main/main_ui.gd
 msgid "Outline"
@@ -2294,19 +2298,19 @@ msgstr[1] "%d esportazioni, scritte da Esporta di nuovo (%s)"
 
 #: res://ui/main/main_ui.gd
 msgid "No frames. Add sprites or drop images here."
-msgstr "Nessun fotogramma. Aggiungi sprite o trascina qui delle immagini."
+msgstr "Nessun frame. Aggiungi sprite o trascina qui delle immagini."
 
 #: res://ui/main/main_ui.gd
 msgid "%d frame · %s"
 msgid_plural "%d frames · %s"
-msgstr[0] "%d fotogramma · %s"
-msgstr[1] "%d fotogrammi · %s"
+msgstr[0] "%d frame · %s"
+msgstr[1] "%d frame · %s"
 
 #: res://ui/main/main_ui.gd
 msgid "%d frame · %d×%d grid · %d×%d px"
 msgid_plural "%d frames · %d×%d grid · %d×%d px"
-msgstr[0] "%d fotogramma · griglia %d×%d · %d×%d px"
-msgstr[1] "%d fotogrammi · griglia %d×%d · %d×%d px"
+msgstr[0] "%d frame · griglia %d×%d · %d×%d px"
+msgstr[1] "%d frame · griglia %d×%d · %d×%d px"
 
 #: res://ui/main/main_ui.gd
 msgid "Cells with a lock stay empty"
@@ -2360,7 +2364,7 @@ msgstr "File"
 
 #: res://ui/main/menu_bar.gd
 msgid "Frame"
-msgstr "Fotogramma"
+msgstr "Frame"
 
 #: res://ui/main/menu_bar.gd
 msgid "View"
@@ -2456,7 +2460,7 @@ msgstr "Ignora"
 
 #: res://ui/main/reload_dialog.gd
 msgid "Keep the frames as they are"
-msgstr "Lascia i fotogrammi come sono"
+msgstr "Lascia i frame come sono"
 
 #: res://ui/main/reload_dialog.gd
 msgid "Reload the file and make the edits made here again"
@@ -2469,8 +2473,8 @@ msgstr "%s è cambiato sul disco. Ricaricarlo?"
 #: res://ui/main/reload_dialog.gd
 msgid "%d of its %d frames was edited here (flipped, trimmed, moved…)."
 msgid_plural "%d of its %d frames were edited here (flipped, trimmed, moved…)."
-msgstr[0] "%d dei suoi %d fotogrammi è stato modificato qui (capovolto, rifilato, spostato…)."
-msgstr[1] "%d dei suoi %d fotogrammi sono stati modificati qui (capovolti, rifilati, spostati…)."
+msgstr[0] "%d dei suoi %d frame è stato modificato qui (capovolto, rifilato, spostato…)."
+msgstr[1] "%d dei suoi %d frame sono stati modificati qui (capovolti, rifilati, spostati…)."
 
 #: res://ui/main/reload_dialog.gd
 msgid "Do the same for the other changed file"
@@ -2492,7 +2496,7 @@ msgstr "Ricarica"
 
 #: res://ui/main/scale_rows.gd
 msgid "The sizes to write the export at, like 1, 2: each is the sheet that many times bigger, with its own data file. Frames are resized from their original images with the sheet's filter; padding, spacing and extrusion grow with them."
-msgstr "Le dimensioni a cui scrivere l'esportazione, come 1, 2: ognuna è lo spritesheet tante volte più grande, con il suo file di dati. I fotogrammi sono ridimensionati dalle immagini originali con il filtro dello spritesheet; margine, spaziatura ed estrusione crescono con loro."
+msgstr "Le dimensioni a cui scrivere l'esportazione, come 1, 2: ognuna è lo spritesheet tante volte più grande, con il suo file di dati. I frame sono ridimensionati dalle immagini originali con il filtro dello spritesheet; margine, spaziatura ed estrusione crescono con loro."
 
 #: res://ui/main/scale_rows.gd
 msgid "Scales"
@@ -2523,8 +2527,8 @@ msgstr "Ricaricamento"
 #: res://ui/main/source_watcher.gd
 msgid "%d frame wasn't found in the changed files and was left as it was."
 msgid_plural "%d frames weren't found in the changed files and were left as they were."
-msgstr[0] "%d fotogramma non è stato trovato nei file modificati ed è rimasto com'era."
-msgstr[1] "%d fotogrammi non sono stati trovati nei file modificati e sono rimasti com'erano."
+msgstr[0] "%d frame non è stato trovato nei file modificati ed è rimasto com'era."
+msgstr[1] "%d frame non sono stati trovati nei file modificati e sono rimasti com'erano."
 
 #: res://ui/main/spacing_dropdown.gd
 msgid "Spacing & Padding"
@@ -2532,11 +2536,11 @@ msgstr "Spaziatura e margine"
 
 #: res://ui/main/spacing_dropdown.gd
 msgid "Empty pixels between frames and around the sheet, and extruded edges"
-msgstr "Pixel vuoti tra i fotogrammi e attorno allo spritesheet, e bordi estrusi"
+msgstr "Pixel vuoti tra i frame e attorno allo spritesheet, e bordi estrusi"
 
 #: res://ui/main/spacing_dropdown.gd
 msgid "Empty pixels between frames"
-msgstr "Pixel vuoti tra i fotogrammi"
+msgstr "Pixel vuoti tra i frame"
 
 #: res://ui/main/spacing_dropdown.gd
 msgid "Padding"
@@ -2552,7 +2556,7 @@ msgstr "Estrudi i bordi"
 
 #: res://ui/main/spacing_dropdown.gd
 msgid "Repeats each frame's edge pixels outward, so scaled or filtered sprites don't pick up their neighbours' colours"
-msgstr "Ripete verso l'esterno i pixel del bordo di ogni fotogramma, così gli sprite scalati o filtrati non prendono i colori dei vicini"
+msgstr "Ripete verso l'esterno i pixel del bordo di ogni frame, così gli sprite scalati o filtrati non prendono i colori dei vicini"
 
 #: res://ui/main/spacing_dropdown.gd
 msgid "Spacing %d"
@@ -2580,7 +2584,7 @@ msgstr "Raggruppa per riga invece che per animazione"
 
 #: res://ui/main/sprites_panel.gd
 msgid "Double-click a name to rename the frame"
-msgstr "Fai doppio clic su un nome per rinominare il fotogramma"
+msgstr "Fai doppio clic su un nome per rinominare il frame"
 
 #: res://ui/main/sprites_panel.gd
 msgid "The folder wasn't found."
@@ -2608,7 +2612,7 @@ msgstr "Nessuna animazione"
 
 #: res://ui/main/sprites_panel.gd
 msgid "Click to select these frames"
-msgstr "Clicca per selezionare questi fotogrammi"
+msgstr "Clicca per selezionare questi frame"
 
 #: res://ui/main/sprites_panel.gd
 msgid "Unpin"
@@ -2620,15 +2624,15 @@ msgstr "Fissa"
 
 #: res://ui/main/sprites_panel.gd
 msgid "Rename frame"
-msgstr "Rinomina fotogramma"
+msgstr "Rinomina frame"
 
 #: res://ui/main/sprites_panel.gd
 msgid "Pin frame"
-msgstr "Fissa fotogramma"
+msgstr "Fissa frame"
 
 #: res://ui/main/sprites_panel.gd
 msgid "Unpin frame"
-msgstr "Libera fotogramma"
+msgstr "Libera frame"
 
 #: res://ui/main/start_screen.gd
 msgid "Recent Files"
@@ -2660,7 +2664,7 @@ msgstr "Nella prima cella libera"
 
 #: res://ui/settings/settings_window.gd
 msgid "After the last frame"
-msgstr "Dopo l'ultimo fotogramma"
+msgstr "Dopo l'ultimo frame"
 
 #: res://ui/settings/settings_window.gd
 msgid "A new row"
@@ -2696,7 +2700,7 @@ msgstr "min"
 
 #: res://ui/settings/settings_window.gd
 msgid "Number frames from"
-msgstr "Numera i fotogrammi da"
+msgstr "Numera i frame da"
 
 #: res://ui/settings/settings_window.gd
 msgid "Show grid"
@@ -2708,7 +2712,7 @@ msgstr "Mostra griglia dei pixel"
 
 #: res://ui/settings/settings_window.gd
 msgid "Show frame numbers"
-msgstr "Mostra numeri dei fotogrammi"
+msgstr "Mostra numeri dei frame"
 
 #: res://ui/settings/settings_window.gd
 msgid "Show checkerboard"
@@ -2756,7 +2760,7 @@ msgstr "Disattivo"
 
 #: res://ui/settings/settings_window.gd
 msgid "Share identical frames"
-msgstr "Condividi fotogrammi identici"
+msgstr "Condividi frame identici"
 
 #: res://ui/settings/settings_window.gd
 msgid "Power-of-two pages"
@@ -2824,7 +2828,7 @@ msgstr "Chiedi di ricaricare gli sprite quando cambiano i file da cui provengono
 
 #: res://ui/settings/settings_window.gd
 msgid "Show the pivot tool (E) and the Pivot menu, to set the point engines anchor each frame at, like a character's feet"
-msgstr "Mostra lo strumento pivot (E) e il menu Pivot, per impostare il punto a cui i motori ancorano ogni fotogramma, come i piedi di un personaggio"
+msgstr "Mostra lo strumento pivot (E) e il menu Pivot, per impostare il punto a cui i motori ancorano ogni frame, come i piedi di un personaggio"
 
 #: res://ui/settings/settings_window.gd
 msgid "Ask before making the grid smaller deletes sprites"
@@ -2852,11 +2856,11 @@ msgstr "Adatta e fai zoom a 200%, 300%… o 50%, 33%… così ogni pixel ha la s
 
 #: res://ui/settings/settings_window.gd
 msgid "How strongly the accent colour covers selected frames. At 0% only their outline shows."
-msgstr "Quanto il colore di accento copre i fotogrammi selezionati. Allo 0% si vede solo il contorno."
+msgstr "Quanto il colore di accento copre i frame selezionati. Allo 0% si vede solo il contorno."
 
 #: res://ui/settings/settings_window.gd
 msgid "Frames that look the same are packed once and share their place"
-msgstr "I fotogrammi uguali vengono compattati una volta sola e condividono il posto"
+msgstr "I frame uguali vengono compattati una volta sola e condividono il posto"
 
 #: res://ui/settings/settings_window.gd
 msgid "Pages are 256, 512, 1024… px wide and tall, for older engines"
@@ -2932,7 +2936,7 @@ msgstr "Mostra il nome solo dell'animazione scelta nel pannello animazioni"
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd
 msgid "Can't be named: their frames are out of order or not one area"
-msgstr "Senza nome: i loro fotogrammi non sono in ordine o non formano un'unica area"
+msgstr "Senza nome: i loro frame non sono in ordine o non formano un'unica area"
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd
 msgid "Hide its name"
@@ -3006,7 +3010,7 @@ msgstr "%d, %d a pagina %d"
 
 #: res://ui/spritesheet_preview/pixel_grid.gd
 msgid "%d, %d in the frame (%s)"
-msgstr "%d, %d nel fotogramma (%s)"
+msgstr "%d, %d nel frame (%s)"
 
 #: res://ui/spritesheet_preview/pixel_grid.gd
 msgid "#%s, alpha %d"
@@ -3038,7 +3042,7 @@ msgstr "fissato"
 
 #: res://ui/spritesheet_preview/preview_area.gd
 msgid "shares its place with a frame that looks the same"
-msgstr "condivide il posto con un fotogramma uguale"
+msgstr "condivide il posto con un frame uguale"
 
 #: res://ui/spritesheet_preview/preview_area.gd
 msgid "%s (edited here)"

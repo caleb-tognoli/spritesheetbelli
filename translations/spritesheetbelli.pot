@@ -523,7 +523,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
-#: res://ui/main/main_ui.gd
+msgctxt "Cut mode"
 msgid "Cut"
 msgstr ""
 
@@ -2125,6 +2125,10 @@ msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Copy"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Cut"
 msgstr ""
 
 #: res://ui/main/main_ui.gd

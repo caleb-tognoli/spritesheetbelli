@@ -508,7 +508,9 @@ func _build_cut_controls() -> void:
 	var grid_box := grid_columns.get_parent().get_parent() as Control
 	var cut_box := HBoxContainer.new()
 	var cut_label := Label.new()
-	cut_label.text = "Cut"
+	# Not the clipboard's Cut
+	cut_label.translation_context = "Cut mode"
+	cut_label.text = L10n.mark("Cut", "Cut mode")
 	cut_box.add_child(cut_label)
 	cut_box.add_child(cut_option)
 	cut_option.tooltip_text = (

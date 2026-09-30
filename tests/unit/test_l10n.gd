@@ -32,12 +32,13 @@ func test_italian_has_every_message_with_the_same_placeholders() -> void:
 	for path in listed:
 		for message in PotGenerator.extract(path):
 			var texts: Array[String] = [message.msgid]
-			var translated: Array[String] = [italian.get_message(message.msgid)]
+			var context: String = message.context
+			var translated: Array[String] = [italian.get_message(message.msgid, context)]
 			if message.plural:
 				texts.append(message.plural)
 				translated = [
-					italian.get_plural_message(message.msgid, message.plural, 1),
-					italian.get_plural_message(message.msgid, message.plural, 2),
+					italian.get_plural_message(message.msgid, message.plural, 1, context),
+					italian.get_plural_message(message.msgid, message.plural, 2, context),
 				]
 			for i in translated.size():
 				var source: String = texts[mini(i, texts.size() - 1)]
@@ -60,7 +61,20 @@ func test_italian_counts() -> void:
 		tr_n("%d frame", "%d frames", 0) % 0,
 	]
 	TranslationServer.set_locale("en")
-	assert_eq(texts, ["Salva", "1 fotogramma", "2 fotogrammi", "0 fotogrammi"])
+	assert_eq(texts, ["Salva", "1 frame", "2 frame", "0 frame"])
+
+
+func test_the_way_a_sheet_is_cut_is_not_the_clipboards_cut() -> void:
+	var window: AddSpritesheetWindow = (
+		load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
+	)
+	add_child(window)
+	var label := window.cut_option.get_parent().get_child(0) as Label
+	TranslationServer.set_locale("it")
+	var texts := [label.atr(label.text), tr("Cut")]
+	TranslationServer.set_locale("en")
+	window.free()
+	assert_eq(texts, ["Ritaglio", "Taglia"])
 
 
 func test_the_pot_has_what_scripts_translate() -> void:

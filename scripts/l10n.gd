@@ -14,8 +14,10 @@ static var _user_translations: Array[Translation] = []
 
 
 ## Returns [param text] as it is, marking it to be translated where it's shown rather than
-## here, e.g. action names and history steps, which then follow language changes
-static func mark(text: String) -> String:
+## here, e.g. action names and history steps, which then follow language changes.
+## [param _context] tells it apart from the same text meaning something else, and is given
+## where it's shown too, like a control's [member Control.translation_context].
+static func mark(text: String, _context := "") -> String:
 	return text
 
 
