@@ -260,6 +260,10 @@ func test_the_setting_turns_the_pixel_grid_on_and_off() -> void:
 	await open_main()
 	assert_true(main.preview.show_pixel_grid, "on by default")
 	assert_true(Actions.is_checked(&"toggle_pixel_grid"))
+	assert_false(Actions.run(&"toggle_pixel_grid"), "not while the start screen covers it")
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
 	Actions.run(&"toggle_pixel_grid")
 	assert_false(Settings.get_value(&"show_pixel_grid"))
 	assert_false(main.preview.show_pixel_grid)

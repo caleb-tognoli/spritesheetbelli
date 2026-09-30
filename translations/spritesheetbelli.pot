@@ -1683,6 +1683,7 @@ msgstr ""
 
 #: res://ui/main/file_controller.gd
 #: res://ui/main/main.tscn
+#: res://ui/main/start_screen.gd
 msgid "Open"
 msgstr ""
 
@@ -2671,11 +2672,59 @@ msgid "Unpin frame"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
-msgid "Recent Files"
+msgid "Jan"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
-msgid "Drop images, folders or a .sbelli project here"
+msgid "Feb"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Mar"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Apr"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "May"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Jun"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Jul"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Aug"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Sep"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Oct"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Nov"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Dec"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Files you open will appear here"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Nothing open"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
@@ -2683,7 +2732,49 @@ msgid "Locate %s"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
+msgid "Locate…"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Show in File Manager"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Copy Path"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
 msgid "Remove from Recent Files"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Just now"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/start_screen.gd
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/start_screen.gd
+msgid "Yesterday"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/start_screen.gd
+msgid "Drop images, folders or a .sbelli project here"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
@@ -2691,7 +2782,7 @@ msgid "Not found"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
-msgid "Locate…"
+msgid "Changed %s"
 msgstr ""
 
 #: res://ui/main/start_screen.gd

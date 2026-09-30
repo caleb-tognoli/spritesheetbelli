@@ -35,7 +35,8 @@ func save_project(file_name: String) -> String:
 	return path
 
 
-## The texts of the labels on [param card]: its name, then its folder or "Not found"
+## The texts of the labels on [param card]: its name, then its folder and when it was
+## changed, or "Not found"
 func texts_of(card: Button) -> PackedStringArray:
 	var texts: PackedStringArray = []
 	for label in card.find_children("*", "Label", true, false):
@@ -57,7 +58,7 @@ func locate_button_of(card: Button) -> Button:
 
 func test_shown_while_nothing_is_open() -> void:
 	assert_true(start.visible, "a new document")
-	assert_eq(start.get_parent(), main.preview_area, "over the canvas")
+	assert_eq(start.get_parent(), main.editor.get_parent(), "over the editor")
 	Global.document.perform(
 		"Add sprites", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
@@ -78,7 +79,9 @@ func test_buttons_run_actions() -> void:
 	for button: Button in start.buttons.get_children():
 		labels.append(button.text)
 		assert_true(button.tooltip_text.begins_with(button.text.trim_suffix("…")), "tooltip")
-	assert_eq(labels, PackedStringArray(["Open…", "Add Sprite(s)…", "Add Spritesheet…"]))
+	assert_eq(
+		labels, PackedStringArray(["Open…", "Add Sprite(s)…", "Add Spritesheet…", "Add Folder…"])
+	)
 	(start.buttons.get_child(1) as Button).pressed.emit()
 	assert_eq(main.files.open_file_dialogs, [main.files.open_sprites_dialog] as Array[FileDialog])
 	main.files.open_sprites_dialog.canceled.emit()
@@ -96,6 +99,8 @@ func test_recent_files_with_a_missing_one() -> void:
 	var texts := texts_of(start.cards[project])
 	assert_eq(texts[0], "walk.sbelli")
 	assert_true(dir.ends_with(texts[1].trim_prefix("…")), "its folder, got %s" % texts[1])
+	assert_eq(texts[2], "Just now", "when it was changed")
+	assert_true(start.cards[project].tooltip_text.begins_with(project + "\nChanged "), "tooltip")
 	assert_false(start.cards[project].disabled)
 	assert_eq(texts_of(start.cards[missing]), PackedStringArray(["gone.png", "Not found"]))
 	assert_true(start.cards[missing].disabled, "can't be opened")
@@ -103,9 +108,10 @@ func test_recent_files_with_a_missing_one() -> void:
 	assert_true(placeholder != null and not placeholder is ImageTexture, "placeholder")
 	assert_true(start.thumbnails[project].texture is DPITexture, "none made yet")
 
+	assert_false(start.empty_hint.visible)
 	Settings.clear_recent_files()
 	assert_false(start.recent_list.visible, "nothing to list")
-	assert_false(start.recent_heading.visible)
+	assert_true(start.empty_hint.visible, "says where they'll be")
 
 
 func test_a_missing_file_is_located() -> void:
@@ -279,8 +285,8 @@ func test_web() -> void:
 	start.refresh()
 	assert_true(start.cards.is_empty(), "no recent files in a browser")
 	assert_false(start.recent_list.visible)
-	assert_false(start.recent_heading.visible)
-	assert_eq(start.buttons.get_child_count(), 3, "the buttons stay")
+	assert_false(start.empty_hint.visible, "there won't be any")
+	assert_eq(start.buttons.get_child_count(), 4, "the buttons stay")
 	var card := start._make_card(dir.path_join("gone.png"))
 	assert_eq(locate_button_of(card), null, "nothing to locate in a browser")
 	card.free()
@@ -289,3 +295,154 @@ func test_web() -> void:
 	Thumbnails.enabled = false
 	Thumbnails.make_for_sheet(project, Global.spritesheet)
 	assert_false(Thumbnails.is_making(project), "no thumbnails in a browser")
+
+
+func test_covers_the_editor() -> void:
+	await get_tree().process_frame
+	var status_bar: Control = main.status_bar
+	assert_true(start.get_global_rect().encloses(main.split.get_global_rect()))
+	assert_true(
+		start.get_global_rect().encloses(status_bar.get_global_rect()), "and the status bar"
+	)
+	assert_eq(main.editor.focus_behavior_recursive, Control.FOCUS_BEHAVIOR_DISABLED)
+	assert_false(Actions.is_enabled(&"toggle_history"), "the editor's actions can't run")
+	assert_eq(Actions.get_disabled_reason(&"toggle_history"), "Nothing open")
+	assert_true(Actions.is_enabled(&"open"))
+	Global.document.perform(
+		"Add sprites", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	assert_false(start.visible, "shown once something is open")
+	assert_eq(main.editor.focus_behavior_recursive, Control.FOCUS_BEHAVIOR_INHERITED)
+	assert_true(Actions.is_enabled(&"toggle_history"))
+	assert_true(Actions.is_enabled(&"zoom_fit"))
+
+
+func test_as_wide_as_five_cards_at_most() -> void:
+	for i in 7:
+		Settings.add_recent_file(dir.path_join("%d.png" % i))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var width := StartScreen.MAX_COLUMNS * StartScreen.CARD_SIZE.x + 4 * StartScreen.CARD_GAP
+	assert_true(main.size.x > width + 100, "room for more")
+	assert_eq(start.recent_list.size.x, width)
+	assert_eq(start.drop_zone.size.x, width, "lined up with the cards")
+	var sixth := start.cards[dir.path_join("1.png")]
+	assert_eq(sixth.position.x, 0.0, "on the next row, under the first card")
+
+
+func test_says_how_long_ago() -> void:
+	var now := 1_800_000_000
+	var ages := [
+		StartScreen.describe_age(now - 5, now),
+		StartScreen.describe_age(now - 60, now),
+		StartScreen.describe_age(now - 150, now),
+		StartScreen.describe_age(now - 3600, now),
+		StartScreen.describe_age(now - 5 * 3600, now),
+		StartScreen.describe_age(now - 30 * 3600, now),
+		StartScreen.describe_age(now - 3 * 86400, now),
+		StartScreen.describe_age(now + 100, now),
+	]
+	assert_eq(
+		ages,
+		[
+			"Just now",
+			"1 minute ago",
+			"2 minutes ago",
+			"1 hour ago",
+			"5 hours ago",
+			"Yesterday",
+			"3 days ago",
+			"Just now",
+		]
+	)
+	var week_ago := now - 8 * 86400
+	assert_eq(StartScreen.describe_age(week_ago, now), StartScreen.format_date(week_ago))
+
+
+func test_dates_are_local() -> void:
+	var bias: int = Time.get_time_zone_from_system().bias
+	var local := {"year": 2026, "month": 9, "day": 12, "hour": 14, "minute": 3, "second": 0}
+	var time := Time.get_unix_time_from_datetime_dict(local) - bias * 60
+	assert_eq(StartScreen.format_date(time), "12 Sep 2026")
+	assert_eq(StartScreen.format_date(time, true), "12 Sep 2026, 14:03")
+	TranslationServer.set_locale("it")
+	var italian := [StartScreen.format_date(time), StartScreen.describe_age(0, 7200)]
+	TranslationServer.set_locale("en")
+	assert_eq(italian, ["12 set 2026", "2 ore fa"])
+
+
+## Presses [param keycode] in the window
+func press(keycode: Key) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.pressed = true
+	get_viewport().push_input(event)
+
+
+func test_arrow_keys_start_on_the_first_card() -> void:
+	var first := save_project("first.sbelli")
+	var second := save_project("second.sbelli")
+	Settings.add_recent_file(second)
+	Settings.add_recent_file(first)
+	assert_true(get_viewport().gui_get_focus_owner() == null, "nothing at first")
+	press(KEY_DOWN)
+	assert_eq(get_viewport().gui_get_focus_owner(), start.cards[first])
+	press(KEY_DELETE)
+	assert_eq(Settings.get_recent_files(), PackedStringArray([second]), "forgotten")
+	assert_eq(get_viewport().gui_get_focus_owner(), start.cards[second], "the next one")
+	press(KEY_ESCAPE)
+	assert_true(get_viewport().gui_get_focus_owner() == null, "nothing again")
+	press(KEY_LEFT)
+	press(KEY_DELETE)
+	assert_eq(get_viewport().gui_get_focus_owner(), start.buttons.get_child(0), "none left")
+	press(KEY_ESCAPE)
+
+
+func test_enter_locates_a_missing_file() -> void:
+	var missing := dir.path_join("gone.png")
+	Settings.add_recent_file(missing)
+	press(KEY_RIGHT)
+	press(KEY_ENTER)
+	assert_eq(start.locate_dialog.title, "Locate gone.png")
+	start.locate_dialog.hide()
+	press(KEY_ESCAPE)
+
+
+func test_menu_of_a_recent_file() -> void:
+	var project := save_project("walk.sbelli")
+	var missing := dir.path_join("gone.png")
+	Settings.add_recent_file(missing)
+	Settings.add_recent_file(project)
+	var menu := start.card_menu
+	start.open_menu(project, Vector2.ZERO)
+	var items: PackedStringArray = []
+	for i in menu.item_count:
+		items.append(menu.get_item_text(i))
+	assert_eq(
+		items,
+		PackedStringArray(
+			["Open", "Show in File Manager", "Copy Path", "", "Remove from Recent Files"]
+		)
+	)
+	menu.id_pressed.emit(StartScreen.MenuItem.FORGET)
+	menu.hide()
+	assert_eq(Settings.get_recent_files(), PackedStringArray([missing]), "forgotten")
+
+	start.open_menu(missing, Vector2.ZERO)
+	assert_eq(menu.get_item_text(0), "Locate…", "instead of opening it")
+	var show := menu.get_item_index(StartScreen.MenuItem.SHOW)
+	assert_true(menu.is_item_disabled(show), "nothing to show")
+	menu.id_pressed.emit(StartScreen.MenuItem.LOCATE)
+	menu.hide()
+	assert_eq(start.locate_dialog.title, "Locate gone.png")
+	start.locate_dialog.hide()
+
+
+func test_open_from_the_menu() -> void:
+	var project := save_project("walk.sbelli")
+	Settings.add_recent_file(project)
+	start.open_menu(project, Vector2.ZERO)
+	start.card_menu.id_pressed.emit(StartScreen.MenuItem.OPEN)
+	start.card_menu.hide()
+	await get_tree().process_frame
+	assert_eq(Global.document.path, project, "opened")

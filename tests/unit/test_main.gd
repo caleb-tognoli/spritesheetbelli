@@ -797,13 +797,14 @@ func test_history_panel() -> void:
 	var buttons: Dictionary = main.preview_area._action_buttons
 	assert_eq(buttons[&"toggle_history"].get_index(), buttons[&"toggle_sprites"].get_index() + 1)
 	assert_ne(Actions.get_action(&"toggle_history").icon, null)
-	Actions.run(&"toggle_history")
-	var panel: HistoryPanel = main.history_panel
-	assert_true(panel.visible)
+	# Something open, or the start screen covers the panel
 	for color: Color in [Color.RED, Color.GREEN]:
 		Global.document.perform(
 			"Add sprites", Global.spritesheet.add_frames.bind([make_image(color)] as Array[Image])
 		)
+	Actions.run(&"toggle_history")
+	var panel: HistoryPanel = main.history_panel
+	assert_true(panel.visible)
 	assert_eq(panel.list.item_count, 3, "the start and two steps")
 	assert_eq(panel.list.get_item_text(2), "Add sprites")
 	assert_true(panel.list.is_selected(2), "the current step")

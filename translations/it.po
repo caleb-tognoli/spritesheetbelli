@@ -1691,6 +1691,7 @@ msgstr "Tutti i file"
 
 #: res://ui/main/file_controller.gd
 #: res://ui/main/main.tscn
+#: res://ui/main/start_screen.gd
 msgid "Open"
 msgstr "Apri"
 
@@ -2680,28 +2681,118 @@ msgid "Unpin frame"
 msgstr "Libera frame"
 
 #: res://ui/main/start_screen.gd
-msgid "Recent Files"
-msgstr "File recenti"
+msgid "Jan"
+msgstr "gen"
 
 #: res://ui/main/start_screen.gd
-msgid "Drop images, folders or a .sbelli project here"
-msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
+msgid "Feb"
+msgstr "feb"
+
+#: res://ui/main/start_screen.gd
+msgid "Mar"
+msgstr "mar"
+
+#: res://ui/main/start_screen.gd
+msgid "Apr"
+msgstr "apr"
+
+#: res://ui/main/start_screen.gd
+msgid "May"
+msgstr "mag"
+
+#: res://ui/main/start_screen.gd
+msgid "Jun"
+msgstr "giu"
+
+#: res://ui/main/start_screen.gd
+msgid "Jul"
+msgstr "lug"
+
+#: res://ui/main/start_screen.gd
+msgid "Aug"
+msgstr "ago"
+
+#: res://ui/main/start_screen.gd
+msgid "Sep"
+msgstr "set"
+
+#: res://ui/main/start_screen.gd
+msgid "Oct"
+msgstr "ott"
+
+#: res://ui/main/start_screen.gd
+msgid "Nov"
+msgstr "nov"
+
+#: res://ui/main/start_screen.gd
+msgid "Dec"
+msgstr "dic"
+
+#: res://ui/main/start_screen.gd
+msgid "Files you open will appear here"
+msgstr "Qui compariranno i file che apri"
+
+#: res://ui/main/start_screen.gd
+msgid "Nothing open"
+msgstr "Nessun file aperto"
 
 #: res://ui/main/start_screen.gd
 msgid "Locate %s"
 msgstr "Cerca %s"
 
 #: res://ui/main/start_screen.gd
+msgid "Locate…"
+msgstr "Cerca…"
+
+#: res://ui/main/start_screen.gd
+msgid "Show in File Manager"
+msgstr "Mostra nel gestore file"
+
+#: res://ui/main/start_screen.gd
+msgid "Copy Path"
+msgstr "Copia percorso"
+
+#: res://ui/main/start_screen.gd
 msgid "Remove from Recent Files"
 msgstr "Togli dai file recenti"
+
+#: res://ui/main/start_screen.gd
+msgid "Just now"
+msgstr "Adesso"
+
+#: res://ui/main/start_screen.gd
+msgid "%d minute ago"
+msgid_plural "%d minutes ago"
+msgstr[0] "%d minuto fa"
+msgstr[1] "%d minuti fa"
+
+#: res://ui/main/start_screen.gd
+msgid "%d hour ago"
+msgid_plural "%d hours ago"
+msgstr[0] "%d ora fa"
+msgstr[1] "%d ore fa"
+
+#: res://ui/main/start_screen.gd
+msgid "Yesterday"
+msgstr "Ieri"
+
+#: res://ui/main/start_screen.gd
+msgid "%d day ago"
+msgid_plural "%d days ago"
+msgstr[0] "%d giorno fa"
+msgstr[1] "%d giorni fa"
+
+#: res://ui/main/start_screen.gd
+msgid "Drop images, folders or a .sbelli project here"
+msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
 
 #: res://ui/main/start_screen.gd
 msgid "Not found"
 msgstr "Non trovato"
 
 #: res://ui/main/start_screen.gd
-msgid "Locate…"
-msgstr "Cerca…"
+msgid "Changed %s"
+msgstr "Modificato il %s"
 
 #: res://ui/main/start_screen.gd
 msgid "Find where the file is now"

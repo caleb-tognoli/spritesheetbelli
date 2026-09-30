@@ -279,12 +279,18 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Theme: a System option, now the default, follows the operating system's dark or light
   mode as it changes, and a System accent colour setting uses the operating system's
   accent colour where it has one, hiding the Accent colour picker meanwhile.
-- A start screen while nothing is open: Open, Add Sprite(s) and Add Spritesheet, and the
-  recent projects and sheets with a thumbnail, name and folder. Click one to open it, or ×
-  to take it off the list; moved or deleted files say "Not found", with Locate… to pick
-  where the file is now, which takes its place in the list and opens it. Thumbnails are
-  made when a project is saved or opened, and from the image for sheets. In a browser it
-  has just the buttons.
+- A start screen while nothing is open, covering the whole window below the menu: the
+  name and version, a zone to drop files on with Open, Add Sprite(s), Add Spritesheet and
+  Add Folder, and the recent projects and sheets, up to five in a row, with a thumbnail,
+  name, folder and when they were changed ("3 hours ago", with the date and time in the
+  tooltip). Click one to open it, or × to take it off the list; moved or deleted files say
+  "Not found", with Locate… to pick where the file is now, which takes its place in the
+  list and opens it. Right-clicking one has Open, Show in File Manager, Copy Path and
+  Remove from Recent Files. The arrow keys move between them, starting on the first,
+  Enter opens, Delete takes one off the list and the menu key opens its menu. Thumbnails
+  are made when a project is saved or opened, and from the image for sheets. Meanwhile
+  the View actions and the tools are greyed out, saying "Nothing open". In a browser it
+  has just the drop zone.
 - Keyboard Shortcuts (F1): a search box finds shortcuts by name or by key, like "ctrl+e"
   or "F2", and every key of an action is listed.
 - Command palette (Ctrl+Shift+P, or Ctrl+K): type part of any action's name to run it,

@@ -72,6 +72,8 @@ var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 var animation_commands := AnimationCommands.new()
 var start_screen := StartScreen.new()
+## The sidebars, the canvas and the status bar, under the start screen while it shows
+var editor := VBoxContainer.new()
 var recovery := Recovery.new()
 ## The settings and export on the left, and the sprites and history on the right
 var sidebar_split: SidebarSplit
@@ -177,8 +179,8 @@ func _ready() -> void:
 	add_child(animation_commands)
 	animation_commands.setup(self)
 	ActionReasons.apply(self)
-	# Over the canvas while nothing is open, with buttons for the actions registered above
-	preview_area.add_child(start_screen)
+	# With buttons for the actions registered above
+	_add_start_screen()
 	start_screen.file_chosen.connect(files.open_recent)
 	add_child(recovery)
 	recovery.setup(files, start_screen)
@@ -243,6 +245,36 @@ func _ready() -> void:
 				L10n.mark("Set pivot"), Global.spritesheet.set_pivots.bind(coords, pivot)
 			)
 	)
+
+
+## Puts the start screen over the editor and the status bar, which stay laid out under it
+## so that a sheet opened from it is shown where it was, fitting the canvas. Its text is
+## sized like the canvas's.
+func _add_start_screen() -> void:
+	var body := MarginContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split.add_sibling(body)
+	editor.add_theme_constant_override("separation", 0)
+	body.add_child(editor)
+	split.reparent(editor)
+	status_bar.reparent(editor)
+	start_screen.theme = preview_area.theme
+	body.add_child(start_screen)
+	start_screen.visibility_changed.connect(_cover_editor)
+	start_screen.cover_actions()
+	_cover_editor()
+
+
+## While the start screen shows, the editor under it can't take focus
+func _cover_editor() -> void:
+	var covered := start_screen.visible
+	editor.focus_behavior_recursive = (
+		Control.FOCUS_BEHAVIOR_DISABLED if covered else Control.FOCUS_BEHAVIOR_INHERITED
+	)
+	var focused := get_viewport().gui_get_focus_owner()
+	if covered and focused and editor.is_ancestor_of(focused):
+		focused.release_focus()
+	Actions.refresh()
 
 
 ## Shows [param view] once the current changes are laid out, or the whole sheet when it's
