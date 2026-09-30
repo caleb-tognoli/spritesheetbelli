@@ -57,6 +57,7 @@ const ICONS := {
 	&"move_row_down": preload("res://assets/icons/MoveDown.svg"),
 	&"about": preload("res://assets/icons/Info.svg"),
 	&"show_shortcuts": preload("res://assets/icons/Keyboard.svg"),
+	&"command_palette": preload("res://assets/icons/Search.svg"),
 	&"tool_pivot": PreviewArea.PIVOT_ICON,
 	&"layout_grid": preload("res://assets/icons/LayoutGrid.svg"),
 	&"layout_packed": preload("res://assets/icons/LayoutPacked.svg"),
@@ -140,6 +141,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var animation_panel: AnimationPanel = %AnimationPanel
 
 var shortcuts_dialog := ShortcutsDialog.new()
+var command_palette := CommandPalette.new()
 var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key := ColorKeyPreview.new()
@@ -231,6 +233,9 @@ func _ready() -> void:
 	)
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
+	add_child(command_palette)
+	command_palette.animation_panel = animation_panel
+	command_palette.exports = files.exports
 	add_child(settings_window)
 	add_child(color_key)
 	color_key.setup(preview_area, edit_selection_in_background)
@@ -348,8 +353,17 @@ func _register_actions() -> void:
 	var sheet := Global.spritesheet
 	var has_frames := func() -> bool: return not sheet.is_empty()
 	var has_selection := func() -> bool: return not preview.get_selected_coords().is_empty()
+	# Why actions can't run, by what they need, see [member AppAction.disabled_reason]
+	var reasons := {
+		has_frames: "No frames yet",
+		has_selection: "No frames selected",
+		clipboard.has_content: "Nothing copied",
+		Global.document.can_undo: "Nothing to undo",
+		Global.document.can_redo: "Nothing to redo",
+	}
 	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()) -> void:
-		Actions.add(id, label, run, can_run, ICONS.get(id))
+		var action := Actions.add(id, label, run, can_run, ICONS.get(id))
+		action.disabled_reason = reasons.get(can_run, "")
 
 	add.call(&"new", "New", files.new_spritesheet)
 	add.call(&"open", "Open…", files.open_spritesheet)
@@ -597,6 +611,7 @@ func _register_actions() -> void:
 	add.call(
 		&"show_shortcuts", "Keyboard Shortcuts", func() -> void: shortcuts_dialog.popup_centered()
 	)
+	add.call(&"command_palette", "Command Palette…", command_palette.open.bind(preview_area))
 	for id: StringName in DESCRIPTIONS:
 		Actions.get_action(id).description = DESCRIPTIONS[id]
 

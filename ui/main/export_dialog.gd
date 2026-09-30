@@ -603,13 +603,9 @@ func _fill_list() -> void:
 ## Shows in the list where the target at [param index] writes, and what
 func _update_item(index: int) -> void:
 	var target := _targets[index]
-	var file := tr("No file picked yet")
-	if ExportController.in_browser:
-		file = ExportController.get_output_path(target).get_file()
-	elif target.path:
-		file = ExportTarget.fit_path(target.path, target.options).get_file()
-	target_list.set_item_text(index, "%s · %s" % [file, target.get_format_name()])
-	target_list.set_item_icon(index, TYPES[_type_index(target.options.target)].icon)
+	var file := get_target_file(target)
+	target_list.set_item_text(index, describe_target(target))
+	target_list.set_item_icon(index, get_type_icon(target.options.target))
 	var full := target.path if target.path and not ExportController.in_browser else file
 	target_list.set_item_tooltip(index, "%s\n%s" % [full, target.get_format_name()])
 
@@ -818,6 +814,25 @@ static func _selected_format(button: OptionButton) -> String:
 
 static func _is_packed() -> bool:
 	return Global.spritesheet.layout == Spritesheet.Layout.PACKED
+
+
+## The name of the file [param target] writes, or that it has none yet
+static func get_target_file(target: ExportTarget) -> String:
+	if ExportController.in_browser:
+		return ExportController.get_output_path(target).get_file()
+	if target.path:
+		return ExportTarget.fit_path(target.path, target.options).get_file()
+	return TranslationServer.translate("No file picked yet")
+
+
+## Where [param target] writes, and what, like "hero.png · PNG"
+static func describe_target(target: ExportTarget) -> String:
+	return "%s · %s" % [get_target_file(target), target.get_format_name()]
+
+
+## The icon of exports of [param target]'s type
+static func get_type_icon(target: ExportOptions.Target) -> Texture2D:
+	return TYPES[_type_index(target)].icon
 
 
 static func _type_index(target: ExportOptions.Target) -> int:

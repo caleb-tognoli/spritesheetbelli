@@ -127,8 +127,11 @@ the repository variable `ITCH_GAME` (like `your-name/spritesheetbelli`) and the 
 
 ## Keyboard shortcuts
 
-Press **F1** in the app for every shortcut and what the mouse does in the preview. Menus
-show each action's shortcut, and toolbar buttons show it when hovered.
+Press **F1** in the app for every shortcut and what the mouse does in the preview; type in
+its search box to find one by name or by key (like "ctrl+e"). Menus show each action's
+shortcut, and toolbar buttons show it when hovered. **Ctrl+Shift+P** (or Ctrl+K, which
+also works in browsers) opens the command palette: type part of an action's name, an
+animation or an export, then press Enter.
 
 ## Command line
 

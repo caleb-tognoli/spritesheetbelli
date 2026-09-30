@@ -63,6 +63,20 @@ func is_enabled(id: StringName) -> bool:
 	)
 
 
+## Why the action can't run: its [member AppAction.disabled_reason], or a generic one. Empty
+## when it can run.
+func get_disabled_reason(id: StringName) -> String:
+	if is_enabled(id):
+		return ""
+	var action: AppAction = _actions.get(id)
+	if action and action.disabled_reason:
+		return tr(action.disabled_reason)
+	# What most actions need
+	if Global.spritesheet.is_empty():
+		return tr("No frames yet")
+	return tr("Not available now")
+
+
 ## Whether the action belongs in menus and toolbars right now, see [member AppAction.is_available]
 func is_available(id: StringName) -> bool:
 	var action: AppAction = _actions.get(id)

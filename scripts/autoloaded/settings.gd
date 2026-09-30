@@ -84,6 +84,8 @@ const DEFAULTS := {
 	# How different a pixel can be from a background colour and still be made transparent,
 	# from 0 to 1, shared by Add Spritesheet and Remove Background Colour
 	&"background_tolerance": SheetBackground.DEFAULT_TOLERANCE,
+	# Keys of what the command palette ran last, the latest first, see CommandPalette
+	&"command_palette_recent": [],
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
 const REMEMBERED: Array[StringName] = [
@@ -107,6 +109,7 @@ const REMEMBERED: Array[StringName] = [
 	&"animation_background_color",
 	&"lock_empty_cells",
 	&"background_tolerance",
+	&"command_palette_recent",
 ]
 const MAX_RECENT_FILES := 10
 

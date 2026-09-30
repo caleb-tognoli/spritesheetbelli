@@ -285,6 +285,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   just the buttons.
 - Keyboard Shortcuts (F1): a search box finds shortcuts by name or by key, like "ctrl+e"
   or "F2", and every key of an action is listed.
+- Command palette (Ctrl+Shift+P, or Ctrl+K): type part of any action's name to run it,
+  play an animation or write one export. What you ran last comes first; actions that
+  can't run now are greyed out with the reason.
 
 ### Changed
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
