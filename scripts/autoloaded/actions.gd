@@ -7,6 +7,9 @@ signal state_changed
 
 var _actions: Dictionary[StringName, AppAction] = {}
 var _refresh_queued := false
+## Controls with an action's tooltip, by instance id: the action and the tooltip's text,
+## see [method set_tooltip]
+var _tooltips: Dictionary[int, Array] = {}
 
 
 func _ready() -> void:
@@ -142,6 +145,24 @@ func get_tooltip(id: StringName, text := "") -> String:
 	if text.is_empty() and action.description:
 		tooltip += "\n" + tr(action.description)
 	return tooltip
+
+
+## Gives [param control] the tooltip of the action [param id] (see [method get_tooltip],
+## with [param text] untranslated), again in the new language when it changes
+func set_tooltip(control: Control, id: StringName, text := "") -> void:
+	control.tooltip_text = get_tooltip(id, text)
+	_tooltips[control.get_instance_id()] = [id, text]
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED:
+		for control_id: int in _tooltips.keys():
+			var control := instance_from_id(control_id) as Control
+			if control == null:
+				_tooltips.erase(control_id)
+				continue
+			var tooltip: Array = _tooltips[control_id]
+			control.tooltip_text = get_tooltip(tooltip[0], tooltip[1])
 
 
 ## Notifies menus and buttons that enabled states may have changed. Coalesced per frame.

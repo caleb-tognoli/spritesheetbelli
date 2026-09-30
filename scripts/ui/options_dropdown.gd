@@ -19,6 +19,8 @@ var content := VBoxContainer.new()
 var fields := GridContainer.new()
 ## Reset buttons, with whether their field is at its default
 var _resets: Dictionary[Button, Callable] = {}
+## The untranslated label of each reset button's field, for its tooltip
+var _reset_labels: Dictionary[Button, String] = {}
 
 
 func _init(empty_text := "") -> void:
@@ -69,12 +71,20 @@ func add_field(
 		button.icon = RESET_ICON
 		button.flat = true
 		button.tooltip_text = tr("Reset %s") % tr(label_text)
+		_reset_labels[button] = label_text
 		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(reset)
 		button.pressed.connect(update_text)
 		slot.add_child(button)
 		_resets[button] = is_default
 	return slot
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		for button in _reset_labels:
+			button.tooltip_text = tr("Reset %s") % tr(_reset_labels[button])
+		update_text()
 
 
 ## Opens the panel below the button, at least as wide as it
@@ -87,6 +97,7 @@ func open() -> void:
 ## Shows what's set, see [member summarize]
 func update_text() -> void:
 	var summary: String = summarize.call() if summarize.is_valid() else ""
-	text = summary if summary else tr(placeholder)
+	# The placeholder is translated by the button, following language changes
+	text = summary if summary else placeholder
 	for button in _resets:
 		button.visible = not _resets[button].call()

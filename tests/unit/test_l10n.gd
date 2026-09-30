@@ -120,10 +120,7 @@ func test_one_frame_is_singular() -> void:
 
 
 func test_the_status_bar_counts_frames() -> void:
-	Global.document.reset()
-	var main: Control = load("res://ui/main/main.tscn").instantiate()
-	add_child(main)
-	await get_tree().process_frame
+	var main := await _open_main()
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
@@ -148,6 +145,141 @@ func test_the_reload_question_counts_edited_frames() -> void:
 	assert_true("2 of its 3 frames were edited here" in dialog.message.text, dialog.message.text)
 	assert_eq(dialog.for_all_check.text, "Do the same for the other changed file")
 	dialog.free()
+
+
+func test_the_language_setting_picks_the_locale() -> void:
+	Settings.set_value(&"language", "it")
+	assert_eq(TranslationServer.get_locale(), "it")
+	Settings.set_value(&"language", "en")
+	assert_eq(TranslationServer.get_locale(), "en")
+	assert_eq(L10n.get_locale("system"), OS.get_locale_language())
+	Settings.set_value(&"language", Settings.DEFAULTS[&"language"])
+	TranslationServer.set_locale("en")
+
+
+func test_po_files_in_the_translations_folder_add_languages() -> void:
+	var folder := temp_path("more translations")
+	DirAccess.make_dir_recursive_absolute(folder)
+	var file := FileAccess.open(folder.path_join("de.po"), FileAccess.WRITE)
+	(
+		file
+		. store_string(
+			(
+				"\n"
+				. join(
+					[
+						'msgid ""',
+						'msgstr ""',
+						'"Language: de\\n"',
+						'"Content-Type: text/plain; charset=UTF-8\\n"',
+						'"Plural-Forms: nplurals=2; plural=(n != 1);\\n"',
+						"",
+						'msgid "Save"',
+						'msgstr "Speichern"',
+						"",
+						'msgid "%d frame"',
+						'msgid_plural "%d frames"',
+						'msgstr[0] "%d Bild"',
+						'msgstr[1] "%d Bilder"',
+					]
+				)
+			)
+		)
+	)
+	file.close()
+	var previous_dir := L10n.user_dir
+	L10n.user_dir = folder
+	L10n.load_user_translations()
+	assert_true(["de", "German"] in L10n.get_languages(), str(L10n.get_languages()))
+	TranslationServer.set_locale("de")
+	var saved := tr("Save")
+	var frames := [tr_n("%d frame", "%d frames", 1), tr_n("%d frame", "%d frames", 3)]
+	TranslationServer.set_locale("en")
+	DirAccess.remove_absolute(folder.path_join("de.po"))
+	L10n.load_user_translations()
+	L10n.user_dir = previous_dir
+	assert_eq(saved, "Speichern")
+	assert_eq(frames, ["%d Bild", "%d Bilder"])
+	assert_false(["de", "German"] in L10n.get_languages(), "taken out when loaded again")
+
+
+func test_settings_offer_the_languages() -> void:
+	var settings := SettingsWindow.new()
+	add_child(settings)
+	var option := settings.get_control(&"language") as OptionButton
+	assert_eq(option.get_item_text(0), "System")
+	assert_eq(option.get_item_text(1), "English")
+	option.select(1)
+	option.item_selected.emit(1)
+	assert_eq(Settings.get_value(&"language"), "en")
+	settings.free()
+	Settings.set_value(&"language", Settings.DEFAULTS[&"language"])
+	TranslationServer.set_locale("en")
+
+
+func test_the_window_follows_language_changes() -> void:
+	var german := Translation.new()
+	german.locale = "de"
+	german.add_message("Add Sprite(s)…", "Sprites hinzufügen…")
+	german.add_plural_message(
+		"%d frame · %d×%d grid · %d×%d px",
+		["%d Bild · %d×%d Raster · %d×%d px", "%d Bilder · %d×%d Raster · %d×%d px"]
+	)
+	TranslationServer.add_translation(german)
+	var main := await _open_main()
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	TranslationServer.set_locale("de")
+	var tooltip: String = main.add_sprites_btn.tooltip_text
+	var info: String = main.sheet_info.text
+	TranslationServer.set_locale("en")
+	var english_tooltip: String = main.add_sprites_btn.tooltip_text
+	TranslationServer.remove_translation(german)
+	main.free()
+	Global.document.reset()
+	assert_true(tooltip.begins_with("Sprites hinzufügen ("), tooltip)
+	assert_true(info.begins_with("1 Bild · "), info)
+	assert_true(english_tooltip.begins_with("Add Sprite(s) ("), english_tooltip)
+
+
+func test_names_are_not_translated() -> void:
+	var main := await _open_main()
+	var sheet := Global.spritesheet
+	Global.document.perform("Add", sheet.add_frames.bind([make_image(Color.RED)] as Array[Image]))
+	# Named like a word that has a translation
+	sheet.add_animation(SheetAnimation.create("Loop", [Vector2i.ZERO] as Array[Vector2i]))
+	main.animation_panel.refresh()
+	Settings.set_value(&"show_sprites", true)
+	var sprites: SpritesPanel = main.layout_controller.sprites_panel
+	sprites.refresh()
+	var list: ItemList = main.animation_panel.list
+	var header := sprites.tree.get_root().get_first_child()
+	var modes := [
+		list.get_item_auto_translate_mode(1),
+		header.get_auto_translate_mode(0),
+		header.get_first_child().get_auto_translate_mode(0),
+	]
+	Settings.set_value(&"show_sprites", Settings.DEFAULTS[&"show_sprites"])
+	main.free()
+	Global.document.reset()
+	assert_eq(
+		modes,
+		[
+			Node.AUTO_TRANSLATE_MODE_DISABLED,
+			Node.AUTO_TRANSLATE_MODE_DISABLED,
+			Node.AUTO_TRANSLATE_MODE_DISABLED
+		]
+	)
+
+
+## The main window, with a new document
+func _open_main() -> Control:
+	Global.document.reset()
+	var main: Control = load("res://ui/main/main.tscn").instantiate()
+	add_child(main)
+	await get_tree().process_frame
+	return main
 
 
 ## Every script and scene in [param dir] and its folders

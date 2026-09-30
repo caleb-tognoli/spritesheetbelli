@@ -151,7 +151,7 @@ func _action_button(id: StringName) -> Button:
 	var button := Button.new()
 	button.text = action.label
 	button.icon = action.icon
-	button.tooltip_text = Actions.get_tooltip(id)
+	Actions.set_tooltip(button, id)
 	button.custom_minimum_size.y = 34
 	button.pressed.connect(func() -> void: Actions.run(id))
 	return button
@@ -187,6 +187,7 @@ func _make_card(file: String) -> Button:
 	box.add_child(name_row)
 	var name_label := Label.new()
 	name_label.text = file.get_file()
+	name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_row.add_child(name_label)

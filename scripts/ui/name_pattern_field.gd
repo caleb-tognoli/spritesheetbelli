@@ -23,6 +23,8 @@ var popup := PopupPanel.new()
 var tokens := GridContainer.new()
 ## Says under [member tokens] how to pad numbers
 var padding_hint := Label.new()
+## The token of a number, for [member padding_hint]
+var _number_token := "index"
 
 var text: String:
 	get:
@@ -71,7 +73,14 @@ func use_tokens(tokens_given: Dictionary, example_values: Callable, number_token
 
 
 func _set_padding_hint(number_token: String) -> void:
+	_number_token = number_token
 	padding_hint.text = tr("Add :3 to pad numbers with zeros: {%s:3} gives 007") % number_token
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_set_padding_hint(_number_token)
+		_update_warning()
 
 
 ## Opens the token list below the button, with examples from the open sheet: for sprite

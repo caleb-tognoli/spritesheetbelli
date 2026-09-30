@@ -30,7 +30,10 @@ func _ready() -> void:
 	# Undo what the real settings did at startup
 	Global.apply_ui_scale()
 	Global.apply_theme()
-	# Tests check English text, whatever the machine's language
+	# Tests check English text, whatever the machine's language, without the user's own
+	# translations
+	L10n.user_dir = TestCase.temp_path("translations")
+	L10n.load_user_translations()
 	TranslationServer.set_locale("en")
 
 	var filter := ""

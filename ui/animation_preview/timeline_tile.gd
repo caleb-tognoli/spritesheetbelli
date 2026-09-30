@@ -58,6 +58,8 @@ func _init() -> void:
 	_frame.add_child(remove_button)
 
 	label.theme_type_variation = &"StatusLabel"
+	# Names of frames, or text translated where it's made
+	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Shortened to fit, see _fit_label(), rather than widening the tile

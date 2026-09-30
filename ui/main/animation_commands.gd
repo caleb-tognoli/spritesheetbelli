@@ -106,7 +106,7 @@ func _setup_labels() -> void:
 	var controls: AnimationLabelControls = main.preview_area.enable_animation_labels()
 	var panel: AnimationPanel = main.animation_panel
 	controls.labels.get_playing = panel.get_selected
-	controls.button.tooltip_text = Actions.get_tooltip(&"animation_labels")
+	Actions.set_tooltip(controls.button, &"animation_labels")
 	controls.animation_chosen.connect(
 		func(index: int) -> void:
 			var animation := Global.spritesheet.animations[index]

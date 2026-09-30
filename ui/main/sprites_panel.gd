@@ -71,9 +71,7 @@ func _init() -> void:
 	header.add_child(title)
 	close_button.flat = true
 	close_button.icon = preload("res://assets/icons/Close.svg")
-	close_button.tooltip_text = Actions.get_tooltip(
-		&"toggle_sprites", L10n.mark("Hide the sprites")
-	)
+	Actions.set_tooltip(close_button, &"toggle_sprites", L10n.mark("Hide the sprites"))
 	header.add_child(close_button)
 
 	search.placeholder_text = "Search by name"
@@ -197,6 +195,7 @@ func _show_folders() -> void:
 		row.add_child(icon)
 		var label := Label.new()
 		label.text = folder.get_file() if folder.get_file() else folder
+		label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		label.theme_type_variation = &"StatusLabel"
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -277,6 +276,8 @@ static func group_frames(sheet: Spritesheet, by_row := false) -> Array[Dictionar
 ## frames instead.
 func _add_header(root: TreeItem, group: Dictionary) -> TreeItem:
 	var header := tree.create_item(root)
+	# Names of animations, or text translated where it's made
+	header.set_auto_translate_mode(0, Node.AUTO_TRANSLATE_MODE_DISABLED)
 	header.set_text(0, group.title)
 	if group.has("color"):
 		header.set_icon(0, AppTheme.swatch(group.color))
@@ -298,6 +299,7 @@ func _add_frame(header: TreeItem, coord: Vector2i, label: String) -> void:
 	var item := tree.create_item(header)
 	# No room is kept for an arrow, so frames line up under their group's name
 	item.disable_folding = true
+	item.set_auto_translate_mode(0, Node.AUTO_TRANSLATE_MODE_DISABLED)
 	item.set_text(0, label)
 	item.set_icon(0, _thumbnail(img))
 	item.set_icon_max_width(0, THUMBNAIL_SIZE)
@@ -319,6 +321,10 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_THEME_CHANGED:
 		_update_highlights()
 		# The folders' icons take the theme's colour
+		_folders_shown = []
+		refresh()
+	elif what == NOTIFICATION_TRANSLATION_CHANGED:
+		# Names of groups and frames, and the folders' tooltips
 		_folders_shown = []
 		refresh()
 

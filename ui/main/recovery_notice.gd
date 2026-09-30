@@ -30,6 +30,12 @@ func setup(from: Recovery) -> void:
 	refresh()
 
 
+func _notification(what: int) -> void:
+	# "Never saved" says it in the new language
+	if what == NOTIFICATION_TRANSLATION_CHANGED and recovery:
+		refresh()
+
+
 ## Lists the copies again
 func refresh() -> void:
 	for row in rows:
@@ -60,6 +66,7 @@ func _make_row(leftover: Dictionary) -> Control:
 	row.add_child(text)
 	var name_label := Label.new()
 	name_label.text = _name_of(leftover)
+	name_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	text.add_child(name_label)
 	var file := Label.new()

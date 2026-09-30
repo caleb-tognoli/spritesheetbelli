@@ -176,8 +176,10 @@ func _fill_flyover() -> void:
 		row.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		row.focus_mode = Control.FOCUS_NONE
 		row.text = animation.name
+		# The animation's name, even one that reads like text that has a translation
+		row.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		row.icon = SHOWN_ICON if animation.show_label else HIDDEN_ICON
-		row.tooltip_text = "Hide its name" if animation.show_label else "Show its name"
+		row.tooltip_text = tr("Hide its name") if animation.show_label else tr("Show its name")
 		row.disabled = sheet.label_playing_only
 		row.pressed.connect(set_label_shown.bind(index, not animation.show_label))
 		list.add_child(row)

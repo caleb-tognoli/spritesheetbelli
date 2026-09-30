@@ -830,6 +830,10 @@ msgid "Delete the animation"
 msgstr ""
 
 #: res://ui/animation_preview/animation_panel.gd
+msgid "Plays the selected frames, or every frame"
+msgstr ""
+
+#: res://ui/animation_preview/animation_panel.gd
 #: res://ui/main/export_dialog.gd
 #: res://ui/main/menu_bar.gd
 msgid "Animation"
@@ -854,10 +858,6 @@ msgstr ""
 
 #: res://ui/animation_preview/animation_panel.gd
 msgid "Delete animation"
-msgstr ""
-
-#: res://ui/animation_preview/animation_panel.gd
-msgid "Plays the selected frames, or every frame"
 msgstr ""
 
 #: res://ui/animation_preview/animation_preview.gd
@@ -2016,12 +2016,6 @@ msgid "Resize filter"
 msgstr ""
 
 #: res://ui/main/main_ui.gd
-msgid ""
-"Drop images, folders or a .sbelli project here\n"
-"or use Add Sprite(s) and Add Spritesheet (%s, %s)"
-msgstr ""
-
-#: res://ui/main/main_ui.gd
 msgid "Copy frames"
 msgstr ""
 
@@ -2327,6 +2321,12 @@ msgid "Resizing the grid to %d×%d would delete %d sprite."
 msgid_plural "Resizing the grid to %d×%d would delete %d sprites."
 msgstr[0] ""
 msgstr[1] ""
+
+#: res://ui/main/main_ui.gd
+msgid ""
+"Drop images, folders or a .sbelli project here\n"
+"or use Add Sprite(s) and Add Spritesheet (%s, %s)"
+msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Save changes to %s before closing?"
@@ -2761,6 +2761,10 @@ msgid "Interface"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
+msgid "Language"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
 msgid "Theme"
 msgstr ""
 
@@ -2853,6 +2857,10 @@ msgid "Pages are as wide as they're tall"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
+msgid "System follows the operating system's language"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
 msgid "System follows the operating system's dark or light mode"
 msgstr ""
 
@@ -2890,6 +2898,10 @@ msgstr ""
 
 #: res://ui/settings/settings_window.gd
 msgid "Revert to the default"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Open the translations folder. A .po file put there, named like it.po, adds its language to the list."
 msgstr ""
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd

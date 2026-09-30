@@ -314,6 +314,11 @@ func _on_sheet_updated() -> void:
 	set_cells(_source_cells, _source_durations)
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready() and sheet:
+		_show_current()
+
+
 func _show_current() -> void:
 	var cell := get_current_cell()
 	var few := _cells.size() < 2

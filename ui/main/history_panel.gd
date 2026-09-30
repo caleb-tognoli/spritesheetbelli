@@ -27,9 +27,7 @@ func _init() -> void:
 	header.add_child(title)
 	close_button.flat = true
 	close_button.icon = preload("res://assets/icons/Close.svg")
-	close_button.tooltip_text = Actions.get_tooltip(
-		&"toggle_history", L10n.mark("Hide the history")
-	)
+	Actions.set_tooltip(close_button, &"toggle_history", L10n.mark("Hide the history"))
 	header.add_child(close_button)
 
 	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -52,7 +50,7 @@ func _ready() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_THEME_CHANGED:
+	if what in [NOTIFICATION_THEME_CHANGED, NOTIFICATION_TRANSLATION_CHANGED]:
 		refresh()
 
 

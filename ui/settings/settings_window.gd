@@ -62,6 +62,7 @@ const CATEGORIES := [  # L10n.mark
 	[
 		"Interface",
 		[
+			[&"language", "Language", &"language"],
 			[
 				&"theme",
 				"Theme",
@@ -115,12 +116,14 @@ const DETAILS := {  # L10n.mark
 	&"atlas_dedupe": "Frames that look the same are packed once and share their place",
 	&"atlas_power_of_two": "Pages are 256, 512, 1024… px wide and tall, for older engines",
 	&"atlas_square": "Pages are as wide as they're tall",
+	&"language": "System follows the operating system's language",
 	&"theme": "System follows the operating system's dark or light mode",
 	&"system_accent": "Use the operating system's accent colour, where it has one",
 	&"ui_scale": "Automatic follows the screen's scale",
 }
 const REVERT_ICON := preload("res://assets/icons/Reload.svg")
 const SEARCH_ICON := preload("res://assets/icons/Search.svg")
+const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
 
 var categories := ItemList.new()
 var search := LineEdit.new()
@@ -132,6 +135,10 @@ var _headers: Array[Label] = []
 ## Refreshes each control from its setting, by key
 var _refreshers: Dictionary[StringName, Callable] = {}
 var _category := "General"
+## The languages to choose from, see [method L10n.get_languages], and the setting's value
+## for each item of the Language list
+var _language_option: OptionButton
+var _language_values: PackedStringArray = []
 
 
 func _init() -> void:
@@ -187,7 +194,13 @@ func _ready() -> void:
 	Settings.changed.connect(_refresh)
 	# The accent colour may be the operating system's, which changes on its own
 	Global.theme_applied.connect(_refresh.bind(&"accent_color"))
-	about_to_popup.connect(func() -> void: _refresh(&""))
+	about_to_popup.connect(
+		func() -> void:
+			# Translations may have been added since
+			L10n.load_user_translations()
+			_fill_languages()
+			_refresh(&"")
+	)
 	_filter()
 
 
@@ -249,7 +262,15 @@ func _add_row(category: String, row: Array) -> void:
 	LabelLink.link(label, control)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	control.tooltip_text = label.tooltip_text
-	box.add_child(control)
+	if key == &"language" and L10n.has_user_dir():
+		# Next to the list, which then starts where the other controls do
+		var pair := HBoxContainer.new()
+		pair.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		pair.add_child(control)
+		pair.add_child(_translations_button())
+		box.add_child(pair)
+	else:
+		box.add_child(control)
 	var revert := Button.new()
 	revert.icon = REVERT_ICON
 	revert.flat = true
@@ -295,6 +316,16 @@ func _create_control(key: StringName, kind: String, options: Array) -> Control:
 						Settings.get_value(&"system_accent") and Global.has_system_accent()
 					)
 			return picker
+		"language":
+			_language_option = OptionButton.new()
+			_fill_languages()
+			_language_option.item_selected.connect(
+				func(index: int) -> void: Settings.set_value(key, _language_values[index])
+			)
+			_refreshers[key] = func() -> void:
+				var value: String = Settings.get_value(key)
+				_language_option.select(maxi(0, _language_values.find(value)))
+			return _language_option
 		"spin":
 			var spin := SpinBox.new()
 			spin.min_value = options[0][0]
@@ -317,6 +348,38 @@ func _create_control(key: StringName, kind: String, options: Array) -> Control:
 			_refreshers[key] = func() -> void:
 				option.select(maxi(0, values.find(Settings.get_value(key))))
 			return option
+
+
+## Lists System and every language with a translation in the Language list
+func _fill_languages() -> void:
+	_language_option.clear()
+	_language_values = ["system"]
+	_language_option.add_item("System")
+	for language in L10n.get_languages():
+		_language_values.append(language[0])
+		_language_option.add_item(language[1])
+		# Named in its own language
+		var index := _language_option.item_count - 1
+		_language_option.get_popup().set_item_auto_translate_mode(
+			index, Node.AUTO_TRANSLATE_MODE_DISABLED
+		)
+
+
+## Opens the folder more translations go in, see [member L10n.user_dir]
+func _translations_button() -> Button:
+	var button := Button.new()
+	button.icon = FOLDER_ICON
+	button.flat = true
+	button.tooltip_text = (
+		"Open the translations folder. A .po file put there, named like it.po, "
+		+ "adds its language to the list."
+	)
+	button.pressed.connect(
+		func() -> void:
+			DirAccess.make_dir_recursive_absolute(L10n.user_dir)
+			OS.shell_open(ProjectSettings.globalize_path(L10n.user_dir))
+	)
+	return button
 
 
 ## Shows the selected category, or every matching setting while searching

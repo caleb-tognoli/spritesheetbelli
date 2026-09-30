@@ -324,6 +324,6 @@ func register_actions() -> void:
 	)
 	for id: StringName in DESCRIPTIONS:
 		Actions.get_action(id).description = DESCRIPTIONS[id]
-	layout_grid_btn.tooltip_text = Actions.get_tooltip(&"layout_grid")
-	layout_packed_btn.tooltip_text = Actions.get_tooltip(&"layout_packed")
-	atlas_panel.repack.tooltip_text = Actions.get_tooltip(&"repack")
+	Actions.set_tooltip(layout_grid_btn, &"layout_grid")
+	Actions.set_tooltip(layout_packed_btn, &"layout_packed")
+	Actions.set_tooltip(atlas_panel.repack, &"repack")

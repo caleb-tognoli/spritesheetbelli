@@ -71,17 +71,15 @@ func _build_toolbar() -> void:
 	toolbar.add_child(bar)
 	add_child(toolbar)
 
-	undo_btn.tooltip_text = Actions.get_tooltip(&"undo", L10n.mark("Undo"))
+	Actions.set_tooltip(undo_btn, &"undo", L10n.mark("Undo"))
 	undo_btn.pressed.connect(undo)
-	redo_btn.tooltip_text = Actions.get_tooltip(&"redo", L10n.mark("Redo"))
+	Actions.set_tooltip(redo_btn, &"redo", L10n.mark("Redo"))
 	redo_btn.pressed.connect(redo)
 	merge_btn.text = "Merge"
 	merge_btn.tooltip_text = "Joins the selected boxes into one. Ctrl+drag across boxes also does."
 	merge_btn.pressed.connect(view.merge_selected)
 	delete_btn.text = "Delete"
-	delete_btn.tooltip_text = Actions.get_tooltip(
-		&"delete_frames", L10n.mark("Delete the selected boxes")
-	)
+	Actions.set_tooltip(delete_btn, &"delete_frames", L10n.mark("Delete the selected boxes"))
 	delete_btn.pressed.connect(view.remove_selected)
 	find_btn.text = "Reset"
 	find_btn.tooltip_text = "Finds the sprites again, without the changes made by hand"
@@ -117,7 +115,7 @@ func _build_overlay(stage: Control) -> void:
 		[zoom_in_btn, &"zoom_in"],
 	]:
 		var button: Button = entry[0]
-		button.tooltip_text = Actions.get_tooltip(entry[1])
+		Actions.set_tooltip(button, entry[1])
 		row.add_child(button)
 	fit_btn.pressed.connect(fit_to_view)
 	zoom_out_btn.pressed.connect(func() -> void: view.zoom_by(0.8))

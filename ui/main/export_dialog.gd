@@ -533,6 +533,10 @@ func _show(target: ExportTarget) -> void:
 		gif_animation.select(EVERY_ANIMATION)
 	for animation in Global.spritesheet.animations:
 		gif_animation.add_item(animation.name)
+		# A name, even one that reads like text that has a translation
+		gif_animation.set_item_auto_translate_mode(
+			gif_animation.item_count - 1, Node.AUTO_TRANSLATE_MODE_DISABLED
+		)
 		if animation.name == options.gif_animation and not options.gif_every_animation:
 			gif_animation.select(gif_animation.item_count - 1)
 	animation_files.show_options(options)
@@ -605,6 +609,8 @@ func _fill_list() -> void:
 	target_list.clear()
 	for i in _targets.size():
 		target_list.add_item("")
+		# Names of files and formats, translated where they come from
+		target_list.set_item_auto_translate_mode(i, Node.AUTO_TRANSLATE_MODE_DISABLED)
 		_update_item(i)
 
 

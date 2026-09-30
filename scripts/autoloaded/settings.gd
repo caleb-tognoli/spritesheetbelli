@@ -38,6 +38,8 @@ const DEFAULTS := {
 	&"atlas_power_of_two": false,
 	&"atlas_square": false,
 	# Interface
+	# "system", the operating system's language, or a locale like "it", see L10n
+	&"language": "system",
 	# "system", following the operating system's dark mode, "dark" or "light"
 	&"theme": "system",
 	&"accent_color": AppTheme.DEFAULT_ACCENT,

@@ -264,25 +264,14 @@ func _ready() -> void:
 	# Work left unsaved by a crash is offered on the start screen instead
 	if recovery.leftovers.is_empty():
 		files.restore_session.call_deferred()
-	add_sprites_btn.tooltip_text = Actions.get_tooltip(&"add_sprites")
-	add_spritesheet_btn.tooltip_text = Actions.get_tooltip(&"add_spritesheet")
+	Actions.set_tooltip(add_sprites_btn, &"add_sprites")
+	Actions.set_tooltip(add_spritesheet_btn, &"add_spritesheet")
 	_update_export_button(ExportTarget.list(Global.spritesheet).size())
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	preview_area.set_toolbar_actions(
 		TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS, {&"color_key": color_key.dropdown}
 	)
-	var add_keys := [
-		Actions.get_shortcut_text(&"add_sprites"), Actions.get_shortcut_text(&"add_spritesheet")
-	]
-	preview_area.empty_hint.text = (
-		tr(
-			(
-				"Drop images, folders or a .sbelli project here\n"
-				+ "or use Add Sprite(s) and Add Spritesheet (%s, %s)"
-			)
-		)
-		% add_keys
-	)
+	_update_empty_hint()
 	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
 	preview.selection_changed.connect(update_sheet_info)
@@ -964,8 +953,29 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 	set_text_params(Global.spritesheet)
 
 
+func _update_empty_hint() -> void:
+	var add_keys := [
+		Actions.get_shortcut_text(&"add_sprites"), Actions.get_shortcut_text(&"add_spritesheet")
+	]
+	preview_area.empty_hint.text = (
+		tr(
+			(
+				"Drop images, folders or a .sbelli project here\n"
+				+ "or use Add Sprite(s) and Add Spritesheet (%s, %s)"
+			)
+		)
+		% add_keys
+	)
+
+
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+	# Text put together here says it in the new language
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_update_empty_hint()
+		set_text_params(Global.spritesheet)
+		# The names of pages in the packed layout
+		preview.queue_redraw()
+	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		files.confirm_unsaved_changes(
 			L10n.mark("Save changes to %s before closing?"), get_tree().quit
 		)

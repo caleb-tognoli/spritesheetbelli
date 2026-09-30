@@ -98,6 +98,10 @@ func _build_list_buttons() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_THEME_CHANGED:
 		_fit_list_buttons.call_deferred()
+	elif what == NOTIFICATION_TRANSLATION_CHANGED and preview and list.item_count > 0:
+		list.set_item_text(0, animation_preview.get_selection_title())
+		list.set_item_tooltip(0, tr("Plays the selected frames, or every frame"))
+		detail.refresh()
 
 
 ## Shows the animations of [param sheet_preview]'s sheet and plays its selected frames.
@@ -115,8 +119,8 @@ func setup(sheet_preview: SpritesheetPreview) -> void:
 	)
 	dock = get_parent() as BottomDock
 	dock_button = dock.add_dock(self, L10n.mark("Animation"), ANIMATION_ICON)
-	dock_button.tooltip_text = Actions.get_tooltip(
-		&"toggle_animation", L10n.mark("Show or hide the animation panel")
+	Actions.set_tooltip(
+		dock_button, &"toggle_animation", L10n.mark("Show or hide the animation panel")
 	)
 	dock.dock_changed.connect(_on_dock_changed)
 	columns.drag_ended.connect(_on_preview_width_dragged)
@@ -234,6 +238,8 @@ func refresh() -> void:
 	list.set_item_tooltip(0, tr("Plays the selected frames, or every frame"))
 	for animation in animations:
 		list.add_item(animation.name, AppTheme.swatch(animation.color))
+		# A name, even one that reads like text that has a translation
+		list.set_item_auto_translate_mode(list.item_count - 1, Node.AUTO_TRANSLATE_MODE_DISABLED)
 	# After deleting the last animation, the one before it
 	_selected = mini(_selected, animations.size() - 1)
 	list.select(_selected + 1)

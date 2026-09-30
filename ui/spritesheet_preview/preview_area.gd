@@ -210,6 +210,20 @@ func _get_minimum_size() -> Vector2:
 	return Vector2(layout.get_combined_minimum_size().x, 0) if layout else Vector2.ZERO
 
 
+## The tooltip of a button that opens a submenu: its name, and what it's for when it says
+static func _update_menu_tooltip(button: Button) -> void:
+	var entry: Array = button.get_meta(&"menu_entry")
+	button.tooltip_text = TranslationServer.translate(entry[0])
+	if entry.size() > 3:
+		button.tooltip_text += "\n" + TranslationServer.translate(entry[3])
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED:
+		for button in _menu_buttons:
+			_update_menu_tooltip(button)
+
+
 static func _tool_button(icon: Texture2D, tooltip := "") -> Button:
 	var button := Button.new()
 	button.theme_type_variation = &"ToolbarButton"
@@ -284,7 +298,7 @@ func set_toolbar_actions(
 		[zoom_in_btn, &"zoom_in"],
 	]:
 		var button: Button = entry[0]
-		button.tooltip_text = Actions.get_tooltip(entry[1])
+		Actions.set_tooltip(button, entry[1])
 	for group: Array in edit_groups:
 		_edit_bar.add_child(VSeparator.new())
 		for id: StringName in group:
@@ -299,14 +313,14 @@ func set_toolbar_actions(
 func _action_button(id: StringName, submenus: Dictionary, buttons: Dictionary) -> Button:
 	if buttons.has(id):
 		var own: Button = buttons[id]
-		own.tooltip_text = Actions.get_tooltip(id)
+		Actions.set_tooltip(own, id)
 		_action_buttons[id] = own
 		return own
 	if submenus.has(id):
 		var entry: Array = submenus[id]
-		var menu_button := _tool_button(entry[2] if entry.size() > 2 else null, tr(entry[0]))
-		if entry.size() > 3:
-			menu_button.tooltip_text += "\n" + tr(entry[3])
+		var menu_button := _tool_button(entry[2] if entry.size() > 2 else null)
+		menu_button.set_meta(&"menu_entry", entry)
+		_update_menu_tooltip(menu_button)
 		var menu := ActionPopupMenu.new()
 		menu_button.add_child(menu)
 		var ids: Array[StringName] = []
@@ -320,7 +334,8 @@ func _action_button(id: StringName, submenus: Dictionary, buttons: Dictionary) -
 		_menu_buttons[menu_button] = ids
 		return menu_button
 	var action := Actions.get_action(id)
-	var button := _tool_button(action.icon, Actions.get_tooltip(id))
+	var button := _tool_button(action.icon)
+	Actions.set_tooltip(button, id)
 	button.toggle_mode = Actions.is_toggle(id)
 	button.pressed.connect(func() -> void: Actions.run(id))
 	_action_buttons[id] = button

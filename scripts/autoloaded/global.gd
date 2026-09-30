@@ -32,8 +32,12 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if Cli.is_cli(args):
 		cli_mode = true
+		# The command line speaks English, whatever the language chosen
+		TranslationServer.set_locale("en")
 		get_tree().quit(await Cli.run(args))
 		return
+	L10n.load_user_translations()
+	L10n.apply(Settings.get_value(&"language"))
 	document.reset()
 	document.changed.connect(update_window_title)
 	update_window_title()
@@ -43,6 +47,8 @@ func _ready() -> void:
 				apply_ui_scale()
 			elif key in [&"theme", &"accent_color", &"system_accent"]:
 				apply_theme()
+			elif key == &"language":
+				L10n.apply(Settings.get_value(key))
 	)
 	# Follows the operating system's dark mode and accent colour as they change
 	DisplayServer.set_system_theme_change_callback(
@@ -74,6 +80,8 @@ func _notification(what: int) -> void:
 	# In case the operating system didn't say its theme changed
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN and not cli_mode:
 		update_system_theme()
+	elif what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready() and not cli_mode:
+		update_window_title()
 
 
 ## Fills the project theme (an empty resource in project.godot) with the generated one,
