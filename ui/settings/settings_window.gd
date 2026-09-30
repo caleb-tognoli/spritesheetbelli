@@ -70,8 +70,9 @@ const CATEGORIES := [  # L10n.mark
 				["System", "Dark", "Light"],
 				[&"system", &"dark", &"light"]
 			],
-			[&"accent_color", "Accent colour", &"color"],
+			# Above the accent colour, which is hidden while the system's is used
 			[&"system_accent", "System accent colour", &"check"],
+			[&"accent_color", "Accent colour", &"color"],
 			[
 				&"ui_scale",
 				"Interface scale",
@@ -192,7 +193,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	Settings.changed.connect(_refresh)
-	# The accent colour may be the operating system's, which changes on its own
+	# The operating system's accent colour, which hides the chosen one, changes on its own
 	Global.theme_applied.connect(_refresh.bind(&"accent_color"))
 	about_to_popup.connect(
 		func() -> void:
@@ -308,13 +309,6 @@ func _create_control(key: StringName, kind: String, options: Array) -> Control:
 			picker.custom_minimum_size = Vector2(60, 0)
 			picker.color_changed.connect(func(color: Color) -> void: Settings.set_value(key, color))
 			_refreshers[key] = func() -> void: picker.color = Settings.get_value(key)
-			if key == &"accent_color":
-				# Shows the colour in use, the operating system's while it's used
-				_refreshers[key] = func() -> void:
-					picker.color = Global.accent_color
-					picker.disabled = (
-						Settings.get_value(&"system_accent") and Global.has_system_accent()
-					)
 			return picker
 		"language":
 			_language_option = OptionButton.new()
@@ -395,12 +389,21 @@ func _filter() -> void:
 	for row in _rows:
 		var described := "%s %s" % [tr(row.text), tr(row.details) if row.details else ""]
 		var shown: bool = query in described.to_lower() if query else row.category == category
+		shown = shown and _applies(row.key)
 		(row.row as Control).visible = shown
 		if shown:
 			shown_categories[row.category] = true
 	# Headers only help when results come from several categories
 	for header in _headers:
 		header.visible = query and shown_categories.has(header.text)
+
+
+## Whether the setting [param key] is in use: the chosen accent colour isn't while the
+## operating system's is, and its row is hidden
+func _applies(key: StringName) -> bool:
+	if key == &"accent_color":
+		return not (Settings.get_value(&"system_accent") and Global.has_system_accent())
+	return true
 
 
 func _refresh(key: StringName) -> void:
@@ -411,3 +414,5 @@ func _refresh(key: StringName) -> void:
 		if key.is_empty() or row.key == key:
 			var is_default: bool = Settings.get_value(row.key) == Settings.DEFAULTS[row.key]
 			(row.revert as Button).visible = not is_default
+	if key.is_empty() or key in [&"system_accent", &"accent_color"]:
+		_filter()

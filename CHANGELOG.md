@@ -278,7 +278,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   which applies to `--strips` too.
 - Theme: a System option, now the default, follows the operating system's dark or light
   mode as it changes, and a System accent colour setting uses the operating system's
-  accent colour where it has one.
+  accent colour where it has one, hiding the Accent colour picker meanwhile.
 - A start screen while nothing is open: Open, Add Sprite(s) and Add Spritesheet, and the
   recent projects and sheets with a thumbnail, name and folder. Click one to open it, or
   × to take it off the list; moved or deleted files say "Not found". Thumbnails are made

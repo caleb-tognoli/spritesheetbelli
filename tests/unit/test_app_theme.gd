@@ -82,27 +82,37 @@ func test_the_system_accent_colour() -> void:
 	assert_eq(Global.accent_color, Color.RED, "to the chosen one")
 
 
-func test_the_settings_window_shows_the_accent_in_use() -> void:
+func test_the_settings_window_hides_the_accent_while_the_system_s_is_used() -> void:
 	_use_stand_in_system()
 	_system_accent = Color.ORANGE
 	var window := SettingsWindow.new()
 	add_child(window)
 	window.popup_centered()
+	window.show_category("Interface")
 	var picker := window.get_control(&"accent_color") as ColorPickerButton
+	var check := window.get_control(&"system_accent") as CheckBox
 	var theme_option := window.get_control(&"theme") as OptionButton
 	assert_eq(theme_option.get_item_text(theme_option.selected), "System")
-	assert_false(picker.disabled)
-	(window.get_control(&"system_accent") as CheckBox).button_pressed = true
+	assert_true(picker.is_visible_in_tree())
+	assert_eq(picker.color, AppTheme.DEFAULT_ACCENT)
+	# Above the picker, so it stays in place when the picker comes and goes
+	assert_true(check.get_parent().get_index() < picker.get_parent().get_index())
+	check.button_pressed = true
 	assert_true(Settings.get_value(&"system_accent"))
-	assert_true(picker.disabled, "the system's is used")
-	assert_eq(picker.color, Color.ORANGE, "shows the system's")
-	_system_accent = Color.GREEN
-	Global.update_system_theme()
-	assert_eq(picker.color, Color.GREEN, "as it changes")
+	assert_false(picker.is_visible_in_tree(), "the system's is used")
+	assert_true(check.is_visible_in_tree())
+	window.search.text = "accent"
+	window.search.text_changed.emit("accent")
+	assert_false(picker.is_visible_in_tree(), "nor found")
+	window.show_category("Interface")
 	_system_accent = Color.TRANSPARENT
 	Global.update_system_theme()
-	assert_false(picker.disabled, "the system has none")
-	assert_eq(picker.color, AppTheme.DEFAULT_ACCENT)
+	assert_true(picker.is_visible_in_tree(), "the system has none")
+	_system_accent = Color.GREEN
+	Global.update_system_theme()
+	assert_false(picker.is_visible_in_tree(), "the system has one again")
+	check.button_pressed = false
+	assert_true(picker.is_visible_in_tree(), "turned off")
 	window.queue_free()
 
 

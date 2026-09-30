@@ -2781,11 +2781,11 @@ msgid "Light"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
-msgid "Accent colour"
+msgid "System accent colour"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
-msgid "System accent colour"
+msgid "Accent colour"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
