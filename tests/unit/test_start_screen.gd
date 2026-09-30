@@ -47,6 +47,14 @@ func close_button_of(card: Button) -> Button:
 	return card.find_children("*", "Button", true, false)[0] as Button
 
 
+## The Locate… button of a missing file's card, or null
+func locate_button_of(card: Button) -> Button:
+	for button: Button in card.find_children("*", "Button", true, false):
+		if button.text == "Locate…":
+			return button
+	return null
+
+
 func test_shown_while_nothing_is_open() -> void:
 	assert_true(start.visible, "a new document")
 	assert_eq(start.get_parent(), main.preview_area, "over the canvas")
@@ -98,6 +106,61 @@ func test_recent_files_with_a_missing_one() -> void:
 	Settings.clear_recent_files()
 	assert_false(start.recent_list.visible, "nothing to list")
 	assert_false(start.recent_heading.visible)
+
+
+func test_a_missing_file_is_located() -> void:
+	var first := save_project("first.sbelli")
+	var moved := save_project("moved.sbelli")
+	var missing := dir.path_join("gone/deeper/walk.sbelli")
+	Settings.add_recent_file(missing)
+	Settings.add_recent_file(first)
+	assert_eq(locate_button_of(start.cards[first]), null, "only when missing")
+	# Its thumbnail from before it was moved
+	var thumbnail := Thumbnails.folder.path_join("%s_1.png" % missing.md5_text())
+	DirAccess.make_dir_recursive_absolute(Thumbnails.folder)
+	make_image(Color.GREEN).save_png(thumbnail)
+
+	locate_button_of(start.cards[missing]).pressed.emit()
+	var dialog := start.locate_dialog
+	assert_eq(dialog.title, "Locate walk.sbelli")
+	assert_eq(dialog.filters, PackedStringArray([FileController.PROJECT_FILTER]))
+	assert_eq(dialog.current_dir.trim_suffix("/"), dir, "the nearest folder that's there")
+	dialog.hide()
+	dialog.file_selected.emit(moved)
+	await get_tree().process_frame
+	assert_eq(Global.document.path, moved, "opened")
+	assert_eq(Settings.get_recent_files(), PackedStringArray([moved, first]))
+	assert_false(FileAccess.file_exists(thumbnail), "the old thumbnail is gone")
+
+
+func test_a_located_file_takes_the_missing_ones_place() -> void:
+	var files := PackedStringArray([dir.path_join("a.png"), dir.path_join("b.png")])
+	Settings.add_recent_file(files[1])
+	Settings.add_recent_file(files[0])
+	Settings.add_recent_file(dir.path_join("gone.png"))
+	Settings.add_recent_file(dir.path_join("first.png"))
+	Settings.replace_recent_file(dir.path_join("gone.png"), dir.path_join("found.png"))
+	assert_eq(
+		Settings.get_recent_files(),
+		PackedStringArray(
+			[dir.path_join("first.png"), dir.path_join("found.png"), files[0], files[1]]
+		)
+	)
+	# Already listed further down: moved up in its place
+	Settings.replace_recent_file(dir.path_join("found.png"), files[1])
+	assert_eq(
+		Settings.get_recent_files(),
+		PackedStringArray([dir.path_join("first.png"), files[1], files[0]])
+	)
+
+
+func test_an_image_is_located_among_images() -> void:
+	var missing := dir.path_join("gone.png")
+	Settings.add_recent_file(missing)
+	locate_button_of(start.cards[missing]).pressed.emit()
+	start.locate_dialog.hide()
+	assert_eq(start.locate_dialog.filters, PackedStringArray([FileController.IMAGE_FILTER]))
+	assert_eq(StartScreen.nearest_folder("Z:/not/there/at/all.png"), "Z:/")
 
 
 func test_long_paths_lose_their_start() -> void:
@@ -218,6 +281,9 @@ func test_web() -> void:
 	assert_false(start.recent_list.visible)
 	assert_false(start.recent_heading.visible)
 	assert_eq(start.buttons.get_child_count(), 3, "the buttons stay")
+	var card := start._make_card(dir.path_join("gone.png"))
+	assert_eq(locate_button_of(card), null, "nothing to locate in a browser")
+	card.free()
 	assert_true(start.drop_hint.visible, "and the drop hint")
 
 	Thumbnails.enabled = false

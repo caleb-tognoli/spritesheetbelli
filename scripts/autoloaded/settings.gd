@@ -190,6 +190,23 @@ func remove_recent_file(file: String) -> void:
 		set_value(&"recent_files", Array(recent))
 
 
+## Puts [param new_file] where [param file] is in the recent files list, e.g. where it was
+## moved to. It's added first when [param file] isn't listed.
+func replace_recent_file(file: String, new_file: String) -> void:
+	var recent := get_recent_files()
+	var index := recent.find(file)
+	if index < 0:
+		add_recent_file(new_file)
+		return
+	var existing := recent.find(new_file)
+	if existing >= 0 and existing != index:
+		recent.remove_at(existing)
+		if existing < index:
+			index -= 1
+	recent[index] = new_file
+	set_value(&"recent_files", Array(recent))
+
+
 func get_recent_files() -> PackedStringArray:
 	return PackedStringArray(get_value(&"recent_files"))
 

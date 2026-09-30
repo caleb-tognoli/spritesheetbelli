@@ -280,10 +280,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   mode as it changes, and a System accent colour setting uses the operating system's
   accent colour where it has one, hiding the Accent colour picker meanwhile.
 - A start screen while nothing is open: Open, Add Sprite(s) and Add Spritesheet, and the
-  recent projects and sheets with a thumbnail, name and folder. Click one to open it, or
-  × to take it off the list; moved or deleted files say "Not found". Thumbnails are made
-  when a project is saved or opened, and from the image for sheets. In a browser it has
-  just the buttons.
+  recent projects and sheets with a thumbnail, name and folder. Click one to open it, or ×
+  to take it off the list; moved or deleted files say "Not found", with Locate… to pick
+  where the file is now, which takes its place in the list and opens it. Thumbnails are
+  made when a project is saved or opened, and from the image for sheets. In a browser it
+  has just the buttons.
 - Keyboard Shortcuts (F1): a search box finds shortcuts by name or by key, like "ctrl+e"
   or "F2", and every key of an action is listed.
 - Command palette (Ctrl+Shift+P, or Ctrl+K): type part of any action's name to run it,

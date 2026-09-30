@@ -2,10 +2,11 @@ class_name StartScreen
 extends Panel
 ## What the canvas shows while nothing is open (see [method Document.is_blank]): buttons
 ## to open a file or add sprites, and the recent files with their thumbnails (see
-## [Thumbnails]), to open or forget. Files dropped on it are opened like on the canvas.
+## [Thumbnails]), to open, forget, or locate when they were moved. Files dropped on it are
+## opened like on the canvas.
 ## A browser has no recent files, so it only has the buttons and the drop hint.
 
-## Emitted when a recent file is clicked
+## Emitted when a recent file is clicked, or located (see [method locate])
 signal file_chosen(path: String)
 
 ## The actions of the buttons, so their names, icons and shortcuts match the menus
@@ -30,8 +31,12 @@ var drop_hint := Label.new()
 var cards: Dictionary[String, Button] = {}
 ## The thumbnail of each recent file listed, by path
 var thumbnails: Dictionary[String, TextureRect] = {}
+## Asks where a missing recent file is now, see [method locate]
+var locate_dialog := FileDialog.new()
 ## Thumbnails asked for, so an image that can't be loaded isn't tried again and again
 var _asked: Dictionary[String, bool] = {}
+## The recent file [member locate_dialog] asks for
+var _locating := ""
 
 
 func _ready() -> void:
@@ -72,6 +77,11 @@ func _ready() -> void:
 	drop_hint.theme_type_variation = &"StatusLabel"
 	drop_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(drop_hint)
+	locate_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	locate_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	locate_dialog.use_native_dialog = true
+	locate_dialog.file_selected.connect(func(path: String) -> void: replace(_locating, path))
+	add_child(locate_dialog)
 
 	Global.document.changed.connect(update)
 	Global.spritesheet.updated.connect(update)
@@ -146,6 +156,39 @@ func forget(file: String) -> void:
 	Settings.remove_recent_file(file)
 
 
+## Asks where the missing recent file [param file] is now, starting in the nearest folder
+## of its path that's still there. Picking it puts it in place of [param file] and opens
+## it, see [method replace].
+func locate(file: String) -> void:
+	_locating = file
+	locate_dialog.title = tr("Locate %s") % file.get_file()
+	var project := ProjectFile.is_project_path(file)
+	locate_dialog.filters = [
+		FileController.PROJECT_FILTER if project else FileController.IMAGE_FILTER
+	]
+	locate_dialog.current_dir = nearest_folder(file)
+	locate_dialog.popup_centered()
+
+
+## Puts [param new_file] in place of the recent file [param file], which is forgotten
+## with its thumbnails, and opens it
+func replace(file: String, new_file: String) -> void:
+	Thumbnails.forget(file)
+	Settings.replace_recent_file(file, new_file)
+	file_chosen.emit(new_file)
+
+
+## The nearest folder of [param file]'s path that exists, or its root when none does
+static func nearest_folder(file: String) -> String:
+	var folder := file.get_base_dir()
+	while not DirAccess.dir_exists_absolute(folder):
+		var parent := folder.get_base_dir()
+		if parent == folder or parent.is_empty():
+			break
+		folder = parent
+	return folder
+
+
 func _action_button(id: StringName) -> Button:
 	var action := Actions.get_action(id)
 	var button := Button.new()
@@ -158,7 +201,8 @@ func _action_button(id: StringName) -> Button:
 
 
 ## A button that opens [param file], with its thumbnail, name and folder, and a button
-## to forget it. A missing file can't be opened and says it's not found.
+## to forget it. A missing file can't be opened: it says it's not found, with a button to
+## locate it (see [method locate]).
 func _make_card(file: String) -> Button:
 	var found := FileAccess.file_exists(file)
 	var card := Button.new()
@@ -207,7 +251,22 @@ func _make_card(file: String) -> Button:
 		folder_label.resized.connect(
 			func() -> void: folder_label.text = trim_start(folder_label, file.get_base_dir())
 		)
-	box.add_child(folder_label)
+		box.add_child(folder_label)
+		return card
+	var missing_row := HBoxContainer.new()
+	missing_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(missing_row)
+	folder_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	missing_row.add_child(folder_label)
+	# A browser has no recent files to locate
+	if not in_browser:
+		var locate_button := Button.new()
+		locate_button.text = "Locate…"
+		locate_button.tooltip_text = "Find where the file is now"
+		locate_button.theme_type_variation = &"ToolbarButton"
+		locate_button.focus_mode = Control.FOCUS_NONE
+		locate_button.pressed.connect(locate.bind(file))
+		missing_row.add_child(locate_button)
 	return card
 
 

@@ -2633,11 +2633,23 @@ msgid "Drop images, folders or a .sbelli project here"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
+msgid "Locate %s"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
 msgid "Remove from Recent Files"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
 msgid "Not found"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Locate…"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
+msgid "Find where the file is now"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd

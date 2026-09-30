@@ -2643,12 +2643,24 @@ msgid "Drop images, folders or a .sbelli project here"
 msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
 
 #: res://ui/main/start_screen.gd
+msgid "Locate %s"
+msgstr "Cerca %s"
+
+#: res://ui/main/start_screen.gd
 msgid "Remove from Recent Files"
 msgstr "Togli dai file recenti"
 
 #: res://ui/main/start_screen.gd
 msgid "Not found"
 msgstr "Non trovato"
+
+#: res://ui/main/start_screen.gd
+msgid "Locate…"
+msgstr "Cerca…"
+
+#: res://ui/main/start_screen.gd
+msgid "Find where the file is now"
+msgstr "Indica dove si trova ora il file"
 
 #: res://ui/settings/settings_window.gd
 msgid "General"
