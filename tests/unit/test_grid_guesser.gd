@@ -41,6 +41,60 @@ func test_gaps_between_sprites() -> void:
 	assert_eq(GridGuesser.guess(make_sheet(Vector2i(5, 3), Vector2i(24, 40))), Vector2i(5, 3))
 
 
+func test_specks_in_the_gaps_are_ignored() -> void:
+	# Like the faint marks soft brushes leave between frames
+	var img := make_sheet(Vector2i(6, 3), Vector2i(40, 40), 6)
+	for y in range(10, 30):
+		img.set_pixel(79, y, Color(1, 1, 1, 0.02))
+	img.set_pixel(159, 50, Color.WHITE)
+	assert_eq(GridGuesser.guess(img), Vector2i(6, 3))
+
+
+func test_missing_frames_keep_the_spacing() -> void:
+	var img := make_sheet(Vector2i(8, 2), Vector2i(16, 16))
+	img.fill_rect(Rect2i(32, 0, 32, 16), Color.TRANSPARENT)
+	img.fill_rect(Rect2i(80, 16, 16, 16), Color.TRANSPARENT)
+	assert_eq(GridGuesser.guess(img), Vector2i(8, 2))
+
+
+func test_touching_sprites_are_cut_where_they_meet() -> void:
+	# Circles touching their neighbours: no gaps, but the cell edges cross little of them
+	var img := Image.create_empty(8 * 32, 2 * 32, false, Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			if Vector2(x % 32 + 0.5, y % 32 + 0.5).distance_to(Vector2(16, 16)) <= 16:
+				img.set_pixel(x, y, Color.RED)
+	assert_eq(GridGuesser.guess(img), Vector2i(8, 2))
+
+
+func test_uneven_sprites_are_cut_in_cells_holding_each() -> void:
+	var img := Image.create_empty(4 * 32, 32, false, Image.FORMAT_RGBA8)
+	for x: int in [0, 52, 66, 112]:
+		img.fill_rect(Rect2i(x, 4, 10, 24), Color.RED)
+	assert_eq(GridGuesser.guess(img), Vector2i(4, 1))
+
+
+func test_unclear_columns_get_square_cells() -> void:
+	# Two rows of 32 px apart, sprites crossing every column edge unevenly
+	var img := Image.create_empty(96, 64, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(2, 2, 12, 28), Color.RED)
+	img.fill_rect(Rect2i(20, 2, 20, 28), Color.RED)
+	img.fill_rect(Rect2i(44, 34, 48, 28), Color.RED)
+	assert_eq(GridGuesser.guess(img), Vector2i(3, 2))
+
+
+func test_one_sprite_with_a_margin_is_one_cell() -> void:
+	var img := Image.create_empty(150, 150, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(60, 20, 45, 110), Color.RED)
+	assert_eq(GridGuesser.guess(img), Vector2i.ONE)
+
+
+func test_tiny_common_sizes_are_not_guessed() -> void:
+	var img := Image.create_empty(1680, 840, false, Image.FORMAT_RGBA8)
+	img.fill(Color.RED)
+	assert_eq(GridGuesser.guess(img), Vector2i.ONE, "24 px would make 70×35 cells")
+
+
 func test_uneven_gaps_fall_back_to_common_sizes() -> void:
 	var img := Image.create_empty(128, 64, false, Image.FORMAT_RGBA8)
 	img.fill(Color.RED)

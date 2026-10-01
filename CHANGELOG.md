@@ -535,6 +535,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   exactly the interface's scale, so pixels are all the same width.
 - Frames with the same name in a grid sheet's data file are numbered (walk, walk_2) like
   in atlases, instead of being written twice.
+- The grid guess of Add Spritesheet: faint specks between sprites, like those soft brushes
+  leave, no longer stop it reading the gaps, which made it guess tiny cells (250×125 for
+  a 6×3 sheet). Missing frames keep the spacing, sprites that touch are cut where they
+  meet, an axis that can't be read gets square cells from the other, and a single sprite
+  is one cell instead of 16 px tiles.
 
 ## 0.2.0
 

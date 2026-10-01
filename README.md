@@ -14,8 +14,9 @@ A small desktop tool made with Godot.</p>
   sorted by name and placed in the first free cell, after the last frame or on a new row.
 - **Cut sheets into frames.** The grid is set by columns × rows or by cell size in pixels,
   each following the other, and guessed from the file name (`hero_32x32.png`,
-  `walk_8x2.png`) or from the gaps between sprites; offset and spacing handle sheets that
-  aren't packed edge to edge, and pixels left over are pointed out. The window starts in
+  `walk_8x2.png`) or from the gaps between sprites, or where they touch; offset and
+  spacing handle sheets that aren't packed edge to edge, and pixels left over are pointed
+  out. The window starts in
   Grid or Find sprites to match the sheet's layout, unless a data file comes with the
   image. The empty cells of an added sheet are locked so added sprites skip them, unless
   "Lock empty cells" is unticked. Sheets drawn on a solid colour, like magenta, have it
