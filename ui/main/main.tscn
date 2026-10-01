@@ -13,6 +13,7 @@
 [ext_resource type="Script" uid="uid://b5qiq6t17j0wt" path="res://ui/main/history_panel.gd" id="11_history"]
 [ext_resource type="Script" uid="uid://cm1ta1eutyomu" path="res://ui/animation_preview/animation_panel.gd" id="12_animation"]
 [ext_resource type="Script" uid="uid://crnq22bcliymm" path="res://ui/main/bottom_dock.gd" id="13_dock"]
+[ext_resource type="Texture2D" uid="uid://rdc7mrpux055" path="res://assets/icons/FolderAdd.svg" id="14_folder_add"]
 
 [node name="Main" type="Control" unique_id=1567927908]
 layout_mode = 3
@@ -133,14 +134,6 @@ layout_mode = 2
 theme_type_variation = &"HeaderSmall"
 text = "Add"
 
-[node name="AddSprites" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1140066213]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 30)
-layout_mode = 2
-text = "Add Sprite(s)"
-icon = ExtResource("5_x1m0q")
-alignment = 0
-
 [node name="AddSpritesheet" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=50982951]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 30)
@@ -148,6 +141,27 @@ layout_mode = 2
 text = "Add Spritesheet"
 icon = ExtResource("7_wpt02")
 alignment = 0
+
+[node name="AddSpritesRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1716480931]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="AddSprites" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/AddSpritesRow" unique_id=1140066213]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Add Sprite(s)"
+icon = ExtResource("5_x1m0q")
+alignment = 0
+
+[node name="AddFolder" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/AddSpritesRow" unique_id=393862517]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+icon = ExtResource("14_folder_add")
+icon_alignment = 1
 
 [node name="AddSeparator" type="HSeparator" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=878569213]
 layout_mode = 2

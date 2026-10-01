@@ -1811,6 +1811,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: res://ui/main/folder_watcher.gd
+msgid "Locate folder"
+msgstr ""
+
+#: res://ui/main/folder_watcher.gd
 msgid "Follow renamed files"
 msgstr ""
 
@@ -1949,6 +1953,67 @@ msgstr ""
 msgid "Remove pivot"
 msgstr ""
 
+#: res://ui/main/linked_folders.gd
+msgid "Linked folders"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Paused: Reload changed files is off."
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Turn on"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Turn Reload changed files back on"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Show in File Manager"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Copy Path"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Locate…"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Unlink Folder"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Locate %s"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Unlink folder"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "The folder wasn't found."
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Images added to it are added here."
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Not found"
+msgstr ""
+
+#: res://ui/main/linked_folders.gd
+msgid "Find where the folder is now"
+msgstr ""
+
 #: res://ui/main/main.tscn
 msgid "Open File(s)"
 msgstr ""
@@ -2049,11 +2114,15 @@ msgid "Every export of the project, or else the Export dialog"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+msgid "Cut a spritesheet image into frames and add them"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
 msgid "Image files as sprites"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
-msgid "Cut a spritesheet image into frames and add them"
+msgid "A folder's images as sprites, and the ones saved there later"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
@@ -2086,15 +2155,15 @@ msgid "Export Again"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+msgid "Add Spritesheet…"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
 msgid "Add Sprite(s)…"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
 msgid "Add Folder…"
-msgstr ""
-
-#: res://ui/main/main_actions.gd
-msgid "Add Spritesheet…"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
@@ -2290,6 +2359,11 @@ msgid "Resize filter"
 msgstr ""
 
 #: res://ui/main/main_ui.gd
+#: res://ui/main/start_screen.gd
+msgid "Drop images, folders or a .sbelli project here"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
 msgid "Copy frames"
 msgstr ""
 
@@ -2372,12 +2446,6 @@ msgid "Resizing the grid to %d×%d would delete %d sprite."
 msgid_plural "Resizing the grid to %d×%d would delete %d sprites."
 msgstr[0] ""
 msgstr[1] ""
-
-#: res://ui/main/main_ui.gd
-msgid ""
-"Drop images, folders or a .sbelli project here\n"
-"or use Add Sprite(s) and Add Spritesheet (%s, %s)"
-msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Save changes to %s before closing?"
@@ -2624,22 +2692,6 @@ msgid "Double-click a name to rename the frame"
 msgstr ""
 
 #: res://ui/main/sprites_panel.gd
-msgid "The folder wasn't found."
-msgstr ""
-
-#: res://ui/main/sprites_panel.gd
-msgid "Images added to it are added here."
-msgstr ""
-
-#: res://ui/main/sprites_panel.gd
-msgid "Paused: Reload changed files is off."
-msgstr ""
-
-#: res://ui/main/sprites_panel.gd
-msgid "Unlink folder"
-msgstr ""
-
-#: res://ui/main/sprites_panel.gd
 msgid "Row %d"
 msgstr ""
 
@@ -2728,22 +2780,6 @@ msgid "Nothing open"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
-msgid "Locate %s"
-msgstr ""
-
-#: res://ui/main/start_screen.gd
-msgid "Locate…"
-msgstr ""
-
-#: res://ui/main/start_screen.gd
-msgid "Show in File Manager"
-msgstr ""
-
-#: res://ui/main/start_screen.gd
-msgid "Copy Path"
-msgstr ""
-
-#: res://ui/main/start_screen.gd
 msgid "Remove from Recent Files"
 msgstr ""
 
@@ -2772,14 +2808,6 @@ msgid "%d day ago"
 msgid_plural "%d days ago"
 msgstr[0] ""
 msgstr[1] ""
-
-#: res://ui/main/start_screen.gd
-msgid "Drop images, folders or a .sbelli project here"
-msgstr ""
-
-#: res://ui/main/start_screen.gd
-msgid "Not found"
-msgstr ""
 
 #: res://ui/main/start_screen.gd
 msgid "Changed %s"

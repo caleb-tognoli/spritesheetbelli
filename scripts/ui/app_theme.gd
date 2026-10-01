@@ -172,6 +172,14 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox(
 		"panel", &"BusyPanel", _box(p.surface, 8, Vector4(20, 16, 20, 18), p.border, 1)
 	)
+	# Sunk into the sidebar, like the linked folders under Add Sprite(s), with rows that
+	# are shaded when hovered
+	theme.set_type_variation(&"InsetPanel", "PanelContainer")
+	theme.set_stylebox("panel", &"InsetPanel", _box(p.background, 6, Vector4(4, 6, 4, 6)))
+	theme.set_type_variation(&"InsetRow", "PanelContainer")
+	var row_margins := Vector4(6, 3, 2, 3)
+	theme.set_stylebox("panel", &"InsetRow", _box(Color.TRANSPARENT, 4, row_margins))
+	theme.set_stylebox("hover", &"InsetRow", _box(p.hovered, 4, row_margins))
 	theme.set_stylebox("background", "ProgressBar", _box(p.raised, 3))
 	theme.set_stylebox("fill", "ProgressBar", _box(p.accent, 3))
 	theme.set_type_variation(&"StatusLabel", "Label")

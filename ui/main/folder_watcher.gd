@@ -182,27 +182,63 @@ func apply() -> void:
 	_ask_about_deleted(deleted)
 
 
+## Follows the linked [param folder] at [param new_folder] instead, as one undoable step,
+## e.g. once it's been moved. Frames from its images link to the images of the same name
+## in [param new_folder], which aren't new; the others there are added like images saved
+## there, when the folder is looked at. Frames whose image isn't there keep their link.
+static func relocate(folder: String, new_folder: String) -> void:
+	new_folder = new_folder.simplify_path()
+	var sheet := Global.spritesheet
+	var document := Global.document
+	if folder == new_folder or folder not in sheet.linked_folders:
+		return
+	var names := get_image_names(new_folder)
+	var new_names := {}
+	for source: Dictionary in sheet.frame_sources.values():
+		var path: String = source.get("path", "")
+		if path.get_base_dir() == folder and path.get_file() in names:
+			new_names[path] = new_folder.path_join(path.get_file())
+	var known: PackedStringArray = []
+	var old_known: PackedStringArray = document.folder_files.get(folder, PackedStringArray())
+	for file in names:
+		if file in old_known or new_names.has(folder.path_join(file)):
+			known.append(file)
+	document.folder_files[new_folder] = known
+	_move_hashes(new_names)
+	document.perform(
+		L10n.mark("Locate folder"),
+		func() -> void:
+			_link_frames(new_names)
+			sheet.relink_folder(folder, new_folder)
+	)
+
+
 ## Links the frames of each renamed file in [param new_names] (old path: new path) to its
 ## new name, as one undoable step
 func _follow_renames(new_names: Dictionary) -> void:
-	var sheet := Global.spritesheet
+	_move_hashes(new_names)
+	Global.document.perform(L10n.mark("Follow renamed files"), _link_frames.bind(new_names))
+
+
+## Keeps what the files in [param new_names] (old path: new path) were, under their new
+## paths, so they aren't seen changed
+static func _move_hashes(new_names: Dictionary) -> void:
 	var document := Global.document
 	for path: String in new_names:
 		if document.source_hashes.has(path):
 			document.source_hashes[new_names[path]] = document.source_hashes[path]
 			document.source_hashes.erase(path)
-	document.perform(
-		L10n.mark("Follow renamed files"),
-		func() -> void:
-			for coord: Vector2i in sheet.frame_sources.keys():
-				var source: Dictionary = sheet.frame_sources[coord]
-				if new_names.has(source.get("path")):
-					var moved := source.duplicate(true)
-					moved.path = new_names[source.path]
-					sheet.set_frame(
-						coord, sheet.frames[coord], moved, FrameSource.get_origin(sheet, coord)
-					)
-	)
+
+
+## Links the frames of each file in [param new_names] (old path: new path) to its new path
+static func _link_frames(new_names: Dictionary) -> void:
+	var sheet := Global.spritesheet
+	for coord: Vector2i in sheet.frame_sources.keys():
+		var source: Dictionary = sheet.frame_sources[coord]
+		if new_names.has(source.get("path")):
+			var moved := source.duplicate(true)
+			moved.path = new_names[source.path]
+			sheet.set_frame(coord, sheet.frames[coord], moved, FrameSource.get_origin(sheet, coord))
 
 
 ## Asks whether to remove the frames of [param paths], if any is left

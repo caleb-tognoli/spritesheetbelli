@@ -9,8 +9,6 @@ extends PanelContainer
 
 const THUMBNAIL_SIZE := 32
 const PIN_ICON := preload("res://assets/icons/Pin.svg")
-const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
-const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
 const PIN_BUTTON := 0
 ## Room left of the text in each cell, such as between a group's arrow and its name
 const TEXT_MARGIN := 5
@@ -26,8 +24,6 @@ var search := LineEdit.new()
 var by_row_button := Button.new()
 var tree := Tree.new()
 var close_button := Button.new()
-## The linked folders under the title, each with a button to unlink it, see [FolderWatcher]
-var folders_box := VBoxContainer.new()
 var context_menu := ActionPopupMenu.new()
 
 var _thumbnails: Dictionary[Image, Texture2D] = {}
@@ -40,8 +36,6 @@ var _highlights: Dictionary[bool, Array] = {}
 var _syncing := false
 ## The groups folded in the list, by key, see [method group_frames]. Kept while the app runs.
 var _collapsed: Dictionary[String, bool] = {}
-## What the linked folders were last listed from, see [method _show_folders]
-var _folders_shown := []
 
 
 func _init() -> void:
@@ -57,13 +51,6 @@ func _init() -> void:
 	margin.add_theme_constant_override("margin_right", 4)
 	margin.add_child(header)
 	box.add_child(margin)
-	var folders_margin := MarginContainer.new()
-	folders_margin.add_theme_constant_override("margin_left", 10)
-	folders_margin.add_theme_constant_override("margin_right", 4)
-	folders_box.add_theme_constant_override("separation", 0)
-	folders_margin.add_child(folders_box)
-	folders_margin.visible = false
-	box.add_child(folders_margin)
 	var title := Label.new()
 	title.text = "Sprites"
 	title.theme_type_variation = &"HeaderSmall"
@@ -135,7 +122,6 @@ func _ready() -> void:
 func refresh() -> void:
 	if not visible or not is_inside_tree():
 		return
-	_show_folders()
 	var sheet := Global.spritesheet
 	tree.clear()
 	var root := tree.create_item()
@@ -165,63 +151,6 @@ func refresh() -> void:
 		if not alive.has(img):
 			_thumbnails.erase(img)
 	_show_selection()
-
-
-## Lists the linked folders, when they changed. A browser can't follow folders, so there
-## are none there.
-func _show_folders() -> void:
-	var folders := (
-		PackedStringArray() if FolderWatcher.in_browser else Global.spritesheet.linked_folders
-	)
-	var watched: bool = Settings.get_value(&"watch_sources")
-	var found := Array(folders).map(
-		func(f: String) -> bool: return DirAccess.dir_exists_absolute(f)
-	)
-	var shown := [folders, watched, found]
-	if shown == _folders_shown:
-		return
-	_folders_shown = shown
-	for row in folders_box.get_children():
-		row.queue_free()
-	# With its margin, so it takes no room when there are none
-	folders_box.get_parent().visible = not folders.is_empty()
-	for i in folders.size():
-		var folder := folders[i]
-		var row := HBoxContainer.new()
-		var icon := TextureRect.new()
-		icon.texture = FOLDER_ICON
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-		icon.modulate = get_theme_color("font_color", &"StatusLabel")
-		row.add_child(icon)
-		var label := Label.new()
-		label.text = folder.get_file() if folder.get_file() else folder
-		label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-		label.theme_type_variation = &"StatusLabel"
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		label.mouse_filter = Control.MOUSE_FILTER_PASS
-		var tip := folder + "\n"
-		if not found[i]:
-			tip += tr("The folder wasn't found.")
-		elif watched:
-			tip += tr("Images added to it are added here.")
-		else:
-			tip += tr("Paused: Reload changed files is off.")
-		label.tooltip_text = tip
-		row.add_child(label)
-		var unlink := Button.new()
-		unlink.flat = true
-		unlink.icon = UNLINK_ICON
-		unlink.tooltip_text = "Unlink folder"
-		unlink.pressed.connect(
-			func() -> void:
-				var sheet := Global.spritesheet
-				Global.document.perform(
-					L10n.mark("Unlink folder"), sheet.unlink_folder.bind(folder)
-				)
-		)
-		row.add_child(unlink)
-		folders_box.add_child(row)
 
 
 ## Every frame of [param sheet] in groups, each a dictionary with a "key" that stays the same
@@ -320,12 +249,9 @@ func _add_frame(header: TreeItem, coord: Vector2i, label: String) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_THEME_CHANGED:
 		_update_highlights()
-		# The folders' icons take the theme's colour
-		_folders_shown = []
 		refresh()
 	elif what == NOTIFICATION_TRANSLATION_CHANGED:
-		# Names of groups and frames, and the folders' tooltips
-		_folders_shown = []
+		# Names of groups and frames
 		refresh()
 
 
@@ -559,8 +485,6 @@ func _on_setting_changed(key: StringName) -> void:
 	if key == &"sprites_by_row":
 		by_row_button.set_pressed_no_signal(Settings.get_value(key))
 		refresh()
-	elif key == &"watch_sources":
-		_show_folders()
 	elif key == &"index_start":
 		# Frames without a name and rows are numbered from it
 		refresh()

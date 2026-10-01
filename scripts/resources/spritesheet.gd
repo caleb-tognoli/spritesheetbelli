@@ -284,6 +284,19 @@ func unlink_folder(folder: String) -> void:
 		_changed(false)
 
 
+## Follows [param new_folder] in place of [param folder], where it's listed, e.g. once it's
+## been moved. When [param new_folder] is linked already, [param folder] is just unlinked.
+func relink_folder(folder: String, new_folder: String) -> void:
+	var index := _folders.find(folder)
+	if index < 0 or folder == new_folder:
+		return
+	if new_folder in _folders:
+		_folders.remove_at(index)
+	else:
+		_folders[index] = new_folder
+	_changed(false)
+
+
 #endregion
 
 #region Grid

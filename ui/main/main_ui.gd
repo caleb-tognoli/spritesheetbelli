@@ -46,8 +46,9 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var triple_size_btn: Button = %TripleSize
 @onready var original_size_btn: Button = %OriginalSize
 @onready var resize_filter: OptionButton = %ResizeFilter
-@onready var add_sprites_btn: Button = %AddSprites
 @onready var add_spritesheet_btn: Button = %AddSpritesheet
+@onready var add_sprites_btn: Button = %AddSprites
+@onready var add_folder_btn: Button = %AddFolder
 @onready var sheet_size: Label = %SheetSize
 @onready var export_btn: Button = %Export
 @onready var split: HSplitContainer = %Split
@@ -72,6 +73,8 @@ var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 var animation_commands := AnimationCommands.new()
 var start_screen := StartScreen.new()
+## The linked folders, under Add Sprite(s)
+var linked_folders := LinkedFolders.new()
 ## The sidebars, the canvas and the status bar, under the start screen while it shows
 var editor := VBoxContainer.new()
 var recovery := Recovery.new()
@@ -103,8 +106,10 @@ func _ready() -> void:
 	Global.spritesheet.updated.connect(set_text_params.bind(Global.spritesheet))
 	Global.spritesheet.updated.connect(disable_if_empty)
 	Global.spritesheet.updated.connect(_prepare_scaled_images)
-	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
+	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
+	add_folder_btn.pressed.connect(Actions.run.bind(&"add_folder"))
+	%AddSpritesRow.add_sibling(linked_folders)
 	export_btn.pressed.connect(Actions.run.bind(&"export"))
 	export_btn.icon = MainActions.ICONS[&"export"]
 	sidebar_split = SidebarSplit.new(split, %Sidebar, &"sidebar_width")
@@ -187,14 +192,15 @@ func _ready() -> void:
 	# Work left unsaved by a crash is offered on the start screen instead
 	if recovery.leftovers.is_empty():
 		files.restore_session.call_deferred()
-	Actions.set_tooltip(add_sprites_btn, &"add_sprites")
 	Actions.set_tooltip(add_spritesheet_btn, &"add_spritesheet")
+	Actions.set_tooltip(add_sprites_btn, &"add_sprites")
+	Actions.set_tooltip(add_folder_btn, &"add_folder")
 	_update_export_button(ExportTarget.list(Global.spritesheet).size())
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	preview_area.set_toolbar_actions(
 		TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS, {&"color_key": color_key.dropdown}
 	)
-	_update_empty_hint()
+	preview_area.empty_hint.text = "Drop images, folders or a .sbelli project here"
 	preview_area.update_ui()
 	preview.preview_updated.connect(Actions.refresh)
 	preview.selection_changed.connect(update_sheet_info)
@@ -599,25 +605,9 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 	set_text_params(Global.spritesheet)
 
 
-func _update_empty_hint() -> void:
-	var add_keys := [
-		Actions.get_shortcut_text(&"add_sprites"), Actions.get_shortcut_text(&"add_spritesheet")
-	]
-	preview_area.empty_hint.text = (
-		tr(
-			(
-				"Drop images, folders or a .sbelli project here\n"
-				+ "or use Add Sprite(s) and Add Spritesheet (%s, %s)"
-			)
-		)
-		% add_keys
-	)
-
-
 func _notification(what: int) -> void:
 	# Text put together here says it in the new language
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
-		_update_empty_hint()
 		set_text_params(Global.spritesheet)
 		# The names of pages in the packed layout
 		preview.queue_redraw()

@@ -76,13 +76,21 @@ func test_shown_while_nothing_is_open() -> void:
 
 func test_buttons_run_actions() -> void:
 	var labels: PackedStringArray = []
-	for button: Button in start.buttons.get_children():
+	for id in start.action_buttons:
+		var button := start.action_buttons[id]
 		labels.append(button.text)
-		assert_true(button.tooltip_text.begins_with(button.text.trim_suffix("…")), "tooltip")
-	assert_eq(
-		labels, PackedStringArray(["Open…", "Add Sprite(s)…", "Add Spritesheet…", "Add Folder…"])
-	)
-	(start.buttons.get_child(1) as Button).pressed.emit()
+		var action := Actions.get_action(id)
+		assert_eq(button.icon, action.icon)
+		assert_true(button.tooltip_text.begins_with(action.label.trim_suffix("…")), "tooltip")
+	assert_eq(labels, PackedStringArray(["Open…", "Add Spritesheet…", "Add Sprite(s)…", ""]))
+	# Add Folder is only an icon, right of Add Sprite(s)
+	var sprites := start.action_buttons[&"add_sprites"]
+	var folder := start.action_buttons[&"add_folder"]
+	assert_eq(folder.get_parent(), sprites.get_parent(), "together")
+	assert_eq(folder.get_index(), sprites.get_index() + 1)
+	assert_eq(sprites.get_parent().get_parent(), start.buttons)
+	assert_eq(folder.custom_minimum_size.x, folder.custom_minimum_size.y, "square")
+	sprites.pressed.emit()
 	assert_eq(main.files.open_file_dialogs, [main.files.open_sprites_dialog] as Array[FileDialog])
 	main.files.open_sprites_dialog.canceled.emit()
 	main.files.open_sprites_dialog.hide()
@@ -286,7 +294,7 @@ func test_web() -> void:
 	assert_true(start.cards.is_empty(), "no recent files in a browser")
 	assert_false(start.recent_list.visible)
 	assert_false(start.empty_hint.visible, "there won't be any")
-	assert_eq(start.buttons.get_child_count(), 4, "the buttons stay")
+	assert_eq(start.action_buttons.size(), 4, "the buttons stay")
 	var card := start._make_card(dir.path_join("gone.png"))
 	assert_eq(locate_button_of(card), null, "nothing to locate in a browser")
 	card.free()
@@ -394,7 +402,7 @@ func test_arrow_keys_start_on_the_first_card() -> void:
 	assert_true(get_viewport().gui_get_focus_owner() == null, "nothing again")
 	press(KEY_LEFT)
 	press(KEY_DELETE)
-	assert_eq(get_viewport().gui_get_focus_owner(), start.buttons.get_child(0), "none left")
+	assert_eq(get_viewport().gui_get_focus_owner(), start.action_buttons[&"open"], "none left")
 	press(KEY_ESCAPE)
 
 

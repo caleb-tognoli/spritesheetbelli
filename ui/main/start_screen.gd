@@ -14,10 +14,15 @@ signal file_chosen(path: String)
 ## The items of the menu of a recent file, see [method open_menu]
 enum MenuItem { OPEN, LOCATE, SHOW, COPY_PATH, FORGET }
 
-## The actions of the buttons, so their names, icons and shortcuts match the menus
+## The actions of the buttons, so their names, icons and shortcuts match the menus. Add
+## Folder is only an icon, right next to Add Sprite(s), see [method _build_drop_zone].
 const BUTTON_ACTIONS: Array[StringName] = [
-	&"open", &"add_sprites", &"add_spritesheet", &"add_folder"
+	&"open", &"add_spritesheet", &"add_sprites", &"add_folder"
 ]
+## The height of the buttons, and the width of Add Folder's
+const BUTTON_HEIGHT := 34
+## Between Add Sprite(s) and Add Folder, less than between the other buttons
+const PAIR_GAP := 3
 ## Actions for the editor it covers, which can't run while it shows, see [method cover_actions]
 const EDITOR_ACTIONS: Array[StringName] = [
 	&"layout_grid",
@@ -65,7 +70,10 @@ var in_browser := WebFiles.is_web()
 var notices := VBoxContainer.new()
 var drop_zone := DropZone.new()
 var drop_hint := Label.new()
+## The buttons, Add Sprite(s) and Add Folder in a row of their own so they stay together
 var buttons := HFlowContainer.new()
+## The button of each of the [constant BUTTON_ACTIONS], by action
+var action_buttons: Dictionary[StringName, Button] = {}
 var recent_list := HFlowContainer.new()
 ## Said instead of the recent files while there are none
 var empty_hint := Label.new()
@@ -178,7 +186,7 @@ func _input(event: InputEvent) -> void:
 		focused.release_focus()
 		get_viewport().set_input_as_handled()
 	elif focused == null and _is_arrow(event):
-		var first: Control = cards.values()[0] if cards else buttons.get_child(0)
+		var first: Control = cards.values()[0] if cards else action_buttons.values()[0]
 		first.grab_focus()
 		get_viewport().set_input_as_handled()
 
@@ -312,7 +320,7 @@ func _forget_keeping_focus(file: String) -> void:
 		return
 	var files := cards.keys()
 	if files.is_empty():
-		(buttons.get_child(0) as Control).grab_focus()
+		action_buttons.values()[0].grab_focus()
 	else:
 		cards[files[mini(index, files.size() - 1)]].grab_focus()
 
@@ -429,17 +437,34 @@ func _build_drop_zone() -> void:
 	buttons.add_theme_constant_override("v_separation", 8)
 	for id in BUTTON_ACTIONS:
 		if Actions.has(id):
-			buttons.add_child(_action_button(id))
+			action_buttons[id] = _action_button(id)
+	for id in action_buttons:
+		if id == &"add_folder" and action_buttons.has(&"add_sprites"):
+			continue
+		if id == &"add_sprites" and action_buttons.has(&"add_folder"):
+			var pair := HBoxContainer.new()
+			pair.add_theme_constant_override("separation", PAIR_GAP)
+			pair.add_child(action_buttons[id])
+			pair.add_child(action_buttons[&"add_folder"])
+			buttons.add_child(pair)
+		else:
+			buttons.add_child(action_buttons[id])
 	box.add_child(buttons)
 
 
+## A button running action [param id], with its name and icon, or only its icon for Add
+## Folder
 func _action_button(id: StringName) -> Button:
 	var action := Actions.get_action(id)
 	var button := Button.new()
-	button.text = action.label
 	button.icon = action.icon
+	if id == &"add_folder":
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.custom_minimum_size.x = BUTTON_HEIGHT
+	else:
+		button.text = action.label
 	Actions.set_tooltip(button, id)
-	button.custom_minimum_size.y = 34
+	button.custom_minimum_size.y = BUTTON_HEIGHT
 	button.pressed.connect(func() -> void: Actions.run(id))
 	return button
 

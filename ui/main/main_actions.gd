@@ -13,9 +13,9 @@ const ICONS := {
 	&"save": SAVE_ICON,
 	&"save_as": SAVE_ICON,
 	&"export": preload("res://assets/icons/ExternalLink.svg"),
-	&"add_sprites": preload("res://assets/icons/Add.svg"),
-	&"add_folder": preload("res://assets/icons/Folder.svg"),
 	&"add_spritesheet": preload("res://assets/icons/SpriteSheet.svg"),
+	&"add_sprites": preload("res://assets/icons/Add.svg"),
+	&"add_folder": preload("res://assets/icons/FolderAdd.svg"),
 	&"settings": preload("res://assets/icons/Tools.svg"),
 	&"undo": preload("res://assets/icons/Undo.svg"),
 	&"redo": preload("res://assets/icons/Redo.svg"),
@@ -74,8 +74,9 @@ const ICONS := {
 const DESCRIPTIONS := {  # L10n.mark
 	&"export": "The spritesheet as an image, as sprites or for a game engine",
 	&"export_again": "Every export of the project, or else the Export dialog",
-	&"add_sprites": "Image files as sprites",
 	&"add_spritesheet": "Cut a spritesheet image into frames and add them",
+	&"add_sprites": "Image files as sprites",
+	&"add_folder": "A folder's images as sprites, and the ones saved there later",
 	&"tool_select": "Click or drag to select frames",
 	&"tool_move":
 	(
@@ -114,6 +115,11 @@ static func register(main: Control) -> void:
 	)
 	add.call(&"export_again", L10n.mark("Export Again"), files.exports.export_again, has_frames)
 	add.call(
+		&"add_spritesheet",
+		L10n.mark("Add Spritesheet…"),
+		files.popup_file_dialog.bind(files.open_spritesheet_dialog)
+	)
+	add.call(
 		&"add_sprites",
 		L10n.mark("Add Sprite(s)…"),
 		files.popup_file_dialog.bind(files.open_sprites_dialog)
@@ -122,11 +128,6 @@ static func register(main: Control) -> void:
 		&"add_folder",
 		L10n.mark("Add Folder…"),
 		files.popup_file_dialog.bind(files.open_folder_dialog)
-	)
-	add.call(
-		&"add_spritesheet",
-		L10n.mark("Add Spritesheet…"),
-		files.popup_file_dialog.bind(files.open_spritesheet_dialog)
 	)
 	add.call(
 		&"settings",

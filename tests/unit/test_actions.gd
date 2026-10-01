@@ -348,8 +348,9 @@ func test_buttons_have_the_tooltips_of_their_actions() -> void:
 	var layout: LayoutController = main.layout_controller
 	var buttons := {
 		main.export_btn: &"export",
-		main.add_sprites_btn: &"add_sprites",
 		main.add_spritesheet_btn: &"add_spritesheet",
+		main.add_sprites_btn: &"add_sprites",
+		main.add_folder_btn: &"add_folder",
 		area.select_tool_btn: &"tool_select",
 		area.move_tool_btn: &"tool_move",
 		area.pivot_tool_btn: &"tool_pivot",
@@ -377,3 +378,32 @@ func test_buttons_have_the_tooltips_of_their_actions() -> void:
 	assert_eq(layout.sprites_panel.close_button.tooltip_text, "Hide the sprites (Ctrl+L)")
 	for menu_button: Button in area._menu_buttons:
 		assert_true(menu_button.tooltip_text.contains("every frame when none are selected"))
+
+
+func test_add_actions_are_in_the_same_order_everywhere() -> void:
+	var order: Array[StringName] = [&"add_spritesheet", &"add_sprites", &"add_folder"]
+	var file: Array = MainMenuBar.MENUS["File"]
+	var in_menu := order.map(func(id: StringName) -> int: return file.find(id))
+	assert_eq(in_menu, [in_menu[0], in_menu[0] + 1, in_menu[0] + 2], "File menu")
+	assert_eq(
+		main.add_spritesheet_btn.get_index() + 1,
+		main.add_sprites_btn.get_parent().get_index(),
+		"sidebar"
+	)
+	# Add Folder is only an icon, right of Add Sprite(s)
+	assert_eq(main.add_folder_btn.get_parent(), main.add_sprites_btn.get_parent())
+	assert_eq(main.add_folder_btn.get_index(), main.add_sprites_btn.get_index() + 1)
+	assert_eq(main.add_folder_btn.text, "")
+	assert_eq(main.add_folder_btn.icon, Actions.get_action(&"add_folder").icon)
+
+
+func test_add_folder_has_a_shortcut() -> void:
+	var events := InputMap.action_get_events(&"add_folder")
+	assert_eq(events.size(), 1)
+	var key := events[0] as InputEventKey
+	assert_eq(key.keycode, KEY_I)
+	assert_true(key.command_or_control_autoremap and key.alt_pressed and not key.shift_pressed)
+	main.add_folder_btn.pressed.emit()
+	assert_eq(main.files.open_file_dialogs, [main.files.open_folder_dialog] as Array[FileDialog])
+	main.files.open_folder_dialog.canceled.emit()
+	main.files.open_folder_dialog.hide()

@@ -190,10 +190,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   it later are added as sprites where *New sprites go to* says, as one undo step, with a
   notice. Deleting images from a linked folder asks whether to remove their frames, and
   renamed images are followed: their frames link to the new name without asking. Linked
-  folders are listed at the top of the Sprites panel, with *Unlink folder*, saved in the
-  project and followed again when it's opened. *Reload changed files* turns this off too;
-  linking a folder while it's off says it's paused, and so does its tooltip. Not in the
-  web version.
+  folders are listed under Add Sprite(s) in the sidebar, each with its name, the folder
+  it's in and *Unlink folder*, saved in the project and followed again when it's opened.
+  Right-clicking one has Show in File Manager, Copy Path and Unlink Folder. A folder that
+  was moved or deleted says "Not found", with Locate… to pick where it is now: its frames
+  link to the images of the same name there, and images that are new there are added.
+  *Reload changed files* turns this off too; linking a folder while it's off says it's
+  paused, and so does the list, with a link to turn it on. Not in the web version.
 - View > Pixel Grid (Shift+G) draws faint lines between pixels once you zoom in to 600%
   or more. The lines follow each frame's own pixels, so a frame scaled 2× gets a line
   every two pixels of the sheet. It's on by default and can also be turned off in
@@ -280,7 +283,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   mode as it changes, and a System accent colour setting uses the operating system's
   accent colour where it has one, hiding the Accent colour picker meanwhile.
 - A start screen while nothing is open, covering the whole window below the menu: the
-  name and version, a zone to drop files on with Open, Add Sprite(s), Add Spritesheet and
+  name and version, a zone to drop files on with Open, Add Spritesheet, Add Sprite(s) and
   Add Folder, and the recent projects and sheets, up to five in a row, with a thumbnail,
   name, folder and when they were changed ("3 hours ago", with the date and time in the
   tooltip). Click one to open it, or × to take it off the list; moved or deleted files say
@@ -311,6 +314,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   included, name their file types in the chosen language too.
 
 ### Changed
+- Add Spritesheet, Add Sprite(s) and Add Folder are in this order everywhere: the sidebar,
+  the start screen and the File menu. Add Folder is a button with a folder and a plus,
+  right of Add Sprite(s), and has a shortcut, Ctrl+Alt+I. The empty preview only says
+  what can be dropped on it.
 - Copy, paste, duplicate, mirrored animations and Add Spritesheet copy a frame's origin,
   pivot and link, not just its pixels.
 - The grid section of the sidebar has spacing, padding and extruded edges for exports too,

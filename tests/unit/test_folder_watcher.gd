@@ -44,6 +44,19 @@ func add_folder() -> void:
 	folders.check()
 
 
+## The unlink button of [param row], a row of [member LinkedFolders.rows]
+func unlink_button_of(row: Control) -> Button:
+	return row.get_child(0).get_child(-1)
+
+
+## The labels of [param row], a row of [member LinkedFolders.rows]: its name, and the folder
+## it's in or that it's missing
+func labels_of(row: Control) -> Array[Label]:
+	var labels: Array[Label] = []
+	labels.assign(row.get_child(0).get_child(0).get_children())
+	return labels
+
+
 ## Two looks: a new file counts once it's done being written, a deleted one once it
 ## stays gone
 func look_twice() -> void:
@@ -82,10 +95,7 @@ func test_a_folder_without_images_is_linked() -> void:
 	assert_false(Notify.message_dialog.visible, "no error")
 	assert_eq(Notify.get_toasts()[-1], "Watching linked for new images.")
 	assert_eq(Global.document.get_history()[-1], "Link folder")
-	var panel: SpritesPanel = main.layout_controller.sprites_panel
-	panel.visible = true
-	panel.refresh()
-	assert_true(panel.folders_box.get_parent().visible, "listed")
+	assert_true(main.linked_folders.visible, "listed")
 	# Images saved there later are added
 	write("a.png", Color.RED)
 	look_twice()
@@ -107,15 +117,16 @@ func test_dropping_a_folder_without_images_links_it() -> void:
 func test_a_folder_without_images_is_linked_paused_when_reloading_is_off() -> void:
 	Settings.set_value(&"watch_sources", false)
 	await add_folder()
-	# Its tooltip in the Sprites panel says so too, until reloading is on again
-	var panel: SpritesPanel = main.layout_controller.sprites_panel
-	panel.visible = true
-	panel.refresh()
-	var label: Label = panel.folders_box.get_children()[-1].get_child(1)
-	assert_true(label.tooltip_text.ends_with("\nPaused: Reload changed files is off."))
-	Settings.set_value(&"watch_sources", true)
-	label = panel.folders_box.get_children()[-1].get_child(1)
-	assert_true(label.tooltip_text.ends_with("\nImages added to it are added here."))
+	# Its row under Add Sprite(s) says so too, until reloading is on again
+	var card: LinkedFolders = main.linked_folders
+	var row: Control = card.rows.get_child(-1)
+	assert_true(row.tooltip_text.ends_with("\nPaused: Reload changed files is off."))
+	assert_true(card.paused_row.visible, "under the folders")
+	card.turn_on_button.pressed.emit()
+	assert_true(Settings.get_value(&"watch_sources"), "turned on")
+	assert_false(card.paused_row.visible)
+	row = card.rows.get_child(-1)
+	assert_true(row.tooltip_text.ends_with("\nImages added to it are added here."))
 	assert_eq(Global.spritesheet.linked_folders, PackedStringArray([dir]), "still linked")
 	assert_false(Notify.message_dialog.visible, "no error")
 	assert_eq(Notify.get_toasts()[-1], "Linked linked, paused: Reload changed files is off.")
@@ -247,23 +258,16 @@ func test_renamed_files_are_followed() -> void:
 func test_unlinking() -> void:
 	write("a.png", Color.RED)
 	await add_folder()
-	var panel: SpritesPanel = main.layout_controller.sprites_panel
-	panel.visible = true
-	panel.refresh()
-	var rows := panel.folders_box.get_children().filter(
-		func(row: Node) -> bool: return not row.is_queued_for_deletion()
-	)
-	assert_eq(rows.size(), 1, "listed")
-	assert_true(panel.folders_box.get_parent().visible)
-	var label: Label = rows[0].get_child(1)
-	assert_eq(label.text, "linked")
-	var unlink: Button = rows[0].get_child(2)
+	var card: LinkedFolders = main.linked_folders
+	assert_eq(card.rows.get_child_count(), 1, "listed")
+	assert_true(card.visible)
+	var unlink := unlink_button_of(card.rows.get_child(0))
 	assert_eq(unlink.tooltip_text, "Unlink folder")
 	unlink.pressed.emit()
 
 	assert_true(Global.spritesheet.linked_folders.is_empty())
 	assert_eq(Global.document.get_history()[-1], "Unlink folder")
-	assert_false(panel.folders_box.get_parent().visible, "not listed")
+	assert_false(card.visible, "not listed")
 	assert_eq(Global.spritesheet.frame_sources.size(), 1, "the frames stay linked to their files")
 	write("b.png", Color.BLUE)
 	look_twice()
@@ -327,10 +331,8 @@ func test_web_build_does_not_link() -> void:
 	write("a.png", Color.RED)
 	await add_folder()
 	FolderWatcher.in_browser = true
-	var panel: SpritesPanel = main.layout_controller.sprites_panel
-	panel.visible = true
-	panel.refresh()
-	assert_false(panel.folders_box.get_parent().visible, "linked folders hidden")
+	main.linked_folders.refresh()
+	assert_false(main.linked_folders.visible, "linked folders hidden")
 	Global.document.reset()
 	await main.files.add_sprites_from_folder(dir)
 	assert_eq(Global.spritesheet.frames.size(), 1, "still added")
@@ -342,3 +344,101 @@ func test_web_build_does_not_link() -> void:
 	assert_true(Global.spritesheet.linked_folders.is_empty())
 	assert_true(Notify.message_dialog.visible, "there are no images")
 	Notify.message_dialog.hide()
+
+
+func test_linked_folders_are_listed_under_add_sprites() -> void:
+	write("a.png", Color.RED)
+	await add_folder()
+	var card: LinkedFolders = main.linked_folders
+	assert_eq(card.get_index(), main.add_sprites_btn.get_parent().get_index() + 1)
+	assert_eq(card.count_label.text, "1")
+	var row: Control = card.rows.get_child(0)
+	var labels := labels_of(row)
+	assert_eq(labels[0].text, "linked")
+	assert_true(
+		labels[1].get_theme_font_size("font_size") < labels[0].get_theme_font_size("font_size"),
+		"the path is smaller than the name"
+	)
+	assert_true(dir.get_base_dir().ends_with(labels[1].text.trim_prefix("…")), "where it is")
+	assert_true(row.tooltip_text.begins_with(dir + "\n"))
+	assert_false(card.paused_row.visible)
+	card.open_menu(dir, Vector2.ZERO)
+	var items: PackedStringArray = []
+	for i in card.menu.item_count:
+		items.append(card.menu.get_item_text(i))
+	assert_eq(items, PackedStringArray(["Show in File Manager", "Copy Path", "", "Unlink Folder"]))
+	card.menu.hide()
+
+
+func test_a_missing_folder_can_be_located() -> void:
+	var moved := temp_path("moved")
+	var a := write("a.png", Color.RED)
+	write("b.png", Color.BLUE)
+	await add_folder()
+	var sheet := Global.spritesheet
+	var coord_a: Vector2i = FrameSource.get_linked(sheet, a)[0]
+	DirAccess.remove_absolute(dir.path_join("b.png"))
+	DirAccess.rename_absolute(dir, moved)
+	# Saved there while it wasn't followed
+	make_image(Color.GREEN, Vector2i(4, 4)).save_png(moved.path_join("c.png"))
+	var card: LinkedFolders = main.linked_folders
+	card.refresh()
+	var row: Control = card.rows.get_child(0)
+	assert_eq(labels_of(row)[1].text, "Not found")
+	var locate_button: Button = row.get_child(0).get_child(1)
+	assert_eq(locate_button.text, "Locate…")
+	card.open_menu(dir, Vector2.ZERO)
+	assert_ne(card.menu.get_item_index(LinkedFolders.MenuItem.LOCATE), -1, "in its menu too")
+	assert_true(card.menu.is_item_disabled(card.menu.get_item_index(LinkedFolders.MenuItem.SHOW)))
+	card.menu.hide()
+
+	card.locate(dir)
+	assert_eq(card.locate_dialog.current_dir, dir.get_base_dir(), "starts where it was")
+	card.locate_dialog.hide()
+	card.locate_dialog.dir_selected.emit(moved)
+	assert_eq(sheet.linked_folders, PackedStringArray([moved]))
+	assert_eq(Global.document.get_history()[-1], "Locate folder")
+	assert_eq(sheet.frame_sources[coord_a].path, moved.path_join("a.png"), "its frames follow")
+	assert_eq(sheet.frames.size(), 2, "nothing added yet")
+	assert_eq(labels_of(card.rows.get_child(0))[0].text, "moved")
+	look_twice()
+	assert_eq(watcher.changed_paths, PackedStringArray(), "the moved files didn't change")
+	assert_true(folders.has_changes(), "the image saved meanwhile is new")
+	await folders.apply()
+	assert_eq(sheet.frames.size(), 3, "and added")
+	assert_false(folders.dialog.visible, "nothing was deleted")
+
+	Global.document.undo()
+	Global.document.undo()
+	assert_eq(sheet.linked_folders, PackedStringArray([dir]), "undone")
+	assert_eq(sheet.frame_sources[coord_a].path, a)
+	for file in DirAccess.get_files_at(moved):
+		DirAccess.remove_absolute(moved.path_join(file))
+	DirAccess.remove_absolute(moved)
+
+
+func test_locating_a_folder_linked_already_unlinks_it() -> void:
+	var other := temp_path("other")
+	DirAccess.make_dir_recursive_absolute(other)
+	await add_folder()
+	await main.files.add_sprites_from_folder(other)
+	FolderWatcher.relocate(dir, other)
+	assert_eq(Global.spritesheet.linked_folders, PackedStringArray([other]))
+	assert_eq(Global.document.get_history()[-1], "Locate folder")
+	DirAccess.remove_absolute(other)
+
+
+func test_a_linked_folder_row_is_shaded_when_hovered() -> void:
+	await add_folder()
+	var row: Control = main.linked_folders.rows.get_child(0)
+	var unlink := unlink_button_of(row)
+	assert_eq(unlink.modulate.a, LinkedFolders.FAINT, "faint at first")
+	row.mouse_entered.emit()
+	assert_eq(unlink.modulate.a, 1.0)
+	assert_true(row.has_theme_stylebox_override("panel"), "shaded")
+	row.mouse_exited.emit()
+	assert_eq(unlink.modulate.a, LinkedFolders.FAINT)
+	assert_false(row.has_theme_stylebox_override("panel"))
+	unlink.grab_focus()
+	assert_eq(unlink.modulate.a, 1.0, "with focus too")
+	unlink.release_focus()

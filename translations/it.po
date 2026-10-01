@@ -356,7 +356,7 @@ msgid "Export Sprites"
 msgstr "Esporta sprite"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Keyboard Shortcuts"
 msgstr "Scorciatoie da tastiera"
 
@@ -536,19 +536,19 @@ msgid "Parts of a sprite closer than this, like a spark, stay together"
 msgstr "Le parti di uno sprite più vicine di così, come una scintilla, restano insieme"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Align"
 msgstr "Allinea"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 #: res://ui/main/layout_controller.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Centre"
 msgstr "Centro"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
 #: res://ui/main/layout_controller.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Bottom"
 msgstr "In basso"
 
@@ -676,12 +676,12 @@ msgid "Cancel"
 msgstr "Annulla"
 
 #: res://ui/add_spritesheet/sprite_box_editor.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Undo"
 msgstr "Annulla"
 
 #: res://ui/add_spritesheet/sprite_box_editor.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Redo"
 msgstr "Ripeti"
 
@@ -694,7 +694,7 @@ msgid "Joins the selected boxes into one. Ctrl+drag across boxes also does."
 msgstr "Unisce i riquadri selezionati in uno. Anche Ctrl+trascina sopra i riquadri lo fa."
 
 #: res://ui/add_spritesheet/sprite_box_editor.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 #: res://ui/spritesheet_preview/animation_label_controls.gd
 msgid "Delete"
 msgstr "Elimina"
@@ -810,7 +810,7 @@ msgid "Edit animation"
 msgstr "Modifica animazione"
 
 #: res://ui/animation_preview/animation_panel.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "New"
 msgstr "Nuovo"
 
@@ -976,7 +976,7 @@ msgid "Combine sprites into spritesheets and cut spritesheets into sprites."
 msgstr "Unisci sprite in spritesheet e taglia spritesheet in sprite."
 
 #: res://ui/main/about_dialog.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "About spritesheetbelli"
 msgstr "Informazioni su spritesheetbelli"
 
@@ -1764,7 +1764,7 @@ msgid "Unsaved changes"
 msgstr "Modifiche non salvate"
 
 #: res://ui/main/file_controller.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Save"
 msgstr "Salva"
 
@@ -1819,6 +1819,10 @@ msgstr[0] "Aggiunto %d nuovo sprite da %s."
 msgstr[1] "Aggiunti %d nuovi sprite da %s."
 
 #: res://ui/main/folder_watcher.gd
+msgid "Locate folder"
+msgstr "Cerca cartella"
+
+#: res://ui/main/folder_watcher.gd
 msgid "Follow renamed files"
 msgstr "Segui file rinominati"
 
@@ -1833,7 +1837,7 @@ msgid "Remove frames of deleted files"
 msgstr "Rimuovi frame di file eliminati"
 
 #: res://ui/main/history_panel.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "History"
 msgstr "Cronologia"
 
@@ -1846,17 +1850,17 @@ msgid "Click a step to go back or forward to it"
 msgstr "Clicca un passaggio per tornare indietro o avanti fino a lì"
 
 #: res://ui/main/layout_controller.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Top"
 msgstr "In alto"
 
 #: res://ui/main/layout_controller.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Left"
 msgstr "A sinistra"
 
 #: res://ui/main/layout_controller.gd
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Right"
 msgstr "A destra"
 
@@ -1957,6 +1961,67 @@ msgstr "Rimuovi pivot"
 msgid "Remove pivot"
 msgstr "Rimuovi pivot"
 
+#: res://ui/main/linked_folders.gd
+msgid "Linked folders"
+msgstr "Cartelle collegate"
+
+#: res://ui/main/linked_folders.gd
+msgid "Paused: Reload changed files is off."
+msgstr "In pausa: Ricarica file modificati è disattivato."
+
+#: res://ui/main/linked_folders.gd
+msgid "Turn on"
+msgstr "Attiva"
+
+#: res://ui/main/linked_folders.gd
+msgid "Turn Reload changed files back on"
+msgstr "Riattiva Ricarica file modificati"
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Show in File Manager"
+msgstr "Mostra nel gestore file"
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Copy Path"
+msgstr "Copia percorso"
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Locate…"
+msgstr "Cerca…"
+
+#: res://ui/main/linked_folders.gd
+msgid "Unlink Folder"
+msgstr "Scollega cartella"
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Locate %s"
+msgstr "Cerca %s"
+
+#: res://ui/main/linked_folders.gd
+msgid "Unlink folder"
+msgstr "Scollega cartella"
+
+#: res://ui/main/linked_folders.gd
+msgid "The folder wasn't found."
+msgstr "La cartella non è stata trovata."
+
+#: res://ui/main/linked_folders.gd
+msgid "Images added to it are added here."
+msgstr "Le immagini aggiunte lì vengono aggiunte qui."
+
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Not found"
+msgstr "Non trovato"
+
+#: res://ui/main/linked_folders.gd
+msgid "Find where the folder is now"
+msgstr "Indica dove si trova ora la cartella"
+
 #: res://ui/main/main.tscn
 msgid "Open File(s)"
 msgstr "Apri file"
@@ -1966,6 +2031,7 @@ msgid "Open a File"
 msgstr "Apri un file"
 
 #: res://ui/main/main.tscn
+#: res://ui/main/main_actions.gd
 #: res://ui/main/main_ui.gd
 msgid "Export…"
 msgstr "Esporta…"
@@ -2047,43 +2113,263 @@ msgstr "Trilineare"
 msgid "Lanczos"
 msgstr "Lanczos"
 
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "The spritesheet as an image, as sprites or for a game engine"
 msgstr "Lo spritesheet come immagine, come sprite o per un motore di gioco"
 
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Every export of the project, or else the Export dialog"
 msgstr "Ogni esportazione del progetto, altrimenti la finestra Esporta"
 
-#: res://ui/main/main_ui.gd
-msgid "Image files as sprites"
-msgstr "File di immagini come sprite"
-
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Cut a spritesheet image into frames and add them"
 msgstr "Taglia un'immagine di spritesheet in frame e aggiungili"
 
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
+msgid "Image files as sprites"
+msgstr "File di immagini come sprite"
+
+#: res://ui/main/main_actions.gd
+msgid "A folder's images as sprites, and the ones saved there later"
+msgstr "Le immagini di una cartella come sprite, e quelle salvate lì in seguito"
+
+#: res://ui/main/main_actions.gd
 msgid "Click or drag to select frames"
 msgstr "Clicca o trascina per selezionare frame"
 
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys move the selected frames inside their cells."
 msgstr "Trascina per spostare i frame selezionati, o quello trascinato; Alt+trascina copia. I tasti freccia spostano i frame selezionati nelle loro celle."
 
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 #: res://ui/main/menu_bar.gd
 msgid "Of the selected frames, or of every frame when none are selected"
 msgstr "Dei frame selezionati, o di tutti se nessuno è selezionato"
 
-#: res://ui/main/main_ui.gd
+#: res://ui/main/main_actions.gd
 msgid "From the selected frames, or from every frame when none are selected"
 msgstr "Dai frame selezionati, o da tutti se nessuno è selezionato"
+
+#: res://ui/main/main_actions.gd
+msgid "Open…"
+msgstr "Apri…"
+
+#: res://ui/main/main_actions.gd
+msgid "Save As…"
+msgstr "Salva con nome…"
+
+#: res://ui/main/main_actions.gd
+msgid "Export Again"
+msgstr "Esporta di nuovo"
+
+#: res://ui/main/main_actions.gd
+msgid "Add Spritesheet…"
+msgstr "Aggiungi spritesheet…"
+
+#: res://ui/main/main_actions.gd
+msgid "Add Sprite(s)…"
+msgstr "Aggiungi sprite…"
+
+#: res://ui/main/main_actions.gd
+msgid "Add Folder…"
+msgstr "Aggiungi cartella…"
+
+#: res://ui/main/main_actions.gd
+msgid "Settings…"
+msgstr "Impostazioni…"
+
+#: res://ui/main/main_actions.gd
+msgid "Quit"
+msgstr "Esci"
+
+#: res://ui/main/main_actions.gd
+msgid "Save changes to %s before quitting?"
+msgstr "Salvare le modifiche a %s prima di uscire?"
+
+#: res://ui/main/main_actions.gd
+msgid "Select Mode"
+msgstr "Modalità selezione"
+
+#: res://ui/main/main_actions.gd
+msgid "Move Mode"
+msgstr "Modalità spostamento"
+
+#: res://ui/main/main_actions.gd
+msgid "Select All"
+msgstr "Seleziona tutto"
+
+#: res://ui/main/main_actions.gd
+msgid "Select None"
+msgstr "Deseleziona tutto"
+
+#: res://ui/main/main_actions.gd
+msgid "Flip Horizontally"
+msgstr "Capovolgi in orizzontale"
+
+#: res://ui/main/main_actions.gd
+msgid "Flip"
+msgstr "Capovolgi"
+
+#: res://ui/main/main_actions.gd
+msgid "Flip Vertically"
+msgstr "Capovolgi in verticale"
+
+#: res://ui/main/main_actions.gd
+msgid "Rotate 90° CW"
+msgstr "Ruota di 90° in senso orario"
+
+#: res://ui/main/main_actions.gd
+msgid "Rotate"
+msgstr "Ruota"
+
+#: res://ui/main/main_actions.gd
+msgid "Rotate 90° CCW"
+msgstr "Ruota di 90° in senso antiorario"
+
+#: res://ui/main/main_actions.gd
+msgid "Copy"
+msgstr "Copia"
+
+#: res://ui/main/main_actions.gd
+msgid "Cut"
+msgstr "Taglia"
+
+#: res://ui/main/main_actions.gd
+msgid "Paste"
+msgstr "Incolla"
+
+#: res://ui/main/main_actions.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Duplicate"
+msgstr "Duplica"
+
+#: res://ui/main/main_actions.gd
+msgid "Trim Transparent Borders"
+msgstr "Rifila i bordi trasparenti"
+
+#: res://ui/main/main_actions.gd
+msgid "Trim"
+msgstr "Rifila"
+
+#: res://ui/main/main_actions.gd
+msgid "Remove Background Colour…"
+msgstr "Rimuovi colore di sfondo…"
+
+#: res://ui/main/main_actions.gd
+msgid "Add Outline…"
+msgstr "Aggiungi contorno…"
+
+#: res://ui/main/main_actions.gd
+msgid "Replace Image…"
+msgstr "Sostituisci immagine…"
+
+#: res://ui/main/main_actions.gd
+msgid "Reload from File"
+msgstr "Ricarica dal file"
+
+#: res://ui/main/main_actions.gd
+msgid "Reload from file"
+msgstr "Ricarica dal file"
+
+#: res://ui/main/main_actions.gd
+msgid "Insert Empty Cell"
+msgstr "Inserisci cella vuota"
+
+#: res://ui/main/main_actions.gd
+msgid "Insert cell"
+msgstr "Inserisci cella"
+
+#: res://ui/main/main_actions.gd
+msgid "Remove Cell"
+msgstr "Rimuovi cella"
+
+#: res://ui/main/main_actions.gd
+msgid "Remove cells"
+msgstr "Rimuovi celle"
+
+#: res://ui/main/main_actions.gd
+msgid "Insert Row"
+msgstr "Inserisci riga"
+
+#: res://ui/main/main_actions.gd
+msgid "Insert row"
+msgstr "Inserisci riga"
+
+#: res://ui/main/main_actions.gd
+msgid "Remove Row"
+msgstr "Rimuovi riga"
+
+#: res://ui/main/main_actions.gd
+msgid "Remove rows"
+msgstr "Rimuovi righe"
+
+#: res://ui/main/main_actions.gd
+msgid "Move Row Up"
+msgstr "Sposta riga in su"
+
+#: res://ui/main/main_actions.gd
+msgid "Move Row Down"
+msgstr "Sposta riga in giù"
+
+#: res://ui/main/main_actions.gd
+msgid "Move row"
+msgstr "Sposta riga"
+
+#: res://ui/main/main_actions.gd
+msgid "Zoom In"
+msgstr "Ingrandisci"
+
+#: res://ui/main/main_actions.gd
+msgid "Zoom Out"
+msgstr "Rimpicciolisci"
+
+#: res://ui/main/main_actions.gd
+msgid "Actual Size"
+msgstr "Dimensioni reali"
+
+#: res://ui/main/main_actions.gd
+msgid "Fit to View"
+msgstr "Adatta alla vista"
+
+#: res://ui/main/main_actions.gd
+msgid "Status Bar"
+msgstr "Barra di stato"
+
+#: res://ui/main/main_actions.gd
+#: res://ui/main/menu_bar.gd
+#: res://ui/spritesheet_preview/animation_label_controls.gd
+msgid "Edit"
+msgstr "Modifica"
+
+#: res://ui/main/main_actions.gd
+msgid "Animation Panel"
+msgstr "Pannello animazioni"
+
+#: res://ui/main/main_actions.gd
+msgid "Grid Lines"
+msgstr "Linee della griglia"
+
+#: res://ui/main/main_actions.gd
+msgid "Pixel Grid"
+msgstr "Griglia dei pixel"
+
+#: res://ui/main/main_actions.gd
+msgid "Frame Numbers"
+msgstr "Numeri dei frame"
+
+#: res://ui/main/main_actions.gd
+msgid "Command Palette…"
+msgstr "Comandi…"
 
 #: res://ui/main/main_ui.gd
 #: res://ui/settings/settings_window.gd
 msgid "Resize filter"
 msgstr "Filtro di ridimensionamento"
+
+#: res://ui/main/main_ui.gd
+#: res://ui/main/start_screen.gd
+msgid "Drop images, folders or a .sbelli project here"
+msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
 
 #: res://ui/main/main_ui.gd
 msgid "Copy frames"
@@ -2100,217 +2386,6 @@ msgstr "Blocca cella"
 #: res://ui/main/main_ui.gd
 msgid "Unlock cell"
 msgstr "Sblocca cella"
-
-#: res://ui/main/main_ui.gd
-msgid "Open…"
-msgstr "Apri…"
-
-#: res://ui/main/main_ui.gd
-msgid "Save As…"
-msgstr "Salva con nome…"
-
-#: res://ui/main/main_ui.gd
-msgid "Export Again"
-msgstr "Esporta di nuovo"
-
-#: res://ui/main/main_ui.gd
-msgid "Add Sprite(s)…"
-msgstr "Aggiungi sprite…"
-
-#: res://ui/main/main_ui.gd
-msgid "Add Folder…"
-msgstr "Aggiungi cartella…"
-
-#: res://ui/main/main_ui.gd
-msgid "Add Spritesheet…"
-msgstr "Aggiungi spritesheet…"
-
-#: res://ui/main/main_ui.gd
-msgid "Settings…"
-msgstr "Impostazioni…"
-
-#: res://ui/main/main_ui.gd
-msgid "Quit"
-msgstr "Esci"
-
-#: res://ui/main/main_ui.gd
-msgid "Save changes to %s before quitting?"
-msgstr "Salvare le modifiche a %s prima di uscire?"
-
-#: res://ui/main/main_ui.gd
-msgid "Select Mode"
-msgstr "Modalità selezione"
-
-#: res://ui/main/main_ui.gd
-msgid "Move Mode"
-msgstr "Modalità spostamento"
-
-#: res://ui/main/main_ui.gd
-msgid "Select All"
-msgstr "Seleziona tutto"
-
-#: res://ui/main/main_ui.gd
-msgid "Select None"
-msgstr "Deseleziona tutto"
-
-#: res://ui/main/main_ui.gd
-msgid "Flip Horizontally"
-msgstr "Capovolgi in orizzontale"
-
-#: res://ui/main/main_ui.gd
-msgid "Flip"
-msgstr "Capovolgi"
-
-#: res://ui/main/main_ui.gd
-msgid "Flip Vertically"
-msgstr "Capovolgi in verticale"
-
-#: res://ui/main/main_ui.gd
-msgid "Rotate 90° CW"
-msgstr "Ruota di 90° in senso orario"
-
-#: res://ui/main/main_ui.gd
-msgid "Rotate"
-msgstr "Ruota"
-
-#: res://ui/main/main_ui.gd
-msgid "Rotate 90° CCW"
-msgstr "Ruota di 90° in senso antiorario"
-
-#: res://ui/main/main_ui.gd
-msgid "Copy"
-msgstr "Copia"
-
-#: res://ui/main/main_ui.gd
-msgid "Cut"
-msgstr "Taglia"
-
-#: res://ui/main/main_ui.gd
-msgid "Paste"
-msgstr "Incolla"
-
-#: res://ui/main/main_ui.gd
-#: res://ui/spritesheet_preview/animation_label_controls.gd
-msgid "Duplicate"
-msgstr "Duplica"
-
-#: res://ui/main/main_ui.gd
-msgid "Trim Transparent Borders"
-msgstr "Rifila i bordi trasparenti"
-
-#: res://ui/main/main_ui.gd
-msgid "Trim"
-msgstr "Rifila"
-
-#: res://ui/main/main_ui.gd
-msgid "Remove Background Colour…"
-msgstr "Rimuovi colore di sfondo…"
-
-#: res://ui/main/main_ui.gd
-msgid "Add Outline…"
-msgstr "Aggiungi contorno…"
-
-#: res://ui/main/main_ui.gd
-msgid "Replace Image…"
-msgstr "Sostituisci immagine…"
-
-#: res://ui/main/main_ui.gd
-msgid "Reload from File"
-msgstr "Ricarica dal file"
-
-#: res://ui/main/main_ui.gd
-msgid "Reload from file"
-msgstr "Ricarica dal file"
-
-#: res://ui/main/main_ui.gd
-msgid "Insert Empty Cell"
-msgstr "Inserisci cella vuota"
-
-#: res://ui/main/main_ui.gd
-msgid "Insert cell"
-msgstr "Inserisci cella"
-
-#: res://ui/main/main_ui.gd
-msgid "Remove Cell"
-msgstr "Rimuovi cella"
-
-#: res://ui/main/main_ui.gd
-msgid "Remove cells"
-msgstr "Rimuovi celle"
-
-#: res://ui/main/main_ui.gd
-msgid "Insert Row"
-msgstr "Inserisci riga"
-
-#: res://ui/main/main_ui.gd
-msgid "Insert row"
-msgstr "Inserisci riga"
-
-#: res://ui/main/main_ui.gd
-msgid "Remove Row"
-msgstr "Rimuovi riga"
-
-#: res://ui/main/main_ui.gd
-msgid "Remove rows"
-msgstr "Rimuovi righe"
-
-#: res://ui/main/main_ui.gd
-msgid "Move Row Up"
-msgstr "Sposta riga in su"
-
-#: res://ui/main/main_ui.gd
-msgid "Move Row Down"
-msgstr "Sposta riga in giù"
-
-#: res://ui/main/main_ui.gd
-msgid "Move row"
-msgstr "Sposta riga"
-
-#: res://ui/main/main_ui.gd
-msgid "Zoom In"
-msgstr "Ingrandisci"
-
-#: res://ui/main/main_ui.gd
-msgid "Zoom Out"
-msgstr "Rimpicciolisci"
-
-#: res://ui/main/main_ui.gd
-msgid "Actual Size"
-msgstr "Dimensioni reali"
-
-#: res://ui/main/main_ui.gd
-msgid "Fit to View"
-msgstr "Adatta alla vista"
-
-#: res://ui/main/main_ui.gd
-msgid "Status Bar"
-msgstr "Barra di stato"
-
-#: res://ui/main/main_ui.gd
-#: res://ui/main/menu_bar.gd
-#: res://ui/spritesheet_preview/animation_label_controls.gd
-msgid "Edit"
-msgstr "Modifica"
-
-#: res://ui/main/main_ui.gd
-msgid "Animation Panel"
-msgstr "Pannello animazioni"
-
-#: res://ui/main/main_ui.gd
-msgid "Grid Lines"
-msgstr "Linee della griglia"
-
-#: res://ui/main/main_ui.gd
-msgid "Pixel Grid"
-msgstr "Griglia dei pixel"
-
-#: res://ui/main/main_ui.gd
-msgid "Frame Numbers"
-msgstr "Numeri dei frame"
-
-#: res://ui/main/main_ui.gd
-msgid "Command Palette…"
-msgstr "Comandi…"
 
 #: res://ui/main/main_ui.gd
 msgid "Outline"
@@ -2379,14 +2454,6 @@ msgid "Resizing the grid to %d×%d would delete %d sprite."
 msgid_plural "Resizing the grid to %d×%d would delete %d sprites."
 msgstr[0] "Ridimensionare la griglia a %d×%d eliminerebbe %d sprite."
 msgstr[1] "Ridimensionare la griglia a %d×%d eliminerebbe %d sprite."
-
-#: res://ui/main/main_ui.gd
-msgid ""
-"Drop images, folders or a .sbelli project here\n"
-"or use Add Sprite(s) and Add Spritesheet (%s, %s)"
-msgstr ""
-"Trascina qui immagini, cartelle o un progetto .sbelli\n"
-"o usa Aggiungi sprite e Aggiungi spritesheet (%s, %s)"
 
 #: res://ui/main/main_ui.gd
 msgid "Save changes to %s before closing?"
@@ -2633,22 +2700,6 @@ msgid "Double-click a name to rename the frame"
 msgstr "Fai doppio clic su un nome per rinominare il frame"
 
 #: res://ui/main/sprites_panel.gd
-msgid "The folder wasn't found."
-msgstr "La cartella non è stata trovata."
-
-#: res://ui/main/sprites_panel.gd
-msgid "Images added to it are added here."
-msgstr "Le immagini aggiunte lì vengono aggiunte qui."
-
-#: res://ui/main/sprites_panel.gd
-msgid "Paused: Reload changed files is off."
-msgstr "In pausa: Ricarica file modificati è disattivato."
-
-#: res://ui/main/sprites_panel.gd
-msgid "Unlink folder"
-msgstr "Scollega cartella"
-
-#: res://ui/main/sprites_panel.gd
 msgid "Row %d"
 msgstr "Riga %d"
 
@@ -2737,22 +2788,6 @@ msgid "Nothing open"
 msgstr "Nessun file aperto"
 
 #: res://ui/main/start_screen.gd
-msgid "Locate %s"
-msgstr "Cerca %s"
-
-#: res://ui/main/start_screen.gd
-msgid "Locate…"
-msgstr "Cerca…"
-
-#: res://ui/main/start_screen.gd
-msgid "Show in File Manager"
-msgstr "Mostra nel gestore file"
-
-#: res://ui/main/start_screen.gd
-msgid "Copy Path"
-msgstr "Copia percorso"
-
-#: res://ui/main/start_screen.gd
 msgid "Remove from Recent Files"
 msgstr "Togli dai file recenti"
 
@@ -2781,14 +2816,6 @@ msgid "%d day ago"
 msgid_plural "%d days ago"
 msgstr[0] "%d giorno fa"
 msgstr[1] "%d giorni fa"
-
-#: res://ui/main/start_screen.gd
-msgid "Drop images, folders or a .sbelli project here"
-msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
-
-#: res://ui/main/start_screen.gd
-msgid "Not found"
-msgstr "Non trovato"
 
 #: res://ui/main/start_screen.gd
 msgid "Changed %s"
@@ -2943,12 +2970,12 @@ msgid "Light"
 msgstr "Chiaro"
 
 #: res://ui/settings/settings_window.gd
-msgid "Accent colour"
-msgstr "Colore di accento"
-
-#: res://ui/settings/settings_window.gd
 msgid "System accent colour"
 msgstr "Colore di accento del sistema"
+
+#: res://ui/settings/settings_window.gd
+msgid "Accent colour"
+msgstr "Colore di accento"
 
 #: res://ui/settings/settings_window.gd
 msgid "Interface scale"
