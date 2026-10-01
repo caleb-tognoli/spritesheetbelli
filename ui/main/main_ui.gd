@@ -222,10 +222,9 @@ func _ready() -> void:
 	# A new or opened sheet shows the view saved with it, or else the whole sheet
 	Global.document.loaded.connect(_queue_view)
 	preview.move_requested.connect(
-		func(coords: Array[Vector2i], offset: Vector2i, copy: bool) -> void:
+		func(coords: Array[Vector2i], offset: Vector2i) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
-				L10n.mark("Copy frames") if copy else L10n.mark("Move frames"),
-				Global.spritesheet.move_frames.bind(coords, offset, copy)
+				L10n.mark("Move frames"), Global.spritesheet.move_frames.bind(coords, offset)
 			)
 			preview.set_selected_coords(targets)
 	)
@@ -252,7 +251,8 @@ func _ready() -> void:
 	preview.pivot_requested.connect(
 		func(coords: Array[Vector2i], pivot: Vector2) -> void:
 			Global.document.perform(
-				L10n.mark("Set pivot"), Global.spritesheet.set_pivots.bind(coords, pivot)
+				L10n.mark("Set pivot"),
+				FrameEdits.set_pivots_inside.bind(Global.spritesheet, coords, pivot)
 			)
 	)
 

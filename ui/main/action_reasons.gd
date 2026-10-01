@@ -76,7 +76,7 @@ static func apply(main: Control) -> void:
 
 	var grid_only: Array[StringName] = LayoutController.GRID_ONLY_ACTIONS.duplicate()
 	grid_only.append_array([&"animation_from_row", &"animation_from_column", &"animation_labels"])
-	var pivots: Array[StringName] = [&"tool_pivot", &"pivot_clear"]
+	var pivots: Array[StringName] = [&"pivot_clear"]
 	for preset: Array in LayoutController.PIVOT_PRESETS:
 		pivots.append(preset[0])
 	for group: Array in [

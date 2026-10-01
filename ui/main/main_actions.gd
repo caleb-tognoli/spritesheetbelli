@@ -25,8 +25,6 @@ const ICONS := {
 	&"duplicate": preload("res://assets/icons/Duplicate.svg"),
 	&"select_all": PreviewArea.SELECT_ALL_ICON,
 	&"select_none": PreviewArea.SELECT_NONE_ICON,
-	&"tool_select": PreviewArea.SELECT_ICON,
-	&"tool_move": PreviewArea.MOVE_ICON,
 	&"flip_h": preload("res://assets/icons/MirrorX.svg"),
 	&"flip_v": preload("res://assets/icons/MirrorY.svg"),
 	&"rotate_cw": preload("res://assets/icons/RotateRight.svg"),
@@ -61,7 +59,6 @@ const ICONS := {
 	&"about": preload("res://assets/icons/Info.svg"),
 	&"show_shortcuts": preload("res://assets/icons/Keyboard.svg"),
 	&"command_palette": preload("res://assets/icons/Search.svg"),
-	&"tool_pivot": PreviewArea.PIVOT_ICON,
 	&"layout_grid": preload("res://assets/icons/LayoutGrid.svg"),
 	&"layout_packed": preload("res://assets/icons/LayoutPacked.svg"),
 	&"pin_toggle": preload("res://assets/icons/Pin.svg"),
@@ -77,12 +74,6 @@ const DESCRIPTIONS := {  # L10n.mark
 	&"add_spritesheet": "Cut a spritesheet image into frames and add them",
 	&"add_sprites": "Image files as sprites",
 	&"add_folder": "A folder's images as sprites, and the ones saved there later",
-	&"tool_select": "Click or drag to select frames",
-	&"tool_move":
-	(
-		"Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys "
-		+ "move the selected frames inside their cells."
-	),
 	&"trim": "Of the selected frames, or of every frame when none are selected",
 	&"color_key": "From the selected frames, or from every frame when none are selected",
 }
@@ -143,18 +134,6 @@ static func register(main: Control) -> void:
 			)
 	)
 
-	for tool: Array in [
-		[&"tool_select", L10n.mark("Select Mode"), SpritesheetPreview.Tool.SELECT],
-		[&"tool_move", L10n.mark("Move Mode"), SpritesheetPreview.Tool.MOVE],
-	]:
-		Actions.add(
-			tool[0],
-			tool[1],
-			preview_area.set_tool.bind(tool[2]),
-			Callable(),
-			ICONS[tool[0]],
-			func() -> bool: return preview.tool == tool[2]
-		)
 	add.call(&"select_all", L10n.mark("Select All"), preview_area.select_all.bind(true), has_frames)
 	add.call(
 		&"select_none", L10n.mark("Select None"), preview_area.select_all.bind(false), has_selection

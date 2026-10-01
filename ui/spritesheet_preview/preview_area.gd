@@ -1,14 +1,11 @@
 class_name PreviewArea
 extends Control
-## The spritesheet preview with its toolbar: the select, move and pivot tools and the
-## actions given to [method set_toolbar_actions], like the toolbar above Godot's 2D editor.
+## The spritesheet preview with its toolbar: the actions given to
+## [method set_toolbar_actions], like the toolbar above Godot's 2D editor.
 ## Zoom and centring the view float over the top-right corner, with panels added to
 ## [member overlay] under them, and notices over the bottom-right one, see
 ## [method show_notice].
 
-const SELECT_ICON := preload("res://assets/icons/ToolSelect.svg")
-const MOVE_ICON := preload("res://assets/icons/ToolMove.svg")
-const PIVOT_ICON := preload("res://assets/icons/EditPivot.svg")
 const SELECT_ALL_ICON := preload("res://assets/icons/ListSelect.svg")
 const SELECT_NONE_ICON := preload("res://assets/icons/Clear.svg")
 const ZOOM_OUT_ICON := preload("res://assets/icons/ZoomLess.svg")
@@ -22,9 +19,6 @@ const WARNING_ICON := preload("res://assets/icons/StatusWarning.svg")
 @onready var stage: Control = %Stage
 @onready var container: SubViewportContainer = %PreviewContainer
 
-var select_tool_btn := _tool_button(SELECT_ICON)
-var move_tool_btn := _tool_button(MOVE_ICON)
-var pivot_tool_btn := _tool_button(PIVOT_ICON)
 var center_view_btn := _tool_button(CENTER_VIEW_ICON)
 var zoom_out_btn := _tool_button(ZOOM_OUT_ICON)
 var zoom_label_btn := _tool_button(null)
@@ -39,8 +33,7 @@ var empty_hint := Label.new()
 ## Names animations on the grid, once [method enable_animation_labels] is called
 var label_controls: AnimationLabelControls
 
-var _tool_group := HBoxContainer.new()
-## Action buttons after the tools, and view toggles before the zoom
+## Action buttons, and view toggles before the zoom
 var _edit_bar := HBoxContainer.new()
 var _view_bar := HBoxContainer.new()
 ## Buttons that run actions, by action id, kept enabled and checked like their actions
@@ -55,6 +48,7 @@ func _ready() -> void:
 	layout.grow_horizontal = Control.GROW_DIRECTION_END
 	layout.minimum_size_changed.connect(update_minimum_size)
 	_build_toolbar()
+	set_process(false)
 	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	empty_hint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -75,7 +69,8 @@ func _ready() -> void:
 	spritesheet_preview.hover_changed.connect(update_tooltip)
 	# Over the toolbar, a floating panel or outside, no cell is under the mouse
 	container.mouse_exited.connect(spritesheet_preview.clear_hover)
-	spritesheet_preview.tool_changed.connect(func(_tool: int) -> void: update_ui())
+	# The sheet's own frames dragged out of it go on as dragged data, see _carry_out
+	spritesheet_preview.frames_dragged_out.connect(_carry_out)
 	update_zoom_label(spritesheet_preview.camera.zoom.x)
 
 
@@ -85,18 +80,6 @@ func _build_toolbar() -> void:
 	bar.add_theme_constant_override("h_separation", 2)
 	bar.add_theme_constant_override("v_separation", 2)
 	toolbar.add_child(bar)
-
-	# Tools
-	var tools := ButtonGroup.new()
-	for button: Button in [select_tool_btn, move_tool_btn, pivot_tool_btn]:
-		button.toggle_mode = true
-		button.button_group = tools
-		_tool_group.add_child(button)
-	select_tool_btn.button_pressed = true
-	select_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.SELECT))
-	move_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.MOVE))
-	pivot_tool_btn.pressed.connect(set_tool.bind(SpritesheetPreview.Tool.PIVOT))
-	bar.add_child(_tool_group)
 
 	for group: HBoxContainer in [_edit_bar, _view_bar]:
 		group.add_theme_constant_override("separation", 2)
@@ -233,9 +216,24 @@ static func _tool_button(icon: Texture2D, tooltip := "") -> Button:
 	return button
 
 
-func set_tool(value: SpritesheetPreview.Tool) -> void:
-	spritesheet_preview.tool = value
-	update_ui()
+## Frames dragged out of the sheet go on as dragged data, to drop them on an animation's
+## timeline, or back on the sheet, which moves them there, see
+## [method SpritesheetPreview.carry_back]
+func _carry_out(coords: Array[Vector2i]) -> void:
+	var data := AnimationTimeline.frames_drag_data(coords)
+	data["sheet_preview"] = spritesheet_preview.get_instance_id()
+	var card := AnimationTimeline.drag_preview(spritesheet_preview.spritesheet, coords)
+	spritesheet_preview.mover.card = card
+	container.force_drag(data, card)
+	set_process(true)
+
+
+## Frames dragged out of the sheet stop showing where they'd land once off it
+func _process(_delta: float) -> void:
+	if not spritesheet_preview.mover.carried:
+		set_process(false)
+	elif not Rect2(Vector2.ZERO, container.size).has_point(container.get_local_mouse_position()):
+		spritesheet_preview.carry_away()
 
 
 func update_zoom_label(value: float) -> void:
@@ -267,31 +265,18 @@ func update_ui() -> void:
 	var is_empty := spritesheet_preview.spritesheet.is_empty()
 	empty_hint.visible = is_empty and not empty_hint.text.is_empty()
 
-	var can_move := spritesheet_preview.able_to_move_frames
-	_tool_group.visible = can_move
-	_update_separators()
-	var moving := spritesheet_preview.tool == SpritesheetPreview.Tool.MOVE
-	select_tool_btn.set_pressed_no_signal(
-		spritesheet_preview.tool == SpritesheetPreview.Tool.SELECT
-	)
-	move_tool_btn.set_pressed_no_signal(moving)
-	pivot_tool_btn.set_pressed_no_signal(spritesheet_preview.tool == SpritesheetPreview.Tool.PIVOT)
 
-
-## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids
-## after the tools, each group after a separator, and [param view_ids] are
+## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids,
+## each group after a separator, and [param view_ids] are
 ## toggles before the zoom. An id in [param submenus] (as in
 ## [method ActionPopupMenu.set_actions]) is a button that opens that menu, with a
 ## description after the icon for its tooltip. An id in [param buttons] is that button,
 ## which does what it does when pressed, kept enabled like the action and with its
-## tooltip. The tools and the zoom buttons get the tooltips of their actions too.
+## tooltip. The zoom buttons get the tooltips of their actions too.
 func set_toolbar_actions(
 	edit_groups: Array, view_ids: Array[StringName], submenus := {}, buttons := {}
 ) -> void:
 	for entry: Array in [
-		[select_tool_btn, &"tool_select"],
-		[move_tool_btn, &"tool_move"],
-		[pivot_tool_btn, &"tool_pivot"],
 		[center_view_btn, &"zoom_fit"],
 		[zoom_out_btn, &"zoom_out"],
 		[zoom_label_btn, &"zoom_reset"],
@@ -343,8 +328,6 @@ func _action_button(id: StringName, submenus: Dictionary, buttons: Dictionary) -
 
 
 func _refresh_action_buttons() -> void:
-	# Pivots are opt-in, see the use_pivots setting
-	pivot_tool_btn.visible = Actions.is_available(&"tool_pivot")
 	for id in _action_buttons:
 		var button := _action_buttons[id]
 		button.visible = Actions.is_available(id)
@@ -362,10 +345,10 @@ func _refresh_action_buttons() -> void:
 	_update_separators()
 
 
-## A group's separator only shows between buttons: after the tools or an earlier group,
-## and before a button of its own group
+## A group's separator only shows between buttons: after an earlier group, and before a
+## button of its own group
 func _update_separators() -> void:
-	var before := _tool_group.visible
+	var before := false
 	var separator: VSeparator = null
 	for child: Control in _edit_bar.get_children():
 		if child is VSeparator:
@@ -374,6 +357,7 @@ func _update_separators() -> void:
 		elif child.visible:
 			if separator and before:
 				separator.visible = true
+			separator = null
 			before = true
 
 

@@ -132,6 +132,29 @@ static func nudge(sheet: Spritesheet, coords: Array[Vector2i], offset: Vector2i)
 	sheet.end_batch()
 
 
+## [param pivot] (in unscaled pixels of the frame at [param coord]) moved inside the frame,
+## its edges included
+static func pivot_inside(sheet: Spritesheet, coord: Vector2i, pivot: Vector2) -> Vector2:
+	if not sheet.has_frame(coord):
+		return pivot
+	return pivot.clamp(Vector2.ZERO, Vector2(sheet.frames[coord].get_size()))
+
+
+## Puts the pivots of the frames at [param pivot], each kept inside its frame, see
+## [method pivot_inside]
+static func set_pivots_inside(sheet: Spritesheet, coords: Array[Vector2i], pivot: Vector2) -> void:
+	var by_pivot := {}
+	for coord in coords:
+		var inside := pivot_inside(sheet, coord, pivot)
+		if not by_pivot.has(inside):
+			by_pivot[inside] = [] as Array[Vector2i]
+		by_pivot[inside].append(coord)
+	sheet.begin_batch()
+	for inside: Vector2 in by_pivot:
+		sheet.set_pivots(by_pivot[inside], inside)
+	sheet.end_batch()
+
+
 ## Puts frames against an edge of their cells, or in the middle, without growing the
 ## cells. Their transparent borders are trimmed first, so it's what's drawn that lines up.
 ## The edges are the other frames' when the frame fits between them (so a frame moved out

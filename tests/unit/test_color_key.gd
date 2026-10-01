@@ -298,7 +298,8 @@ func test_clicks_on_the_canvas_select_and_the_preview_follows() -> void:
 	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0).a, 0.0)
 
 	# A box from before the first frame to the middle of the second
-	var start: Vector2 = at.call(Vector2i(0, 0)) - Vector2(30, 30)
+	var corner := preview.cell_rect(Vector2i(0, 0)).position
+	var start: Vector2 = (corner - preview.camera.position) * preview.camera.zoom - Vector2(9, 9)
 	press_on.call(start)
 	var motion := InputEventMouseMotion.new()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT

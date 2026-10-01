@@ -139,7 +139,7 @@ func world_to_pivot(coord: Vector2i, world: Vector2) -> Vector2:
 
 
 ## The pages and their frames, under the selection. Frames in [param lifted] are picked up
-## to move, so the canvas draws them where they'd land instead.
+## to move, so the canvas draws them where they'd land instead, and a new page shows.
 func draw(
 	canvas: SpritesheetPreview, visible_rect: Rect2, pixel: float, lifted: Dictionary = {}
 ) -> void:
@@ -154,7 +154,7 @@ func draw(
 		_draw_label(
 			canvas, rect.position, tr("Page %d · %d×%d") % [page + 1, size.x, size.y], pixel
 		)
-	if canvas.is_dragging_frames():
+	if not lifted.is_empty():
 		var new_page := get_new_page_rect()
 		canvas.draw_rect(new_page, NEW_PAGE_COLOR)
 		_draw_label(canvas, new_page.position, tr("New page"), pixel)

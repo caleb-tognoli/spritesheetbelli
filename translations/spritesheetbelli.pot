@@ -397,11 +397,11 @@ msgid "Mouse wheel"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Select frames"
+msgid "Select a frame"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Click or drag"
+msgid "Click"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
@@ -421,27 +421,75 @@ msgid "Shift+click"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Select the next frame"
+msgid "Select frames in a box"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Arrow keys (Shift adds)"
+msgid "Drag from outside the frames"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Copy frames in the grid (move mode)"
+msgid "Add frames in a box to the selection"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Alt+drag"
+msgid "Shift+drag"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Move frames in their cells (move mode)"
+msgid "Select or unselect frames in a box"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Ctrl+drag"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Add the next frame to the selection"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Ctrl+arrow keys"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move frames, with the selection when selected"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag a frame"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Add frames to an animation"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag them onto its timeline"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move frames in their cells"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Arrow keys (Shift: 8 px)"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move a pivot (with pivots on)"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag the cross on a frame"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Put back what's dragged"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Escape"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
@@ -458,6 +506,18 @@ msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Right-click"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Timeline"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Copy frames in the timeline"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Alt+drag"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
@@ -746,13 +806,13 @@ msgid ""
 msgstr ""
 
 #: res://ui/animation_preview/animation_detail.gd
-msgid "Choose an animation to edit it."
+msgid "Choose an animation to edit it, or drop frames here to make one."
 msgstr ""
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid ""
 "No animations yet.\n"
-"Select frames in the sheet and press New."
+"Drop frames here, or select some and press New."
 msgstr ""
 
 #: res://ui/animation_preview/animation_detail.gd
@@ -879,6 +939,10 @@ msgstr ""
 #: res://ui/animation_preview/animation_timeline.gd
 #: res://ui/main/main_ui.gd
 msgid "Move frames"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Duplicate frames"
 msgstr ""
 
 #: res://ui/animation_preview/animation_timeline.gd
@@ -1875,10 +1939,6 @@ msgid "Frames packed tightly on pages"
 msgstr ""
 
 #: res://ui/main/layout_controller.gd
-msgid "Drag on a frame to put the pivot of the selected frames there"
-msgstr ""
-
-#: res://ui/main/layout_controller.gd
 msgid "Pack every frame that isn't pinned again, as tightly as possible"
 msgstr ""
 
@@ -1916,10 +1976,6 @@ msgstr ""
 
 #: res://ui/main/layout_controller.gd
 msgid "Packed Layout"
-msgstr ""
-
-#: res://ui/main/layout_controller.gd
-msgid "Pivot Mode"
 msgstr ""
 
 #: res://ui/main/layout_controller.gd
@@ -2128,14 +2184,6 @@ msgid "A folder's images as sprites, and the ones saved there later"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
-msgid "Click or drag to select frames"
-msgstr ""
-
-#: res://ui/main/main_actions.gd
-msgid "Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys move the selected frames inside their cells."
-msgstr ""
-
-#: res://ui/main/main_actions.gd
 #: res://ui/main/menu_bar.gd
 msgid "Of the selected frames, or of every frame when none are selected"
 msgstr ""
@@ -2178,14 +2226,6 @@ msgstr ""
 
 #: res://ui/main/main_actions.gd
 msgid "Save changes to %s before quitting?"
-msgstr ""
-
-#: res://ui/main/main_actions.gd
-msgid "Select Mode"
-msgstr ""
-
-#: res://ui/main/main_actions.gd
-msgid "Move Mode"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
@@ -2363,10 +2403,6 @@ msgstr ""
 #: res://ui/main/main_ui.gd
 #: res://ui/main/start_screen.gd
 msgid "Drop images, folders or a .sbelli project here"
-msgstr ""
-
-#: res://ui/main/main_ui.gd
-msgid "Copy frames"
 msgstr ""
 
 #: res://ui/main/main_ui.gd

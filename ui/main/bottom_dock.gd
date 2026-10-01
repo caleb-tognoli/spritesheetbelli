@@ -4,7 +4,8 @@ extends VBoxContainer
 ## buttons along the bottom, one for each dock. Pressing one shows its dock above the row,
 ## in place of the one shown, and pressing it again hides it, leaving only the row.
 ## The handle on the top edge of a shown dock makes it taller, up to half the window. Every
-## dock is as tall, remembered in the bottom_dock_height setting.
+## dock is as tall, remembered in the bottom_dock_height setting. Holding something dragged
+## over a hidden dock's button shows that dock, to drop it there.
 
 ## Another dock was shown, or the one shown was hidden
 signal dock_changed
@@ -13,6 +14,8 @@ signal dock_changed
 const MIN_HEIGHT := 160
 ## Room between a shown dock and the row of buttons under it
 const GAP := 4
+## Seconds something dragged is held over a hidden dock's button before it's shown
+const SPRING_DELAY := 0.6
 
 ## The row of buttons, under the dock shown
 var bar := HBoxContainer.new()
@@ -24,6 +27,9 @@ var _shown: Control
 var _bar_margin := MarginContainer.new()
 ## The split between the sheet's preview and the docks
 var _split: SplitContainer
+## The hidden dock whose button something dragged is held over, and for how long
+var _spring_dock: Control
+var _spring_time := 0.0
 
 
 func _init() -> void:
@@ -37,6 +43,40 @@ func _init() -> void:
 	bar_panel.add_child(_bar_margin)
 	# Always last, under the docks
 	add_child(bar_panel, false, Node.INTERNAL_MODE_BACK)
+	set_process(false)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_BEGIN:
+		_spring_dock = null
+		set_process(true)
+
+
+func _process(delta: float) -> void:
+	if not get_viewport().gui_is_dragging():
+		_spring_dock = null
+		set_process(false)
+		return
+	hold_over(get_global_mouse_position(), delta)
+
+
+## Shows a hidden dock once something dragged is held over its button, at
+## [param mouse] in the window, for [constant SPRING_DELAY], [param delta] seconds at a time
+func hold_over(mouse: Vector2, delta: float) -> void:
+	var held: Control = null
+	for dock in _buttons:
+		var button := _buttons[dock]
+		var over := button.get_global_rect().has_point(mouse)
+		if dock != _shown and button.is_visible_in_tree() and over:
+			held = dock
+	if held != _spring_dock:
+		_spring_dock = held
+		_spring_time = 0.0
+	elif held:
+		_spring_time += delta
+		if _spring_time >= SPRING_DELAY:
+			_spring_dock = null
+			show_dock(held)
 
 
 func _ready() -> void:

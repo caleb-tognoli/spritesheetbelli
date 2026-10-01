@@ -208,7 +208,7 @@ func test_opening_a_document_clears_the_selection() -> void:
 	Global.document.perform("Add", Global.spritesheet.add_frames.bind(images))
 	var moved := Global.spritesheet.get_sorted_coords().slice(0, 2)
 	preview.set_selected_coords(moved)
-	preview.move_requested.emit(moved, Vector2i(0, 5), false)
+	preview.move_requested.emit(moved, Vector2i(0, 5))
 	moved = preview.get_selected_coords()
 	assert_eq(moved[0].y, 5, "moved, and the selection with them")
 	Actions.run(&"flip_h")

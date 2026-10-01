@@ -409,4 +409,16 @@ func test_adding_the_selected_boxes() -> void:
 		sizes.append(sheet.frames[coord].get_size())
 	assert_eq(sizes, [Vector2i(10, 10), Vector2i(6, 12)] as Array[Vector2i], "in reading order")
 
+
+func test_cursor_shows_what_dragging_does() -> void:
+	var hint := SpriteBoxView.resize_hint
+	assert_eq(hint.call(SpriteBoxes.LEFT | SpriteBoxes.TOP), CanvasCursor.Hint.RESIZE_FDIAG)
+	assert_eq(hint.call(SpriteBoxes.RIGHT | SpriteBoxes.TOP), CanvasCursor.Hint.RESIZE_BDIAG)
+	assert_eq(hint.call(SpriteBoxes.LEFT), CanvasCursor.Hint.RESIZE_H)
+	assert_eq(hint.call(SpriteBoxes.BOTTOM), CanvasCursor.Hint.RESIZE_V)
+	assert_eq(view.get_cursor_hint(), CanvasCursor.Hint.POINT, "a new box is drawn")
+	view.picking = true
+	assert_eq(view.mouse_default_cursor_shape, Control.CURSOR_CROSS, "picking")
+	view.picking = false
+
 #endregion

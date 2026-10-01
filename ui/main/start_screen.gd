@@ -38,9 +38,6 @@ const EDITOR_ACTIONS: Array[StringName] = [
 	&"toggle_history",
 	&"toggle_status_bar",
 	&"toggle_animation",
-	&"tool_select",
-	&"tool_move",
-	&"tool_pivot",
 ]
 # L10n.mark
 ## Months in dates, see [method format_date]

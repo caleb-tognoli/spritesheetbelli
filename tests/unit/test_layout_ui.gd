@@ -124,7 +124,7 @@ func test_toolbar_order() -> void:
 	for child: Control in bar.get_children():
 		if child.visible:
 			shown.append(child)
-	assert_true(shown[0] is VSeparator, "after the tools")
+	assert_false(shown[0] is VSeparator, "none before the first group")
 	for i in range(1, shown.size()):
 		assert_false(shown[i] is VSeparator and shown[i - 1] is VSeparator, "no empty group")
 	assert_false(shown[-1] is VSeparator)
@@ -132,18 +132,17 @@ func test_toolbar_order() -> void:
 
 func test_pivots_are_opt_in() -> void:
 	await get_tree().process_frame
-	assert_false(Actions.is_available(&"tool_pivot"))
 	assert_false(Actions.is_available(&"pivot_center"))
 	assert_false(&"pivot_menu" in menu_ids("Frame"), "no Pivot menu")
-	assert_false(main.preview_area.pivot_tool_btn.visible)
-	assert_false(Actions.run(&"tool_pivot"), "no shortcut either")
+	assert_false(main.preview.pivots.is_shown(main.preview), "none on the frames")
 	Settings.set_value(&"use_pivots", true)
 	await get_tree().process_frame
-	assert_true(main.preview_area.pivot_tool_btn.visible)
-	Actions.run(&"tool_pivot")
-	assert_eq(main.preview.tool, SpritesheetPreview.Tool.PIVOT)
+	assert_true(main.preview.pivots.is_shown(main.preview), "shown to drag them")
+	var import_preview: SpritesheetPreview = (
+		main.files.add_spritesheet_window.preview_area.spritesheet_preview
+	)
+	assert_false(import_preview.pivots.is_shown(import_preview), "not in Add Spritesheet")
 	Settings.set_value(&"use_pivots", false)
-	assert_eq(main.preview.tool, SpritesheetPreview.Tool.SELECT, "left with the setting")
 	assert_ne(main.settings_window.get_control(&"use_pivots"), null)
 
 
@@ -157,10 +156,6 @@ func test_pivot_presets() -> void:
 	assert_eq(sheet.get_pivot(Vector2i(2, 0)), Vector2(8, 10), "each frame its own bottom")
 	Actions.run(&"pivot_clear")
 	assert_false(sheet.has_pivot(Vector2i(0, 0)))
-	Actions.run(&"tool_pivot")
-	assert_eq(main.preview.tool, SpritesheetPreview.Tool.PIVOT)
-	assert_eq(Actions.get_shortcut_text(&"tool_pivot"), "E", "a shortcut like the other tools")
-	assert_true(main.preview_area.pivot_tool_btn.button_pressed)
 
 
 func test_packed_frames_are_described() -> void:

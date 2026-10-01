@@ -53,11 +53,11 @@ func click(cell: Vector2i, ctrl := false, shift := false) -> void:
 	mouse(MOUSE_BUTTON_LEFT, false, at(cell), ctrl, shift)
 
 
-func drag(from: Vector2, to: Vector2, alt := false) -> void:
-	mouse(MOUSE_BUTTON_LEFT, true, from)
+func drag(from: Vector2, to: Vector2, ctrl := false, shift := false, alt := false) -> void:
+	mouse(MOUSE_BUTTON_LEFT, true, from, ctrl, shift, alt)
 	move_to(from.lerp(to, 0.5))
 	move_to(to)
-	mouse(MOUSE_BUTTON_LEFT, false, to, false, false, alt)
+	mouse(MOUSE_BUTTON_LEFT, false, to, ctrl, shift, alt)
 
 
 func selected() -> Array[Vector2i]:
@@ -85,21 +85,61 @@ func test_shift_click_selects_range() -> void:
 	assert_eq(selected().size(), 3)
 
 
-func test_box_selection() -> void:
+func test_box_from_an_empty_cell() -> void:
+	click(Vector2i(3, 0))
 	drag(at(Vector2i(1, 1)), at(Vector2i(2, 0)))
-	assert_eq(selected(), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i])
+	assert_eq(selected(), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i], "replaces")
+	assert_false(Global.spritesheet.is_locked(Vector2i(1, 1)), "a drag locks nothing")
 
 
-func test_dragging_frames_moves_them() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
-	click(Vector2i(0, 0))
+func test_dragging_a_frame_moves_it() -> void:
 	drag(at(Vector2i(0, 0)), at(Vector2i(1, 1)))
 	var sheet := Global.spritesheet
 	assert_false(sheet.has_frame(Vector2i(0, 0)))
 	assert_color(sheet.frames[Vector2i(1, 1)], Vector2i.ZERO, Color.RED)
 	assert_eq(selected(), [Vector2i(1, 1)] as Array[Vector2i], "selection follows")
+	assert_eq(Global.document.get_history()[-1], "Move frames")
 	Global.document.undo()
 	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "undoable")
+
+
+func test_dragging_a_selected_frame_moves_the_selection() -> void:
+	preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	drag(at(Vector2i(1, 0)), at(Vector2i(1, 1)))
+	var sheet := Global.spritesheet
+	assert_color(sheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.RED)
+	assert_color(sheet.frames[Vector2i(1, 1)], Vector2i.ZERO, Color.GREEN)
+	assert_eq(selected(), [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
+
+
+func test_dragging_an_unselected_frame_moves_only_it() -> void:
+	preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	drag(at(Vector2i(2, 0)), at(Vector2i(2, 1)))
+	var sheet := Global.spritesheet
+	assert_color(sheet.frames[Vector2i(2, 1)], Vector2i.ZERO, Color.BLUE)
+	assert_color(sheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "the selection stays")
+	assert_eq(selected(), [Vector2i(2, 1)] as Array[Vector2i], "the dragged frame is picked")
+
+
+func test_alt_drag_moves_too() -> void:
+	drag(at(Vector2i(0, 0)), at(Vector2i(0, 1)), false, false, true)
+	var sheet := Global.spritesheet
+	assert_false(sheet.has_frame(Vector2i(0, 0)), "no copy left behind")
+	assert_color(sheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.RED)
+
+
+func test_shift_drag_from_a_frame_adds_a_box() -> void:
+	click(Vector2i(3, 0))
+	drag(at(Vector2i(0, 0)), at(Vector2i(1, 0)), false, true)
+	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
+	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0), Vector2i(3, 0)] as Array[Vector2i])
+
+
+func test_ctrl_drag_from_a_frame_toggles_a_box() -> void:
+	preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	drag(at(Vector2i(1, 0)), at(Vector2i(2, 0)), true)
+	assert_color(Global.spritesheet.frames[Vector2i(1, 0)], Vector2i.ZERO, Color.GREEN, "not moved")
+	assert_eq(selected(), [Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
 
 
 func test_dragging_selects_when_moving_is_off() -> void:
@@ -107,70 +147,61 @@ func test_dragging_selects_when_moving_is_off() -> void:
 	drag(at(Vector2i(0, 0)), at(Vector2i(1, 0)))
 	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
 	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "box selection")
+	move_to(at(Vector2i(2, 0)))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.NONE, "nothing to grab")
 
 
-func test_select_tool_drags_a_box_even_from_a_frame() -> void:
-	drag(at(Vector2i(0, 0)), at(Vector2i(1, 0)))
-	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
-	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
-
-
-func test_move_tool_moves_the_selection_from_anywhere() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
-	preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
-	drag(at(Vector2i(3, 0)), at(Vector2i(3, 1)))
-	var sheet := Global.spritesheet
-	assert_color(sheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.RED)
-	assert_color(sheet.frames[Vector2i(1, 1)], Vector2i.ZERO, Color.GREEN)
-	assert_eq(selected(), [Vector2i(0, 1), Vector2i(1, 1)] as Array[Vector2i])
-
-
-func test_move_tool_without_selection_moves_the_dragged_frame() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
-	drag(at(Vector2i(2, 0)), at(Vector2i(2, 1)))
-	assert_color(Global.spritesheet.frames[Vector2i(2, 1)], Vector2i.ZERO, Color.BLUE)
-
-
-func test_move_tool_shows_what_moves_from_the_press_on() -> void:
+func test_pressing_a_frame_moves_nothing_until_dragged() -> void:
 	var some: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
 	preview.set_selected_coords(some)
-	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 0)))
-	assert_true(preview._get_lifted_coords().is_empty(), "the select tool draws a box")
-	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(3, 0)))
-
-	preview.tool = SpritesheetPreview.Tool.MOVE
-	preview.set_selected_coords(some)
 	var steps := Global.document.get_history().size()
-	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 0)))
-	assert_eq(preview._get_lifted_coords(), some, "the selection, before the mouse moves")
-	assert_eq(preview._get_cursor_shape(), Input.CURSOR_MOVE)
-	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(3, 0)))
-	assert_true(preview._get_lifted_coords().is_empty(), "put down on release")
-	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(1, 0)))
+	assert_true(preview._get_lifted_coords().is_empty(), "nothing lifted yet")
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.MOVE, "but a drag would move")
+	move_to(at(Vector2i(1, 0)) + Vector2(2, 0))
+	assert_true(preview._get_lifted_coords().is_empty(), "not past the threshold")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(1, 0)))
+	assert_eq(selected(), [Vector2i(1, 0)] as Array[Vector2i], "a click picks it alone")
 	assert_eq(Global.document.get_history().size(), steps, "no step")
 
-	preview.select_all(false)
-	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(2, 0)))
-	assert_eq(preview._get_lifted_coords(), [Vector2i(2, 0)] as Array[Vector2i], "no selection")
-	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(2, 0)))
-	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "a click still selects")
-	preview.select_all(false)
-	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 1)))
-	assert_true(preview._get_lifted_coords().is_empty(), "an empty cell draws a box")
-	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(3, 1)))
 
-
-func test_move_cursor_where_dragging_moves() -> void:
+func test_cursor_follows_what_dragging_does() -> void:
 	move_to(at(Vector2i(0, 0)))
-	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW, "select tool")
-	Actions.run(&"tool_move")
-	assert_eq(preview._get_cursor_shape(), Input.CURSOR_MOVE, "over a frame")
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.GRAB, "over a frame")
+	assert_eq(preview.surface.mouse_default_cursor_shape, Control.CURSOR_MOVE, "shown")
 	move_to(at(Vector2i(3, 1)))
-	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW, "over an empty cell")
-	preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
-	assert_eq(preview._get_cursor_shape(), Input.CURSOR_MOVE, "the selection moves from anywhere")
-	Actions.run(&"tool_select")
-	assert_eq(preview._get_cursor_shape(), Input.CURSOR_ARROW)
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.NONE, "over an empty cell")
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(3, 1)))
+	move_to(at(Vector2i(2, 1)))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.BOX, "drawing a box")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(2, 1)))
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(0, 0)))
+	move_to(at(Vector2i(1, 1)))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.MOVE, "moving")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(1, 1)))
+	var space := InputEventKey.new()
+	space.keycode = KEY_SPACE
+	space.pressed = true
+	preview._unhandled_input(space)
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.PAN, "Space pans")
+	space.pressed = false
+	preview._unhandled_input(space)
+	assert_eq(Input.get_current_cursor_shape(), Input.CURSOR_ARROW, "the app's own is left be")
+
+
+func test_escape_puts_back_what_is_dragged() -> void:
+	var steps := Global.document.get_history().size()
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(0, 0)))
+	move_to(at(Vector2i(1, 1)))
+	assert_false(preview._get_lifted_coords().is_empty())
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	preview._input(escape)
+	assert_true(preview._get_lifted_coords().is_empty(), "put down")
+	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(1, 1)))
+	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED, "not moved")
+	assert_eq(Global.document.get_history().size(), steps, "no step")
 
 
 func test_selection_tint_setting() -> void:
@@ -188,22 +219,10 @@ func test_selection_tint_setting() -> void:
 	window.queue_free()
 
 
-func test_tool_actions() -> void:
-	Actions.run(&"tool_move")
-	assert_eq(preview.tool, SpritesheetPreview.Tool.MOVE)
-	assert_true(main.preview_area.move_tool_btn.button_pressed)
-	assert_true(Actions.is_checked(&"tool_move"))
-	Actions.run(&"tool_select")
-	assert_true(main.preview_area.select_tool_btn.button_pressed)
-	preview.able_to_move_frames = false
-	assert_eq(preview.tool, SpritesheetPreview.Tool.SELECT)
-
-
-func test_alt_drag_copies() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
-	drag(at(Vector2i(0, 0)), at(Vector2i(0, 1)), true)
-	assert_color(Global.spritesheet.frames[Vector2i(0, 0)], Vector2i.ZERO, Color.RED)
-	assert_color(Global.spritesheet.frames[Vector2i(0, 1)], Vector2i.ZERO, Color.RED)
+func test_there_are_no_tools() -> void:
+	for id: StringName in [&"tool_select", &"tool_move", &"tool_pivot"]:
+		assert_false(Actions.has(id), id)
+		assert_false(InputMap.has_action(id), "no shortcut: %s" % id)
 
 
 func test_click_empty_cell_locks_it() -> void:
@@ -213,11 +232,18 @@ func test_click_empty_cell_locks_it() -> void:
 	assert_false(Global.spritesheet.is_locked(Vector2i(3, 1)))
 
 
-func test_click_empty_cell_first_clears_selection() -> void:
+func test_click_empty_cell_keeps_the_selection() -> void:
 	click(Vector2i(0, 0))
 	click(Vector2i(3, 1))
+	assert_true(Global.spritesheet.is_locked(Vector2i(3, 1)), "locked")
+	assert_eq(selected(), [Vector2i(0, 0)] as Array[Vector2i], "still selected")
+
+
+func test_click_outside_the_grid_selects_nothing() -> void:
+	click(Vector2i(0, 0))
+	click(Vector2i(6, 0))
 	assert_true(selected().is_empty())
-	assert_false(Global.spritesheet.is_locked(Vector2i(3, 1)))
+	assert_true(Global.spritesheet.locked_coordinates.is_empty(), "nothing locked")
 
 
 func test_right_click_selects_frame_under_mouse() -> void:
@@ -239,29 +265,19 @@ func test_tooltip_describes_cells() -> void:
 	assert_eq(PreviewArea.describe_cell(sheet, Vector2i(9, 9)), "")
 
 
-func key(keycode: Key, shift := false) -> void:
+func key(keycode: Key, shift := false, ctrl := false, alt := false) -> bool:
 	var event := InputEventKey.new()
 	event.keycode = keycode
 	event.pressed = true
 	event.shift_pressed = shift
-	preview._unhandled_input(event)
+	event.ctrl_pressed = ctrl
+	event.alt_pressed = alt
+	return preview._handle_arrow_key(event)
 
 
-func test_arrow_keys_move_selection() -> void:
-	key(KEY_RIGHT)
-	assert_eq(selected(), [Vector2i(0, 0)] as Array[Vector2i], "first press selects a frame")
-	key(KEY_RIGHT)
-	assert_eq(selected(), [Vector2i(1, 0)] as Array[Vector2i])
-	key(KEY_RIGHT, true)
-	assert_eq(selected(), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i], "shift extends")
-	key(KEY_DOWN)
-	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "no frame below: stays")
-
-
-func test_arrow_keys_move_frames_in_the_move_mode() -> void:
+func test_arrow_keys_move_frames() -> void:
 	click(Vector2i(0, 0))
 	click(Vector2i(1, 0), true)
-	Actions.run(&"tool_move")
 	key(KEY_RIGHT)
 	var sheet := Global.spritesheet
 	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "selection kept")
@@ -270,9 +286,32 @@ func test_arrow_keys_move_frames_in_the_move_mode() -> void:
 	assert_false(sheet.has_frame_origin(Vector2i(2, 0)))
 	key(KEY_UP, true)
 	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-7, -16), "8 pixels with Shift")
-	Actions.run(&"tool_select")
-	key(KEY_RIGHT)
-	assert_eq(selected(), [Vector2i(2, 0)] as Array[Vector2i], "the select mode selects")
+
+
+func test_ctrl_arrow_keys_add_to_the_selection() -> void:
+	assert_true(key(KEY_RIGHT, false, true))
+	assert_eq(selected(), [Vector2i(0, 0)] as Array[Vector2i], "first press selects a frame")
+	key(KEY_RIGHT, false, true)
+	assert_eq(selected(), [Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i], "adds the next")
+	key(KEY_DOWN, false, true)
+	assert_eq(selected().size(), 2, "no frame below: stays")
+	assert_false(sheet_moved(), "nothing nudged")
+
+
+func sheet_moved() -> bool:
+	for coord in Global.spritesheet.frames:
+		if Global.spritesheet.has_frame_origin(coord):
+			return true
+	return false
+
+
+func test_arrow_keys_leave_shortcuts_be() -> void:
+	click(Vector2i(0, 0))
+	assert_false(key(KEY_DOWN, true, true), "Ctrl+Shift moves rows")
+	assert_false(key(KEY_LEFT, false, false, true), "Alt is for shortcuts")
+	assert_false(sheet_moved())
+	preview.able_to_move_frames = false
+	assert_false(key(KEY_RIGHT), "nothing to nudge where frames can't move")
 
 
 func test_cells_show_the_spacing_of_the_export() -> void:
@@ -293,3 +332,27 @@ func test_cells_show_the_spacing_of_the_export() -> void:
 	assert_eq(preview.world_to_cell(second.position - Vector2(3, -1)), Vector2i(0, 0))
 	Global.document.undo()
 	assert_eq(preview.cell_rect(Vector2i(1, 0)).position, Vector2(16, 0), "follows undo")
+
+
+func test_frames_dragged_out_and_back_move_in_the_sheet() -> void:
+	assert_true(preview.drag_frames_out, "to drop them on a timeline")
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(0, 0)))
+	move_to(at(Vector2i(1, 1)))
+	move_to(Vector2(at(Vector2i(0, 0)).x, preview.get_viewport_rect().size.y + 20))
+	assert_true(preview.mover.carried, "carried out")
+	assert_true(get_viewport().gui_is_dragging(), "as dragged data")
+	assert_true(preview._get_lifted_coords().is_empty(), "not shown in the sheet")
+	var data: Variant = get_viewport().gui_get_drag_data()
+	assert_true(preview._can_drop_back(at(Vector2i(2, 1)), data), "back over the sheet")
+	assert_eq(preview._get_lifted_coords(), [Vector2i(0, 0)] as Array[Vector2i], "moving again")
+	assert_false(preview.mover.card.visible, "only drawn where it'd land")
+	preview.carry_away()
+	assert_true(preview._get_lifted_coords().is_empty(), "off it again")
+	assert_true(preview.mover.card.visible)
+	assert_false(preview._can_drop_back(at(Vector2i(2, 1)), {"type": "other"}))
+	preview._drop_back(at(Vector2i(2, 1)), data)
+	get_viewport().gui_cancel_drag()
+	var sheet := Global.spritesheet
+	assert_false(sheet.has_frame(Vector2i(0, 0)))
+	assert_color(sheet.frames[Vector2i(2, 1)], Vector2i.ZERO, Color.RED, "moved where dropped")
+	assert_false(preview.mover.carried, "put down")

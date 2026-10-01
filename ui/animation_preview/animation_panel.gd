@@ -5,7 +5,8 @@ extends PanelContainer
 ## and the chosen animation's details ([AnimationDetail]). Choosing in the list plays it;
 ## each animation is listed with a swatch of its colour. Above the list, New makes an
 ## animation, and the chosen one can be duplicated, mirrored or deleted, each as one step
-## to undo.
+## to undo. Frames dropped on the list, off the animations, or on the details while no
+## animation is chosen, make a new animation.
 ## It's the Animation dock of the [BottomDock] under the sheet's preview, shown with its
 ## button there or P. It's hidden until the sheet has animations, then shown once; after
 ## that it stays as it was left, see the animation_panel setting.
@@ -70,6 +71,8 @@ func _init() -> void:
 	list_split.add_child(detail)
 
 	list.item_selected.connect(func(item: int) -> void: select_animation(item - 1))
+	list.set_drag_forwarding(Callable(), _can_drop_on_list, _drop_on_list)
+	detail.frames_dropped.connect(add_animation)
 	new_button.pressed.connect(add_animation)
 	duplicate_button.pressed.connect(duplicate_animation)
 	mirror_button.pressed.connect(mirror_animation)
@@ -109,14 +112,8 @@ func _notification(what: int) -> void:
 func setup(sheet_preview: SpritesheetPreview) -> void:
 	preview = sheet_preview
 	animation_preview.preview = preview
-	# Frames dragged out of the sheet go to the timeline of the animation edited
-	preview.frames_dragged_out.connect(
-		func(coords: Array[Vector2i]) -> void:
-			force_drag(
-				AnimationTimeline.frames_drag_data(coords),
-				AnimationTimeline.drag_preview(Global.spritesheet, coords)
-			)
-	)
+	# To drop them on a timeline or the list, which opens when they're held over its button
+	preview.drag_frames_out = true
 	dock = get_parent() as BottomDock
 	dock_button = dock.add_dock(self, L10n.mark("Animation"), ANIMATION_ICON)
 	Actions.set_tooltip(
@@ -148,7 +145,6 @@ func set_expanded(expanded: bool, remember := true) -> void:
 	elif is_expanded():
 		dock.show_dock(null)
 	_remember = true
-	_update_drag_out()
 
 
 func toggle() -> void:
@@ -176,7 +172,6 @@ func select_animation(index: int) -> void:
 	animation_preview.select_animation(index)
 	detail.show_animation(index)
 	_update_list_buttons()
-	_update_drag_out()
 
 
 ## Index of the chosen animation, or -1 for the selected frames
@@ -184,13 +179,20 @@ func get_selected() -> int:
 	return _selected
 
 
-## A new animation of the selected frames, or of every frame, chosen for editing
-func add_animation() -> void:
+## A new animation of [param cells], named after what their names share, or of the
+## selected frames, or of every frame, chosen for editing
+func add_animation(cells: Array[Vector2i] = []) -> void:
 	var sheet := Global.spritesheet
-	var cells := preview.get_selected_coords() if preview else ([] as Array[Vector2i])
+	var anim_name := sheet.get_unique_animation_name()
+	if cells:
+		var frame_names := PackedStringArray()
+		for cell in cells:
+			frame_names.append(sheet.frames[cell].resource_name if sheet.has_frame(cell) else "")
+		anim_name = SheetAnimation.default_name(frame_names, sheet.get_animation_names())
+	elif preview:
+		cells = preview.get_selected_coords()
 	if cells.is_empty():
 		cells = sheet.get_sorted_coords()
-	var anim_name := sheet.get_unique_animation_name()
 	var index: int = Global.document.perform(
 		L10n.mark("New animation"),
 		sheet.add_animation.bind(SheetAnimation.create(anim_name, cells))
@@ -247,7 +249,6 @@ func refresh() -> void:
 	detail.show_animation(_selected)
 	_open_when_animated()
 	_update_list_buttons()
-	_update_drag_out()
 
 
 ## The first time the sheet has animations, the panel opens
@@ -262,7 +263,6 @@ func _open_when_animated() -> void:
 func _on_dock_changed() -> void:
 	if _remember:
 		Settings.set_value(&"animation_panel", "open" if is_expanded() else "closed")
-	_update_drag_out()
 	Actions.refresh()
 
 
@@ -283,10 +283,17 @@ func _fit_list_buttons() -> void:
 	)
 
 
-## Frames are dragged out of the sheet while there's a timeline to drop them on
-func _update_drag_out() -> void:
-	if preview:
-		preview.drag_frames_out = is_expanded() and detail.get_animation_index() >= 0
+## Frames of the sheet dropped on the list, but not on an animation, make a new one
+func _can_drop_on_list(at: Vector2, data: Variant) -> bool:
+	if not AnimationTimeline.is_frames_drag(data):
+		return false
+	return list.get_item_at_position(at, true) < 1
+
+
+func _drop_on_list(_at: Vector2, data: Variant) -> void:
+	var cells: Array[Vector2i] = []
+	cells.assign(data.cells)
+	add_animation(cells)
 
 
 func _refresh_selection_title() -> void:

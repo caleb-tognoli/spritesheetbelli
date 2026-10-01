@@ -82,10 +82,6 @@ const MENUS := {  # L10n.mark
 		&"",
 		&"select_all",
 		&"select_none",
-		&"",
-		&"tool_select",
-		&"tool_move",
-		&"tool_pivot",
 	],
 	"Frame":
 	[

@@ -29,7 +29,6 @@ const GRID_ONLY_ACTIONS: Array[StringName] = [
 const DESCRIPTIONS := {  # L10n.mark
 	&"layout_grid": "Frames in the cells of a grid",
 	&"layout_packed": "Frames packed tightly on pages",
-	&"tool_pivot": "Drag on a frame to put the pivot of the selected frames there",
 	&"repack": "Pack every frame that isn't pinned again, as tightly as possible",
 	&"pin_toggle":
 	(
@@ -207,12 +206,6 @@ func register_actions() -> void:
 	var has_frames := func() -> bool: return not sheet.is_empty()
 	var packed := func() -> bool: return sheet.layout == Spritesheet.Layout.PACKED
 	var pivots := func() -> bool: return Settings.get_value(&"use_pivots")
-	Settings.changed.connect(
-		func(key: StringName) -> void:
-			var pivot_tool: bool = main.preview.tool == SpritesheetPreview.Tool.PIVOT
-			if key == &"use_pivots" and not pivots.call() and pivot_tool:
-				main.preview_area.set_tool(SpritesheetPreview.Tool.SELECT)
-	)
 	var grid := func() -> bool: return sheet.layout == Spritesheet.Layout.GRID
 	for id in GRID_ONLY_ACTIONS:
 		Actions.get_action(id).is_available = grid
@@ -249,15 +242,6 @@ func register_actions() -> void:
 		Callable(),
 		preload("res://assets/icons/FileList.svg"),
 		func() -> bool: return sprites_panel.visible
-	)
-	Actions.add(
-		&"tool_pivot",
-		L10n.mark("Pivot Mode"),
-		main.preview_area.set_tool.bind(SpritesheetPreview.Tool.PIVOT),
-		Callable(),
-		MainActions.ICONS[&"tool_pivot"],
-		func() -> bool: return main.preview.tool == SpritesheetPreview.Tool.PIVOT,
-		pivots
 	)
 	Actions.add(
 		&"repack",

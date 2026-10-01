@@ -501,30 +501,37 @@ func _set_hover(index: int, edges: int) -> void:
 
 
 func _update_cursor() -> void:
-	mouse_default_cursor_shape = _pick_cursor_shape()
+	CanvasCursor.apply(self, get_cursor_hint())
 
 
-## Arrows over edges to resize, the move cursor over boxes and a cross where a box would
-## be drawn
-func _pick_cursor_shape() -> Control.CursorShape:
+## What pressing or dragging where the mouse is does: resizing over edges, moving over
+## boxes and drawing a box anywhere else
+func get_cursor_hint() -> CanvasCursor.Hint:
 	if _drag == Drag.PAN or _pan_key_held:
-		return Control.CURSOR_DRAG
+		return CanvasCursor.Hint.PAN
 	if picking:
-		return Control.CURSOR_CROSS
+		return CanvasCursor.Hint.PICK
 	var edges := _press_edges if _drag == Drag.RESIZE else _hover_edges
 	if _drag in [Drag.NONE, Drag.RESIZE] and edges:
-		var horizontal := edges & (SpriteBoxes.LEFT | SpriteBoxes.RIGHT)
-		var vertical := edges & (SpriteBoxes.TOP | SpriteBoxes.BOTTOM)
-		if horizontal and vertical:
-			var falling := (
-				edges
-				in [SpriteBoxes.LEFT | SpriteBoxes.TOP, SpriteBoxes.RIGHT | SpriteBoxes.BOTTOM]
-			)
-			return Control.CURSOR_FDIAGSIZE if falling else Control.CURSOR_BDIAGSIZE
-		return Control.CURSOR_HSIZE if horizontal else Control.CURSOR_VSIZE
-	if _drag == Drag.MOVE or (_drag == Drag.NONE and _hover_box >= 0):
-		return Control.CURSOR_MOVE
-	return Control.CURSOR_CROSS
+		return resize_hint(edges)
+	if _drag == Drag.MOVE:
+		return CanvasCursor.Hint.MOVE
+	if _drag == Drag.NONE and _hover_box >= 0:
+		return CanvasCursor.Hint.GRAB
+	return CanvasCursor.Hint.POINT
+
+
+## The arrows for dragging the [param edges] of a box (see [SpriteBoxes]): a side, or a
+## corner where two meet
+static func resize_hint(edges: int) -> CanvasCursor.Hint:
+	var horizontal := edges & (SpriteBoxes.LEFT | SpriteBoxes.RIGHT)
+	var vertical := edges & (SpriteBoxes.TOP | SpriteBoxes.BOTTOM)
+	if horizontal and vertical:
+		var falling := (
+			edges in [SpriteBoxes.LEFT | SpriteBoxes.TOP, SpriteBoxes.RIGHT | SpriteBoxes.BOTTOM]
+		)
+		return CanvasCursor.Hint.RESIZE_FDIAG if falling else CanvasCursor.Hint.RESIZE_BDIAG
+	return CanvasCursor.Hint.RESIZE_H if horizontal else CanvasCursor.Hint.RESIZE_V
 
 
 #endregion

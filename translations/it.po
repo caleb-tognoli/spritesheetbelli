@@ -397,12 +397,12 @@ msgid "Mouse wheel"
 msgstr "Rotellina del mouse"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Select frames"
-msgstr "Selezionare frame"
+msgid "Select a frame"
+msgstr "Selezionare un frame"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Click or drag"
-msgstr "Clic o trascina"
+msgid "Click"
+msgstr "Clic"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Select or unselect a frame"
@@ -421,28 +421,76 @@ msgid "Shift+click"
 msgstr "Shift+clic"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Select the next frame"
-msgstr "Selezionare il frame successivo"
+msgid "Select frames in a box"
+msgstr "Selezionare i frame in un riquadro"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Arrow keys (Shift adds)"
-msgstr "Tasti freccia (Shift aggiunge)"
+msgid "Drag from outside the frames"
+msgstr "Trascina da fuori dai frame"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Copy frames in the grid (move mode)"
-msgstr "Copiare frame nella griglia (modalità spostamento)"
+msgid "Add frames in a box to the selection"
+msgstr "Aggiungere alla selezione i frame in un riquadro"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Alt+drag"
-msgstr "Alt+trascina"
+msgid "Shift+drag"
+msgstr "Shift+trascina"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Move frames in their cells (move mode)"
-msgstr "Spostare frame nelle loro celle (modalità spostamento)"
+msgid "Select or unselect frames in a box"
+msgstr "Selezionare o deselezionare i frame in un riquadro"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Ctrl+drag"
+msgstr "Ctrl+trascina"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Add the next frame to the selection"
+msgstr "Aggiungere il frame successivo alla selezione"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Ctrl+arrow keys"
+msgstr "Ctrl+tasti freccia"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move frames, with the selection when selected"
+msgstr "Spostare frame, con la selezione se selezionati"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag a frame"
+msgstr "Trascina un frame"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Add frames to an animation"
+msgstr "Aggiungere frame a un'animazione"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag them onto its timeline"
+msgstr "Trascinali sulla sua timeline"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move frames in their cells"
+msgstr "Spostare i frame nelle loro celle"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Arrow keys (Shift: 8 px)"
 msgstr "Tasti freccia (Shift: 8 px)"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move a pivot (with pivots on)"
+msgstr "Spostare un pivot (con i pivot attivi)"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag the cross on a frame"
+msgstr "Trascina la croce su un frame"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Put back what's dragged"
+msgstr "Rimettere a posto ciò che si trascina"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Escape"
+msgstr "Esc"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Lock or unlock an empty cell"
@@ -459,6 +507,18 @@ msgstr "Azioni sui frame"
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Right-click"
 msgstr "Clic destro"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Timeline"
+msgstr "Timeline"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Copy frames in the timeline"
+msgstr "Copiare frame nella timeline"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Alt+drag"
+msgstr "Alt+trascina"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "%s: %s"
@@ -749,16 +809,16 @@ msgstr ""
 "Aggiungi *2 per mostrare un frame il doppio del tempo: 0-3, 4*2, 5*0.5"
 
 #: res://ui/animation_preview/animation_detail.gd
-msgid "Choose an animation to edit it."
-msgstr "Scegli un'animazione per modificarla."
+msgid "Choose an animation to edit it, or drop frames here to make one."
+msgstr "Scegli un'animazione per modificarla, o trascina qui dei frame per crearne una."
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid ""
 "No animations yet.\n"
-"Select frames in the sheet and press New."
+"Drop frames here, or select some and press New."
 msgstr ""
 "Ancora nessuna animazione.\n"
-"Seleziona dei frame nello spritesheet e premi Nuovo."
+"Trascina qui dei frame, o selezionane alcuni e premi Nuovo."
 
 #: res://ui/animation_preview/animation_detail.gd
 msgid "walk"
@@ -885,6 +945,10 @@ msgstr "Trascina qui i frame dallo spritesheet o dal pannello Sprite"
 #: res://ui/main/main_ui.gd
 msgid "Move frames"
 msgstr "Sposta frame"
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Duplicate frames"
+msgstr "Duplica frame"
 
 #: res://ui/animation_preview/animation_timeline.gd
 msgid "Remove frames"
@@ -1883,10 +1947,6 @@ msgid "Frames packed tightly on pages"
 msgstr "Frame compattati su pagine"
 
 #: res://ui/main/layout_controller.gd
-msgid "Drag on a frame to put the pivot of the selected frames there"
-msgstr "Trascina su un frame per mettere lì il pivot dei frame selezionati"
-
-#: res://ui/main/layout_controller.gd
 msgid "Pack every frame that isn't pinned again, as tightly as possible"
 msgstr "Compatta di nuovo ogni frame non fissato, il più possibile"
 
@@ -1925,10 +1985,6 @@ msgstr "Compatta frame"
 #: res://ui/main/layout_controller.gd
 msgid "Packed Layout"
 msgstr "Layout compatto"
-
-#: res://ui/main/layout_controller.gd
-msgid "Pivot Mode"
-msgstr "Modalità pivot"
 
 #: res://ui/main/layout_controller.gd
 msgid "Pack Again"
@@ -2136,14 +2192,6 @@ msgid "A folder's images as sprites, and the ones saved there later"
 msgstr "Le immagini di una cartella come sprite, e quelle salvate lì in seguito"
 
 #: res://ui/main/main_actions.gd
-msgid "Click or drag to select frames"
-msgstr "Clicca o trascina per selezionare frame"
-
-#: res://ui/main/main_actions.gd
-msgid "Drag to move the selected frames, or the dragged one; Alt+drag copies. Arrow keys move the selected frames inside their cells."
-msgstr "Trascina per spostare i frame selezionati, o quello trascinato; Alt+trascina copia. I tasti freccia spostano i frame selezionati nelle loro celle."
-
-#: res://ui/main/main_actions.gd
 #: res://ui/main/menu_bar.gd
 msgid "Of the selected frames, or of every frame when none are selected"
 msgstr "Dei frame selezionati, o di tutti se nessuno è selezionato"
@@ -2187,14 +2235,6 @@ msgstr "Esci"
 #: res://ui/main/main_actions.gd
 msgid "Save changes to %s before quitting?"
 msgstr "Salvare le modifiche a %s prima di uscire?"
-
-#: res://ui/main/main_actions.gd
-msgid "Select Mode"
-msgstr "Modalità selezione"
-
-#: res://ui/main/main_actions.gd
-msgid "Move Mode"
-msgstr "Modalità spostamento"
 
 #: res://ui/main/main_actions.gd
 msgid "Select All"
@@ -2372,10 +2412,6 @@ msgstr "Filtro di ridimensionamento"
 #: res://ui/main/start_screen.gd
 msgid "Drop images, folders or a .sbelli project here"
 msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
-
-#: res://ui/main/main_ui.gd
-msgid "Copy frames"
-msgstr "Copia frame"
 
 #: res://ui/main/main_ui.gd
 msgid "Nudge frames"

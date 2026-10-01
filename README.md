@@ -34,10 +34,11 @@ A small desktop tool made with Godot.</p>
   again after adding or editing frames keeps the places engines know. Page size, packing,
   spacing, padding, extrusion, turning frames to fit and trimming are in the sidebar;
   sharing identical frames and power-of-two or square pages are in Settings.
-- **Pivots** (turn them on in Settings): the point engines anchor each frame at, set with
-  the pivot tool or presets and exported where the format has them.
-- **Edit frames.** The Select tool clicks and box-selects frames; the Move tool drags
-  them, or copies them with Alt. Flip, rotate, trim, remove a background colour (from the
+- **Pivots** (turn them on in Settings): the point engines anchor each frame at, shown on
+  the selected frames and the one under the mouse and dragged there (all the selected
+  frames' at once), or set with presets, and exported where the format has them.
+- **Edit frames.** Click or box-select frames and drag them where they go: there are no
+  tools to switch between. Flip, rotate, trim, remove a background colour (from the
   eyedropper button in the toolbar, picked by clicking a frame and previewed on the
   selected frames, or every frame, until you Apply), add an outline, replace,
   cut/copy/paste (also images copied in other apps), duplicate, insert or remove cells,
@@ -49,8 +50,8 @@ A small desktop tool made with Godot.</p>
   the same places (data-file frames by name), GIF frames by number. Link a folder with Add
   Folder or by dropping it on the window: new images you save there are added
   automatically, deleted ones can be removed, and renamed ones stay linked.
-- **Line frames up.** Move frames inside their cells a pixel at a time with the Move tool,
-  or align them to an edge of their cells; trimming keeps every pixel where it was, so
+- **Line frames up.** Move frames inside their cells a pixel at a time with the arrow
+  keys, or align them to an edge of their cells; trimming keeps every pixel where it was, so
   animations don't jump.
 - **Resize without losing quality.** Sprites are always resized from the originals, with
   Nearest for sharp pixel art, and pixel-perfect zoom keeps every pixel the same size on
@@ -58,8 +59,9 @@ A small desktop tool made with Godot.</p>
 - **Animations:** make named animations from a row, a column or the selected frames in a
   keystroke (F2, Shift+F2, Ctrl+F2), named after what their frames' names share, or from a
   range of cells, each with its own speed and loop, ping-pong or play-once. Put their
-  frames together on a timeline by dragging them from the sheet or the Sprites panel,
-  reordering them and setting how long each is shown, or type them by number or name
+  frames together on a timeline by dragging them from the sheet or the Sprites panel
+  (dropped anywhere else in the panel, they make a new animation), reordering or copying
+  them and setting how long each is shown, or type them by number or name
   (`0-3, 4*2`); mirror walk_right into walk_left; play them in the animation panel under
   the sheet, with onion skin, zoom, a scrub bar and a choice of background, and export
   them; only animations are exported as animations. Animations are named on the grid, next

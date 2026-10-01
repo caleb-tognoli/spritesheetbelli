@@ -37,8 +37,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   Godot SpriteFrames using every page (with margins for trimmed frames). Pages are
   numbered when there are more than one, turned frames are stored the way each engine
   expects, and frame names are made unique.
-- Pivots, turned on in Settings > General: a pivot mode (E) drags the pivot of the
-  selected frames, and Frame > Pivot has presets, top left and bottom left included.
+- Pivots, turned on in Settings > General: the selected frames and the frame under the
+  mouse show their pivot, dragged to move it, with every selected frame's when it's one
+  of them, always inside the frame. Frame > Pivot has presets, top left and bottom left included.
   Pivots follow flips and turns, stay on their pixel when trimming, and are exported where
   the format has them, for atlases and grid sheets with a data file, only while they're
   turned on. Frames without one use the atlas's default. Unity's `.tpsheet`, which always
@@ -96,8 +97,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Progress overlay for slow work, such as resizing many big sprites, which now happens
   on worker threads.
 - Error dialogs when an image would be bigger than Godot or the format allows.
-- Frames can be moved inside their cells: in the move mode, arrow keys move the selected
-  frames by a pixel (8 with Shift), and Frame > Align in Cell puts them against the top,
+- Frames can be moved inside their cells: arrow keys move the selected frames by a pixel
+  (8 with Shift), and Frame > Align in Cell puts them against the top,
   bottom, left or right of their cells or in the middle (Alt+T, B, L, R, C). Both trim
   the frames' transparent borders first, so it's what's drawn that lines up, and only
   what's drawn grows the cells when moved past them. Projects keep where every frame is.
@@ -182,9 +183,10 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The animation panel's details show the chosen animation's frames on a timeline: each
   frame with its picture, its place, the part of its name that differs from the others
   and how long it's shown (×1.0). Frames are dragged into another order, taken out with ×
-  or Delete, picked with Ctrl, Shift or a box, and added by dragging them from the sheet
-  or the Sprites panel, several at once. Every change is a step to
-  undo. The name, speed and type share one line above it; the typed frames (`0-3, 4*2`)
+  or Delete, copied with Alt+drag, picked with Ctrl, Shift or a box, and added by
+  dragging them from the sheet or the Sprites panel, several at once. Frames dropped on
+  the details while no animation is chosen, or on the list off the animations, make a new
+  one. Every change is a step to undo. The name, speed and type share one line above it; the typed frames (`0-3, 4*2`)
   are one button away.
 - Every animation has a colour of its own, picked far from the others' when it's made and
   saved with the project. Change it with the colour button in the animation details, or
@@ -350,7 +352,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The toolbar wraps onto more rows when the preview is narrow, and has a button for the
   list of sprites. Align in Cell, Pivot, Trim and Pinned come first and work on every
   frame when none are selected; Select All and Select None are in the Edit menu only.
-- A toolbar above the preview: select and move tools (Q, W), select all/none, flip and
+- A toolbar above the preview: select all/none, flip and
   rotate, Align in Cell and Trim, toggles for grid lines (G) and frame numbers (N). Zoom
   floats over the top-right corner of the preview, like in
   Godot: a button fits the view, and clicking the zoom level goes back to 100%.
@@ -394,7 +396,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   "Export (Ctrl+E)", with what it does on the next line where that helps. Align in Cell,
   Pivot, Trim and Pinned say they work on every frame when none are selected.
 - Keyboard Shortcuts (F1) also lists panning with Space+drag, Ctrl+click, Shift+click,
-  copying with Alt+drag, locking cells and the right-click menu. The README no longer
+  boxes with Shift and Ctrl, moving frames and pivots, locking cells, the right-click menu
+  and copying frames in the timeline with Alt+drag. The README no longer
   lists shortcuts and points to F1 instead.
 - Adding a GIF with Add Sprites also makes its animation, like Add Spritesheet and
   dropping it do.
@@ -410,13 +413,22 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   atlas or GIF) shows whole.
 - The Add Spritesheet preview shows the whole sheet again when Cut or Keep the packed
   layout changes; grid sizes, offset, spacing and the Find sprites settings keep the zoom.
-- The Move tool shows the move cursor wherever dragging would move frames: anywhere while
-  frames are selected, since the selection moves from wherever it's dragged, else over a
-  frame.
-- Pressing with the Move tool picks the frames up right away: they leave their places and
-  are shown see-through where they'd land, in the grid and the packed layout. Releasing
-  without dragging moves nothing; Alt+dragging in the grid keeps the copied frames in
-  their cells.
+- Selecting and moving frames need no tool: dragging a frame moves it, with the rest of
+  the selection when it's selected, and dragging from anywhere else draws a selection
+  box, which adds to the selection with Shift and toggles it with Ctrl, also from a
+  frame. Frames are shown see-through where they'd land, in the grid and the packed
+  layout, and Esc puts them back. Arrow keys move the selected frames inside their cells
+  or on their page (8 px with Shift), and Ctrl+arrows add the next frame to the
+  selection. Clicking an empty cell locks or unlocks it and keeps the selection; clicking
+  outside the frames selects nothing. Alt+drag no longer copies frames: Duplicate
+  (Ctrl+D) does.
+- The cursor shows what pressing or dragging does: the move cursor over frames, a cross
+  while drawing a box or over a pivot, a hand while panning, a pointing hand over the
+  names of animations, and a forbidden sign where packed frames wouldn't fit. It only
+  changes over the preview, never over other panels.
+- Frames dragged out of the sheet can always be dropped somewhere: held over the
+  Animation button, the panel opens; brought back over the sheet, they move there
+  instead. In the Sprites panel, dragging a frame that isn't selected drags it alone.
 - Dialog buttons sit together at the right, at least 88 px wide (the standard on
   Windows), in the platform's order: OK before Cancel on Windows, after it on macOS and
   Linux. Other buttons (Reset All…, Don't Save, Add selected frames) go to their left.

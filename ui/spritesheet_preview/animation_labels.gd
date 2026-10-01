@@ -177,10 +177,11 @@ func handle_input(canvas: SpritesheetPreview, event: InputEvent) -> bool:
 	if event is InputEventMouseMotion:
 		if index >= 0:
 			canvas.clear_hover()
-			Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
 		if index != hovered:
 			set_hovered(index)
 			canvas.queue_redraw()
+		# The pointing hand over names, see SpritesheetPreview.get_cursor_hint
+		canvas.update_cursor()
 		return index >= 0
 	var button := event as InputEventMouseButton
 	if index < 0 or button == null:

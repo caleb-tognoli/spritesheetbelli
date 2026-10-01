@@ -3,8 +3,12 @@ extends ScrollContainer
 ## Where the animation chosen in the animation panel is edited: its name, speed, type and
 ## colour on one line, and its frames below on an [AnimationTimeline], where they're
 ## dragged into place, taken out and timed. Frames of the sheet are added by dragging them
-## there, from the sheet or the Sprites panel. Frames as text shows them typed instead:
+## there, from the sheet or the Sprites panel; dropped while no animation is chosen, they
+## make a new one, see [signal frames_dropped]. Frames as text shows them typed instead:
 ## sprite numbers, names and ranges such as "0-3, 5, idle". Every change can be undone.
+
+## Frames of the sheet were dropped while no animation is chosen, to make one of them
+signal frames_dropped(cells: Array[Vector2i])
 
 const TEXT_ICON := preload("res://assets/icons/FrameNumbers.svg")
 const MODE_ICONS := {
@@ -98,6 +102,7 @@ func _init() -> void:
 	mode_option.item_selected.connect(func(_item: int) -> void: _apply())
 	color_button.popup_closed.connect(_apply_color)
 	timeline.frames_edited.connect(_on_frames_edited)
+	set_drag_forwarding(Callable(), _can_drop_frames, _drop_frames)
 	resized.connect(_fit_timeline)
 	_fields.resized.connect(_fit_timeline)
 
@@ -156,9 +161,9 @@ func refresh() -> void:
 	empty_hint.visible = not has_animation
 	if not has_animation:
 		empty_hint.text = (
-			tr("Choose an animation to edit it.")
+			tr("Choose an animation to edit it, or drop frames here to make one.")
 			if sheet.animations
-			else tr("No animations yet.\nSelect frames in the sheet and press New.")
+			else tr("No animations yet.\nDrop frames here, or select some and press New.")
 		)
 		return
 	var animation := sheet.animations[_index]
@@ -178,6 +183,18 @@ func refresh() -> void:
 		color_button.color = animation.color
 	timeline.show_frames(sheet, animation.cells, animation.durations)
 	_updating = false
+
+
+## Frames of the sheet are taken while no animation is chosen; the timeline takes them
+## otherwise
+func _can_drop_frames(_at: Vector2, data: Variant) -> bool:
+	return _index < 0 and AnimationTimeline.is_frames_drag(data)
+
+
+func _drop_frames(_at: Vector2, data: Variant) -> void:
+	var cells: Array[Vector2i] = []
+	cells.assign(data.cells)
+	frames_dropped.emit(cells)
 
 
 ## The name, speed, type and colour on one line, then the frames as text button

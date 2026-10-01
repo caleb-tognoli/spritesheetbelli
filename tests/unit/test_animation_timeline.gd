@@ -334,10 +334,24 @@ func test_frames_are_dragged_from_the_sprites_panel() -> void:
 	main.preview.set_selected_coords([] as Array[Vector2i])
 	assert_eq(sprites._get_drag_data_of_tree(Vector2.ZERO), null, "nothing to drag")
 
+	# A frame that isn't selected is dragged alone
+	main.preview.set_selected_coords(cells([0]))
+	await get_tree().process_frame
+	# Group names have their key as metadata, frames their cell
+	var item := sprites.tree.get_root().get_next_in_tree()
+	while item and var_to_str(item.get_metadata(0)) != var_to_str(Vector2i(2, 0)):
+		item = item.get_next_in_tree()
+	var on_it := sprites.tree.get_item_area_rect(item).get_center()
+	sprites.force_drag(true, null)
+	data = sprites._get_drag_data_of_tree(on_it)
+	get_viewport().gui_cancel_drag()
+	assert_eq(data, AnimationTimeline.frames_drag_data(cells([2])), "only the one pressed")
+	assert_eq(main.preview.get_selected_coords(), cells([2]), "and it's selected")
+
 
 func test_frames_are_dragged_out_of_the_sheet() -> void:
 	var preview: SpritesheetPreview = main.preview
-	assert_true(preview.drag_frames_out, "an animation to drop them on")
+	assert_true(preview.drag_frames_out, "to drop them on a timeline")
 	var dragged: Array = []
 	preview.frames_dragged_out.connect(
 		func(coords: Array[Vector2i]) -> void: dragged.append(coords)
@@ -353,18 +367,20 @@ func test_frames_are_dragged_out_of_the_sheet() -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = screen + Vector2(10, 0)
 	preview._unhandled_input(motion)
-	assert_true(dragged.is_empty(), "still a box inside the preview")
+	assert_true(dragged.is_empty(), "still moving inside the preview")
 	motion = motion.duplicate() as InputEventMouseMotion
 	motion.position = Vector2(screen.x, preview.get_viewport_rect().size.y + 20)
 	preview._unhandled_input(motion)
 	assert_eq(dragged, [cells([2, 3])], "the selection, once out")
 	assert_eq(preview.get_selected_coords(), cells([2, 3]), "still selected")
+	assert_true(preview.mover.carried, "carried")
+	get_viewport().gui_cancel_drag()
+	preview.notification(Control.NOTIFICATION_DRAG_END)
+	assert_false(preview.mover.carried, "put down when the drag ends")
 
 	panel.set_expanded(false)
-	assert_false(preview.drag_frames_out, "nowhere to drop them")
-	panel.set_expanded(true)
 	panel.select_animation(-1)
-	assert_false(preview.drag_frames_out, "no animation")
+	assert_true(preview.drag_frames_out, "always: the panel opens when they're held over it")
 
 
 func test_numbers_follow_the_first_frame_number() -> void:
@@ -376,3 +392,47 @@ func test_numbers_follow_the_first_frame_number() -> void:
 	assert_eq(timeline.get_tile(1).get_label_text(), "2", "numbered from 1")
 	assert_true(timeline.get_tile(1).tooltip_text.begins_with("Frame 2"), "its tooltip too")
 	assert_eq(detail.frames_edit.text, "1-3", "and as text")
+
+
+func test_alt_drag_copies_tiles() -> void:
+	var before := steps()
+	timeline.copy_frames([0, 1] as Array[int], 3)
+	assert_eq(animation().cells, cells([0, 1, 2, 0, 1]), "copied after the last")
+	assert_eq(timeline.get_selected(), [3, 4] as Array[int], "the copies are picked")
+	assert_eq(steps(), before + 1, "one step")
+	assert_eq(Global.document.get_history()[-1], "Duplicate frames")
+
+
+func test_frames_dropped_off_the_animations_make_one() -> void:
+	await get_tree().process_frame
+	var data := AnimationTimeline.frames_drag_data(cells([3, 1]))
+	var below := panel.list.get_item_rect(panel.list.item_count - 1).end + Vector2(0, 4)
+	assert_true(panel._can_drop_on_list(below, data), "under the animations")
+	var on_animation := panel.list.get_item_rect(1).get_center()
+	assert_false(panel._can_drop_on_list(on_animation, data), "not on one")
+	assert_false(panel._can_drop_on_list(below, {"type": "other"}))
+	panel._drop_on_list(below, data)
+	var animations := Global.spritesheet.animations
+	assert_eq(animations.size(), 2)
+	assert_eq(animations[1].cells, cells([3, 1]), "in the order dragged")
+	assert_eq(panel.get_selected(), 1, "chosen to edit")
+	panel.select_animation(-1)
+	assert_true(detail._can_drop_frames(Vector2.ZERO, data), "on the details while none is")
+	detail._drop_frames(Vector2.ZERO, data)
+	assert_eq(Global.spritesheet.animations.size(), 3)
+	assert_false(detail._can_drop_frames(Vector2.ZERO, data), "then the timeline takes them")
+
+
+func test_holding_frames_over_the_dock_button_opens_the_panel() -> void:
+	panel.set_expanded(false)
+	await get_tree().process_frame
+	var middle := panel.dock_button.get_global_rect().get_center()
+	panel.dock.hold_over(middle, 0.3)
+	panel.dock.hold_over(middle, 0.3)
+	assert_false(panel.is_expanded(), "not right away")
+	panel.dock.hold_over(middle + Vector2(0, -500), 0.3)
+	panel.dock.hold_over(middle, 0.4)
+	panel.dock.hold_over(middle, 0.4)
+	assert_false(panel.is_expanded(), "leaving the button starts again")
+	panel.dock.hold_over(middle, 0.4)
+	assert_true(panel.is_expanded(), "held long enough")

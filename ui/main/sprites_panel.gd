@@ -281,8 +281,12 @@ func get_selected_coords() -> Array[Vector2i]:
 	return coords
 
 
-## The selected frames as dragged, see [method AnimationTimeline.frames_drag_data]
-func _get_drag_data_of_tree(_at: Vector2) -> Variant:
+## The selected frames as dragged, see [method AnimationTimeline.frames_drag_data]. A frame
+## that isn't selected is dragged alone, and selected, like in the sheet.
+func _get_drag_data_of_tree(at: Vector2) -> Variant:
+	var item := tree.get_item_at_position(at)
+	if preview and item and item.get_metadata(0) is Vector2i and not item.is_selected(0):
+		preview.set_selected_coords([item.get_metadata(0)] as Array[Vector2i])
 	var coords := get_selected_coords()
 	if coords.is_empty():
 		return null

@@ -8,11 +8,17 @@ extends Node2D
 ## Frame textures are cached per image and only created for new images. Other images can
 ## be shown in place of frames' own, see [method show_instead].
 ##
-## Mouse: click to select, Ctrl+click to toggle, Shift+click for a range, click an empty
-## cell to lock it. Dragging depends on [member tool]: the select tool draws a selection
-## box, the move tool moves frames (Alt+drag copies), showing them where they'd land from
-## the press on. Middle drag or Space+drag pans, the wheel zooms. With [member picking]
-## on, a click picks the colour under the mouse instead.
+## Mouse: click a frame to select it, Ctrl+click to toggle it, Shift+click for a range,
+## click an empty cell to lock or unlock it, and anywhere else to select nothing. Dragging
+## a frame moves it, with the rest of the selection when it's selected, showing where it
+## would land; dragging from anywhere else draws a selection box, which adds to the
+## selection with Shift and toggles with Ctrl, also from a frame. With pivots on, the
+## frame under the mouse shows its pivot, dragged to move it. Middle drag or Space+drag
+## pans, the wheel zooms. With [member picking] on, a click picks the colour under the
+## mouse instead. Esc puts back what's being dragged.
+##
+## Keys: arrows move the selected frames inside their cells, or on their page, a pixel at
+## a time, 8 with Shift; Ctrl+arrows add the next frame that way to the selection.
 
 ## Emitted when the spritesheet or the selection changed
 signal preview_updated
@@ -21,10 +27,9 @@ signal zoom_changed(zoom: float)
 ## The user clicked an empty cell to lock or unlock it
 signal lock_requested(coord: Vector2i, locked: bool)
 ## The user dragged frames to another place
-signal move_requested(coords: Array[Vector2i], offset: Vector2i, copy: bool)
-## The user pressed arrow keys in the move mode to move frames inside their cells
+signal move_requested(coords: Array[Vector2i], offset: Vector2i)
+## The user pressed arrow keys to move frames inside their cells
 signal nudge_requested(coords: Array[Vector2i], offset: Vector2i)
-signal tool_changed(tool: Tool)
 ## The cell under the mouse changed. (-1, -1) when outside the grid or the preview. Also
 ## emitted when the sheet changes, since what's in the cell may have.
 signal hover_changed(coord: Vector2i)
@@ -38,7 +43,8 @@ signal placement_move_requested(coords: Array[Vector2i], page: int, offset: Vect
 ## The user dragged the pivot of frames to [param pivot], in unscaled pixels of the frame
 signal pivot_requested(coords: Array[Vector2i], pivot: Vector2)
 ## The user dragged frames out of the preview, to drop them elsewhere, see
-## [member drag_frames_out]
+## [member drag_frames_out]. Dragged back over the preview, they move there again, see
+## [method carry_back].
 signal frames_dragged_out(coords: Array[Vector2i])
 
 const HOVER_COLOR := Color(1, 1, 1, 0.08)
@@ -51,45 +57,36 @@ const INDEX_FONT_SIZE := 14
 ## Mouse movement in pixels before a press becomes a drag
 const DRAG_THRESHOLD := 4.0
 const NO_CELL := Vector2i(-1, -1)
-const INVALID_MOVE_COLOR := Color(1, 0.3, 0.3, 0.6)
-## Frames picked up with the move tool, drawn where they'd land
-const GHOST_COLOR := Color(1, 1, 1, 0.6)
-## On-screen size of pivot marks
-const PIVOT_SIZE := 7.0
+## Pixels Shift+arrow keys move frames
+const BIG_NUDGE := 8
 
 enum Drag { NONE, PENDING, BOX, MOVE, PAN, PIVOT }
-## What dragging does
-enum Tool {
-	SELECT,  ## Draws a selection box
-	MOVE,  ## Moves the selected frames, or the dragged frame when none are selected
-	PIVOT,  ## Moves the pivot of the selected frames
+## What a press turns into once dragged
+enum Press { BOX, MOVE, PIVOT }
+## How a selection box changes the selection
+enum Box { REPLACE, ADD, TOGGLE }
+
+## The cursor while something is pressed, before it's dragged
+const PRESS_HINTS: Dictionary[Press, CanvasCursor.Hint] = {
+	Press.BOX: CanvasCursor.Hint.NONE,
+	Press.MOVE: CanvasCursor.Hint.MOVE,
+	Press.PIVOT: CanvasCursor.Hint.POINT,
 }
 
 @export var able_to_lock_spaces := true
 ## When off, frames can't be moved and dragging always selects
-@export var able_to_move_frames := true:
-	set(value):
-		able_to_move_frames = value
-		if not value:
-			tool = Tool.SELECT
-## When on, the selected frames dragged out of the preview, moved or from a box started on
-## one of them, stop there and go with [signal frames_dragged_out] instead, e.g. into an
-## animation's timeline
+@export var able_to_move_frames := true
+## When on, frames dragged out of the preview stop moving there and go with
+## [signal frames_dragged_out] instead, e.g. into an animation's timeline
 var drag_frames_out := false
-var tool := Tool.SELECT:
-	set(value):
-		if not able_to_move_frames:
-			value = Tool.SELECT
-		if value != tool:
-			tool = value
-			tool_changed.emit(tool)
-			_update_cursor()
 ## When on, clicking picks the colour under the mouse, see [signal color_picked], instead
 ## of selecting
 var picking := false:
 	set(value):
 		picking = value
-		_update_cursor()
+		update_cursor()
+## Where the cursor is shown and frames dragged out are dropped back, over the whole view
+var surface: Control
 
 # Set from Settings
 var show_indices := true
@@ -116,6 +113,10 @@ var grid_view := GridView.new()
 var packed_view := PackedView.new()
 ## Names of animations on the grid, once enabled
 var animation_labels := AnimationLabels.new()
+## The pivots of the frames, to drag them
+var pivots := PivotHandles.new()
+## The frames being moved
+var mover := FrameMover.new()
 
 var _selected: Dictionary[Vector2i, bool] = {}
 ## Selection range start for Shift+click
@@ -129,29 +130,27 @@ var _checker := _make_checker_texture()
 var _wheel_notches := 0.0
 
 var _drag := Drag.NONE
+var _press := Press.BOX
+var _box_mode := Box.REPLACE
 var _drag_start_screen := Vector2.ZERO
 var _drag_start_camera := Vector2.ZERO
 var _drag_start_cell := NO_CELL
-## The start cell even outside the grid, for moving
-var _drag_start_unclamped := Vector2i.ZERO
-var _drag_additive := false
-## Whether Alt is held while dragging, so frames in the grid are copied
-var _drag_copy := false
 var _box_end_world := Vector2.ZERO
-var _move_offset := Vector2i.ZERO
 var _pan_key_held := false
 var _drag_start_world := Vector2.ZERO
-## The page packed frames are dragged onto, and whether they fit there
-var _move_page := 0
-var _move_fits := true
-## The frame whose pivot is dragged, and where to
-var _pivot_coord := NO_CELL
-var _pivot := Vector2.ZERO
 
 @onready var camera: Camera2D = $Camera2D
 
 
 func _ready() -> void:
+	# Over the whole view whatever the camera does, letting the mouse through to the preview
+	var layer := CanvasLayer.new()
+	add_child(layer)
+	surface = Control.new()
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	surface.mouse_filter = Control.MOUSE_FILTER_PASS
+	surface.set_drag_forwarding(Callable(), _can_drop_back, _drop_back)
+	layer.add_child(surface)
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	Settings.changed.connect(apply_settings.unbind(1))
@@ -171,6 +170,7 @@ func apply_settings() -> void:
 	index_start = Settings.get_value(&"index_start")
 	selection_color = Global.accent_color
 	selection_tint = Settings.get_value(&"selection_tint") / 100.0
+	pivots.shown = Settings.get_value(&"use_pivots")
 	queue_redraw()
 
 
@@ -214,11 +214,6 @@ func is_packed() -> bool:
 ## Whether nothing is being dragged, panned or pressed
 func is_idle() -> bool:
 	return _drag == Drag.NONE and not _pan_key_held
-
-
-## Whether frames are being dragged to another place
-func is_dragging_frames() -> bool:
-	return _drag == Drag.MOVE
 
 
 #region Coordinates
@@ -332,7 +327,7 @@ func _select_range(coord: Vector2i, additive: bool) -> void:
 
 func _selection_updated() -> void:
 	queue_redraw()
-	_update_cursor()
+	update_cursor()
 	selection_changed.emit()
 	preview_updated.emit()
 
@@ -420,14 +415,28 @@ func is_index_visible() -> bool:
 #region Input
 
 
+func _input(event: InputEvent) -> void:
+	# Before Esc selects nothing
+	var key := event as InputEventKey
+	if key and key.pressed and key.keycode == KEY_ESCAPE and _cancel_drag():
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	# Frames dragged out come back through the surface, see carry_back
+	if mover.carried and event is InputEventMouse:
+		return
 	if animation_labels.handle_input(self, event):
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.keycode == KEY_SPACE:
-		_pan_key_held = event.pressed
-		_update_cursor()
-	elif event is InputEventKey and event.pressed and _handle_arrow_key(event):
+	var key := event as InputEventKey
+	if key and key.keycode == KEY_SPACE:
+		_pan_key_held = key.pressed
+		update_cursor()
+	elif key and key.keycode in [KEY_SHIFT, KEY_CTRL, KEY_META]:
+		# They turn dragging a frame into drawing a box
+		update_cursor()
+	elif key and key.pressed and _handle_arrow_key(key):
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		_handle_mouse_button(event)
@@ -493,20 +502,21 @@ func _on_left_press(event: InputEventMouseButton) -> void:
 		return
 	_drag_start_world = screen_to_world(event.position)
 	_drag_start_cell = get_cell_at_screen_position(event.position)
-	_drag_start_unclamped = grid_view.get_cell_unclamped(screen_to_world(event.position))
-	_drag_additive = event.is_command_or_control_pressed() or event.shift_pressed
-	_drag_copy = event.alt_pressed
+	var toggling := event.is_command_or_control_pressed()
+	var adding := event.shift_pressed
+	_box_mode = Box.TOGGLE if toggling else (Box.ADD if adding else Box.REPLACE)
+	pivots.hover(self, event.position)
+	if not (toggling or adding) and pivots.is_hovered(self):
+		_press = Press.PIVOT
+	elif _drags_frame(_drag_start_cell, toggling or adding):
+		_press = Press.MOVE
+	else:
+		_press = Press.BOX
 	_start_drag(Drag.PENDING, event.position)
-	# What a drag would move shows right away, where it is
-	_move_offset = Vector2i.ZERO
-	_move_page = _dragged_page()
-	_move_fits = true
-	queue_redraw()
 
 
 func _on_left_release(event: InputEventMouseButton) -> void:
 	var drag := _drag
-	var start_page := _dragged_page()
 	_end_drag()
 	match drag:
 		Drag.PENDING:
@@ -514,27 +524,26 @@ func _on_left_release(event: InputEventMouseButton) -> void:
 		Drag.BOX:
 			_finish_box_selection()
 		Drag.MOVE:
-			if is_packed():
-				var moved := _move_offset != Vector2i.ZERO or _move_page != start_page
-				if _move_fits and moved:
-					placement_move_requested.emit(get_selected_coords(), _move_page, _move_offset)
-			elif _move_offset != Vector2i.ZERO:
-				move_requested.emit(get_selected_coords(), _move_offset, event.alt_pressed)
-			_move_offset = Vector2i.ZERO
-			queue_redraw()
+			mover.put_down(self)
 		Drag.PIVOT:
-			pivot_requested.emit(get_selected_coords(), _pivot.round())
-			_pivot_coord = NO_CELL
+			pivot_requested.emit(pivots.targets, pivots.pivot)
+			pivots.release()
 			queue_redraw()
 
 
-## Pixels Shift+arrow keys move frames inside their cells in the move mode
-const BIG_NUDGE := 8
+## Puts back what's being dragged, as it was before the press. Whether something was.
+func _cancel_drag() -> bool:
+	if _drag not in [Drag.PENDING, Drag.BOX, Drag.MOVE, Drag.PIVOT]:
+		return false
+	mover.drop()
+	pivots.release()
+	_end_drag()
+	return true
 
 
-## In the select mode, arrow keys move the selection to the next frame in that direction
-## and Shift extends it. In the move mode, they move the selected frames inside their
-## cells, by 8 pixels with Shift.
+## Arrow keys move the selected frames inside their cells, or on their page, by a pixel or
+## 8 with Shift; Ctrl+arrow adds the next frame that way to the selection. Whether
+## [param event] was handled. Ctrl+Shift and Alt are left to shortcuts, like moving rows.
 func _handle_arrow_key(event: InputEventKey) -> bool:
 	var directions := {
 		KEY_LEFT: Vector2i.LEFT,
@@ -542,59 +551,68 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 		KEY_UP: Vector2i.UP,
 		KEY_DOWN: Vector2i.DOWN
 	}
-	if not directions.has(event.keycode) or spritesheet.is_empty():
+	if not directions.has(event.keycode) or spritesheet.is_empty() or event.alt_pressed:
 		return false
 	var direction: Vector2i = directions[event.keycode]
+	if event.is_command_or_control_pressed():
+		if event.shift_pressed:
+			return false
+		_extend_selection(direction)
+		return true
+	if not able_to_move_frames:
+		return false
+	if _selected.is_empty():
+		return true
 	var step := direction * (BIG_NUDGE if event.shift_pressed else 1)
-	if tool == Tool.MOVE and is_packed():
+	var coords := get_selected_coords()
+	if is_packed():
 		# Frames that wouldn't fit where they'd go stay put
-		if not _selected.is_empty():
-			var coords := get_selected_coords()
-			var page: int = spritesheet.placements[coords[0]].page
-			if not PackedLayout.moved(spritesheet, coords, page, step).is_empty():
-				placement_move_requested.emit(coords, page, step)
-		return true
-	if tool == Tool.MOVE:
-		if not _selected.is_empty():
-			nudge_requested.emit(get_selected_coords(), step)
-		return true
+		var page: int = spritesheet.placements[coords[0]].page
+		if not PackedLayout.moved(spritesheet, coords, page, step).is_empty():
+			placement_move_requested.emit(coords, page, step)
+	else:
+		nudge_requested.emit(coords, step)
+	return true
+
+
+## Adds the next frame from the last one picked in [param direction] to the selection, or
+## picks the first frame when none is
+func _extend_selection(direction: Vector2i) -> void:
 	var from := _anchor if spritesheet.has_frame(_anchor) else spritesheet.get_sorted_coords()[0]
 	if _selected.is_empty():
 		set_selected_coords([from] as Array[Vector2i])
 		_anchor = from
-		return true
+		return
 	var cell := from + direction
 	if is_packed():
 		cell = packed_view.get_neighbour(from, direction)
 	while spritesheet.is_inside(cell) and not spritesheet.has_frame(cell):
 		cell += direction
 	if not spritesheet.has_frame(cell):
-		# Nothing further that way: keep only the current frame selected
+		# Nothing further that way
 		cell = from
-	if not event.shift_pressed:
-		_selected.clear()
 	_selected[cell] = true
 	_anchor = cell
 	_selection_updated()
-	return true
 
 
 ## A press and release without dragging
 func _click(cell: Vector2i, event: InputEventMouseButton) -> void:
-	var has_frame := spritesheet.has_frame(cell)
-	if event.shift_pressed and has_frame:
-		_select_range(cell, event.is_command_or_control_pressed())
-	elif event.is_command_or_control_pressed():
-		_toggle(cell)
-		_anchor = cell
-	elif has_frame:
-		set_selected_coords([cell] as Array[Vector2i])
-		_anchor = cell
-	else:
-		if not _selected.is_empty():
-			select_all(false)
-		elif cell != NO_CELL and able_to_lock_spaces and not is_packed():
-			lock_requested.emit(cell, not spritesheet.is_locked(cell))
+	var toggling := event.is_command_or_control_pressed()
+	if spritesheet.has_frame(cell):
+		if event.shift_pressed:
+			_select_range(cell, toggling)
+		elif toggling:
+			_toggle(cell)
+			_anchor = cell
+		else:
+			set_selected_coords([cell] as Array[Vector2i])
+			_anchor = cell
+	elif cell != NO_CELL and able_to_lock_spaces and not is_packed():
+		# The selection stays: clicking outside the cells selects nothing
+		lock_requested.emit(cell, not spritesheet.is_locked(cell))
+	elif not (toggling or event.shift_pressed) and not _selected.is_empty():
+		select_all(false)
 
 
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
@@ -605,11 +623,8 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 		hovered_pixel = pixel
 		pixel_hovered.emit()
 	_set_hovered_cell(get_cell_at_screen_position(event.position))
-	if _drag_copy != event.alt_pressed and _drag in [Drag.PENDING, Drag.MOVE]:
-		_drag_copy = event.alt_pressed
+	if _drag == Drag.NONE and pivots.hover(self, event.position):
 		queue_redraw()
-	# The cursor is shared with the other previews, e.g. in Add Spritesheet
-	_update_cursor()
 	match _drag:
 		Drag.PAN:
 			camera.position = (
@@ -619,125 +634,137 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 		Drag.PENDING:
 			if event.position.distance_to(_drag_start_screen) >= DRAG_THRESHOLD:
 				_begin_real_drag()
+				_update_drag(event.position)
+		_:
+			_update_drag(event.position)
+	update_cursor()
+
+
+## Follows the mouse at [param screen_position] with the box, the frames or the pivot
+## being dragged
+func _update_drag(screen_position: Vector2) -> void:
+	var world := screen_to_world(screen_position)
+	var changed := true
+	match _drag:
 		Drag.BOX:
-			_box_end_world = screen_to_world(event.position)
-			queue_redraw()
+			_box_end_world = world
 		Drag.PIVOT:
-			_pivot = world_to_pivot(_pivot_coord, screen_to_world(event.position))
-			queue_redraw()
-		Drag.MOVE when is_packed():
-			_update_packed_move(screen_to_world(event.position))
+			pivots.drag_to(self, world)
 		Drag.MOVE:
-			var cell := grid_view.get_cell_unclamped(screen_to_world(event.position))
-			var offset := cell - _drag_start_unclamped
-			# Keep every moved frame inside the positive quadrant
-			for coord in _selected:
-				offset = offset.max(-coord)
-			if offset != _move_offset:
-				_move_offset = offset
-				queue_redraw()
+			changed = mover.follow(self, world)
+	if changed:
+		queue_redraw()
 
 
-## Hands the selected frames over with [signal frames_dragged_out] when they're dragged
-## out of the preview, see [member drag_frames_out]. Whether they were.
+## Hands the frames being moved over with [signal frames_dragged_out] when they're
+## dragged out of the preview, see [member drag_frames_out]. Whether they were.
 func _drag_out(screen_position: Vector2) -> bool:
-	if not drag_frames_out or get_viewport_rect().has_point(screen_position):
+	if not drag_frames_out or _drag != Drag.MOVE or get_viewport_rect().has_point(screen_position):
 		return false
-	var carried := _drag == Drag.MOVE
-	if _drag == Drag.BOX:
-		carried = not _drag_additive and is_selected(_drag_start_cell)
-	if not carried or _selected.is_empty():
-		return false
-	_move_offset = Vector2i.ZERO
+	mover.carried = true
 	_end_drag()
-	frames_dragged_out.emit(get_selected_coords())
+	frames_dragged_out.emit(mover.lifted.duplicate())
 	return true
+
+
+## Moves the frames dragged out, see [signal frames_dragged_out], again while they're
+## back over the preview at [param screen_position], showing where they'd land
+func carry_back(screen_position: Vector2) -> void:
+	if not mover.carried:
+		return
+	if _drag != Drag.MOVE:
+		_drag = Drag.MOVE
+		mover.show_card(false)
+	_set_hovered_cell(get_cell_at_screen_position(screen_position))
+	_update_drag(screen_position)
+	queue_redraw()
+	update_cursor()
+
+
+## Stops showing where the frames dragged out would land, once they're off the preview
+func carry_away() -> void:
+	if mover.carried and _drag == Drag.MOVE:
+		_drag = Drag.NONE
+		mover.show_card(true)
+		queue_redraw()
+
+
+func _can_drop_back(at: Vector2, data: Variant) -> bool:
+	if not (data is Dictionary and data.get("sheet_preview") == get_instance_id()):
+		return false
+	carry_back(at)
+	return mover.carried
+
+
+## Frames dragged out and dropped back move where they're dropped
+func _drop_back(at: Vector2, _data: Variant) -> void:
+	carry_back(at)
+	if _drag == Drag.MOVE:
+		mover.put_down(self)
+	_end_carry()
+
+
+func _end_carry() -> void:
+	mover.drop()
+	_end_drag()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END and mover.carried:
+		_end_carry()
 
 
 ## Turns a pending press into a box selection, a move or moving a pivot
 func _begin_real_drag() -> void:
-	if tool == Tool.PIVOT and spritesheet.has_frame(_drag_start_cell):
-		if not is_selected(_drag_start_cell):
-			set_selected_coords([_drag_start_cell] as Array[Vector2i])
-		_drag = Drag.PIVOT
-		_pivot_coord = _drag_start_cell
-		_pivot = world_to_pivot(_pivot_coord, _drag_start_world)
-		return
-	if _drag_moves(_drag_start_cell, _drag_additive):
-		# The selection moves from wherever it's dragged; without one, the dragged frame
-		if _selected.is_empty():
-			set_selected_coords([_drag_start_cell] as Array[Vector2i])
-		_drag = Drag.MOVE
-		_move_offset = Vector2i.ZERO
-		_move_page = _dragged_page()
-		_move_fits = true
-	else:
-		_drag = Drag.BOX
-		_box_end_world = screen_to_world(_drag_start_screen)
-	_update_cursor()
+	match _press:
+		Press.PIVOT:
+			_drag = Drag.PIVOT
+			pivots.grab(self, pivots.hovered, _drag_start_world)
+		Press.MOVE:
+			# The selection moves when the frame is in it, else the frame alone
+			if not is_selected(_drag_start_cell):
+				set_selected_coords([_drag_start_cell] as Array[Vector2i])
+				_anchor = _drag_start_cell
+			_drag = Drag.MOVE
+			mover.lift(self, get_selected_coords(), _drag_start_world)
+		Press.BOX:
+			_drag = Drag.BOX
+			_box_end_world = _drag_start_world
+	update_cursor()
 
 
-## Whether dragging from [param cell] moves frames: with the move tool, the selection from
-## wherever it's dragged, else the frame at [param cell]. Otherwise it draws a box.
-func _drag_moves(cell: Vector2i, additive: bool) -> bool:
-	if tool != Tool.MOVE or not able_to_move_frames or additive:
-		return false
-	return not _selected.is_empty() or spritesheet.has_frame(cell)
+## Whether pressing [param cell] and dragging moves it, see [method _begin_real_drag]: a
+## frame, when frames can move and the press doesn't draw a box with Shift or Ctrl
+func _drags_frame(cell: Vector2i, boxing: bool) -> bool:
+	return able_to_move_frames and not boxing and spritesheet.has_frame(cell)
 
 
-## The frames picked up with the move tool, in reading order: from the press on, before
-## the mouse moves, so it's clear what a drag moves
+## The frames being moved, in reading order
 func _get_lifted_coords() -> Array[Vector2i]:
-	var pressed := _drag == Drag.PENDING and _drag_moves(_drag_start_cell, _drag_additive)
-	if _drag != Drag.MOVE and not pressed:
-		return []
-	if _selected.is_empty():
-		return [_drag_start_cell] as Array[Vector2i]
-	return get_selected_coords()
+	return mover.lifted if _drag == Drag.MOVE else ([] as Array[Vector2i])
+
+
+## The frames whose cells, or places on the pages, touch [param rect]
+func get_frames_in(rect: Rect2) -> Array[Vector2i]:
+	if is_packed():
+		return packed_view.get_frames_in(rect)
+	var coords: Array[Vector2i] = []
+	for coord in spritesheet.frames:
+		if rect.intersects(cell_rect(coord)):
+			coords.append(coord)
+	return coords
 
 
 func _finish_box_selection() -> void:
-	var box := _box_rect()
-	if not _drag_additive:
+	var coords := get_frames_in(_box_rect())
+	if _box_mode == Box.REPLACE:
 		_selected.clear()
-	var coords: Array[Vector2i] = []
-	if is_packed():
-		coords = packed_view.get_frames_in(box)
-	else:
-		for coord in spritesheet.frames:
-			if box.intersects(cell_rect(coord)):
-				coords.append(coord)
 	for coord in coords:
-		_selected[coord] = true
+		if _box_mode == Box.TOGGLE and _selected.has(coord):
+			_selected.erase(coord)
+		else:
+			_selected[coord] = true
 	_selection_updated()
-
-
-## The page of the first frame picked up, which dragging starts from
-func _dragged_page() -> int:
-	var coords := _get_lifted_coords()
-	if coords.is_empty() or not spritesheet.placements.has(coords[0]):
-		return 0
-	return spritesheet.placements[coords[0]].page
-
-
-## Where dragged packed frames would go: the page under the mouse, whole pixels away from
-## where they are, and whether they fit there
-func _update_packed_move(world: Vector2) -> void:
-	var start_page := _dragged_page()
-	var page := packed_view.get_page_at(world)
-	if page < 0:
-		page = _move_page
-	# Frames stay under the mouse when they go to another page
-	var origins := packed_view.page_origins
-	var moved_by := world - _drag_start_world + origins[start_page] - origins[page]
-	var offset := Vector2i(moved_by.round())
-	if offset == _move_offset and page == _move_page:
-		return
-	_move_offset = offset
-	_move_page = page
-	var coords := get_selected_coords()
-	_move_fits = not PackedLayout.moved(spritesheet, coords, page, offset).is_empty()
-	queue_redraw()
 
 
 func _box_rect() -> Rect2:
@@ -749,36 +776,61 @@ func _start_drag(kind: Drag, screen_position: Vector2) -> void:
 	_drag = kind
 	_drag_start_screen = screen_position
 	_drag_start_camera = camera.position
-	_update_cursor()
+	update_cursor()
 
 
 func _end_drag() -> void:
 	_drag = Drag.NONE
 	queue_redraw()
-	_update_cursor()
+	update_cursor()
 
 
-func _update_cursor() -> void:
-	Input.set_default_cursor_shape(_get_cursor_shape())
+## Shows the cursor for what pressing or dragging where the mouse is does, see
+## [method get_cursor_hint]
+func update_cursor() -> void:
+	CanvasCursor.apply(surface, get_cursor_hint())
 
 
-## The pan cursor while panning, and the move cursor wherever dragging would move frames
-func _get_cursor_shape() -> Input.CursorShape:
+## What pressing or dragging where the mouse is does, or what's being dragged: panning,
+## picking a colour, moving frames, drawing a box, moving a pivot or clicking a name
+func get_cursor_hint() -> CanvasCursor.Hint:
 	if _drag == Drag.PAN or _pan_key_held:
-		return Input.CURSOR_DRAG
+		return CanvasCursor.Hint.PAN
 	if picking:
-		return Input.CURSOR_CROSS
-	if _drag == Drag.MOVE or not _get_lifted_coords().is_empty():
-		return Input.CURSOR_MOVE
-	if _drag == Drag.NONE and _drag_moves(hovered_cell, false):
-		return Input.CURSOR_MOVE
-	return Input.CURSOR_ARROW
+		return CanvasCursor.Hint.PICK
+	match _drag:
+		Drag.MOVE:
+			return CanvasCursor.Hint.MOVE if mover.fits else CanvasCursor.Hint.FORBIDDEN
+		Drag.BOX:
+			return CanvasCursor.Hint.BOX
+		Drag.PIVOT, Drag.PENDING:
+			return CanvasCursor.Hint.POINT if _drag == Drag.PIVOT else PRESS_HINTS[_press]
+	return _hover_hint()
+
+
+## What pressing or dragging does where the mouse is, over a name, a pivot or a frame
+func _hover_hint() -> CanvasCursor.Hint:
+	if mover.carried:
+		return CanvasCursor.Hint.NONE
+	if animation_labels.hovered >= 0:
+		return CanvasCursor.Hint.LINK
+	if pivots.is_hovered(self):
+		return CanvasCursor.Hint.POINT
+	var boxing := (
+		Input.is_key_pressed(KEY_SHIFT)
+		or Input.is_key_pressed(KEY_CTRL)
+		or Input.is_key_pressed(KEY_META)
+	)
+	return CanvasCursor.Hint.GRAB if _drags_frame(hovered_cell, boxing) else CanvasCursor.Hint.NONE
 
 
 ## Forgets the cell under the mouse, e.g. when the mouse leaves the preview or another
-## document opens
+## document opens. Frames dragged out stop showing where they'd land.
 func clear_hover() -> void:
+	carry_away()
+	pivots.hovered = NO_CELL
 	_set_hovered_cell(NO_CELL)
+	update_cursor()
 
 
 func _set_hovered_cell(cell: Vector2i) -> void:
@@ -803,17 +855,15 @@ func _draw() -> void:
 		return
 	var pixel := 1.0 / camera.zoom.x
 	var visible_rect := _visible_world_rect()
-	# Frames being moved leave their cells, copied ones stay
-	var lifted: Dictionary[Vector2i, bool] = {}
-	if not _drag_copy:
-		lifted = _as_set(_get_lifted_coords())
+	# Frames being moved leave their cells
+	var lifted := _as_set(_get_lifted_coords())
 	var hovered := hovered_cell if _drag == Drag.NONE else NO_CELL
 	grid_view.draw(self, visible_rect, pixel, lifted, hovered)
 	_draw_selection(pixel)
 	animation_labels.draw(self)
 	if is_index_visible():
 		_draw_indices(grid_view.get_visible_cells(visible_rect))
-	_draw_pivots(pixel)
+	pivots.draw(self, pixel, _drag == Drag.MOVE)
 	_draw_box(pixel)
 
 
@@ -821,8 +871,7 @@ func _draw() -> void:
 func _draw_packed() -> void:
 	var pixel := 1.0 / camera.zoom.x
 	var visible_rect := _visible_world_rect()
-	var lifted := _get_lifted_coords()
-	packed_view.draw(self, visible_rect, pixel, _as_set(lifted))
+	packed_view.draw(self, visible_rect, pixel, _as_set(_get_lifted_coords()))
 	var hovered := packed_view.get_frame_rect(hovered_cell)
 	if spritesheet.placements.has(hovered_cell) and _drag == Drag.NONE:
 		draw_rect(hovered, HOVER_COLOR)
@@ -830,22 +879,15 @@ func _draw_packed() -> void:
 		var rect := packed_view.get_frame_rect(coord)
 		draw_rect(rect, Color(selection_color, selection_tint))
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
-	# Frames picked up with the move tool, where they would land
-	var origins := packed_view.page_origins
-	for coord in lifted:
-		var place: Dictionary = spritesheet.placements[coord]
-		var target := packed_view.get_frame_rect(coord)
-		target.position += Vector2(_move_offset) + origins[_move_page] - origins[place.page]
-		packed_view.draw_frame(self, coord, target, GHOST_COLOR)
-		var color := selection_color if _move_fits else INVALID_MOVE_COLOR
-		draw_rect(target.grow(-pixel), color, false, pixel * 2)
+	if _drag == Drag.MOVE:
+		mover.draw(self, pixel)
 	if show_indices:
 		for coord in packed_view.get_frames_in(visible_rect):
 			var rect := packed_view.get_frame_rect(coord)
 			if rect.size * camera.zoom >= MIN_SIZE_TO_SHOW_INDEX:
 				_draw_index(coord, rect)
 		draw_set_transform(Vector2.ZERO)
-	_draw_pivots(pixel)
+	pivots.draw(self, pixel, _drag == Drag.MOVE)
 	_draw_box(pixel)
 
 
@@ -854,21 +896,6 @@ func _draw_box(pixel: float) -> void:
 		var box := _box_rect()
 		draw_rect(box, Color(selection_color, 0.15))
 		draw_rect(box, selection_color, false, pixel)
-
-
-## Crosses at the pivots of the selected frames with the pivot tool
-func _draw_pivots(pixel: float) -> void:
-	if tool != Tool.PIVOT:
-		return
-	for coord in _selected:
-		var pivot := _pivot if _drag == Drag.PIVOT else spritesheet.get_pivot(coord)
-		var at := pivot_to_world(coord, pivot)
-		var arm := PIVOT_SIZE * pixel
-		for color: Color in [Color.BLACK, selection_color]:
-			var width := pixel * (4 if color == Color.BLACK else 2)
-			draw_line(at - Vector2(arm, 0), at + Vector2(arm, 0), color, width)
-			draw_line(at - Vector2(0, arm), at + Vector2(0, arm), color, width)
-		draw_circle(at, arm * 0.35, selection_color)
 
 
 ## Checker squares behind transparent pixels, the same size on screen at any zoom
@@ -911,12 +938,8 @@ func _draw_selection(pixel: float) -> void:
 		var rect := cell_rect(coord)
 		draw_rect(rect, Color(selection_color, selection_tint))
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
-
-	# Frames picked up with the move tool, where they would land
-	for coord in _get_lifted_coords():
-		var target := cell_rect(coord + _move_offset)
-		grid_view.draw_frame(self, coord, target, GHOST_COLOR)
-		draw_rect(target.grow(-pixel), selection_color, false, pixel * 2)
+	if _drag == Drag.MOVE:
+		mover.draw(self, pixel)
 
 
 func _draw_indices(visible_cells: Rect2i) -> void:

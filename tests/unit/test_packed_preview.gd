@@ -68,11 +68,12 @@ func drag(from: Vector2, to: Vector2) -> void:
 	mouse(MOUSE_BUTTON_LEFT, false, to)
 
 
-func key(keycode: Key, shift := false) -> void:
+func key(keycode: Key, shift := false, ctrl := false) -> void:
 	var event := InputEventKey.new()
 	event.keycode = keycode
 	event.pressed = true
 	event.shift_pressed = shift
+	event.ctrl_pressed = ctrl
 	preview._unhandled_input(event)
 
 
@@ -100,7 +101,6 @@ func test_click_box_and_empty_space() -> void:
 
 
 func test_dragging_moves_a_frame_and_pins_it() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
 	var coord := Vector2i(1, 0)
 	var before := PackedLayout.get_rect(sheet, coord)
 	var right := preview.packed_view.get_content_rect().end.x + 20
@@ -116,18 +116,16 @@ func test_dragging_moves_a_frame_and_pins_it() -> void:
 
 
 func test_frames_dont_land_on_others() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
 	var before := sheet.placements.duplicate()
 	drag(at(Vector2i(1, 0)), at(Vector2i(0, 0)))
 	assert_eq(sheet.placements, before, "nothing moved")
 
 
 func test_frames_can_go_on_a_new_page() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
 	var coord := Vector2i(0, 0)
 	mouse(MOUSE_BUTTON_LEFT, true, at(coord))
 	move_to(at(coord) + Vector2(10, 0))
-	assert_true(preview.is_dragging_frames())
+	assert_eq(preview._get_lifted_coords(), [coord] as Array[Vector2i])
 	var new_page := preview.packed_view.get_new_page_rect()
 	var target := to_screen(new_page.position + Vector2(20, 20))
 	move_to(target)
@@ -136,21 +134,23 @@ func test_frames_can_go_on_a_new_page() -> void:
 	assert_eq(PackedLayout.get_page_count(sheet), 2)
 
 
-func test_pressing_picks_frames_up_without_moving_them() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
-	var before := sheet.placements.duplicate(true)
+func test_dragging_a_selected_frame_moves_the_selection() -> void:
 	var some: Array[Vector2i] = [Vector2i(0, 0), Vector2i(2, 0)]
 	preview.set_selected_coords(some)
+	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(2, 0)))
+	assert_true(preview._get_lifted_coords().is_empty(), "not lifted before the mouse moves")
+	move_to(at(Vector2i(2, 0)) + Vector2(0, 30))
+	assert_eq(preview._get_lifted_coords(), some, "the selection")
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.MOVE)
+
+
+func test_where_frames_dont_fit_is_shown() -> void:
 	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(1, 0)))
-	assert_eq(preview._get_lifted_coords(), some, "the selection, before the mouse moves")
-	assert_false(preview.is_dragging_frames(), "not dragged yet")
-	mouse(MOUSE_BUTTON_LEFT, false, at(Vector2i(1, 0)))
-	assert_true(preview._get_lifted_coords().is_empty(), "put down on release")
-	assert_eq(sheet.placements, before, "nothing moved")
+	move_to(at(Vector2i(0, 0)))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.FORBIDDEN, "on another frame")
 
 
-func test_arrow_keys_move_frames_in_the_move_mode() -> void:
-	preview.tool = SpritesheetPreview.Tool.MOVE
+func test_arrow_keys_move_frames() -> void:
 	var coord := Vector2i(3, 0)
 	preview.set_selected_coords([coord] as Array[Vector2i])
 	var before := PackedLayout.get_rect(sheet, coord)
@@ -164,7 +164,7 @@ func test_arrow_keys_move_frames_in_the_move_mode() -> void:
 	)
 
 
-func test_arrow_keys_pick_the_next_frame() -> void:
+func test_ctrl_arrow_keys_add_the_next_frame() -> void:
 	preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
 	var start := preview.get_frame_world_rect(Vector2i(0, 0)).get_center()
 	var keys := {
@@ -177,26 +177,66 @@ func test_arrow_keys_pick_the_next_frame() -> void:
 		var expected := preview.packed_view.get_neighbour(Vector2i(0, 0), direction)
 		preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
 		preview._anchor = Vector2i(0, 0)
-		key(keys[direction])
-		assert_eq(preview.get_selected_coords(), [expected] as Array[Vector2i])
+		key(keys[direction], false, true)
+		assert_true(preview.is_selected(expected), "added")
+		assert_true(preview.is_selected(Vector2i(0, 0)), "to the selection")
 		if expected != Vector2i(0, 0):
 			var delta := preview.get_frame_world_rect(expected).get_center() - start
 			assert_true(delta.dot(Vector2(direction)) > 0, "that way")
 
 
+## Screen position of the pivot of a frame
+func pivot_at(coord: Vector2i) -> Vector2:
+	return to_screen(preview.pivot_to_world(coord, sheet.get_pivot(coord)))
+
+
 func test_dragging_a_pivot() -> void:
-	preview.tool = SpritesheetPreview.Tool.PIVOT
+	Settings.set_value(&"use_pivots", true)
 	var coord := Vector2i(2, 0)
+	move_to(pivot_at(coord))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.POINT, "over the pivot")
+	move_to(pivot_at(coord) + Vector2(12, 0))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.GRAB, "elsewhere on the frame")
 	var rect := preview.get_frame_world_rect(coord)
-	drag(at(coord), to_screen(rect.position + Vector2(3, rect.size.y)))
+	drag(pivot_at(coord), to_screen(rect.position + Vector2(3, rect.size.y)))
 	assert_eq(sheet.get_pivot(coord), Vector2(3, 12), "bottom, three pixels in")
+	assert_eq(PackedLayout.get_rect(sheet, coord), Rect2i(rect), "the frame stays")
+	assert_true(preview.get_selected_coords().is_empty(), "nothing selected")
 	# The same in the grid
 	sheet.set_layout(Spritesheet.Layout.GRID)
 	var cell := preview.cell_rect(coord)
 	var in_cell := sheet.get_frame_rect_in_cell(coord)
 	var frame_start := cell.position + Vector2(in_cell.position)
-	drag(to_screen(frame_start + Vector2(5, 5)), to_screen(frame_start + Vector2(1, 2)))
+	drag(pivot_at(coord), to_screen(frame_start + Vector2(1, 2)))
 	assert_eq(sheet.get_pivot(coord), Vector2(1, 2))
+	Settings.set_value(&"use_pivots", Settings.DEFAULTS[&"use_pivots"])
+
+
+func test_pivots_stay_inside_their_frames() -> void:
+	Settings.set_value(&"use_pivots", true)
+	var coord := Vector2i(0, 0)
+	var rect := preview.get_frame_world_rect(coord)
+	drag(pivot_at(coord), to_screen(rect.end + Vector2(40, 40)))
+	assert_eq(sheet.get_pivot(coord), Vector2(sheet.frames[coord].get_size()), "the corner")
+	Settings.set_value(&"use_pivots", Settings.DEFAULTS[&"use_pivots"])
+
+
+func test_a_selected_pivot_moves_the_selection_pivots() -> void:
+	Settings.set_value(&"use_pivots", true)
+	var some: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
+	preview.set_selected_coords(some)
+	drag(pivot_at(Vector2i(1, 0)), pivot_at(Vector2i(1, 0)) + Vector2(-6, -6))
+	assert_eq(sheet.get_pivot(Vector2i(1, 0)), Vector2(5, 3))
+	assert_eq(sheet.get_pivot(Vector2i(0, 0)), Vector2(5, 3), "the other selected frame too")
+	assert_eq(preview.get_selected_coords(), some, "still selected")
+	assert_false(sheet.has_pivot(Vector2i(2, 0)), "not the others")
+	drag(pivot_at(Vector2i(1, 0)), pivot_at(Vector2i(1, 0)) + Vector2(18, 0))
+	assert_eq(sheet.get_pivot(Vector2i(1, 0)), Vector2(14, 3))
+	assert_eq(sheet.get_pivot(Vector2i(0, 0)), Vector2(10, 3), "inside the narrower frame")
+	Settings.set_value(&"use_pivots", false)
+	move_to(pivot_at(Vector2i(2, 0)))
+	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.GRAB, "no pivots when they're off")
+	Settings.set_value(&"use_pivots", Settings.DEFAULTS[&"use_pivots"])
 
 
 func test_turned_frames_are_drawn_turned() -> void:
@@ -215,3 +255,17 @@ func test_turned_frames_are_drawn_turned() -> void:
 	var pivot := Vector2(0, 0)
 	assert_eq(preview.pivot_to_world(coord, pivot), rect.position + Vector2(rect.size.x, 0))
 	assert_eq(preview.world_to_pivot(coord, rect.position + Vector2(rect.size.x, 0)), pivot)
+
+
+func test_selected_frames_always_show_their_pivots() -> void:
+	Settings.set_value(&"use_pivots", true)
+	var some: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
+	preview.set_selected_coords(some)
+	preview.clear_hover()
+	assert_eq(preview.pivots.get_shown_coords(preview), some, "without the mouse over them")
+	move_to(at(Vector2i(3, 0)))
+	var with_hovered: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(3, 0)]
+	assert_eq(preview.pivots.get_shown_coords(preview), with_hovered, "and the one under it")
+	Settings.set_value(&"use_pivots", false)
+	assert_true(preview.pivots.get_shown_coords(preview).is_empty(), "none while off")
+	Settings.set_value(&"use_pivots", Settings.DEFAULTS[&"use_pivots"])

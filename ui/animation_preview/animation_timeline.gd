@@ -2,9 +2,9 @@ class_name AnimationTimeline
 extends PanelContainer
 ## An animation's frames in playing order, left to right, as [TimelineTile]s: each with
 ## its picture, its place in the animation, a short label and how long it's shown. Frames
-## are dragged to reorder them, taken out with × or Delete, picked by clicking (Ctrl and
-## Shift pick more) or with a box, and added by dropping frames of the sheet on it, see
-## [method frames_drag_data]. Changes aren't made here but sent with
+## are dragged to reorder them (Alt+drag copies them), taken out with × or Delete, picked
+## by clicking (Ctrl and Shift pick more) or with a box, and added by dropping frames of
+## the sheet on it, see [method frames_drag_data]. Changes aren't made here but sent with
 ## [signal frames_edited], so each is one undoable step.
 
 ## The frames should become [param cells], shown [param durations] long, as the step
@@ -225,6 +225,25 @@ func move_frames(indices: Array[int], to: int) -> void:
 	frames_edited.emit(L10n.mark("Move frames"), new_cells, new_durations)
 
 
+## Puts copies of the frames at [param indices] at [param to], keeping their order and how
+## long they're shown, and picks the copies
+func copy_frames(indices: Array[int], to: int) -> void:
+	var copying := _valid_indices(indices)
+	if copying.is_empty():
+		return
+	to = clampi(to, 0, _cells.size())
+	var new_cells := _cells.duplicate()
+	var new_durations := _durations.duplicate()
+	for i in copying.size():
+		new_cells.insert(to + i, _cells[copying[i]])
+		new_durations.insert(to + i, _durations[copying[i]])
+	_selected.clear()
+	for i in copying.size():
+		_selected[to + i] = true
+	_anchor = to
+	frames_edited.emit(L10n.mark("Duplicate frames"), new_cells, new_durations)
+
+
 ## Takes the frames at [param indices] out
 func remove_frames(indices: Array[int]) -> void:
 	var removing := _valid_indices(indices)
@@ -330,6 +349,15 @@ static func frames_drag_data(cells: Array[Vector2i]) -> Dictionary:
 	return {"type": FRAMES_DRAG, "cells": cells.duplicate()}
 
 
+## Whether [param data] is frames of the sheet being dragged, see [method frames_drag_data]
+static func is_frames_drag(data: Variant) -> bool:
+	return (
+		data is Dictionary
+		and data.get("type") == FRAMES_DRAG
+		and not data.get("cells", []).is_empty()
+	)
+
+
 ## What follows the mouse while dragging [param cells] of [param frames_sheet]: the first
 ## few pictures fanned out, with how many there are
 static func drag_preview(frames_sheet: Spritesheet, cells: Array[Vector2i]) -> Control:
@@ -381,7 +409,8 @@ func _can_drop(at: Vector2, data: Variant, over: Control) -> bool:
 	return true
 
 
-## Adds dropped frames of the sheet, or moves frames of this timeline, where dropped
+## Adds dropped frames of the sheet, or moves frames of this timeline where dropped, or
+## copies them there with Alt
 func _drop(at: Vector2, data: Variant, over: Control) -> void:
 	var index := _insert_index(_to_row(at, over).x)
 	_drop_index = -1
@@ -390,6 +419,8 @@ func _drop(at: Vector2, data: Variant, over: Control) -> void:
 		var cells: Array[Vector2i] = []
 		cells.assign(data.cells)
 		insert_cells(cells, index)
+	elif Input.is_key_pressed(KEY_ALT):
+		copy_frames(data.indices, index)
 	else:
 		move_frames(data.indices, index)
 	grab_focus()
