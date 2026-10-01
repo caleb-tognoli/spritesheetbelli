@@ -34,9 +34,10 @@ func _init() -> void:
 	dialog.title = "Files Deleted"
 	dialog.ok_button_text = "Remove"
 	dialog.cancel_button_text = "Keep"
+	dialog.get_ok_button().icon = preload("res://assets/icons/Remove.svg")
 	dialog.dialog_autowrap = true
 	dialog.min_size = Vector2i(400, 0)
-	DialogButtons.apply(dialog)
+	DialogButtons.apply(dialog, true)
 	dialog.confirmed.connect(_remove_deleted)
 	dialog.canceled.connect(func() -> void: _deleted_paths.clear())
 

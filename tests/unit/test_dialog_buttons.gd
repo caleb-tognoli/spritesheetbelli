@@ -41,12 +41,47 @@ func test_buttons_are_together_at_the_right_in_the_platform_order() -> void:
 	dialog.free()
 
 
-func test_every_dialog_has_its_buttons_at_the_right() -> void:
+func test_centered_buttons_and_text() -> void:
+	var dialog := ConfirmationDialog.new()
+	DialogButtons.apply(dialog, true)
+	var row := dialog.get_ok_button().get_parent() as HBoxContainer
+	assert_eq(row.alignment, BoxContainer.ALIGNMENT_CENTER)
+	assert_eq(dialog.get_label().horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER)
+	dialog.free()
+
+
+func test_alternative_goes_after_ok_or_first() -> void:
+	var dialog := ConfirmationDialog.new()
+	DialogButtons.apply(dialog)
+	var other := DialogButtons.add_alternative(dialog, "Don't Save", &"discard")
+	var ok := dialog.get_ok_button()
+	var cancel := dialog.get_cancel_button()
+	var expected: Array[Control] = [ok, other, cancel]
+	if not DialogButtons.is_cancel_last():
+		expected = [other, cancel, ok]
+	assert_eq(visible_row(dialog), expected, "Save, Don't Save, Cancel on Windows")
+	dialog.free()
+
+
+## Dialogs that only ask something, which have their buttons in the middle
+static func centered_dialogs(main: Control) -> Array[AcceptDialog]:
+	return [
+		Notify.message_dialog,
+		Notify.confirm_dialog,
+		main.files.unsaved_changes_dialog,
+		main.source_watcher.folders.dialog,
+		main.source_watcher.dialog,
+		main.about_dialog,
+	]
+
+
+func test_every_dialog_has_its_buttons_at_the_right_or_in_the_middle() -> void:
 	var main: Control = load("res://ui/main/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
 	var dialogs := main.find_children("*", "AcceptDialog", true, false)
 	dialogs.append_array(Notify.find_children("*", "AcceptDialog", true, false))
+	var centered := centered_dialogs(main)
 	var checked := 0
 	for dialog: AcceptDialog in dialogs:
 		# The system's own file dialogs, and the ones inside Godot's controls
@@ -55,16 +90,21 @@ func test_every_dialog_has_its_buttons_at_the_right() -> void:
 			continue
 		checked += 1
 		var row := dialog.get_ok_button().get_parent() as HBoxContainer
-		assert_eq(row.alignment, BoxContainer.ALIGNMENT_END, dialog.title)
+		var alignment := (
+			BoxContainer.ALIGNMENT_CENTER if dialog in centered else BoxContainer.ALIGNMENT_END
+		)
+		assert_eq(row.alignment, alignment, dialog.title)
 		for control in visible_row(dialog):
 			assert_true(control is Button, "%s: only buttons show" % dialog.title)
 	assert_true(checked >= 10, "found the dialogs")
 
 	var unsaved: ConfirmationDialog = main.files.unsaved_changes_dialog
-	var expected: Array[Control] = [visible_row(unsaved)[0]]
-	expected.append_array(pair(unsaved.get_ok_button(), unsaved.get_cancel_button()))
-	assert_eq(visible_row(unsaved), expected, "Don't Save goes left of Save and Cancel")
-	assert_eq((expected[0] as Button).text, "Don't Save")
+	var labels: Array[String] = []
+	for button: Button in visible_row(unsaved):
+		labels.append(button.text)
+	var windows: Array[String] = ["Save", "Don't Save", "Cancel"]
+	var others: Array[String] = ["Don't Save", "Cancel", "Save"]
+	assert_eq(labels, windows if DialogButtons.is_cancel_last() else others)
 	main.queue_free()
 
 

@@ -361,6 +361,13 @@ msgid "Keyboard Shortcuts"
 msgstr "Scorciatoie da tastiera"
 
 #: res://scripts/ui/shortcuts_dialog.gd
+#: res://ui/main/about_dialog.gd
+#: res://ui/main/export_dialog.gd
+#: res://ui/settings/settings_window.gd
+msgid "Close"
+msgstr "Chiudi"
+
+#: res://scripts/ui/shortcuts_dialog.gd
 msgid "Search by name or key"
 msgstr "Cerca per nome o tasto"
 
@@ -1212,8 +1219,8 @@ msgid "How different a pixel can be and still be made transparent"
 msgstr "Quanto un pixel può essere diverso ed essere reso comunque trasparente"
 
 #: res://ui/main/color_key_dropdown.gd
-msgid "Confirm"
-msgstr "Conferma"
+msgid "Apply"
+msgstr "Applica"
 
 #: res://ui/main/color_key_preview.gd
 msgid "Remove background"
@@ -1408,11 +1415,6 @@ msgstr "Ogni animazione come PNG con i suoi frame affiancati, in una cartella, c
 #: res://ui/main/export_dialog.gd
 msgid "The sheet as a PNG and a data file written from a template of your own. Packed sheets, and templates only for packed atlases, give atlas pages."
 msgstr "Lo spritesheet come PNG e un file di dati scritto da un tuo modello. Gli spritesheet compatti, e i modelli solo per atlanti compatti, danno pagine di atlante."
-
-#: res://ui/main/export_dialog.gd
-#: res://ui/settings/settings_window.gd
-msgid "Close"
-msgstr "Chiudi"
 
 #: res://ui/main/export_dialog.gd
 msgid "Export All"
@@ -2456,6 +2458,10 @@ msgstr[0] "Ridimensionare la griglia a %d×%d eliminerebbe %d sprite."
 msgstr[1] "Ridimensionare la griglia a %d×%d eliminerebbe %d sprite."
 
 #: res://ui/main/main_ui.gd
+msgid "Resize"
+msgstr "Ridimensiona"
+
+#: res://ui/main/main_ui.gd
 msgid "Save changes to %s before closing?"
 msgstr "Salvare le modifiche a %s prima di chiudere?"
 
@@ -2560,20 +2566,20 @@ msgid "File Changed"
 msgstr "File modificato"
 
 #: res://ui/main/reload_dialog.gd
-msgid "Reload, Reset"
-msgstr "Ricarica e azzera"
-
-#: res://ui/main/reload_dialog.gd
-msgid "Reload the file as it is, without the edits made here"
-msgstr "Ricarica il file così com'è, senza le modifiche fatte qui"
-
-#: res://ui/main/reload_dialog.gd
 msgid "Ignore"
 msgstr "Ignora"
 
 #: res://ui/main/reload_dialog.gd
 msgid "Keep the frames as they are"
 msgstr "Lascia i frame come sono"
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload, Reset"
+msgstr "Ricarica e azzera"
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload the file as it is, without the edits made here"
+msgstr "Ricarica il file così com'è, senza le modifiche fatte qui"
 
 #: res://ui/main/reload_dialog.gd
 msgid "Reload the file and make the edits made here again"

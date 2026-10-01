@@ -24,6 +24,7 @@ var _rows: Array[Dictionary] = []
 
 func _init() -> void:
 	title = "Keyboard Shortcuts"
+	ok_button_text = "Close"
 	DialogButtons.apply(self)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)

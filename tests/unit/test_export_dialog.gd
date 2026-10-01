@@ -408,7 +408,7 @@ func test_template_errors_stop_the_export() -> void:
 	)
 	assert_false(await main.files.exports.export_to(dir.path_join("broken.png")))
 	assert_true(Notify.message_dialog.visible, "says why")
-	assert_true("line 2" in Notify.message_dialog.dialog_text, Notify.message_dialog.dialog_text)
+	assert_true("line 2" in Notify.message_label.text, Notify.message_label.text)
 	Notify.message_dialog.hide()
 	assert_false(FileAccess.file_exists(dir.path_join("broken.png")), "nothing written")
 

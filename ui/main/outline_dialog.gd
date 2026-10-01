@@ -13,6 +13,7 @@ var corners := CheckBox.new()
 func _init() -> void:
 	title = "Add Outline"
 	ok_button_text = "Add"
+	get_ok_button().icon = MainActions.ICONS[&"add_outline"]
 	DialogButtons.apply(self)
 	var grid := GridContainer.new()
 	grid.columns = 2

@@ -39,7 +39,7 @@ A small desktop tool made with Godot.</p>
 - **Edit frames.** The Select tool clicks and box-selects frames; the Move tool drags
   them, or copies them with Alt. Flip, rotate, trim, remove a background colour (from the
   eyedropper button in the toolbar, picked by clicking a frame and previewed on the
-  selected frames, or every frame, until you Confirm), add an outline, replace,
+  selected frames, or every frame, until you Apply), add an outline, replace,
   cut/copy/paste (also images copied in other apps), duplicate, insert or remove cells,
   insert, remove or reorder rows. Everything can be undone.
 - **Stay linked to your art files.** Sprites and sheets remember the file they came from.

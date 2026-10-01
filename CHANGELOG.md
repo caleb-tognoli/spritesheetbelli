@@ -314,6 +314,13 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   included, name their file types in the chosen language too.
 
 ### Changed
+- Dialogs that only ask something (unsaved changes, deleted or changed files, errors and
+  confirmations) and About have their text and buttons in the middle. Their main button,
+  and those of New / Rename Animation, Add Outline, Export and Settings' Reset All, have
+  the icon of the action. Save, Don't Save, Cancel are in that order on Windows. Errors
+  show a warning sign, About links to the repository with an external-link button, About
+  and Keyboard Shortcuts close with Close, the background panel applies with Apply, and
+  the grid-shrink confirmation resizes with Resize.
 - Add Spritesheet, Add Sprite(s) and Add Folder are in this order everywhere: the sidebar,
   the start screen and the File menu. Add Folder is a button with a folder and a plus,
   right of Add Sprite(s), and has a shortcut, Ctrl+Alt+I. The empty preview only says

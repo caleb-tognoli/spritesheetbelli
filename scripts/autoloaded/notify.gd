@@ -2,7 +2,13 @@ extends Node
 ## Message and confirmation dialogs usable from anywhere. Their text is shown as given, so
 ## translate it first.
 
+const ERROR_ICON := preload("res://assets/icons/StatusWarning.svg")
+
 var message_dialog := AcceptDialog.new()
+## The text of [member message_dialog], below [member message_icon]
+var message_label := Label.new()
+## Shown above errors
+var message_icon := TextureRect.new()
 var confirm_dialog := ConfirmationDialog.new()
 var _confirm_action: Callable
 var _toasts := VBoxContainer.new()
@@ -16,10 +22,10 @@ func _ready() -> void:
 	for dialog: AcceptDialog in [message_dialog, confirm_dialog]:
 		dialog.dialog_autowrap = true
 		dialog.min_size = Vector2i(400, 0)
-		dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		DialogButtons.apply(dialog)
+		DialogButtons.apply(dialog, true)
 		add_child(dialog)
 		_return_when_hidden(dialog)
+	_build_message(message_dialog)
 	confirm_dialog.confirmed.connect(
 		func() -> void:
 			var action := _confirm_action
@@ -44,13 +50,34 @@ func _ready() -> void:
 
 
 func message(title: String, text: String) -> void:
-	message_dialog.title = title
-	message_dialog.dialog_text = text
-	_popup(message_dialog)
+	_show_message(title, text, false)
 
 
 func error(text: String) -> void:
-	message(tr("Error"), text)
+	_show_message(tr("Error"), text, true)
+
+
+func _show_message(title: String, text: String, is_error: bool) -> void:
+	message_dialog.title = title
+	message_label.text = text
+	message_icon.visible = is_error
+	_popup(message_dialog)
+
+
+## The message's own label rather than the dialog's, for an icon to go above it
+func _build_message(dialog: AcceptDialog) -> void:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	dialog.add_child(box)
+	message_icon.texture = ERROR_ICON
+	message_icon.custom_minimum_size = Vector2(32, 32)
+	message_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	message_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	box.add_child(message_icon)
+	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_label.custom_minimum_size = Vector2(360, 0)
+	box.add_child(message_label)
 
 
 ## A short message that fades away on its own, for things that went well
@@ -140,11 +167,15 @@ func get_toasts() -> PackedStringArray:
 	return texts
 
 
-## Asks for confirmation and runs [param action] if confirmed
-func confirm(title: String, text: String, action: Callable, ok_text := "OK") -> void:
+## Asks for confirmation and runs [param action] if confirmed, with [param ok_text] and
+## [param ok_icon] on the button that confirms
+func confirm(
+	title: String, text: String, action: Callable, ok_text := "OK", ok_icon: Texture2D = null
+) -> void:
 	confirm_dialog.title = title
 	confirm_dialog.dialog_text = text
 	confirm_dialog.ok_button_text = ok_text
+	confirm_dialog.get_ok_button().icon = ok_icon
 	_confirm_action = action
 	_popup(confirm_dialog)
 

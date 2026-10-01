@@ -361,6 +361,13 @@ msgid "Keyboard Shortcuts"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
+#: res://ui/main/about_dialog.gd
+#: res://ui/main/export_dialog.gd
+#: res://ui/settings/settings_window.gd
+msgid "Close"
+msgstr ""
+
+#: res://scripts/ui/shortcuts_dialog.gd
 msgid "Search by name or key"
 msgstr ""
 
@@ -1207,7 +1214,7 @@ msgid "How different a pixel can be and still be made transparent"
 msgstr ""
 
 #: res://ui/main/color_key_dropdown.gd
-msgid "Confirm"
+msgid "Apply"
 msgstr ""
 
 #: res://ui/main/color_key_preview.gd
@@ -1402,11 +1409,6 @@ msgstr ""
 
 #: res://ui/main/export_dialog.gd
 msgid "The sheet as a PNG and a data file written from a template of your own. Packed sheets, and templates only for packed atlases, give atlas pages."
-msgstr ""
-
-#: res://ui/main/export_dialog.gd
-#: res://ui/settings/settings_window.gd
-msgid "Close"
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
@@ -2448,6 +2450,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: res://ui/main/main_ui.gd
+msgid "Resize"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
 msgid "Save changes to %s before closing?"
 msgstr ""
 
@@ -2552,19 +2558,19 @@ msgid "File Changed"
 msgstr ""
 
 #: res://ui/main/reload_dialog.gd
-msgid "Reload, Reset"
-msgstr ""
-
-#: res://ui/main/reload_dialog.gd
-msgid "Reload the file as it is, without the edits made here"
-msgstr ""
-
-#: res://ui/main/reload_dialog.gd
 msgid "Ignore"
 msgstr ""
 
 #: res://ui/main/reload_dialog.gd
 msgid "Keep the frames as they are"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload, Reset"
+msgstr ""
+
+#: res://ui/main/reload_dialog.gd
+msgid "Reload the file as it is, without the edits made here"
 msgstr ""
 
 #: res://ui/main/reload_dialog.gd

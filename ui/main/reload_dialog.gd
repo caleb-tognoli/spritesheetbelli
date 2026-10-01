@@ -22,20 +22,23 @@ var _others_edited := false
 
 func _init() -> void:
 	title = "File Changed"
-	DialogButtons.apply(self)
+	DialogButtons.apply(self, true)
 	dialog_hide_on_ok = true
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
 	add_child(box)
 	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message.custom_minimum_size = Vector2(360, 0)
 	box.add_child(message)
+	for_all_check.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	for_all_check.toggled.connect(func(_on: bool) -> void: _update_buttons())
 	box.add_child(for_all_check)
-	reset_button = add_button("Reload, Reset", false, "reset")
-	reset_button.tooltip_text = "Reload the file as it is, without the edits made here"
 	ignore_button = add_cancel_button("Ignore")
 	ignore_button.tooltip_text = "Keep the frames as they are"
+	reset_button = DialogButtons.add_alternative(self, L10n.mark("Reload, Reset"), &"reset")
+	reset_button.tooltip_text = "Reload the file as it is, without the edits made here"
+	get_ok_button().icon = MainActions.RELOAD_ICON
 	get_ok_button().tooltip_text = "Reload the file and make the edits made here again"
 
 	confirmed.connect(func() -> void: _choose(Choice.KEEP_EDITS))

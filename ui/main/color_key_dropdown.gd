@@ -122,7 +122,7 @@ func _init(optional := false) -> void:
 	content.add_child(note)
 	var row := HBoxContainer.new()
 	content.add_child(row)
-	confirm_button.text = "Confirm"
+	confirm_button.text = "Apply"
 	cancel_button.text = "Cancel"
 	for button: Button in [confirm_button, cancel_button]:
 		row.add_child(button)

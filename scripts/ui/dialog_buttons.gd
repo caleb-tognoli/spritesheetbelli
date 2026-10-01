@@ -1,21 +1,36 @@
 class_name DialogButtons
-## Lays out the buttons of every dialog the same way: at the right, at least
-## [constant MIN_WIDTH] wide (the theme's [code]buttons_min_width[/code]), in the order
-## [AcceptDialog] puts them for the platform. OK comes before Cancel on Windows and after
-## it elsewhere (the [code]gui/common/swap_cancel_ok[/code] project setting can change
-## that), and other buttons go to the left of the two.
+## Lays out the buttons of every dialog the same way: at the right (in the middle for
+## dialogs that are only a message or a question), at least [constant MIN_WIDTH] wide (the
+## theme's [code]buttons_min_width[/code]), in the order [AcceptDialog] puts them for the
+## platform. OK comes before Cancel on Windows and after it elsewhere (the
+## [code]gui/common/swap_cancel_ok[/code] project setting can change that), and other
+## buttons go to the left of the two.
 
 ## Windows' standard button width, in interface units, so scaled with the interface
 const MIN_WIDTH := 88
 
 
-## Moves the buttons of [param dialog] to the right, also ones added or shown later.
-## Other buttons are added with [code]add_button(text, false)[/code], to go on the left.
-static func apply(dialog: AcceptDialog) -> void:
+## Moves the buttons of [param dialog] to the right, also ones added or shown later, or
+## when [param centered], to the middle along with its text, for dialogs that are only a
+## message or a question. Other buttons are added with
+## [code]add_button(text, false)[/code], to go on the left, or with [method add_alternative].
+static func apply(dialog: AcceptDialog, centered := false) -> void:
 	var row := dialog.get_ok_button().get_parent() as HBoxContainer
-	row.alignment = BoxContainer.ALIGNMENT_END
+	row.alignment = BoxContainer.ALIGNMENT_CENTER if centered else BoxContainer.ALIGNMENT_END
+	if centered:
+		dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hide_spacers(row)
 	row.child_order_changed.connect(_hide_spacers.bind(row))
+
+
+## Adds a button that answers otherwise than OK, like Don't Save beside Save: right after
+## OK where OK comes before Cancel (Windows), and first elsewhere, away from OK (macOS).
+## Added after Cancel, so it stays first.
+static func add_alternative(dialog: AcceptDialog, text: String, action: StringName) -> Button:
+	var button := dialog.add_button(text, false, action)
+	if is_cancel_last():
+		button.get_parent().move_child(button, dialog.get_ok_button().get_index() + 1)
+	return button
 
 
 ## Puts [param ok] and [param cancel] at the end of [param row] in the order dialogs have

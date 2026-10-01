@@ -12,7 +12,8 @@ var _engine := Label.new()
 
 func _init() -> void:
 	title = "About spritesheetbelli"
-	DialogButtons.apply(self)
+	ok_button_text = "Close"
+	DialogButtons.apply(self, true)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 8)
@@ -46,10 +47,12 @@ func _init() -> void:
 			)
 	)
 
-	var link := LinkButton.new()
+	var link := Button.new()
 	link.text = REPOSITORY.trim_prefix("https://")
-	link.uri = REPOSITORY
+	link.icon = preload("res://assets/icons/ExternalLink.svg")
+	link.flat = true
 	link.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	link.pressed.connect(OS.shell_open.bind(REPOSITORY))
 	box.add_child(link)
 
 

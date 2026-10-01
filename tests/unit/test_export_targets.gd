@@ -182,7 +182,7 @@ func test_export_all_writes_every_target() -> void:
 		"sprites/walk_0.png"
 	]:
 		assert_true(FileAccess.file_exists(dir.path_join("all").path_join(file)), file)
-	assert_false(Notify.message_dialog.visible, Notify.message_dialog.dialog_text)
+	assert_false(Notify.message_dialog.visible, Notify.message_label.text)
 	var toasts := "\n".join(Notify.get_toasts())
 	assert_true("Exported hero.png in all." in toasts, toasts)
 	assert_true("Saved 3 images to sprites." in toasts, toasts)
@@ -394,9 +394,7 @@ func test_export_again() -> void:
 	assert_true(FileAccess.file_exists(dir.path_join("again.png")))
 	assert_true(FileAccess.file_exists(dir.path_join("again.gif")), "its own extension")
 	assert_true(Notify.message_dialog.visible)
-	assert_eq(
-		Notify.message_dialog.dialog_text, "Pick where to export TexturePacker JSON (hash) atlas."
-	)
+	assert_eq(Notify.message_label.text, "Pick where to export TexturePacker JSON (hash) atlas.")
 	Notify.message_dialog.hide()
 
 	DirAccess.remove_absolute(dir.path_join("again.png"))

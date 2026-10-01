@@ -161,6 +161,7 @@ var _atlas_pages := {}
 func _init() -> void:
 	title = "Export"
 	ok_button_text = "Export"
+	get_ok_button().icon = MainActions.ICONS[&"export"]
 	cancel_button_text = "Close"
 	# Exporting a target that doesn't know where to write asks first
 	dialog_hide_on_ok = false

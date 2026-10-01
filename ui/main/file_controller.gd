@@ -411,8 +411,9 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 func _create_unsaved_changes_dialog() -> void:
 	unsaved_changes_dialog.title = "Unsaved changes"
 	unsaved_changes_dialog.ok_button_text = "Save"
-	DialogButtons.apply(unsaved_changes_dialog)
-	unsaved_changes_dialog.add_button("Don't Save", false, "discard")
+	unsaved_changes_dialog.get_ok_button().icon = MainActions.SAVE_ICON
+	DialogButtons.apply(unsaved_changes_dialog, true)
+	DialogButtons.add_alternative(unsaved_changes_dialog, L10n.mark("Don't Save"), &"discard")
 	add_child(unsaved_changes_dialog)
 	unsaved_changes_dialog.confirmed.connect(
 		func() -> void:

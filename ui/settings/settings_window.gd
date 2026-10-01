@@ -148,6 +148,7 @@ func _init() -> void:
 	DialogButtons.apply(self)
 	min_size = Vector2i(760, 500)
 	var reset := add_button("Reset All…", false, "reset")
+	reset.icon = MainActions.RELOAD_ICON
 	reset.tooltip_text = "Restore every setting to its default"
 	custom_action.connect(
 		func(_action: StringName) -> void:
@@ -155,7 +156,8 @@ func _init() -> void:
 				tr("Reset settings"),
 				tr("Restore every setting to its default?"),
 				Settings.reset_to_defaults,
-				tr("Reset")
+				tr("Reset"),
+				MainActions.RELOAD_ICON
 			)
 	)
 

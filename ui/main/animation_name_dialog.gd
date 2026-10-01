@@ -4,6 +4,9 @@ extends ConfirmationDialog
 
 signal name_chosen(animation_name: String)
 
+const CREATE_ICON := preload("res://assets/icons/Add.svg")
+const RENAME_ICON := preload("res://assets/icons/Rename.svg")
+
 var line_edit := LineEdit.new()
 
 
@@ -27,6 +30,7 @@ func _init() -> void:
 func open(suggested: String, renaming := false) -> void:
 	title = "Rename Animation" if renaming else "New Animation"
 	ok_button_text = "Rename" if renaming else "Create"
+	get_ok_button().icon = RENAME_ICON if renaming else CREATE_ICON
 	line_edit.text = suggested
 	_update_ok(suggested)
 	popup_centered()

@@ -100,7 +100,8 @@ func _make_row(leftover: Dictionary) -> Control:
 				tr("Discard unsaved work"),
 				tr("Delete the unsaved changes to %s? This can't be undone.") % _name_of(leftover),
 				recovery.discard.bind(leftover),
-				tr("Discard")
+				tr("Discard"),
+				preload("res://assets/icons/Remove.svg")
 			)
 	)
 	row.add_child(discard)

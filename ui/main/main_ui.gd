@@ -597,7 +597,8 @@ func set_spritesheet_grid_size(columns: int, rows: int) -> void:
 				)
 				% [columns, rows, frames_outside_count]
 			),
-			spritesheet_set_size
+			spritesheet_set_size,
+			tr("Resize")
 		)
 	else:
 		spritesheet_set_size.call()
