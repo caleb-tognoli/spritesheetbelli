@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=spritesheetbelli
+Comment=Combine sprites into spritesheets and cut spritesheets into sprites
+Comment[it]=Unisci sprite in spritesheet e taglia spritesheet in sprite
+Exec=spritesheetbelli %F
+Icon=spritesheetbelli
+Terminal=false
+Categories=Graphics;2DGraphics;Development;
+MimeType=application/x-spritesheetbelli;image/png;image/jpeg;image/webp;image/gif;application/json;text/x-texture-atlas;

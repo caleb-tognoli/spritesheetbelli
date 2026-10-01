@@ -50,12 +50,24 @@ jobs:
           godot --headless --export-release "macOS" build/macos/spritesheetbelli.zip
           godot --headless --export-release "Web" build/web/index.html
 
+      - name: Install NSIS
+        run: sudo apt-get install -y nsis
+
       - name: Package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p dist
           (cd build/windows && zip -q "../../dist/spritesheetbelli-${VERSION}-windows.zip" spritesheetbelli.exe)
-          (cd build/linux && chmod +x spritesheetbelli.x86_64 && tar -czf "../../dist/spritesheetbelli-${VERSION}-linux.tar.gz" spritesheetbelli.x86_64)
+          # The installer opens .sbelli projects with the app and offers it for importable files
+          makensis -V2 -DVERSION="$VERSION" -DEXE="$PWD/build/windows/spritesheetbelli.exe" \
+            -DOUTFILE="$PWD/dist/spritesheetbelli-${VERSION}-windows-setup.exe" packaging/windows/installer.nsi
+          # With install.sh, which adds the launcher and the file types
+          mkdir -p build/linux/spritesheetbelli
+          mv build/linux/spritesheetbelli.x86_64 build/linux/spritesheetbelli/
+          cp packaging/linux/* build/linux/spritesheetbelli/
+          cp icon.svg build/linux/spritesheetbelli/spritesheetbelli.svg
+          chmod +x build/linux/spritesheetbelli/spritesheetbelli.x86_64 build/linux/spritesheetbelli/install.sh
+          tar -czf "dist/spritesheetbelli-${VERSION}-linux.tar.gz" -C build/linux spritesheetbelli
           cp build/macos/spritesheetbelli.zip "dist/spritesheetbelli-${VERSION}-macos.zip"
           (cd build/web && zip -q -r "../../dist/spritesheetbelli-${VERSION}-web.zip" .)
 

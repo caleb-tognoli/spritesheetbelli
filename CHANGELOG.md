@@ -6,6 +6,11 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 ## Unreleased
 
 ### Added
+- Opening files from the file manager: `.sbelli` projects open with spritesheetbelli by
+  default, and images and spritesheet data files offer it in "Open with". Releases have a
+  Windows installer, the macOS app declares the file types, and the Linux archive has an
+  `install.sh` adding the launcher, the file types and the `spritesheetbelli` command.
+  Files given on the command line are opened at start, instead of the last session.
 - The packed layout: instead of a grid, frames can be packed tightly on pages like a
   texture atlas, and edited there with every tool. Switch with Grid / Packed in the
   sidebar or View. The move tool drags frames anywhere on a page or onto a new one;

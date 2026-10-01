@@ -555,13 +555,34 @@ func restore_session() -> void:
 		open_project(last)
 
 
+## The files in [param args] (see [method OS.get_cmdline_args]) the app can open: those the
+## file manager passes when a file is opened with the app
+static func files_from_arguments(args: PackedStringArray) -> PackedStringArray:
+	var paths: PackedStringArray = []
+	for arg in args:
+		if arg.begins_with("-") or not FileAccess.file_exists(arg):
+			continue
+		if ProjectFile.is_project_path(arg) or is_image_path(arg) or SheetData.is_data_path(arg):
+			# Like the paths of dropped files
+			paths.append(arg.replace("\\", "/") if OS.has_feature("windows") else arg)
+	return paths
+
+
+## Opens files the app was started with: one like Open, several like dropped files
+func open_files(paths: PackedStringArray) -> void:
+	if paths.size() == 1:
+		await open_path(paths[0])
+	else:
+		await open_dropped_files(paths)
+
+
 ## Opens a project, or an image through the Add Spritesheet window
 func open_path(path: String) -> void:
 	if ProjectFile.is_project_path(path):
-		open_project(path)
+		await open_project(path)
 	else:
 		set_filepath_when_opening_spritesheet = true
-		show_add_spritesheet_window(path)
+		await show_add_spritesheet_window(path)
 
 
 ## Frames are about to be linked to [param path], so it's watched again even if it was

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-spritesheetbelli">
+    <comment>spritesheetbelli project</comment>
+    <comment xml:lang="it">Progetto spritesheetbelli</comment>
+    <sub-class-of type="application/zip"/>
+    <icon name="spritesheetbelli"/>
+    <glob pattern="*.sbelli" weight="60"/>
+  </mime-type>
+  <mime-type type="text/x-texture-atlas">
+    <comment>libGDX / Spine texture atlas</comment>
+    <sub-class-of type="text/plain"/>
+    <glob pattern="*.atlas"/>
+  </mime-type>
+</mime-info>

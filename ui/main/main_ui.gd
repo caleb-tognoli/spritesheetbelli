@@ -189,8 +189,12 @@ func _ready() -> void:
 	start_screen.file_chosen.connect(files.open_recent)
 	add_child(recovery)
 	recovery.setup(files, start_screen)
-	# Work left unsaved by a crash is offered on the start screen instead
-	if recovery.leftovers.is_empty():
+	# Opened from the file manager. Else work left unsaved by a crash is offered on the
+	# start screen instead.
+	var opened := FileController.files_from_arguments(OS.get_cmdline_args())
+	if not opened.is_empty():
+		files.open_files.call_deferred(opened)
+	elif recovery.leftovers.is_empty():
 		files.restore_session.call_deferred()
 	Actions.set_tooltip(add_spritesheet_btn, &"add_spritesheet")
 	Actions.set_tooltip(add_sprites_btn, &"add_sprites")

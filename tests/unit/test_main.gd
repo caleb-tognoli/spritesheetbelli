@@ -419,6 +419,28 @@ func test_dropping_files() -> void:
 	main.files.add_spritesheet_window.hide()
 
 
+func test_opening_files_given_on_the_command_line() -> void:
+	var image := dir.path_join("opened.png")
+	make_image(Color.RED).save_png(image)
+	var note := dir.path_join("notes.txt")
+	FileAccess.open(note, FileAccess.WRITE).close()
+	var args := PackedStringArray(
+		["--position", "10,10", image, note, dir.path_join("missing.sbelli"), "res://a.tscn"]
+	)
+	assert_eq(FileController.files_from_arguments(args), PackedStringArray([image]))
+
+	await main.files.open_files(PackedStringArray([image]))
+	assert_true(main.files.add_spritesheet_window.visible, "an image opens Add Spritesheet")
+	main.files.add_spritesheet_window.hide()
+
+	var project := dir.path_join("opened.sbelli")
+	var sheet := Spritesheet.new()
+	sheet.add_frames([make_image(Color.BLUE)] as Array[Image])
+	ProjectFile.save(sheet, project)
+	await main.files.open_files(FileController.files_from_arguments([project]))
+	assert_eq(Global.document.path, project, "a project is opened")
+
+
 func test_quick_scale_buttons_and_filter() -> void:
 	Global.document.perform(
 		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])

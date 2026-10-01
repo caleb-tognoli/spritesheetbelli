@@ -119,6 +119,15 @@ Builds for Windows, macOS, Linux and the web are attached to each
 runs in the browser: opening files uses the browser's file picker and saving downloads
 the result.
 
+Installed, spritesheetbelli opens `.sbelli` projects when you double-click them, and
+shows up in "Open with" for images and spritesheet data files (`.json`, `.atlas`):
+
+- **Windows:** run `spritesheetbelli-…-windows-setup.exe` (no administrator rights
+  needed). The `.zip` is the same app without installing it.
+- **macOS:** move the app to Applications.
+- **Linux:** extract the archive and run `./install.sh`, which also adds the launcher and
+  the `spritesheetbelli` command (`./install.sh --uninstall` removes it all).
+
 ### Publishing a release
 
 Push a tag such as `v0.2.0`. The Release workflow builds every platform, attaches the
