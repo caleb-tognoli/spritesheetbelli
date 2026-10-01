@@ -98,8 +98,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Error dialogs when an image would be bigger than Godot or the format allows.
 - Frames can be moved inside their cells: in the move mode, arrow keys move the selected
   frames by a pixel (8 with Shift), and Frame > Align in Cell puts them against the top,
-  bottom, left or right of their cells or in the middle (Alt+T, B, L, R, C). Cells grow to hold moved
-  frames, and projects keep where every frame is.
+  bottom, left or right of their cells or in the middle (Alt+T, B, L, R, C). Both trim
+  the frames' transparent borders first, so it's what's drawn that lines up, and only
+  what's drawn grows the cells when moved past them. Projects keep where every frame is.
 - Linked files: sprites, spritesheets and GIFs remember the file (and the place in it) they
   came from. When a linked file changes on disk, a dialog asks whether to reload it,
   keeping the edits made here (flip, rotate, trim, background colour, outline, moves in the

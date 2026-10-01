@@ -66,6 +66,16 @@ func test_spritesheet_keeps_rows_and_aligns() -> void:
 		assert_eq(sheet.get_frame_rect_in_cell(coord).end.y, 16, str(coord))
 
 
+func test_boxes_drawn_with_borders_are_cut_tight() -> void:
+	var img := packed_sheet()
+	var rows: Array[Array] = [[Rect2i(0, 0, 16, 16), Rect2i(28, 0, 12, 16)]]
+	var sheet := SpriteDetector.to_spritesheet(img, rows, Spritesheet.Alignment.CENTER, "a.png")
+	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(10, 10))
+	assert_eq(sheet.frames[Vector2i(1, 0)].get_size(), Vector2i(8, 12))
+	assert_eq(sheet.frame_sources[Vector2i(0, 0)].rect, [2, 4, 10, 10], "linked to what it holds")
+	assert_false(FrameSource.has_edits(sheet.frame_sources[Vector2i(0, 0)]))
+
+
 ## An Add Spritesheet window showing [method packed_sheet]
 func open_window() -> AddSpritesheetWindow:
 	var window: AddSpritesheetWindow = (

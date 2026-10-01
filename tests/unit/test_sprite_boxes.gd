@@ -218,7 +218,8 @@ func test_dragging_moves_and_resizes_whole_pixels() -> void:
 	# From inside the first box, 3.4 px right and 2.6 px down
 	drag(Vector2(6, 8), Vector2(9.4, 10.6))
 	assert_eq(window.box_editor.get_boxes()[0], Rect2i(5, 7, 10, 10), "moved")
-	assert_eq(get_cut_rects()[0], Rect2i(5, 7, 10, 10), "cut there")
+	# The sprite is at 2, 4, 10×10: what's drawn of it inside the box
+	assert_eq(get_cut_rects()[0], Rect2i(5, 7, 7, 7), "cut there, without transparent borders")
 	# Its right edge, to the line nearest the mouse
 	drag(Vector2(15, 12), Vector2(20.3, 12))
 	assert_eq(window.box_editor.get_boxes()[0], Rect2i(5, 7, 15, 10), "wider")

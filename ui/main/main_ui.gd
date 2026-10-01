@@ -232,7 +232,7 @@ func _ready() -> void:
 	preview.nudge_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i) -> void:
 			Global.document.perform(
-				L10n.mark("Nudge frames"), Global.spritesheet.nudge_frames.bind(coords, offset)
+				L10n.mark("Nudge frames"), FrameEdits.nudge.bind(Global.spritesheet, coords, offset)
 			)
 	)
 	preview.lock_requested.connect(

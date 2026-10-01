@@ -28,8 +28,7 @@ static func detect(img: Image, merge_distance := 0) -> Array[Array]:
 		var area := Rect2i(outline.position.floor(), outline.size.ceil()).intersection(bounds)
 		if merge_distance > 0:
 			# Back to the pixels themselves
-			var used := img.get_region(area).get_used_rect()
-			area = Rect2i(area.position + used.position, used.size)
+			area = _visible_part(img, area)
 		if area.get_area() >= MIN_AREA:
 			rects.append(area)
 	return group_in_rows(_drop_enclosed(rects))
@@ -75,9 +74,10 @@ static func order_in_rows(rects: Array[Rect2i]) -> Array[Array]:
 	return rows
 
 
-## A spritesheet with one frame per sprite, keeping the rows of [param rows]. With
-## [param alignment], the frames are lined up, e.g. at the bottom for characters. With
-## the [param path] of the image, the frames are linked to it, see [FrameSource]. With
+## A spritesheet with one frame per sprite, keeping the rows of [param rows]. The frames
+## are cut without the transparent borders of their rectangles, and lined up as
+## [param alignment] says, e.g. at the bottom for characters (see [method FrameEdits.align]).
+## With the [param path] of the image, the frames are linked to it, see [FrameSource]. With
 ## [param keep_layout], the sheet is packed with every sprite where it was found.
 static func to_spritesheet(
 	img: Image,
@@ -86,6 +86,11 @@ static func to_spritesheet(
 	path := "",
 	keep_layout := false
 ) -> Spritesheet:
+	# Trimmed here rather than by aligning, so the frames are linked to what they hold
+	var visible_rows: Array[Array] = []
+	for row in rows:
+		visible_rows.append(row.map(func(rect: Rect2i) -> Rect2i: return _visible_part(img, rect)))
+	rows = visible_rows
 	var sheet := Spritesheet.new()
 	sheet.begin_batch()
 	for row in rows.size():
@@ -112,6 +117,15 @@ static func to_spritesheet(
 		PackedLayout.adopt(sheet, places, img.get_size())
 	sheet.end_batch()
 	return sheet
+
+
+## The part of [param area] of [param img] that isn't transparent, or the whole of it when
+## nothing is drawn there
+static func _visible_part(img: Image, area: Rect2i) -> Rect2i:
+	var used := img.get_region(area).get_used_rect()
+	if not used.has_area():
+		return area
+	return Rect2i(area.position + used.position, used.size)
 
 
 static func _drop_enclosed(rects: Array[Rect2i]) -> Array[Rect2i]:

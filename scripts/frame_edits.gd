@@ -106,12 +106,41 @@ static func outline_op(color: Color, thickness: int, corners: bool) -> Dictionar
 	return {"op": "outline", "color": color.to_html(), "thickness": thickness, "corners": corners}
 
 
+## Trims the frames that have transparent borders, leaving the others (and their linked
+## files' edits) as they are. See [method trim].
+static func trim_padded(sheet: Spritesheet, coords: Array[Vector2i]) -> void:
+	var padded: Array[Vector2i] = []
+	for coord in coords:
+		if not sheet.has_frame(coord):
+			continue
+		var img: Image = sheet.frames[coord]
+		var used := img.get_used_rect()
+		if used.size != Vector2i.ZERO and used.size != img.get_size():
+			padded.append(coord)
+	if not padded.is_empty():
+		trim(sheet, padded)
+
+
+## Moves frames inside their cells by [param offset] unscaled pixels. Their transparent
+## borders are trimmed first, so only what's drawn grows the cells when it goes past them.
+static func nudge(sheet: Spritesheet, coords: Array[Vector2i], offset: Vector2i) -> void:
+	if offset == Vector2i.ZERO:
+		return
+	sheet.begin_batch()
+	trim_padded(sheet, coords)
+	sheet.nudge_frames(coords, offset)
+	sheet.end_batch()
+
+
 ## Puts frames against an edge of their cells, or in the middle, without growing the
-## cells. The edges are the other frames' when the frame fits between them (so a frame
-## moved out lines up with the rest again), else the whole cell's.
+## cells. Their transparent borders are trimmed first, so it's what's drawn that lines up.
+## The edges are the other frames' when the frame fits between them (so a frame moved out
+## lines up with the rest again), else the whole cell's.
 static func align(
 	sheet: Spritesheet, coords: Array[Vector2i], alignment: Spritesheet.Alignment
 ) -> void:
+	sheet.begin_batch()
+	trim_padded(sheet, coords)
 	var cell := Rect2i()
 	var rest := Rect2i()
 	for coord in sheet.frames:
@@ -119,7 +148,6 @@ static func align(
 		cell = rect if cell.size == Vector2i.ZERO else cell.merge(rect)
 		if coord not in coords:
 			rest = rect if rest.size == Vector2i.ZERO else rest.merge(rect)
-	sheet.begin_batch()
 	for coord in coords:
 		if not sheet.has_frame(coord):
 			continue

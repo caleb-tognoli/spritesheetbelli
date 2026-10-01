@@ -69,6 +69,28 @@ func test_align_to_bottom() -> void:
 	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(1, 0)), Rect2i(0, 0, 8, 16))
 
 
+func test_align_lines_up_what_is_drawn() -> void:
+	sheet.add_frames([block_at(Vector2i(2, 2)), block_at(Vector2i(6, 8))] as Array[Image])
+	FrameEdits.align(sheet, sheet.get_sorted_coords(), Spritesheet.Alignment.BOTTOM)
+	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(4, 6), "transparent borders go")
+	assert_eq(sheet.sprite_size, Vector2i(8, 6))
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(0, 0, 4, 6))
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(1, 0)), Rect2i(4, 0, 4, 6))
+
+
+func test_nudging_leaves_transparent_borders_out() -> void:
+	sheet.add_frames([block_at(Vector2i(2, 2)), make_image(Color.BLUE)] as Array[Image])
+	var first := [Vector2i(0, 0)] as Array[Vector2i]
+	sheet.set_frame(Vector2i(0, 0), sheet.frames[Vector2i(0, 0)], FrameSource.for_file("a.png"))
+	FrameEdits.nudge(sheet, first, Vector2i(0, 1))
+	assert_eq(sheet.sprite_size, Vector2i(16, 16), "the borders don't grow the cells")
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i(0, 0)), Rect2i(2, 3, 4, 6))
+	FrameEdits.nudge(sheet, first, Vector2i(0, 8))
+	assert_eq(sheet.sprite_size, Vector2i(16, 17), "what's drawn still does")
+	var ops: Array = sheet.frame_sources[Vector2i(0, 0)].ops
+	assert_eq(ops.map(func(op: Dictionary) -> String: return op.op), ["trim", "move", "move"])
+
+
 func test_flip_and_rotate_move_origins() -> void:
 	sheet.add_frames([block_at(Vector2i(0, 0)), make_image(Color.BLUE)] as Array[Image])
 	var first := [Vector2i(0, 0)] as Array[Vector2i]
