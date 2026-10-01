@@ -3152,8 +3152,8 @@ msgid "Name only the animation chosen in the animation panel"
 msgstr "Mostra il nome solo dell'animazione scelta nel pannello animazioni"
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd
-msgid "Can't be named: their frames are out of order or not one area"
-msgstr "Senza nome: i loro frame non sono in ordine o non formano un'unica area"
+msgid "Can't be named: their frames aren't one area"
+msgstr "Senza nome: i loro frame non formano un'unica area"
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd
 msgid "Hide its name"

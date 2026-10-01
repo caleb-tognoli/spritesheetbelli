@@ -91,6 +91,16 @@ func test_whole_rows() -> void:
 	assert_line(frames, Layout.Shape.ROW, Layout.Side.LEFT, 1, frames)
 	# A frame alone in its row
 	assert_line(cells_of([2, 1]), Layout.Shape.ROW, Layout.Side.LEFT, 1, cells_of([2, 1, 2, 2]))
+	# Out of order: named in the margin nearer its first frame
+	assert_line(cells_of([1, 0, 0, 0, 2, 0]), Layout.Shape.ROW, Layout.Side.LEFT, 0, row(0, 0, 2))
+	assert_line(
+		cells_of([5, 2, 0, 2, 4, 2]),
+		Layout.Shape.ROW,
+		Layout.Side.RIGHT,
+		2,
+		cells_of([0, 2, 4, 2, 5, 2])
+	)
+	assert_line(row(0, 3, 5) + row(0, 0, 2), Layout.Shape.ROW, Layout.Side.RIGHT, 0)
 
 
 func test_whole_columns() -> void:
@@ -99,6 +109,7 @@ func test_whole_columns() -> void:
 	var frames := row(0, 0, 5) + column(4, 1, 2)
 	assert_line(column(4, 0, 2), Layout.Shape.COLUMN, Layout.Side.TOP, 4, frames)
 	assert_line(column(4, 2, 0), Layout.Shape.COLUMN, Layout.Side.BOTTOM, 4, frames)
+	assert_line(cells_of([1, 0, 1, 3, 1, 1, 1, 2]), Layout.Shape.COLUMN, Layout.Side.TOP, 1)
 
 
 func test_part_of_a_row_or_column_is_outlined() -> void:
@@ -115,15 +126,18 @@ func test_part_of_a_row_or_column_is_outlined() -> void:
 	# Frames that aren't the whole row
 	var label := Layout.classify(row(0, 0, 3), GRID, has_frame_in(row(0, 0, 4)))
 	assert_eq(label.shape, Layout.Shape.AREA, "one frame short")
-	# The whole row, out of order
-	var frames := row(0, 0, 2)
-	label = Layout.classify(cells_of([1, 0, 0, 0, 2, 0]), GRID, has_frame_in(frames))
-	assert_eq(label.shape, Layout.Shape.NONE, "out of order")
+	# Out of order
+	assert_eq(shape_of(cells_of([2, 0, 4, 0, 3, 0])), Layout.Shape.AREA, "2, 4, 3")
+	assert_eq(shape_of(cells_of([0, 0, 2, 0, 1, 0])), Layout.Shape.AREA, "0, 2, 1")
 
 
 func test_blocks() -> void:
-	# Whole rows of a rectangle, in reading order
+	# Whole rows of a rectangle
 	assert_eq(shape_of(row(1, 1, 3) + row(2, 1, 3)), Layout.Shape.BLOCK, "rows")
+	assert_eq(shape_of(row(0, 2, 0) + row(1, 2, 0)), Layout.Shape.BLOCK, "right to left")
+	assert_eq(shape_of(row(1, 1, 3) + row(2, 3, 1)), Layout.Shape.BLOCK, "snaking")
+	assert_eq(shape_of(cells_of([0, 0, 1, 0, 1, 1, 0, 1])), Layout.Shape.BLOCK, "round a square")
+	assert_eq(shape_of(row(2, 1, 3) + row(1, 1, 3)), Layout.Shape.BLOCK, "bottom row first")
 	assert_eq(shape_of(row(0, 0, 1) + row(1, 0, 1) + row(2, 0, 1)), Layout.Shape.BLOCK, "2×3")
 	# Whole columns
 	assert_eq(shape_of(column(1, 0, 2) + column(2, 0, 2)), Layout.Shape.BLOCK, "columns")
@@ -143,26 +157,25 @@ func test_areas() -> void:
 	# L-shapes, either way round
 	assert_eq(shape_of(row(0, 0, 2) + column(2, 1, 3)), Layout.Shape.AREA, "L")
 	assert_eq(shape_of(column(0, 0, 2) + row(2, 1, 3)), Layout.Shape.AREA, "L down then right")
-	# Back and forth along rows
-	assert_eq(shape_of(row(0, 0, 2) + row(1, 2, 0)), Layout.Shape.AREA, "snaking")
-	# Rows of a rectangle that aren't whole or in reading order
+	# A rectangle with a frame missing
 	assert_eq(shape_of(row(1, 1, 3) + row(2, 3, 2)), Layout.Shape.AREA, "a row short")
-	assert_eq(shape_of(cells_of([0, 0, 1, 0, 1, 1, 0, 1])), Layout.Shape.AREA, "round a square")
+	# Out of order
+	assert_eq(shape_of(row(1, 0, 1) + row(0, 4, 5)), Layout.Shape.AREA, "wrapping backwards")
+	assert_eq(shape_of(cells_of([2, 3, 2, 1, 2, 2, 0, 1, 1, 1])), Layout.Shape.AREA, "T")
 	var label := Layout.classify(row(0, 0, 5) + row(1, 0, 1), GRID)
 	assert_true(Layout.is_outlined(label))
 	assert_eq(Layout.get_slot(label), Vector3i(Layout.Side.NONE, 0, 0), "named at its first frame")
 
 
-func test_scattered_or_out_of_order_get_none() -> void:
+func test_scattered_get_none() -> void:
 	assert_eq(shape_of([] as Array[Vector2i]), Layout.Shape.NONE, "empty")
 	assert_eq(shape_of(cells_of([0, 0, 2, 0])), Layout.Shape.NONE, "a gap")
-	assert_eq(shape_of(cells_of([0, 0, 2, 0, 1, 0])), Layout.Shape.NONE, "out of order")
-	assert_eq(shape_of(cells_of([1, 0, 0, 0, 2, 0])), Layout.Shape.NONE, "out of order")
+	assert_eq(shape_of(cells_of([2, 0, 0, 0])), Layout.Shape.NONE, "a gap, backwards")
 	assert_eq(shape_of(cells_of([0, 0, 1, 1])), Layout.Shape.NONE, "diagonal")
 	assert_eq(shape_of(cells_of([3, 0, 0, 3])), Layout.Shape.NONE, "far apart")
-	assert_eq(shape_of(row(0, 2, 0) + row(1, 2, 0)), Layout.Shape.NONE, "rows right to left")
 	assert_eq(shape_of(row(0, 0, 1) + row(0, 3, 4)), Layout.Shape.NONE, "a row with a gap")
-	assert_eq(shape_of(row(1, 4, 5) + row(0, 0, 1)), Layout.Shape.NONE, "wrapping backwards")
+	assert_eq(shape_of(row(1, 4, 5) + row(0, 0, 1)), Layout.Shape.NONE, "not wrapping")
+	assert_eq(shape_of(cells_of([5, 0, 0, 2])), Layout.Shape.NONE, "wrapping two rows")
 	assert_eq(shape_of(row(0, 0, 6)), Layout.Shape.NONE, "outside the grid")
 	assert_eq(shape_of(row(0, 0, 1), Vector2i.ZERO), Layout.Shape.NONE, "no grid")
 

@@ -140,7 +140,7 @@ func _build_flyover() -> void:
 	list.add_theme_constant_override("separation", 0)
 	box.add_child(scroll)
 	left_out.theme_type_variation = &"StatusLabel"
-	left_out.tooltip_text = "Can't be named: their frames are out of order or not one area"
+	left_out.tooltip_text = "Can't be named: their frames aren't one area"
 	left_out.mouse_filter = Control.MOUSE_FILTER_PASS
 	box.add_child(left_out)
 	area.add_child(flyover)

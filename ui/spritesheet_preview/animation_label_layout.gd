@@ -4,21 +4,23 @@ extends RefCounted
 ## their cells alone so it can be tested without drawing.
 ##
 ## Frames shown more than once count once, where they're first shown: a ping-pong written
-## out as 0-5, 4-1 or a frame held with 3, 3 is still the row 0-5. An animation gets a
-## label when those cells, in that order, are:
-## [br]- every frame of one row and nothing else, either way along it, named in the margin
-## where it starts; the same for a column, named above or below it. Empty cells don't
-## count, so a row with frames missing is still whole;
-## [br]- a rectangle of whole rows, or whole columns, in reading order, outlined;
-## [br]- any area whose every frame touches the one before it or follows it in reading
-## order, such as part of a row, frames wrapping onto the next row or an L-shape, outlined.
-## [br]Other animations are scattered or out of order, and get none.
+## out as 0-5, 4-1 or a frame held with 3, 3 is still the row 0-5. The order they're
+## shown in doesn't matter otherwise: 2, 4, 3 is the area 2-4. An animation gets a label
+## when those cells are:
+## [br]- every frame of one row and nothing else, named in the margin nearer its first
+## frame; the same for a column, named above or below it. Empty cells don't count, so a
+## row with frames missing is still whole;
+## [br]- a rectangle of at least two rows and two columns, outlined;
+## [br]- any connected area, where frames touch side to side or the end of a row leads on
+## to the start of the next, such as part of a row, frames wrapping onto the next row or
+## an L-shape, outlined.
+## [br]Other animations are scattered, and get none.
 
 enum Shape {
-	NONE,  ## Scattered or out of order: no label
+	NONE,  ## Scattered: no label
 	ROW,  ## A whole row, named in the margin where it starts
 	COLUMN,  ## A whole column, named above or below it
-	BLOCK,  ## Whole rows or columns of a rectangle, outlined and named at its first frame
+	BLOCK,  ## A rectangle, outlined and named at its first frame
 	AREA,  ## Any other area, outlined and named at its first frame
 }
 ## The margin of the grid a row or column's label goes in
@@ -57,11 +59,11 @@ static func classify(
 	var column := _frames_along(Vector2i(first.x, 0), Vector2i.DOWN, grid_size.y, has_frame)
 	if _is_whole(distinct, row):
 		result.shape = Shape.ROW
-		result.side = Side.LEFT if distinct == row else Side.RIGHT
+		result.side = Side.LEFT if _starts_nearer_start(first, row) else Side.RIGHT
 		result.line = first.y
 	elif _is_whole(distinct, column):
 		result.shape = Shape.COLUMN
-		result.side = Side.TOP if distinct == column else Side.BOTTOM
+		result.side = Side.TOP if _starts_nearer_start(first, column) else Side.BOTTOM
 		result.line = first.x
 	elif _is_block(distinct):
 		result.shape = Shape.BLOCK
@@ -82,43 +84,49 @@ static func _frames_along(
 	return frames
 
 
-## Whether [param cells] are all of [param line] and nothing else, in its order or the
-## other way
+## Whether [param cells], all different, are all of [param line] and nothing else, in
+## any order
 static func _is_whole(cells: Array[Vector2i], line: Array[Vector2i]) -> bool:
-	if cells == line:
-		return true
-	var backwards := line.duplicate()
-	backwards.reverse()
-	return cells == backwards
+	var in_line := func(cell: Vector2i) -> bool: return cell in line
+	return cells.size() == line.size() and cells.all(in_line)
 
 
-## Whether [param cells] fill a rectangle of at least two rows and two columns, row after
-## row or column after column in reading order
+## Whether [param first] is in the first half of [param line], or its middle
+static func _starts_nearer_start(first: Vector2i, line: Array[Vector2i]) -> bool:
+	return line.find(first) * 2 <= line.size() - 1
+
+
+## Whether [param cells], all different, fill a rectangle of at least two rows and two
+## columns
 static func _is_block(cells: Array[Vector2i]) -> bool:
 	var bounds := Rect2i(cells[0], Vector2i.ONE)
 	for cell in cells:
 		bounds = bounds.merge(Rect2i(cell, Vector2i.ONE))
 	var size := bounds.size
-	if size.x < 2 or size.y < 2 or cells.size() != size.x * size.y:
-		return false
-	var by_rows := true
-	var by_columns := true
-	for i in cells.size():
-		by_rows = by_rows and cells[i] == bounds.position + Vector2i(i % size.x, i / size.x)
-		by_columns = by_columns and cells[i] == bounds.position + Vector2i(i / size.y, i % size.y)
-	return by_rows or by_columns
+	return size.x >= 2 and size.y >= 2 and cells.size() == size.x * size.y
 
 
-## Whether every cell of [param cells] touches the one before it, or follows it in reading
-## order from the end of a row to the start of the next
+## Whether [param cells] are connected: each reached from the first through cells that
+## touch side to side, or that follow on from the end of a row to the start of the next
 static func _is_area(cells: Array[Vector2i], grid_size: Vector2i) -> bool:
-	for i in range(1, cells.size()):
-		var before := cells[i - 1]
-		var step := cells[i] - before
-		var wraps := before.x == grid_size.x - 1 and cells[i] == Vector2i(0, before.y + 1)
-		if absi(step.x) + absi(step.y) != 1 and not wraps:
-			return false
-	return true
+	var left: Dictionary[Vector2i, bool] = {}
+	for cell in cells:
+		left[cell] = true
+	left.erase(cells[0])
+	var reached: Array[Vector2i] = [cells[0]]
+	while not reached.is_empty():
+		var cell: Vector2i = reached.pop_back()
+		var next: Array[Vector2i] = [
+			cell + Vector2i.LEFT, cell + Vector2i.RIGHT, cell + Vector2i.UP, cell + Vector2i.DOWN
+		]
+		if cell.x == grid_size.x - 1:
+			next.append(Vector2i(0, cell.y + 1))
+		if cell.x == 0:
+			next.append(Vector2i(grid_size.x - 1, cell.y - 1))
+		for neighbour in next:
+			if left.erase(neighbour):
+				reached.append(neighbour)
+	return left.is_empty()
 
 
 ## How labels that overlap are told apart. [param labels] are results of [method classify]

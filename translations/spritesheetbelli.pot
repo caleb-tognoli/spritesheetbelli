@@ -3144,7 +3144,7 @@ msgid "Name only the animation chosen in the animation panel"
 msgstr ""
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd
-msgid "Can't be named: their frames are out of order or not one area"
+msgid "Can't be named: their frames aren't one area"
 msgstr ""
 
 #: res://ui/spritesheet_preview/animation_label_controls.gd

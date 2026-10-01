@@ -163,11 +163,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - An Animation menu with these, Edit, Duplicate, Mirror and Delete Animation (of the
   animation chosen in the animation panel), Animation Panel (P) and Onion Skin.
 - The grid names animations: an animation that is exactly one row is named in the left
-  margin (the right one when it runs right to left), one that is exactly one column above
-  it (below when it runs upwards); empty cells don't count. Any other connected run or
-  area, such as part of a row, a rectangle, 8 frames in 6 columns or an L-shape, is
-  outlined with the name on the edge at its first frame. Frames shown twice count once;
-  scattered or out-of-order animations aren't named. Names and outlines are drawn in
+  margin (the right one when it starts nearer the right), one that is exactly one column
+  above it (below when it starts nearer the bottom); empty cells don't count. Any other
+  connected area, such as part of a row, a rectangle, 8 frames in 6 columns or an
+  L-shape, is outlined with the name on the edge at its first frame. The order of the
+  frames doesn't matter, and frames shown twice count once; scattered animations aren't
+  named. Names and outlines are drawn in
   their animation's colour; where they overlap, names stack in their margin and outlines
   around the same frames are drawn further inside, with the playing one on top.
   Names are never drawn over each other or over frame numbers, and Fit to View leaves
