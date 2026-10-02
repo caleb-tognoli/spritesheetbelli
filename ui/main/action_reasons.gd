@@ -17,7 +17,7 @@ static func apply(main: Control) -> void:
 	var commands: AnimationCommands = main.animation_commands
 	var selected := func() -> Array[Vector2i]: return preview.get_selected_coords()
 	var has_frames := func() -> bool: return not sheet.is_empty()
-	var has_selection := func() -> bool: return not selected.call().is_empty()
+	var has_selection := preview.has_selection
 	var one_selected := func() -> bool: return selected.call().size() == 1
 	var linked := func() -> bool: return not main.get_selected_linked_coords().is_empty()
 	var not_top := func() -> bool: return selected.call()[0].y > 0

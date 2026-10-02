@@ -278,6 +278,11 @@ func get_selected_coords() -> Array[Vector2i]:
 	return coords
 
 
+## Whether a frame is selected, quicker than [method get_selected_coords] for menus
+func has_selection() -> bool:
+	return _selected.keys().any(spritesheet.has_frame)
+
+
 func is_selected(coord: Vector2i) -> bool:
 	return _selected.has(coord)
 

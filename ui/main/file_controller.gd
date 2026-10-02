@@ -11,9 +11,6 @@ const DATA_FILTER := "*.json, *.atlas ; Spritesheet data (TexturePacker, Aseprit
 ## What Godot calls the filters its file dialogs add, of every file the other filters take
 ## and of all files, which they translate like the others, also in native dialogs
 const DIALOG_FILTER_NAMES := ["All Recognized", "All Files"]  # L10n.mark
-## Work above these sizes shows a "please wait" overlay first
-const SLOW_PIXELS := 4_000_000
-const SLOW_FILE_BYTES := 4_000_000
 
 @export var add_spritesheet_window: AddSpritesheetWindow
 
@@ -335,8 +332,7 @@ func open_dropped_files(paths: PackedStringArray) -> void:
 func show_add_spritesheet_window(spritesheet_path: String) -> void:
 	await Notify.run_busy(
 		tr("Opening %s") % spritesheet_path.get_file(),
-		_show_add_spritesheet_window.bind(spritesheet_path),
-		is_big_file(spritesheet_path)
+		_show_add_spritesheet_window.bind(spritesheet_path)
 	)
 
 
@@ -410,7 +406,7 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 		loading_opened_file = true
 	_linking(spritesheet_path)
 	_linking(data_path)
-	add_spritesheet_window.setup(img, spritesheet_path, data, data_path, prepared)
+	await add_spritesheet_window.setup(img, spritesheet_path, data, data_path, prepared)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
@@ -486,12 +482,17 @@ static func _suggest(dialog: FileDialog, path: String) -> void:
 
 
 func save_project(path: String) -> bool:
-	return await Notify.run_busy(tr("Saving"), _save_project.bind(path), is_big_sheet())
+	return await Notify.run_busy(tr("Saving"), _save_project.bind(path))
 
 
 func _save_project(path: String) -> bool:
 	path = ProjectFile.with_extension(path)
-	var error := ProjectFile.save(Global.spritesheet, path, project_extra(path.get_base_dir()))
+	# Written on a worker thread, so the bar keeps going. Frame images are never changed in
+	# place, so a copy of the state is enough.
+	var copy := Spritesheet.new()
+	copy.set_state(Global.spritesheet.get_state())
+	var extra := project_extra(path.get_base_dir())
+	var error: Error = await Parallel.run(ProjectFile.save.bind(copy, path, extra))
 	if error != OK:
 		Notify.error(tr("Could not save %s (%s).") % [path.get_file(), error_string(error)])
 		after_save = Callable()
@@ -513,9 +514,7 @@ func _save_project(path: String) -> bool:
 
 
 func open_project(path: String) -> bool:
-	return await Notify.run_busy(
-		tr("Opening %s") % path.get_file(), _open_project.bind(path), is_big_file(path)
-	)
+	return await Notify.run_busy(tr("Opening %s") % path.get_file(), _open_project.bind(path))
 
 
 func _open_project(path: String) -> bool:
@@ -692,21 +691,6 @@ func open_spritesheet() -> void:
 		L10n.mark("Save changes to %s before opening another file?"),
 		popup_file_dialog.bind(open_dialog)
 	)
-
-
-static func is_big_file(path: String) -> bool:
-	var file := FileAccess.open(path, FileAccess.READ)
-	return file != null and file.get_length() > SLOW_FILE_BYTES
-
-
-## Whether work on the sheet takes long enough to show a "please wait" overlay
-static func is_big_sheet() -> bool:
-	var sheet := Global.spritesheet
-	var pixels := 0
-	for coord in sheet.frames:
-		var size := sheet.get_frame_rect_in_cell(coord).size
-		pixels += size.x * size.y
-	return pixels > SLOW_PIXELS
 
 
 static func _create_file_dialog(

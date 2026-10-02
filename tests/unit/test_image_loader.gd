@@ -41,7 +41,21 @@ func test_run_busy_shows_the_overlay_while_working() -> void:
 	assert_eq(result, 5)
 	assert_true(seen[0], "visible during the work")
 	assert_false(Notify.is_progress_visible(), "hidden after")
-	assert_eq(await Notify.run_busy("Quick", func() -> int: return 6, false), 6, "not slow")
+
+
+func test_run_busy_within_other_work_keeps_its_overlay() -> void:
+	var seen := []
+	var inner := func() -> int:
+		seen.append(Notify._progress_label.text)
+		return 2
+	var outer := func() -> int:
+		var result: int = await Notify.run_busy("Inner", inner)
+		seen.append(Notify.is_progress_visible())
+		seen.append(Notify._progress_label.text)
+		return result + 1
+	assert_eq(await Notify.run_busy("Outer", outer), 3)
+	assert_eq(seen, ["Inner…", true, "Outer…"], "says what's being done, until the outer is")
+	assert_false(Notify.is_progress_visible(), "hidden after")
 
 
 func test_run_busy_awaits_work_on_worker_threads() -> void:
@@ -53,7 +67,7 @@ func test_run_busy_awaits_work_on_worker_threads() -> void:
 		await get_tree().create_timer(0.3).timeout
 		seen.append(Notify._progress_overlay.modulate.a)
 		return result
-	assert_eq(await Notify.run_busy("Working", work, false), 7)
+	assert_eq(await Notify.run_busy("Working", work), 7)
 	assert_eq(seen, [true, 0.0, 1.0], "blocks clicks at once, and shows once it takes a while")
 	assert_false(Notify.is_progress_visible(), "hidden after")
 	assert_eq(Notify._progress_overlay.modulate.a, 1.0, "ready to show again")

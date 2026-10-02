@@ -572,6 +572,18 @@ msgid "Data: %s"
 msgstr "Dati: %s"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Making the background transparent"
+msgstr "Rimozione dello sfondo"
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Finding sprites"
+msgstr "Ricerca degli sprite"
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
+msgid "Cutting"
+msgstr "Taglio"
+
+#: res://ui/add_spritesheet/add_spritesheet_window.gd
 #: res://ui/animation_preview/animation_detail.gd
 #: res://ui/spritesheet_preview/animation_labels.gd
 msgid "%d frame"

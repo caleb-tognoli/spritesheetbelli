@@ -25,6 +25,10 @@ signal frames_added
 ## [member background] is on
 @export var spritesheet_image: Image
 
+## Images with more pixels than this are cut on worker threads, behind the "please wait"
+## overlay, see [method _run_busy]
+const SLOW_PIXELS := 4_000_000
+
 ## How the image is cut into frames
 enum Cut {
 	GRID,  ## In a grid of equal cells
@@ -88,6 +92,9 @@ var _by_cell_size := false
 ## be found again, as the settings for finding them changed. They're found once shown.
 var _boxes_found := false
 var _boxes_stale := true
+## Counts cuts started: big images are cut on worker threads, and a cut that ends after a
+## newer one started is dropped
+var _cut_generation := 0
 
 
 func _ready() -> void:
@@ -105,8 +112,9 @@ func _ready() -> void:
 	window_input.connect(
 		func(event: InputEvent) -> void:
 			if event.is_action_pressed(&"ui_cancel") and not event.is_echo():
-				# The background's panel takes it first, see ColorKeyDropdown._input
-				if not background.is_open():
+				# The background's panel takes it first, see ColorKeyDropdown._input. Keys
+				# come here before the busy overlay can block them.
+				if not background.is_open() and not Notify.is_progress_visible():
 					close_requested.emit()
 	)
 	lock_empty_cells.toggled.connect(
@@ -195,7 +203,7 @@ func _ready() -> void:
 	box_editor.find_requested.connect(
 		func() -> void:
 			_boxes_stale = true
-			_slice()
+			_slice_busy()
 	)
 	# Show the whole sheet once the window has its size
 	visibility_changed.connect(
@@ -236,7 +244,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "", prep
 	)
 	background.set_picking(false)
 	_boxes_found = false
-	_remove_background(prepared)
+	await _remove_background(prepared)
 	# Packed sheets stay packed when opened, or added to a packed sheet
 	var target := Global.spritesheet
 	keep_layout.set_pressed_no_signal(
@@ -254,13 +262,13 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "", prep
 	_set_max(cell_height, image_size.y)
 	# Guessed beforehand from the image as keyed, unless it was keyed differently
 	var keyed_before: bool = not prepared.is_empty() and spritesheet_image == prepared.keyed[0]
-	_guess_grid(false, prepared.grid if keyed_before else Vector2i.ZERO)
+	await _guess_grid(false, prepared.grid if keyed_before else Vector2i.ZERO)
 	cut_option.clear()
 	cut_option.add_item("Grid", Cut.GRID)
 	cut_option.add_item("Find sprites", Cut.DETECT)
 	if data:
 		cut_option.add_item(tr("Data: %s") % data_file.get_file(), Cut.DATA)
-	set_cut(get_default_cut(data != null, target.layout))
+	await set_cut(get_default_cut(data != null, target.layout))
 
 
 ## What [method setup] works out that takes a while on big sheets, worked out on worker
@@ -300,7 +308,7 @@ func _guess_grid(or_keep := false, guessed := Vector2i.ZERO) -> void:
 	var cell_size := GridGuesser.guess_cell_size_from_file_name(image_path, image_size)
 	var guessed_size := guessed
 	if guessed_size == Vector2i.ZERO:
-		guessed_size = GridGuesser.guess(spritesheet_image, image_path)
+		guessed_size = await _compute(GridGuesser.guess.bind(spritesheet_image, image_path))
 	if or_keep and guessed_size == Vector2i.ONE:
 		return
 	_by_cell_size = cell_size != Vector2i.ZERO
@@ -319,20 +327,34 @@ func _remove_background(prepared := {}) -> void:
 	var key := _get_key()
 	if key == _keyed_with:
 		return
-	_keyed_with = key
-	spritesheet_image = source_image
-	_other_pages = _source_pages
+	var generation := _key_generation
+	var keyed: Array[Image] = []
 	if prepared.get("key") == key:
-		spritesheet_image = prepared.keyed[0]
-		_other_pages = prepared.keyed.slice(1)
-	elif background.is_on():
-		var color := background.get_color()
-		var tolerance := background.get_tolerance()
-		spritesheet_image = SheetBackground.remove(source_image, color, tolerance)
-		_other_pages = []
-		for page in _source_pages:
-			_other_pages.append(SheetBackground.remove(page, color, tolerance) if page else null)
+		keyed = prepared.keyed
+	else:
+		keyed = await _key_images(key, _is_big())
+	# A new image came in the meantime
+	if generation != _key_generation:
+		return
+	_keyed_with = key
+	spritesheet_image = keyed[0]
+	_other_pages = keyed.slice(1)
 	box_editor.set_image(spritesheet_image)
+
+
+## The images as opened, with the background made transparent as [param key] says (see
+## [method _get_key]), on worker threads when [param threaded]
+func _key_images(key: Array, threaded: bool) -> Array[Image]:
+	var keyed: Array[Image] = [source_image]
+	keyed.append_array(_source_pages)
+	if not key[0]:
+		return keyed
+	for i in keyed.size():
+		if keyed[i] and threaded:
+			keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2])
+		elif keyed[i]:
+			keyed[i] = SheetBackground.remove(keyed[i], key[1], key[2])
+	return keyed
 
 
 ## Whether the background is made transparent, and its colour and tolerance when it is
@@ -367,14 +389,7 @@ func _preview_background() -> void:
 	var generation := _key_generation
 	_keying = true
 	background_passes += 1
-	var sources: Array[Image] = [source_image]
-	sources.append_array(_source_pages)
-	var keyed: Array[Image] = []
-	for img in sources:
-		if img and key[0]:
-			keyed.append(await SheetBackground.remove_async(img, key[1], key[2]))
-		else:
-			keyed.append(img)
+	var keyed := await _key_images(key, true)
 	_keying = false
 	# A new image, Confirm or Cancel came in the meantime
 	if generation != _key_generation:
@@ -420,26 +435,30 @@ func _restore_background() -> void:
 ## Cuts the image again with the background as it's set, guessing the grid again (unless
 ## it was set by hand) and finding the sprites again
 func _cut_with_background() -> void:
-	_remove_background()
-	if _grid_guessed:
-		_guess_grid(true)
-	_slice()
+	await _run_busy(
+		tr("Making the background transparent"),
+		func() -> void:
+			await _remove_background()
+			if _grid_guessed:
+				await _guess_grid(true)
+			await _slice()
+	)
 
 
 ## Remembers with the sources of the frames of [param sheet] that the background was made
-## transparent, so reloading them from their files does it again
-func _link_background(sheet: Spritesheet) -> void:
-	if not background.is_on():
-		return
-	var color := background.get_color()
-	var tolerance := background.get_tolerance()
+## transparent as [param key] says (see [method _get_key]), so reloading them from their
+## files does it again. Returns [param sheet].
+static func _link_background(sheet: Spritesheet, key: Array) -> Spritesheet:
+	if not key[0]:
+		return sheet
 	sheet.batch(
 		func() -> void:
 			for coord: Vector2i in sheet.frame_sources.keys():
-				var source := FrameSource.with_key(sheet.frame_sources[coord], color, tolerance)
+				var source := FrameSource.with_key(sheet.frame_sources[coord], key[1], key[2])
 				var origin: Variant = FrameSource.get_origin(sheet, coord)
 				sheet.set_frame(coord, sheet.frames[coord], source, origin)
 	)
+	return sheet
 
 
 ## How an image is cut when it's opened: where its data file says, or else the way that
@@ -460,12 +479,50 @@ func set_cut(cut: Cut) -> void:
 	var index := cut_option.get_item_index(cut)
 	if index >= 0:
 		cut_option.select(index)
-	_slice()
+	await _slice_busy()
 	preview_area.spritesheet_preview.fit_to_view()
 	box_editor.fit_to_view()
 
 
+## Cuts the image again like [method _slice], behind the "please wait" overlay on big
+## images, see [method _run_busy]
+func _slice_busy() -> void:
+	var finding := get_cut() == Cut.DETECT and _boxes_stale
+	await _run_busy(tr("Finding sprites") if finding else tr("Cutting"), _slice)
+
+
+## Runs [param work] behind the "please wait" overlay when the image is big enough for it
+## to take a while, see [method Notify.run_busy]: what takes long in it is worked out on
+## worker threads (see [method _compute]), so the bar keeps going. Small images are cut
+## right away.
+func _run_busy(text: String, work: Callable) -> void:
+	if not _is_big():
+		await work.call()
+		return
+	await Notify.run_busy(text, work)
+
+
+## Calls [param work] on a worker thread when the image is big, so the window keeps drawing
+## (see [method Parallel.run]), and right away otherwise. It mustn't touch the window.
+func _compute(work: Callable) -> Variant:
+	if _is_big():
+		return await Parallel.run(work)
+	return work.call()
+
+
+## Whether the images cut have enough pixels for cutting them to take a while
+func _is_big() -> bool:
+	var pixels := 0
+	for img: Image in [source_image] + _source_pages:
+		if img:
+			pixels += img.get_width() * img.get_height()
+	return pixels > SLOW_PIXELS
+
+
+## Cuts the image again the way it's cut, on worker threads when it's big
 func _slice() -> void:
+	_cut_generation += 1
+	var generation := _cut_generation
 	var cut := get_cut()
 	var grid_controls: Array[Control] = [more_options_btn]
 	for field: SpinBox in [grid_columns, cell_width]:
@@ -477,30 +534,47 @@ func _slice() -> void:
 	# Found sprites are shown where they are in the image, to edit their boxes
 	preview_area.visible = cut != Cut.DETECT
 	box_editor.visible = cut == Cut.DETECT
+	# What the worker threads use, as it's set now
 	var keep := keep_layout.button_pressed
+	var img := spritesheet_image
+	var path := image_path
+	var key := _get_key()
+	var sheet: Spritesheet
 	match cut:
 		Cut.GRID:
-			_cut_grid()
+			await _cut_grid()
+			return
 		Cut.DATA:
-			_show_cut(
-				sheet_data.to_spritesheet(
-					spritesheet_image, image_path, data_path, keep, _other_pages
-				)
+			var data := sheet_data
+			var data_file := data_path
+			var pages := _other_pages
+			sheet = await _compute(
+				func() -> Spritesheet:
+					var cut_sheet := data.to_spritesheet(img, path, data_file, keep, pages)
+					return _link_background(cut_sheet, key)
 			)
 		Cut.DETECT:
 			if _boxes_stale:
-				_find_sprites()
+				var distance := int(merge_distance.value)
+				var found: Array[Array] = await _compute(SpriteDetector.detect.bind(img, distance))
+				if generation != _cut_generation:
+					return
+				_show_found(found)
 			var rows := SpriteBoxes.to_rows(box_editor.get_boxes())
 			var alignment := align_option.get_selected_id() as Spritesheet.Alignment
-			_show_cut(
-				SpriteDetector.to_spritesheet(spritesheet_image, rows, alignment, image_path, keep)
+			sheet = await _compute(
+				func() -> Spritesheet:
+					var cut_sheet := SpriteDetector.to_spritesheet(img, rows, alignment, path, keep)
+					return _link_background(cut_sheet, key)
 			)
+	if generation == _cut_generation:
+		_show_cut(sheet)
 
 
-## Finds the sprites in the image as it's cut. Boxes edited by hand are replaced, as a
-## step that can be undone in the box editor, see [method SpriteBoxEditor.find_again].
-func _find_sprites() -> void:
-	var rows := SpriteDetector.detect(spritesheet_image, int(merge_distance.value))
+## Shows the sprites found in the image as it's cut, in [param rows] (see
+## [method SpriteDetector.detect]). Boxes edited by hand are replaced, as a step that can
+## be undone in the box editor, see [method SpriteBoxEditor.find_again].
+func _show_found(rows: Array[Array]) -> void:
 	var boxes := SpriteBoxes.from_rows(rows)
 	if _boxes_found:
 		box_editor.find_again(boxes)
@@ -529,7 +603,6 @@ static func _load_other_pages(data: SheetData, data_file: String) -> Array[Image
 
 ## Shows frames that were cut without a grid
 func _show_cut(sheet: Spritesheet) -> void:
-	_link_background(sheet)
 	spritesheet = sheet
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
@@ -568,7 +641,7 @@ func _build_cut_controls() -> void:
 	merge_distance.value_changed.connect(
 		func(_value: float) -> void:
 			_boxes_stale = true
-			_slice()
+			_slice_busy()
 	)
 	SpinScroll.enable(merge_distance)
 	var align_label := Label.new()
@@ -626,31 +699,27 @@ func update_cell_size(width: int, height: int) -> void:
 ## Cuts the image into a grid, keeping the grid or the cell size, whichever was set last. A
 ## grid leaves background spacing after the last cells over, see [method Slicer.fit].
 func _cut_grid() -> void:
-	var offset := Vector2i(int(offset_x.value), int(offset_y.value))
-	var spacing := Vector2i(int(spacing_x.value), int(spacing_y.value))
-	var fitted := Slicer.fit(
-		spritesheet_image.get_size(),
-		Vector2i(int(grid_columns.value), int(grid_rows.value)),
-		Vector2i(int(cell_width.value), int(cell_height.value)),
-		offset,
-		spacing,
-		_by_cell_size,
-		spritesheet_image,
-		_detected_background
+	_cut_generation += 1
+	var generation := _cut_generation
+	var cut: Dictionary = await _compute(
+		_cut_in_grid.bind(
+			spritesheet_image,
+			Vector2i(int(grid_columns.value), int(grid_rows.value)),
+			Vector2i(int(cell_width.value), int(cell_height.value)),
+			Vector2i(int(offset_x.value), int(offset_y.value)),
+			Vector2i(int(spacing_x.value), int(spacing_y.value)),
+			_by_cell_size,
+			_detected_background,
+			image_path,
+			_get_key()
+		)
 	)
-	var grid_size: Vector2i = fitted.grid
-	var cell_size: Vector2i = fitted.cell_size
-	var result := Slicer.slice(spritesheet_image, grid_size, offset, spacing, cell_size)
-
-	spritesheet = Spritesheet.new()
-	spritesheet.begin_batch()
-	spritesheet.set_grid_size(grid_size)
-	for coord: Vector2i in result.frames:
-		var source := FrameSource.for_region(image_path, result.rects[coord]) if image_path else {}
-		spritesheet.set_frame(coord, result.frames[coord], source)
-	spritesheet.end_batch()
-	_link_background(spritesheet)
-	_show_slice_info(result.unused)
+	if generation != _cut_generation:
+		return
+	var grid_size: Vector2i = cut.grid
+	var cell_size: Vector2i = cut.cell_size
+	spritesheet = cut.sheet
+	_show_slice_info(cut.unused)
 	preview_area.spritesheet_preview.spritesheet = spritesheet
 	on_preview_update()
 
@@ -658,6 +727,41 @@ func _cut_grid() -> void:
 	grid_rows.set_value_no_signal(grid_size.y)
 	cell_width.set_value_no_signal(cell_size.x)
 	cell_height.set_value_no_signal(cell_size.y)
+
+
+## [param img] cut in a grid as fitted (see [method Slicer.fit]), with its frames linked
+## to [param path] and to the background made transparent as [param key] says: the sheet,
+## the grid and the cell size fitted, and the pixels left over
+static func _cut_in_grid(
+	img: Image,
+	grid: Vector2i,
+	cell: Vector2i,
+	offset: Vector2i,
+	spacing: Vector2i,
+	by_cell_size: bool,
+	detected_background: Variant,
+	path: String,
+	key: Array
+) -> Dictionary:
+	var fitted := Slicer.fit(
+		img.get_size(), grid, cell, offset, spacing, by_cell_size, img, detected_background
+	)
+	var grid_size: Vector2i = fitted.grid
+	var cell_size: Vector2i = fitted.cell_size
+	var result := Slicer.slice(img, grid_size, offset, spacing, cell_size)
+	var sheet := Spritesheet.new()
+	sheet.begin_batch()
+	sheet.set_grid_size(grid_size)
+	for coord: Vector2i in result.frames:
+		var source := FrameSource.for_region(path, result.rects[coord]) if path else {}
+		sheet.set_frame(coord, result.frames[coord], source)
+	sheet.end_batch()
+	return {
+		"sheet": _link_background(sheet, key),
+		"grid": grid_size,
+		"cell_size": cell_size,
+		"unused": result.unused,
+	}
 
 
 func add_spritesheet_to_global() -> void:

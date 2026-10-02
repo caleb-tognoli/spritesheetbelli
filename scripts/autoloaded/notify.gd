@@ -12,9 +12,12 @@ var message_icon := TextureRect.new()
 var confirm_dialog := ConfirmationDialog.new()
 var _confirm_action: Callable
 var _toasts := VBoxContainer.new()
-var _progress_overlay := ColorRect.new()
-var _progress_label := Label.new()
-var _progress_bar := ProgressBar.new()
+## Holds the overlay, over the window on top, see [method _show_overlay]. It's made again
+## when it was freed with that window.
+var _progress_layer: OverlayLayer
+var _progress_overlay: ColorRect
+var _progress_label: Label
+var _progress_bar: ProgressBar
 var _progress_started := 0
 ## Counts busy runs and hidings, so a run that ended doesn't show the overlay later
 var _busy_runs := 0
@@ -48,7 +51,7 @@ func _ready() -> void:
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toasts.alignment = BoxContainer.ALIGNMENT_END
 	layer.add_child(_toasts)
-	_build_progress_overlay(layer)
+	_build_progress_overlay()
 
 
 func message(title: String, text: String) -> void:
@@ -103,9 +106,9 @@ func progress(text: String, done: int, total: int) -> void:
 	var now := Time.get_ticks_msec()
 	if _progress_started == 0:
 		_progress_started = now
-	if now - _progress_started < 250 and not _progress_overlay.visible:
+	if now - _progress_started < 250 and not is_progress_visible():
 		return
-	_progress_overlay.visible = true
+	_show_overlay()
 	_progress_overlay.modulate.a = 1.0
 	_progress_bar.indeterminate = false
 	_progress_label.text = tr("%s %d of %d") % [text, done, total]
@@ -114,27 +117,30 @@ func progress(text: String, done: int, total: int) -> void:
 
 
 ## Runs [param work] and returns its result, awaiting it when it's a coroutine. The
-## overlay blocks clicks and keys while it runs. When [param slow], it's drawn first, since
-## the window can't repaint while the work runs on the main thread; otherwise it shows
-## once the work has taken a quarter second, like [method progress].
-func run_busy(text: String, work: Callable, slow := true) -> Variant:
+## overlay blocks clicks and keys while it runs, and shows once the work has taken a quarter
+## second, like [method progress]. What takes long in the work is to be done on worker
+## threads (see [Parallel]), as the bar only moves while the window can draw. Within other
+## work, the overlay that one shows says [param text] until this is done.
+func run_busy(text: String, work: Callable) -> Variant:
+	if is_progress_visible():
+		var outer := _progress_label.text
+		_progress_label.text = text + "…"
+		var inner_result: Variant = await work.call()
+		if is_progress_visible():
+			_progress_label.text = outer
+		return inner_result
 	_busy_runs += 1
 	var run := _busy_runs
+	_show_overlay()
 	_progress_label.text = text + "…"
 	# How long it takes is unknown
 	_progress_bar.indeterminate = true
-	_progress_overlay.visible = true
-	if slow:
-		# A frame is drawn between two process frames, so the overlay is on screen after
-		await get_tree().process_frame
-		await get_tree().process_frame
-	else:
-		_progress_overlay.modulate.a = 0.0
-		get_tree().create_timer(0.25).timeout.connect(
-			func() -> void:
-				if run == _busy_runs:
-					_progress_overlay.modulate.a = 1.0
-		)
+	_progress_overlay.modulate.a = 0.0
+	get_tree().create_timer(0.25).timeout.connect(
+		func() -> void:
+			if run == _busy_runs and is_progress_visible():
+				_progress_overlay.modulate.a = 1.0
+	)
 	var result: Variant = await work.call()
 	hide_progress()
 	return result
@@ -143,26 +149,44 @@ func run_busy(text: String, work: Callable, slow := true) -> Variant:
 func hide_progress() -> void:
 	_busy_runs += 1
 	_progress_started = 0
+	if not is_instance_valid(_progress_layer):
+		return
 	_progress_overlay.visible = false
 	_progress_overlay.modulate.a = 1.0
+	# Back here, so it isn't freed with the window it was shown over
+	if _progress_layer.get_parent() != self:
+		_progress_layer.reparent(self, false)
 
 
 func is_progress_visible() -> bool:
-	return _progress_overlay.visible
+	return is_instance_valid(_progress_overlay) and _progress_overlay.visible
 
 
-# The overlay blocks clicks, and keys too: shortcuts would change what's being worked on
-func _input(event: InputEvent) -> void:
-	if _progress_overlay.visible and event is InputEventKey:
-		get_viewport().set_input_as_handled()
+## Shows the overlay over the window on top, e.g. Add Spritesheet: windows aren't embedded
+## in the main one, so it would be hidden behind them there
+func _show_overlay() -> void:
+	if not is_instance_valid(_progress_layer):
+		_build_progress_overlay()
+	var host := _top_window(null)
+	if _progress_layer.get_parent() != host:
+		_progress_layer.reparent(host, false)
+	_progress_overlay.visible = true
 
 
-func _build_progress_overlay(layer: CanvasLayer) -> void:
+func _build_progress_overlay() -> void:
+	_progress_layer = OverlayLayer.new()
+	_progress_overlay = ColorRect.new()
+	_progress_label = Label.new()
+	_progress_bar = ProgressBar.new()
+	# Above the toasts
+	_progress_layer.layer = 101
+	_progress_layer.overlay = _progress_overlay
+	add_child(_progress_layer)
 	_progress_overlay.color = Color(0, 0, 0, 0.35)
 	_progress_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_progress_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_progress_overlay.visible = false
-	layer.add_child(_progress_overlay)
+	_progress_layer.add_child(_progress_overlay)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_progress_overlay.add_child(center)
@@ -233,3 +257,15 @@ func _return_when_hidden(dialog: AcceptDialog) -> void:
 			if not dialog.visible and dialog.get_parent() != self:
 				dialog.reparent.call_deferred(self, false)
 	)
+
+
+## The layer of the progress overlay, which blocks keys in the window it's in as the overlay
+## blocks clicks: shortcuts would change what's being worked on
+class OverlayLayer:
+	extends CanvasLayer
+
+	var overlay: Control
+
+	func _input(event: InputEvent) -> void:
+		if overlay.visible and event is InputEventKey:
+			get_viewport().set_input_as_handled()

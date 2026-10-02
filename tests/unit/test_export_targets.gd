@@ -169,7 +169,10 @@ func test_export_all_writes_every_target() -> void:
 	assert_eq(dialog.target_list.item_count, 5)
 	assert_false(dialog.export_all.disabled)
 	dialog.custom_action.emit(ExportDialog.EXPORT_ALL)
-	for i in 5:
+	# Written on worker threads, one target after the other, then told about at once
+	for i in 600:
+		if "walk.gif" in "\n".join(Notify.get_toasts()) or Notify.message_dialog.visible:
+			break
 		await get_tree().process_frame
 	assert_false(dialog.visible)
 	for file: String in [

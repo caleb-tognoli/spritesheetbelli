@@ -90,7 +90,7 @@ static func register(main: Control) -> void:
 	var history_panel: HistoryPanel = main.history_panel
 	var animation_panel: AnimationPanel = main.animation_panel
 	var has_frames := func() -> bool: return not sheet.is_empty()
-	var has_selection := func() -> bool: return not preview.get_selected_coords().is_empty()
+	var has_selection := preview.has_selection
 	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()) -> void:
 		Actions.add(id, label, run, can_run, ICONS.get(id))
 
@@ -234,7 +234,7 @@ static func register(main: Control) -> void:
 			(main.source_watcher as SourceWatcher).reload_frames(
 				main.get_selected_linked_coords(), true, L10n.mark("Reload from file")
 			),
-		func() -> bool: return not main.get_selected_linked_coords().is_empty()
+		main.has_selected_linked
 	)
 	add.call(
 		&"insert_cell",

@@ -25,6 +25,44 @@ func test_single_row_fills_gaps_then_grows() -> void:
 	assert_eq(sheet.grid_size, Vector2i(4, 1), "grows horizontally")
 
 
+## Many frames go where adding them one at a time would put them: the search for a free
+## cell goes on from the one added last
+func test_many_frames_go_where_one_at_a_time_would() -> void:
+	for mode: Spritesheet.AddMode in [Spritesheet.AddMode.FIRST_FREE, Spritesheet.AddMode.APPEND]:
+		var one_by_one: Array[Vector2i] = []
+		var together: Array[Vector2i] = []
+		for result: Array[Vector2i] in [one_by_one, together]:
+			var target := Spritesheet.new()
+			target.set_grid_size(Vector2i(3, 3))
+			for coord: Vector2i in [Vector2i(0, 0), Vector2i(2, 0), Vector2i(1, 1)]:
+				target.set_frame(coord, make_image(Color.RED))
+			target.set_locked(Vector2i(0, 1), true)
+			var images: Array[Image] = []
+			for i in 6:
+				images.append(make_image(Color.BLUE))
+			if result == one_by_one:
+				for img in images:
+					result.append_array(target.add_frames([img] as Array[Image], mode))
+			else:
+				result.append_array(target.add_frames(images, mode))
+		assert_eq(together, one_by_one, str(mode))
+	# A single row grows instead of wrapping, with every frame added at once too
+	sheet.add_frames([make_image(Color.RED), make_image(Color.RED)] as Array[Image])
+	assert_eq(
+		sheet.add_frames([make_image(Color.RED), make_image(Color.RED)] as Array[Image]),
+		[Vector2i(2, 0), Vector2i(3, 0)] as Array[Vector2i]
+	)
+
+
+func test_coords_are_sorted_in_reading_order() -> void:
+	for coord: Vector2i in [Vector2i(2, 1), Vector2i(0, 2), Vector2i(1, 0), Vector2i(0, 1)]:
+		sheet.set_frame(coord, make_image(Color.RED))
+	assert_eq(
+		sheet.get_sorted_coords(),
+		[Vector2i(1, 0), Vector2i(0, 1), Vector2i(2, 1), Vector2i(0, 2)] as Array[Vector2i]
+	)
+
+
 func test_frames_are_padded_to_sprite_size() -> void:
 	sheet.add_frames(
 		(

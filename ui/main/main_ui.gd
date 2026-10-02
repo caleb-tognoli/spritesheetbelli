@@ -317,6 +317,15 @@ func get_selected_linked_coords() -> Array[Vector2i]:
 	return coords
 
 
+## Whether a selected frame is linked to a file, quicker than
+## [method get_selected_linked_coords] for menus, which ask on every change
+func has_selected_linked() -> bool:
+	for coord: Vector2i in Global.spritesheet.frame_sources:
+		if preview.is_selected(coord) and Global.spritesheet.has_frame(coord):
+			return true
+	return false
+
+
 ## The selected frames with what they hold, but not where they are in the packed layout,
 ## see [method Spritesheet.get_cell_data]
 func get_selected_cells() -> Array[Dictionary]:

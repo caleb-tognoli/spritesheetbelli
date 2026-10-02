@@ -70,7 +70,7 @@ func _register_actions() -> void:
 		&"animation_from_selection",
 		L10n.mark("Animation from Selection…"),
 		func() -> void: name_frames(main.preview.get_selected_coords()),
-		func() -> bool: return not main.preview.get_selected_coords().is_empty()
+		main.preview.has_selection
 	)
 	# The buttons above the animation panel's list do the same
 	var panel: AnimationPanel = main.animation_panel
@@ -146,9 +146,13 @@ static func line_cells(sheet: Spritesheet, cell: Vector2i, column := false) -> A
 	var cells: Array[Vector2i] = []
 	if cell == NO_CELL:
 		return cells
-	for coord in sheet.get_sorted_coords():
+	# Only the line's frames are sorted, as menus ask on every change
+	for coord: Vector2i in sheet.frames:
 		if (coord.x == cell.x) if column else (coord.y == cell.y):
 			cells.append(coord)
+	cells.sort_custom(
+		func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x)
+	)
 	return cells
 
 

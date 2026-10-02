@@ -395,6 +395,8 @@ func test_closing_with_unsaved_changes_asks_first() -> void:
 		"Save changes to %s before closing?", func() -> void: quits[0] += 1
 	)
 	main.files.unsaved_changes_dialog.confirmed.emit()
+	# Written on a worker thread
+	await until_idle()
 	assert_eq(quits[0], 3, "Save saves, then closes")
 	assert_false(Global.document.is_dirty)
 	assert_true(FileAccess.file_exists(dir.path_join("close_save.sbelli")))

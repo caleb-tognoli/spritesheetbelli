@@ -116,11 +116,14 @@ func coord_of(index: int) -> Vector2i:
 
 ## Frame coordinates in reading order
 func get_sorted_coords() -> Array[Vector2i]:
+	# Sorted as (row, column), which the engine compares many times quicker than a script
+	var flipped: Array[Vector2i] = []
+	for coord: Vector2i in _frames:
+		flipped.append(Vector2i(coord.y, coord.x))
+	flipped.sort()
 	var coords: Array[Vector2i] = []
-	coords.assign(_frames.keys())
-	coords.sort_custom(
-		func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x)
-	)
+	for coord in flipped:
+		coords.append(Vector2i(coord.y, coord.x))
 	return coords
 
 
@@ -365,15 +368,20 @@ func set_export_settings(settings: Dictionary) -> void:
 #region Adding and removing
 
 
-func get_free_space(mode := AddMode.FIRST_FREE) -> Vector2i:
+## Where a frame added with [param mode] goes. [param after] is the frame added last,
+## when adding many: the search goes on from there instead of from the top, which takes a
+## while with thousands of frames.
+func get_free_space(mode := AddMode.FIRST_FREE, after := Vector2i(-1, -1)) -> Vector2i:
 	if is_empty():
 		return get_first_free_unlocked_space()
 	if mode == AddMode.NEW_ROW:
 		return Vector2i(0, get_first_free_row())
 	if mode == AddMode.APPEND:
-		return _get_space_after_last_frame()
+		# The frame added last is the last one
+		return _get_space_after(after) if after.x >= 0 else _get_space_after_last_frame()
 
-	var first_free := get_first_free_unlocked_space()
+	# Every cell before the frame added last is taken
+	var first_free := get_first_free_unlocked_space(after.max(Vector2i.ZERO))
 	# Single-row spritesheets grow horizontally instead of wrapping to a new row
 	if _grid_size.y == 1 and first_free.y > 0:
 		return Vector2i(_grid_size.x, 0)
@@ -386,11 +394,16 @@ func _get_space_after_last_frame() -> Vector2i:
 	for coord in _frames:
 		if coord.y == last_row:
 			last_column = maxi(last_column, coord.x)
-	if last_column + 1 < _grid_size.x:
-		return get_first_free_unlocked_space(Vector2i(last_column + 1, last_row))
+	return _get_space_after(Vector2i(last_column, last_row))
+
+
+## The first free cell after [param last], the last frame
+func _get_space_after(last: Vector2i) -> Vector2i:
+	if last.x + 1 < _grid_size.x:
+		return get_first_free_unlocked_space(Vector2i(last.x + 1, last.y))
 	if _grid_size.y == 1:
 		return Vector2i(_grid_size.x, 0)
-	return get_first_free_unlocked_space(Vector2i(0, last_row + 1))
+	return get_first_free_unlocked_space(Vector2i(0, last.y + 1))
 
 
 func get_first_free_unlocked_space(from := Vector2i.ZERO) -> Vector2i:
@@ -418,6 +431,7 @@ func add_frames(
 	var coords: Array[Vector2i] = []
 	begin_batch()
 	var next_new_row := Vector2i(-1, -1)
+	var added_last := Vector2i(-1, -1)
 	for i in imgs.size():
 		var img := imgs[i]
 		if img == null or img.is_empty():
@@ -429,7 +443,8 @@ func add_frames(
 			coord = next_new_row
 			next_new_row.x += 1
 		else:
-			coord = get_free_space(mode)
+			coord = get_free_space(mode, added_last)
+			added_last = coord
 		set_frame(coord, img, sources[i] if i < sources.size() else {})
 		coords.append(coord)
 	end_batch()

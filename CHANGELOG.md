@@ -495,6 +495,14 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - Opening a big image, GIF or project froze the window behind a "please wait" bar that
   never moved: the file is now loaded and looked into on worker threads, so the bar keeps
   going and the window keeps drawing. Keys are blocked too while it works.
+- Add Spritesheet froze without a "please wait" bar on big images when finding sprites,
+  changing the cut or making the background transparent: that's worked out on worker
+  threads now, behind a bar that keeps going. Saving and exporting write on worker
+  threads too, so their bar doesn't freeze either. The bar shows over the window on top,
+  not behind it on the main one.
+- Sheets of thousands of frames lagging after every click: the menus sorted every
+  selected frame dozens of times to tell which actions are enabled. Duplicating or
+  pasting thousands of frames took seconds, looking for each one's free cell from the top.
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
 - The status bar's note about locked cells shows its tooltip again.
 - The sidebar's resize bar ending up under the preview when the preview was narrower than

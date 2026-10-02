@@ -111,23 +111,24 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 
 ## Writes one scale of an export, see [member ExportOptions.scale]
 func _export_at_scale(path: String, options: ExportOptions) -> Dictionary:
-	var slow := FileController.is_big_sheet()
 	match options.target:
 		_ when options.packs(Global.spritesheet):
-			return await Notify.run_busy(
-				tr("Packing the atlas"), _export_atlas.bind(path, options), slow
-			)
+			return await Notify.run_busy(tr("Packing the atlas"), _export_atlas.bind(path, options))
 		ExportOptions.Target.GIF:
 			return await _export_gif(path, options)
 		ExportOptions.Target.SPRITES:
-			return await Notify.run_busy(
-				tr("Exporting sprites"), _save_sprites.bind(path, options), slow
-			)
+			return await Notify.run_busy(tr("Exporting sprites"), _save_sprites.bind(path, options))
 		ExportOptions.Target.STRIPS:
-			return await Notify.run_busy(
-				tr("Exporting strips"), _save_strips.bind(path, options), slow
-			)
-	return await Notify.run_busy(tr("Exporting"), _export_image.bind(path, options), slow)
+			return await Notify.run_busy(tr("Exporting strips"), _save_strips.bind(path, options))
+	return await Notify.run_busy(tr("Exporting"), _export_image.bind(path, options))
+
+
+## A copy of the open sheet, to export on a worker thread while the bar keeps going. Frame
+## images are never changed in place, so a copy of the state is enough.
+static func _sheet_copy() -> Spritesheet:
+	var copy := Spritesheet.new()
+	copy.set_state(Global.spritesheet.get_state())
+	return copy
 
 
 ## Says what [param results] of [method _export] wrote, and what went wrong. Returns
@@ -149,7 +150,6 @@ static func _report(results: Array[Dictionary]) -> bool:
 
 
 func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
-	var errors: PackedStringArray = []
 	var coords: Array[Vector2i] = []
 	if options.only_selected:
 		coords = get_selected_coords.call()
@@ -164,9 +164,18 @@ func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
 				)
 			}
 	_empty_download_folder(folder)
-	var written := SpritesheetExporter.export_sprites(
-		Global.spritesheet, folder, errors, Settings.get_value(&"index_start"), options, coords
+	var copy := _sheet_copy()
+	var index_start: int = Settings.get_value(&"index_start")
+	var exported: Array = await Parallel.run(
+		func() -> Array:
+			var failed: PackedStringArray = []
+			var paths := SpritesheetExporter.export_sprites(
+				copy, folder, failed, index_start, options, coords
+			)
+			return [paths, failed]
 	)
+	var written: PackedStringArray = exported[0]
+	var errors: PackedStringArray = exported[1]
 	unlink_overwritten(written)
 	if not errors.is_empty():
 		return {"error": tr("Could not save: %s.") % ", ".join(errors)}
@@ -183,7 +192,9 @@ func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
 ## Writes a GameMaker strip of each animation into [param folder]
 func _save_strips(folder: String, options: ExportOptions) -> Dictionary:
 	_empty_download_folder(folder)
-	var result := StripExporter.write(Global.spritesheet, options, folder)
+	var result: Dictionary = await Parallel.run(
+		StripExporter.write.bind(_sheet_copy(), options, folder)
+	)
 	if result.error == ERR_DOES_NOT_EXIST:
 		return {"error": tr("The spritesheet is empty.")}
 	if result.error == ERR_OUT_OF_MEMORY:
@@ -272,35 +283,40 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 	if sheet.is_empty():
 		return {"error": tr("The spritesheet is empty.")}
 	if sheet.layout == Spritesheet.Layout.PACKED:
-		return _export_pages(path, options)
+		return await _export_pages(path, options)
 	var problem := ImageUtils.size_problem(
 		SpritesheetExporter.get_image_size(sheet, options), path.get_extension()
 	)
 	if problem:
 		return {"error": problem + "\n" + tr("Make the sprites smaller or use fewer cells.")}
-	var spritesheet_image := sheet.get_image(options)
-	var error := SpritesheetExporter.save_image(spritesheet_image, path, options)
-	if error != OK:
-		return {"error": tr("Could not export to %s (%s).") % [path, error_string(error)]}
+	var copy := _sheet_copy()
+	var index_start: int = Settings.get_value(&"index_start")
+	var opaque_format := not SpritesheetExporter.supports_transparency(path)
+	var written: Dictionary = await Parallel.run(
+		func() -> Dictionary:
+			var image := copy.get_image(options)
+			var result := {"error": SpritesheetExporter.save_image(image, path, options)}
+			if result.error == OK:
+				result.metadata_error = Metadata.write_for_image(copy, options, path, index_start)
+				result.transparent = opaque_format and ImageUtils.has_transparency(image)
+			return result
+	)
+	if written.error != OK:
+		return {"error": tr("Could not export to %s (%s).") % [path, error_string(written.error)]}
 	unlink_overwritten([path])
 
 	var message := tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
-	var metadata_error := Metadata.write_for_image(
-		sheet, options, path, Settings.get_value(&"index_start")
-	)
-	if metadata_error != OK:
-		return {"error": tr("Could not write the metadata (%s).") % error_string(metadata_error)}
+	if written.metadata_error != OK:
+		return {
+			"error": tr("Could not write the metadata (%s).") % error_string(written.metadata_error)
+		}
 	WebFiles.download(path)
 	if options.get_image_data():
 		var data_path := Metadata.get_path_for_image(path, options)
 		unlink_overwritten([data_path])
 		message += "\n" + tr("Also wrote %s.") % data_path.get_file()
 		WebFiles.download(data_path)
-	if (
-		not SpritesheetExporter.supports_transparency(path)
-		and ImageUtils.has_transparency(spritesheet_image)
-		and not warned_about_jpg_transparency
-	):
+	if written.transparent and not warned_about_jpg_transparency:
 		warned_about_jpg_transparency = true
 		message += (
 			"\n"
@@ -322,18 +338,33 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 
 ## Writes each page of the packed sheet as an image, numbered when there are more
 func _export_pages(path: String, options: ExportOptions) -> Dictionary:
-	var pages := SpritesheetExporter.build_pages(Global.spritesheet, options)
-	var paths := SpritesheetExporter.get_page_paths(
-		path, pages.size(), options.get_scale_suffix(options.scale)
+	var copy := _sheet_copy()
+	# Drawn and written on a worker thread, so the bar keeps going
+	var written: Dictionary = await Parallel.run(
+		func() -> Dictionary:
+			var pages := SpritesheetExporter.build_pages(copy, options)
+			var page_paths := SpritesheetExporter.get_page_paths(
+				path, pages.size(), options.get_scale_suffix(options.scale)
+			)
+			for i in pages.size():
+				var problem := ImageUtils.size_problem(pages[i].get_size(), path.get_extension())
+				if problem:
+					return {"problem": problem}
+				var error := SpritesheetExporter.save_image(pages[i], page_paths[i], options)
+				if error != OK:
+					return {"failed": page_paths[i], "error": error}
+			return {"paths": page_paths}
 	)
-	for i in pages.size():
-		var problem := ImageUtils.size_problem(pages[i].get_size(), path.get_extension())
-		if problem:
-			return {"error": problem}
-		var error := SpritesheetExporter.save_image(pages[i], paths[i], options)
-		if error != OK:
-			return {"error": tr("Could not export to %s (%s).") % [paths[i], error_string(error)]}
-		WebFiles.download(paths[i])
+	if written.has("problem"):
+		return {"error": written.problem}
+	if written.has("failed"):
+		return {
+			"error":
+			tr("Could not export to %s (%s).") % [written.failed, error_string(written.error)]
+		}
+	var paths: PackedStringArray = written.paths
+	for page_path in paths:
+		WebFiles.download(page_path)
 	unlink_overwritten(paths)
 	if options.scale == 1:
 		Global.document.export_path = path
@@ -352,8 +383,8 @@ func _export_pages(path: String, options: ExportOptions) -> Dictionary:
 
 ## Packs trimmed frames tightly and writes the atlas's pages with a data file
 func _export_atlas(path: String, options: ExportOptions) -> Dictionary:
-	var result := AtlasPacker.write(
-		Global.spritesheet, options, path, Settings.get_value(&"index_start")
+	var result: Dictionary = await Parallel.run(
+		AtlasPacker.write.bind(_sheet_copy(), options, path, Settings.get_value(&"index_start"))
 	)
 	if result.error == ERR_OUT_OF_MEMORY:
 		return {"error": tr("The frames don't fit in a %d px atlas.") % AtlasPacker.MAX_SIZE}

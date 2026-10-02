@@ -112,7 +112,7 @@ func _update_note() -> void:
 	var count := get_target_coords().size()
 	dropdown.note.text = (
 		tr_n("In %d selected frame", "In %d selected frames", count) % count
-		if not preview.get_selected_coords().is_empty()
+		if preview.has_selection()
 		else tr_n("In %d frame", "In all %d frames", count) % count
 	)
 	dropdown.note.visible = true

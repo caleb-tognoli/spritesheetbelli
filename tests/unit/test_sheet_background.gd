@@ -218,6 +218,32 @@ func settle() -> void:
 		await get_tree().process_frame
 
 
+func test_big_sheets_are_cut_behind_the_busy_overlay_in_their_window() -> void:
+	# Over 4 million pixels: two sprites far apart on magenta
+	var img := Image.create_empty(2100, 2000, false, Image.FORMAT_RGBA8)
+	img.fill(MAGENTA)
+	img.fill_rect(Rect2i(8, 8, 16, 16), Color.RED)
+	img.fill_rect(Rect2i(2000, 1900, 16, 16), Color.RED)
+	window.popup()
+	await window.setup(img)
+	assert_false(Notify.is_progress_visible(), "hidden once cut")
+
+	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
+	assert_true(Notify.is_progress_visible(), "shown while finding the sprites")
+	assert_true(Notify._progress_layer.get_parent() == window, "over the window on top")
+	await until_idle()
+	assert_eq(window.spritesheet.frames.size(), 2)
+	assert_true(Notify._progress_layer.get_parent() == Notify, "back once hidden")
+
+	window.background.open()
+	window.background.enabled_check.button_pressed = false
+	await settle()
+	window.background.confirm()
+	assert_true(Notify.is_progress_visible(), "shown while cutting without the background")
+	await until_idle()
+	assert_eq(window.spritesheet.frames.size(), 1, "the magenta is one sprite")
+
+
 func test_turning_it_off_keeps_the_background() -> void:
 	window.setup(magenta_sheet())
 	window.background.open()
