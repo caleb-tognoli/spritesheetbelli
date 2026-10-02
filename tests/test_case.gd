@@ -69,6 +69,15 @@ static func remove_dir(path: String) -> void:
 	DirAccess.remove_absolute(path)
 
 
+## Waits for work behind the busy overlay to end, like opening a file, see
+## [method Notify.run_busy]
+func until_idle() -> void:
+	for i in 600:
+		if not Notify.is_progress_visible():
+			return
+		await get_tree().process_frame
+
+
 ## Returns a solid-colour image
 static func make_image(color: Color, size := Vector2i(16, 16)) -> Image:
 	var img := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)

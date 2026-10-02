@@ -343,7 +343,7 @@ func show_add_spritesheet_window(spritesheet_path: String) -> void:
 ## Adds the frames of an animated GIF in a new row, named after the file, with an
 ## animation that plays them at the GIF's speed
 func add_gif(path: String) -> void:
-	var gif := GifDecoder.load_file(path)
+	var gif: Dictionary = await Parallel.run(GifDecoder.load_file.bind(path))
 	if gif.has("error"):
 		set_filepath_when_opening_spritesheet = false
 		Notify.error(tr(gif.error))
@@ -371,7 +371,7 @@ func add_gif(path: String) -> void:
 
 func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 	if GifDecoder.is_gif_path(spritesheet_path):
-		add_gif(spritesheet_path)
+		await add_gif(spritesheet_path)
 		return
 	# A data file brings its image, and an image brings the data file next to it
 	var data: SheetData = null
@@ -389,11 +389,17 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 		if data_path:
 			data = SheetData.load_file(data_path)
 
-	var img := Image.load_from_file(spritesheet_path)
+	# Loaded and looked into on worker threads, as that takes a while on big sheets
+	var img: Image = await Parallel.run(
+		func() -> Image: return Image.load_from_file(spritesheet_path)
+	)
 	if not img:
 		set_filepath_when_opening_spritesheet = false
 		Notify.error(tr("Could not load %s.") % spritesheet_path.get_file())
 		return
+	var prepared := await AddSpritesheetWindow.prepare(
+		img, spritesheet_path, data, data_path, Settings.get_value(&"background_tolerance")
+	)
 
 	if set_filepath_when_opening_spritesheet:
 		set_filepath_when_opening_spritesheet = false
@@ -404,7 +410,7 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 		loading_opened_file = true
 	_linking(spritesheet_path)
 	_linking(data_path)
-	add_spritesheet_window.setup(img, spritesheet_path, data, data_path)
+	add_spritesheet_window.setup(img, spritesheet_path, data, data_path, prepared)
 	add_spritesheet_window.popup_centered(get_window().size * 0.8)
 
 
@@ -513,7 +519,7 @@ func open_project(path: String) -> bool:
 
 
 func _open_project(path: String) -> bool:
-	var result := ProjectFile.load(path)
+	var result: Dictionary = await Parallel.run(ProjectFile.load.bind(path))
 	if result.has("error"):
 		Notify.error(result.error)
 		return false

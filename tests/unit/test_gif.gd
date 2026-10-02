@@ -141,8 +141,7 @@ func test_opening_and_adding_gifs() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	var path := ProjectSettings.globalize_path("res://tests/fixtures/pillow.gif")
-	main.files.open_path(path)
-	await get_tree().process_frame
+	await main.files.open_path(path)
 	var sheet := Global.spritesheet
 	assert_eq(sheet.frames.size(), 3)
 	assert_eq(sheet.animations.size(), 1)

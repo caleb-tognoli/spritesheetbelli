@@ -120,6 +120,7 @@ func test_recent_files_menu() -> void:
 	menu.refresh()
 	assert_eq(menu.get_item_text(0), "recent.sbelli  (%s)" % path.get_base_dir())
 	menu.id_pressed.emit(0)
+	await until_idle()
 	assert_eq(Global.document.path, path, "opened")
 	assert_eq(Global.spritesheet.frames.size(), 1)
 	menu.id_pressed.emit(RecentFilesMenu.CLEAR_ID)

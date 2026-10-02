@@ -16,6 +16,8 @@ var _progress_overlay := ColorRect.new()
 var _progress_label := Label.new()
 var _progress_bar := ProgressBar.new()
 var _progress_started := 0
+## Counts busy runs and hidings, so a run that ended doesn't show the overlay later
+var _busy_runs := 0
 
 
 func _ready() -> void:
@@ -104,36 +106,55 @@ func progress(text: String, done: int, total: int) -> void:
 	if now - _progress_started < 250 and not _progress_overlay.visible:
 		return
 	_progress_overlay.visible = true
+	_progress_overlay.modulate.a = 1.0
 	_progress_bar.indeterminate = false
 	_progress_label.text = tr("%s %d of %d") % [text, done, total]
 	_progress_bar.max_value = maxi(total, 1)
 	_progress_bar.value = done
 
 
-## Runs [param work] and returns its result. When [param slow], a "please wait" overlay is
-## drawn first, since the window can't repaint while the work runs.
+## Runs [param work] and returns its result, awaiting it when it's a coroutine. The
+## overlay blocks clicks and keys while it runs. When [param slow], it's drawn first, since
+## the window can't repaint while the work runs on the main thread; otherwise it shows
+## once the work has taken a quarter second, like [method progress].
 func run_busy(text: String, work: Callable, slow := true) -> Variant:
-	if not slow:
-		return work.call()
+	_busy_runs += 1
+	var run := _busy_runs
 	_progress_label.text = text + "…"
 	# How long it takes is unknown
 	_progress_bar.indeterminate = true
 	_progress_overlay.visible = true
-	# A frame is drawn between two process frames, so the overlay is on screen after
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var result: Variant = work.call()
+	if slow:
+		# A frame is drawn between two process frames, so the overlay is on screen after
+		await get_tree().process_frame
+		await get_tree().process_frame
+	else:
+		_progress_overlay.modulate.a = 0.0
+		get_tree().create_timer(0.25).timeout.connect(
+			func() -> void:
+				if run == _busy_runs:
+					_progress_overlay.modulate.a = 1.0
+		)
+	var result: Variant = await work.call()
 	hide_progress()
 	return result
 
 
 func hide_progress() -> void:
+	_busy_runs += 1
 	_progress_started = 0
 	_progress_overlay.visible = false
+	_progress_overlay.modulate.a = 1.0
 
 
 func is_progress_visible() -> bool:
 	return _progress_overlay.visible
+
+
+# The overlay blocks clicks, and keys too: shortcuts would change what's being worked on
+func _input(event: InputEvent) -> void:
+	if _progress_overlay.visible and event is InputEventKey:
+		get_viewport().set_input_as_handled()
 
 
 func _build_progress_overlay(layer: CanvasLayer) -> void:

@@ -287,8 +287,7 @@ func test_opening_an_atlas_keeps_it_packed() -> void:
 	options.sprite_name_pattern = "{name}"
 	options.atlas_data = "atlas"
 	var result := AtlasPacker.write(sheet, options, dir.path_join("opened.png"))
-	main.files.open_path(result.json_path)
-	await get_tree().process_frame
+	await main.files.open_path(result.json_path)
 	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
 	assert_true(window.keep_layout.button_pressed, "on when opening")
 	assert_eq(window.spritesheet.frames.size(), 5, "every page is read")

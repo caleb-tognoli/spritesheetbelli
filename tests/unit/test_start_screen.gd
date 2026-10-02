@@ -276,8 +276,7 @@ func test_image_thumbnail_from_the_file() -> void:
 func test_canceled_opening_shows_it_again() -> void:
 	var path := dir.path_join("sheet.png")
 	make_image(Color.RED, Vector2i(32, 16)).save_png(path)
-	main.files.open_path(path)
-	await get_tree().process_frame
+	await main.files.open_path(path)
 	assert_false(start.visible, "opening")
 	var window: AddSpritesheetWindow = main.files.add_spritesheet_window
 	window.canceled.emit()

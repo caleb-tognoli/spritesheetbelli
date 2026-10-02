@@ -490,6 +490,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The `{row_name}` file name token.
 
 ### Fixed
+- Opening a big image, GIF or project froze the window behind a "please wait" bar that
+  never moved: the file is now loaded and looked into on worker threads, so the bar keeps
+  going and the window keeps drawing. Keys are blocked too while it works.
 - Godot's warning about rounded popup corners: windows may use per-pixel transparency.
 - The status bar's note about locked cells shows its tooltip again.
 - The sidebar's resize bar ending up under the preview when the preview was narrower than

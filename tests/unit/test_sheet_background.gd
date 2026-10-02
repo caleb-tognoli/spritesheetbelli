@@ -192,6 +192,26 @@ func test_the_import_makes_the_background_transparent() -> void:
 	assert_clean(Global.spritesheet, "added")
 
 
+func test_the_import_can_be_prepared_on_worker_threads() -> void:
+	var img := magenta_sheet()
+	var tolerance: float = Settings.get_value(&"background_tolerance")
+	var prepared := await AddSpritesheetWindow.prepare(img, "", null, "", tolerance)
+	window.setup(img, "", null, "", prepared)
+	assert_true(window.spritesheet_image == prepared.keyed[0], "the keyed image is taken")
+	assert_true(window.background.is_on())
+	assert_eq(window.background.get_color(), MAGENTA)
+	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2))
+	assert_clean(window.spritesheet, "grid")
+
+	# Keyed differently than prepared, like with another tolerance: keyed again
+	Settings.set_value(&"background_tolerance", 0.5)
+	window.setup(img, "", null, "", prepared)
+	assert_false(window.spritesheet_image == prepared.keyed[0], "keyed again")
+	assert_eq(window.background.get_tolerance(), 0.5)
+	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2))
+	assert_clean(window.spritesheet, "keyed again")
+
+
 ## Waits for the background to be previewed, keyed on worker threads
 func settle() -> void:
 	for i in 5:

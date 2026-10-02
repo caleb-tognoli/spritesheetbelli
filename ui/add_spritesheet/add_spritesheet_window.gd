@@ -214,13 +214,15 @@ func _ready() -> void:
 ## guessed grid; the name of the image at [param path] can hold a size hint. The frames
 ## are linked to [param path] and [param data_file] when they're given. A colour the image
 ## is drawn on instead of transparency is made transparent first, see [SheetBackground].
-func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> void:
+## What takes a while on big sheets can be worked out beforehand, without blocking the
+## window: [param prepared] is what [method prepare] returned for the same image.
+func setup(img: Image, path := "", data: SheetData = null, data_file := "", prepared := {}) -> void:
 	source_image = img
 	sheet_data = data
 	image_path = path
 	data_path = data_file
-	_source_pages = _load_other_pages()
-	var found: Variant = SheetBackground.detect(img)
+	_source_pages = prepared.pages if prepared else _load_other_pages(data, data_file)
+	var found: Variant = prepared.background if prepared else SheetBackground.detect(img)
 	_detected_background = found
 	if background.is_open():
 		background.cancel()
@@ -234,7 +236,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	)
 	background.set_picking(false)
 	_boxes_found = false
-	_remove_background()
+	_remove_background(prepared)
 	# Packed sheets stay packed when opened, or added to a packed sheet
 	var target := Global.spritesheet
 	keep_layout.set_pressed_no_signal(
@@ -250,7 +252,9 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	_set_max(offset_y, image_size.y - 1)
 	_set_max(cell_width, image_size.x)
 	_set_max(cell_height, image_size.y)
-	_guess_grid()
+	# Guessed beforehand from the image as keyed, unless it was keyed differently
+	var keyed_before: bool = not prepared.is_empty() and spritesheet_image == prepared.keyed[0]
+	_guess_grid(false, prepared.grid if keyed_before else Vector2i.ZERO)
 	cut_option.clear()
 	cut_option.add_item("Grid", Cut.GRID)
 	cut_option.add_item("Find sprites", Cut.DETECT)
@@ -259,15 +263,44 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "") -> v
 	set_cut(get_default_cut(data != null, target.layout))
 
 
+## What [method setup] works out that takes a while on big sheets, worked out on worker
+## threads while the window goes on: the other pages of a data file loaded, the background
+## found and made transparent with [param tolerance], and the grid guessed. To be awaited.
+static func prepare(
+	img: Image, path: String, data: SheetData, data_file: String, tolerance: float
+) -> Dictionary:
+	var pages: Array[Image] = await Parallel.run(_load_other_pages.bind(data, data_file))
+	var found: Variant = await Parallel.run(SheetBackground.detect.bind(img))
+	# Like [method _get_key], with the tolerance as the background's field shows it
+	var key := [false]
+	var keyed: Array[Image] = [img]
+	keyed.append_array(pages)
+	if found != null:
+		key = [true, Color(found, 1.0), roundf(tolerance * 100.0) / 100.0]
+		for i in keyed.size():
+			if keyed[i]:
+				keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2])
+	return {
+		"pages": pages,
+		"background": found,
+		"key": key,
+		"keyed": keyed,
+		"grid": await Parallel.run(GridGuesser.guess.bind(keyed[0], path)),
+	}
+
+
 ## Fills in the grid guessed from the name of the image and from the gaps between its
 ## sprites, once its background is transparent. With [param or_keep], a guess of a single
-## cell, which finds nothing, keeps the grid there is.
-func _guess_grid(or_keep := false) -> void:
+## cell, which finds nothing, keeps the grid there is. [param guessed] is the guess when
+## it was made beforehand.
+func _guess_grid(or_keep := false, guessed := Vector2i.ZERO) -> void:
 	_grid_guessed = true
 	# A sprite size in the name is kept when the offset or spacing change
 	var image_size := spritesheet_image.get_size()
 	var cell_size := GridGuesser.guess_cell_size_from_file_name(image_path, image_size)
-	var guessed_size := GridGuesser.guess(spritesheet_image, image_path)
+	var guessed_size := guessed
+	if guessed_size == Vector2i.ZERO:
+		guessed_size = GridGuesser.guess(spritesheet_image, image_path)
 	if or_keep and guessed_size == Vector2i.ONE:
 		return
 	_by_cell_size = cell_size != Vector2i.ZERO
@@ -279,8 +312,9 @@ func _guess_grid(or_keep := false) -> void:
 
 ## Makes the background colour transparent in the images that are cut, when it's on,
 ## unless they already are, as previewed. The sprites are to be found again, as that
-## changes where they are.
-func _remove_background() -> void:
+## changes where they are. The images keyed by [method prepare] are taken when they were
+## keyed the same way.
+func _remove_background(prepared := {}) -> void:
 	_boxes_stale = true
 	var key := _get_key()
 	if key == _keyed_with:
@@ -288,7 +322,10 @@ func _remove_background() -> void:
 	_keyed_with = key
 	spritesheet_image = source_image
 	_other_pages = _source_pages
-	if background.is_on():
+	if prepared.get("key") == key:
+		spritesheet_image = prepared.keyed[0]
+		_other_pages = prepared.keyed.slice(1)
+	elif background.is_on():
 		var color := background.get_color()
 		var tolerance := background.get_tolerance()
 		spritesheet_image = SheetBackground.remove(source_image, color, tolerance)
@@ -475,11 +512,11 @@ func _find_sprites() -> void:
 
 ## The pages after the first of a packed sheet with a data file, missing ones as empty
 ## images, which leave their frames out
-func _load_other_pages() -> Array[Image]:
+static func _load_other_pages(data: SheetData, data_file: String) -> Array[Image]:
 	var images: Array[Image] = []
-	if sheet_data == null or data_path.is_empty():
+	if data == null or data_file.is_empty():
 		return images
-	var paths := sheet_data.get_page_paths(data_path)
+	var paths := data.get_page_paths(data_file)
 	for page in range(1, paths.size()):
 		var img := Image.new()
 		if not FileAccess.file_exists(paths[page]) or img.load(paths[page]) != OK:

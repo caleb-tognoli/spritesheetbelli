@@ -34,3 +34,9 @@ static func map(count: int, work: Callable, on_progress := Callable()) -> Array:
 		await tree.process_frame
 	WorkerThreadPool.wait_for_group_task_completion(task)
 	return results
+
+
+## Calls [param work] on a worker thread and returns its result, while the window keeps
+## drawing. Calls it right away in builds without threads.
+static func run(work: Callable) -> Variant:
+	return (await map(1, func(_i: int) -> Variant: return work.call()))[0]
