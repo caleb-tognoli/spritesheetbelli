@@ -27,6 +27,7 @@ signal zoom_changed(zoom: float)
 ## The user clicked an empty cell to lock or unlock it
 signal lock_requested(coord: Vector2i, locked: bool)
 ## The user dragged frames to another place
+@warning_ignore("unused_signal")
 signal move_requested(coords: Array[Vector2i], offset: Vector2i)
 ## The user pressed arrow keys to move frames inside their cells
 signal nudge_requested(coords: Array[Vector2i], offset: Vector2i)
