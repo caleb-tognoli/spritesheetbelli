@@ -66,7 +66,7 @@ func update(sheet: Spritesheet, grid: GridView) -> void:
 			if not shown:
 				continue
 			var label := AnimationLabelLayout.classify(
-				animations[i].get_frame_cells(sheet), sheet.grid_size, sheet.has_frame
+				animations[i].cells, sheet.grid_size, sheet.has_frame
 			)
 			if label.shape == AnimationLabelLayout.Shape.NONE:
 				continue
@@ -92,7 +92,7 @@ static func get_labelled(sheet: Spritesheet) -> Array[int]:
 	var indices: Array[int] = []
 	var animations := sheet.animations
 	for i in animations.size():
-		var cells := animations[i].get_frame_cells(sheet)
+		var cells := animations[i].cells
 		var shape: int = (
 			AnimationLabelLayout.classify(cells, sheet.grid_size, sheet.has_frame).shape
 		)

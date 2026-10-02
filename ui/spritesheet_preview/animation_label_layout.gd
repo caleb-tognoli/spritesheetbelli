@@ -11,10 +11,12 @@ extends RefCounted
 ## frame; the same for a column, named above or below it. Empty cells don't count, so a
 ## row with frames missing is still whole;
 ## [br]- a rectangle of at least two rows and two columns, outlined;
-## [br]- any connected area, where frames touch side to side or the end of a row leads on
+## [br]- any connected area, where cells touch side to side or the end of a row leads on
 ## to the start of the next, such as part of a row, frames wrapping onto the next row or
 ## an L-shape, outlined.
-## [br]Other animations are scattered, and get none.
+## [br]Outlines take in the animation's empty cells too, and empty cells between two of
+## its frames in a row or column, so a rectangle with a frame missing is still one.
+## Other animations are scattered, and get none.
 
 enum Shape {
 	NONE,  ## Scattered: no label
@@ -41,35 +43,68 @@ static func distinct_cells(cells: Array[Vector2i]) -> Array[Vector2i]:
 ## What shape the animation of [param cells] makes in a grid of [param grid_size], where
 ## [param has_frame] tells which cells hold a frame (every one when it isn't given).
 ## Returns [code]{"shape": Shape, "cells": Array[Vector2i], "side": Side, "line": int}
-## [/code]: the cells without repeats, and for a row or a column the margin the label goes
-## in and which row or column it is. A frame alone in its row is that whole row.
+## [/code]: the cells labelled without repeats (the frames of a row or column, every cell
+## of an outline, empty gaps included), and for a row or a column the margin the label
+## goes in and which row or column it is. A frame alone in its row is that whole row.
 static func classify(
 	cells: Array[Vector2i], grid_size: Vector2i, has_frame := Callable()
 ) -> Dictionary:
-	var distinct := distinct_cells(cells)
-	var result := {"shape": Shape.NONE, "cells": distinct, "side": Side.NONE, "line": -1}
-	var grid := Rect2i(Vector2i.ZERO, grid_size)
-	var inside := func(cell: Vector2i) -> bool: return grid.has_point(cell)
-	if distinct.is_empty() or not distinct.all(inside):
-		return result
 	if not has_frame.is_valid():
 		has_frame = func(_cell: Vector2i) -> bool: return true
-	var first := distinct[0]
+	var grid := Rect2i(Vector2i.ZERO, grid_size)
+	# Empty cells off the grid are left out, rather than scattering the animation
+	var kept := func(cell: Vector2i) -> bool: return grid.has_point(cell) or has_frame.call(cell)
+	var distinct: Array[Vector2i] = []
+	distinct.assign(distinct_cells(cells).filter(kept))
+	var frames: Array[Vector2i] = []
+	frames.assign(distinct.filter(has_frame))
+	var result := {"shape": Shape.NONE, "cells": distinct, "side": Side.NONE, "line": -1}
+	var inside := func(cell: Vector2i) -> bool: return grid.has_point(cell)
+	if frames.is_empty() or not distinct.all(inside):
+		return result
+	var first: Vector2i = frames[0]
 	var row := _frames_along(Vector2i(0, first.y), Vector2i.RIGHT, grid_size.x, has_frame)
 	var column := _frames_along(Vector2i(first.x, 0), Vector2i.DOWN, grid_size.y, has_frame)
-	if _is_whole(distinct, row):
+	if _is_whole(frames, row):
 		result.shape = Shape.ROW
+		result.cells = frames
 		result.side = Side.LEFT if _starts_nearer_start(first, row) else Side.RIGHT
 		result.line = first.y
-	elif _is_whole(distinct, column):
+	elif _is_whole(frames, column):
 		result.shape = Shape.COLUMN
+		result.cells = frames
 		result.side = Side.TOP if _starts_nearer_start(first, column) else Side.BOTTOM
 		result.line = first.x
-	elif _is_block(distinct):
-		result.shape = Shape.BLOCK
-	elif _is_area(distinct, grid_size):
-		result.shape = Shape.AREA
+	else:
+		distinct.append_array(_empty_gaps(distinct, grid, has_frame))
+		if _is_block(distinct):
+			result.shape = Shape.BLOCK
+		elif _is_area(distinct, grid_size):
+			result.shape = Shape.AREA
 	return result
+
+
+## The empty cells between two of [param cells] in a row or a column, with nothing but
+## empty cells between them
+static func _empty_gaps(
+	cells: Array[Vector2i], grid: Rect2i, has_frame: Callable
+) -> Array[Vector2i]:
+	var gaps: Array[Vector2i] = []
+	var taken: Dictionary[Vector2i, bool] = {}
+	for cell in cells:
+		taken[cell] = true
+	for cell in cells:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
+			var between: Array[Vector2i] = []
+			var next := cell + step
+			while grid.has_point(next) and not taken.has(next) and not has_frame.call(next):
+				between.append(next)
+				next += step
+			if taken.has(next):
+				for gap in between:
+					if not gap in gaps:
+						gaps.append(gap)
+	return gaps
 
 
 ## The cells holding a frame among the [param count] from [param start] on by [param step]

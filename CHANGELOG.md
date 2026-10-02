@@ -166,7 +166,9 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   margin (the right one when it starts nearer the right), one that is exactly one column
   above it (below when it starts nearer the bottom); empty cells don't count. Any other
   connected area, such as part of a row, a rectangle, 8 frames in 6 columns or an
-  L-shape, is outlined with the name on the edge at its first frame. The order of the
+  L-shape, is outlined with the name on the edge at its first frame; outlines take in
+  empty cells between its frames, so a rectangle with a frame missing is still one, and
+  a row with a gap is one outline. The order of the
   frames doesn't matter, and frames shown twice count once; scattered animations aren't
   named. Names and outlines are drawn in
   their animation's colour; where they overlap, names stack in their margin and outlines

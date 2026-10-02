@@ -167,6 +167,53 @@ func test_areas() -> void:
 	assert_eq(Layout.get_slot(label), Vector3i(Layout.Side.NONE, 0, 0), "named at its first frame")
 
 
+func test_outlines_go_around_empty_cells() -> void:
+	# A rectangle with an empty cell is still a rectangle, and the outline goes round it
+	var block := row(1, 1, 3) + row(2, 1, 3)
+	var frames := block.filter(func(cell: Vector2i) -> bool: return cell != Vector2i(2, 1))
+	var frames_in: Array[Vector2i] = []
+	frames_in.assign(frames)
+	var label := Layout.classify(block, GRID, has_frame_in(frames_in))
+	assert_eq(label.shape, Layout.Shape.BLOCK, "a block with a hole")
+	assert_eq(label.cells, block, "the empty cell is outlined too")
+	# An empty cell joins the frames on either side of it
+	var with_gap := cells_of([0, 0, 1, 0, 3, 0, 5, 0])
+	label = Layout.classify(row(0, 0, 3), GRID, has_frame_in(with_gap))
+	assert_eq(label.shape, Layout.Shape.AREA, "a gap that's part of it")
+	assert_eq(label.cells, row(0, 0, 3))
+	# Or that it leaves out, as a selection does
+	label = Layout.classify(cells_of([1, 0, 3, 0]), GRID, has_frame_in(with_gap))
+	assert_eq(label.shape, Layout.Shape.AREA, "a gap that isn't part of it")
+	assert_eq(label.cells, cells_of([1, 0, 3, 0, 2, 0]), "the gap after its frames")
+	var hole := block.filter(func(cell: Vector2i) -> bool: return cell != Vector2i(2, 1))
+	var hole_cells: Array[Vector2i] = []
+	hole_cells.assign(hole)
+	label = Layout.classify(hole_cells, GRID, has_frame_in(frames_in))
+	assert_eq(label.shape, Layout.Shape.BLOCK, "a hole left out")
+	assert_eq(label.cells.size(), 6)
+	# Up and down too
+	var column_frames := cells_of([0, 0, 0, 2, 0, 3])
+	label = Layout.classify(cells_of([0, 0, 0, 2]), GRID, has_frame_in(column_frames))
+	assert_eq(label.shape, Layout.Shape.AREA, "a gap in a column")
+	# A missing corner isn't between frames, so the outline goes round it
+	var corner := row(1, 1, 3) + row(2, 1, 2)
+	label = Layout.classify(corner, GRID, has_frame_in(corner))
+	assert_eq(label.shape, Layout.Shape.AREA, "a corner short")
+	assert_eq(label.cells, corner)
+	# Only empty cells, or empty ones off the grid
+	assert_eq(
+		Layout.classify(row(0, 0, 2), GRID, has_frame_in(row(3, 0, 0))).shape,
+		Layout.Shape.NONE,
+		"no frames"
+	)
+	label = Layout.classify(row(0, 0, 2) + row(9, 0, 0), GRID, has_frame_in(row(0, 0, 2)))
+	assert_eq(label.cells, row(0, 0, 2), "empty cells off the grid are left out")
+	# A row is still named by its frames alone
+	label = Layout.classify(row(2, 0, 5), GRID, has_frame_in(row(2, 0, 3) + row(3, 0, 5)))
+	assert_eq(label.shape, Layout.Shape.ROW)
+	assert_eq(label.cells, row(2, 0, 3), "a row's frames")
+
+
 func test_scattered_get_none() -> void:
 	assert_eq(shape_of([] as Array[Vector2i]), Layout.Shape.NONE, "empty")
 	assert_eq(shape_of(cells_of([0, 0, 2, 0])), Layout.Shape.NONE, "a gap")
