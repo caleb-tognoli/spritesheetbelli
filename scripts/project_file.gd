@@ -89,6 +89,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 		"frames": frames,
 		"extra": extra,
 	}
+	if sheet.canvas.has_area():
+		var canvas := sheet.canvas
+		data.canvas = [canvas.position.x, canvas.position.y, canvas.size.x, canvas.size.y]
 	if not sheet.linked_folders.is_empty():
 		var folders: Array[Dictionary] = []
 		for folder in sheet.linked_folders:
@@ -186,6 +189,13 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	for linked: Variant in data.get("folders", []):
 		if linked is Dictionary and linked.get("path") is String:
 			folders.append(FrameSource.resolve_path(linked.path, linked.get("relative"), folder))
+	var canvas := Rect2()
+	var saved_canvas: Variant = data.get("canvas")
+	if saved_canvas is Array and saved_canvas.size() >= 4:
+		canvas = Rect2(
+			Vector2(float(saved_canvas[0]), float(saved_canvas[1])),
+			Vector2(float(saved_canvas[2]), float(saved_canvas[3]))
+		)
 	var layout := Spritesheet.Layout.GRID
 	if data.get("layout") == "packed":
 		layout = Spritesheet.Layout.PACKED
@@ -201,6 +211,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"locked": locked,
 		"scale": Vector2(frame_scale[0], frame_scale[1]),
 		"scale_filter": int(data.get("scale_filter", Image.INTERPOLATE_NEAREST)),
+		"canvas": canvas,
 		"animations": animations,
 		"label_playing_only": data.get("animation_labels") == "playing",
 		"export":

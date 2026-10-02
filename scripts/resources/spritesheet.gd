@@ -33,7 +33,7 @@ var grid_size: Vector2i:
 var locked_coordinates: Array[Vector2i]:
 	get:
 		return _locked
-## Size of every cell: the largest scaled frame
+## Size of every cell: the largest scaled frame, or the canvas when it's bigger
 var sprite_size: Vector2i:
 	get:
 		return _sprite_size
@@ -44,6 +44,12 @@ var frame_scale: Vector2:
 var scale_filter: Image.Interpolation:
 	get:
 		return _scale_filter
+## The least the cells hold in the grid layout, transparent space around the frames: in
+## unscaled pixels, relative to the point every frame is placed around. Empty when the
+## cells just fit the frames. Changes go through [method set_canvas_size].
+var canvas: Rect2:
+	get:
+		return _canvas
 ## Named animations, in the order they were made. Read only: changes go through
 ## [method add_animation], [method set_animation] and [method remove_animation].
 var animations: Array[SheetAnimation]:
@@ -83,6 +89,7 @@ var _grid_size := Vector2i.ZERO
 var _locked: Array[Vector2i] = []
 var _scale := Vector2.ONE
 var _scale_filter := Image.INTERPOLATE_NEAREST
+var _canvas := Rect2()
 var _export_settings := {}
 var _animations: Array[Dictionary] = []
 var _label_playing_only := false
@@ -218,6 +225,7 @@ func get_state() -> Dictionary:
 		"locked": _locked.duplicate(),
 		"scale": _scale,
 		"scale_filter": _scale_filter,
+		"canvas": _canvas,
 		"animations": _animations.duplicate(true),
 		"label_playing_only": _label_playing_only,
 		"export": _export_settings.duplicate(),
@@ -239,6 +247,7 @@ func set_state(state: Dictionary) -> void:
 	_locked.assign(state.get("locked", []))
 	_scale = state.get("scale", Vector2.ONE)
 	_scale_filter = state.get("scale_filter", Image.INTERPOLATE_NEAREST)
+	_canvas = state.get("canvas", Rect2())
 	_animations.assign(state.get("animations", []).duplicate(true))
 	_label_playing_only = state.get("label_playing_only", false)
 	_export_settings = state.get("export", {}).duplicate()
@@ -840,6 +849,22 @@ func resize_sprites(size: Vector2i, filter := _scale_filter) -> void:
 	set_frame_scale(Vector2(size) / Vector2(base), filter)
 
 
+## Makes the cells [param size] without scaling the frames, growing or shrinking them evenly
+## around their middle (the odd pixel on the right and bottom). They keep that size as
+## frames change, only growing to hold the frames. See [method FrameEdits.resize_canvas],
+## which also crops the frames' transparent borders.
+func set_canvas_size(size: Vector2i) -> void:
+	if _frames.is_empty() or size.x <= 0 or size.y <= 0:
+		return
+	# The cells as they were last told about, before any change in this batch
+	var grow := size - _sprite_size
+	var position := _cell_origin - Vector2i(floori(grow.x / 2.0), floori(grow.y / 2.0))
+	var new_canvas := Rect2(Vector2(position) / _scale, Vector2(size) / _scale)
+	if not new_canvas.is_equal_approx(_canvas):
+		_canvas = new_canvas
+		_changed()
+
+
 ## Adds an edit to the frame's source, so it's made again when the frame is reloaded
 func _record_op(coord: Vector2i, op: Dictionary) -> void:
 	if not op.is_empty() and _sources.has(coord):
@@ -924,9 +949,16 @@ func _placed_rect(coord: Vector2i, at_scale: Vector2) -> Rect2i:
 
 
 ## The smallest rectangle holding every frame at [param at_scale], placed around the
-## same point
+## same point, and the canvas in the grid layout
 func _frame_bounds(at_scale: Vector2) -> Rect2i:
-	return _bounds_of(_frames.keys(), at_scale)
+	var bounds := _bounds_of(_frames.keys(), at_scale)
+	if _layout == Layout.GRID and _canvas.has_area() and bounds.has_area():
+		var canvas_rect := Rect2i(
+			Vector2i((_canvas.position * at_scale).round()),
+			Vector2i((_canvas.size * at_scale).round()).max(Vector2i.ONE)
+		)
+		bounds = bounds.merge(canvas_rect)
+	return bounds
 
 
 ## The smallest rectangle holding the frames at [param coords], or an empty one

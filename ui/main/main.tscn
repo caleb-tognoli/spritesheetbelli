@@ -241,12 +241,21 @@ select_all_on_focus = true
 
 [node name="KeepRatio" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow" unique_id=1366264970]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 30)
 layout_mode = 2
 tooltip_text = "Keep aspect ratio"
 toggle_mode = true
 button_pressed = true
 icon = ExtResource("8_link")
-flat = true
+icon_alignment = 1
+
+[node name="ResizeCanvas" type="Button" parent="Layout/Split/Sidebar/Scroll/Margin/Sections/SpriteRow" unique_id=1888213470]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 30)
+layout_mode = 2
+tooltip_text = "Resize the canvas: add or take away transparent space around the frames instead of scaling them"
+toggle_mode = true
+icon_alignment = 1
 
 [node name="ScaleRow" type="HBoxContainer" parent="Layout/Split/Sidebar/Scroll/Margin/Sections" unique_id=1093878071]
 layout_mode = 2

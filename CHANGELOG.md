@@ -323,8 +323,15 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   panels included. On desktops, a `.po` file put in the translations folder (the button
   next to the setting opens it) adds its language to the list. File dialogs, native ones
   included, name their file types in the chosen language too.
+- Resize Canvas, a toggle next to the sprite size: typing a size adds transparent space
+  evenly around the frames instead of scaling them, or takes it away, trimming only
+  transparent pixels. The cells keep that size as frames are added or removed, growing
+  only to hold a bigger one, and scale along with the frames (½×, 2×, typing a size with
+  the toggle off). The toggle is remembered.
 
 ### Changed
+- The Keep Aspect Ratio button looks like the other toggles: bordered, and in the accent
+  colour while on.
 - Dialogs that only ask something (unsaved changes, deleted or changed files, errors and
   confirmations) and About have their text and buttons in the middle. Their main button,
   and those of New / Rename Animation, Add Outline, Export and Settings' Reset All, have

@@ -139,6 +139,76 @@ func test_resize_is_lossless() -> void:
 	assert_eq(sheet.frames[Vector2i.ZERO].get_size(), Vector2i(16, 16), "source kept")
 
 
+func test_resize_canvas_adds_space_evenly() -> void:
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	FrameEdits.resize_canvas(sheet, Vector2i(25, 20))
+	assert_eq(sheet.sprite_size, Vector2i(25, 20))
+	assert_eq(sheet.frames[Vector2i.ZERO].get_size(), Vector2i(16, 16), "frame not scaled")
+	assert_eq(
+		sheet.get_frame_rect_in_cell(Vector2i.ZERO).position,
+		Vector2i(4, 2),
+		"odd pixel on the right"
+	)
+	var img := sheet.get_image()
+	assert_eq(img.get_pixel(3, 10).a, 0.0, "transparent space")
+	assert_color(img, Vector2i(4, 2), Color.RED)
+
+
+func test_canvas_keeps_its_size_and_grows_for_frames() -> void:
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	FrameEdits.resize_canvas(sheet, Vector2i(32, 32))
+	sheet.add_frames([make_image(Color.BLUE, Vector2i(24, 24))] as Array[Image])
+	assert_eq(sheet.sprite_size, Vector2i(32, 32), "a smaller frame fits the canvas")
+	sheet.add_frames([make_image(Color.GREEN, Vector2i(40, 8))] as Array[Image])
+	assert_eq(sheet.sprite_size, Vector2i(40, 32), "a bigger frame grows the cells")
+	sheet.remove_frames([Vector2i(2, 0)] as Array[Vector2i])
+	assert_eq(sheet.sprite_size, Vector2i(32, 32))
+
+
+func test_canvas_scales_with_frames() -> void:
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	FrameEdits.resize_canvas(sheet, Vector2i(24, 24))
+	sheet.set_frame_scale(Vector2(2, 2))
+	assert_eq(sheet.sprite_size, Vector2i(48, 48))
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i.ZERO), Rect2i(8, 8, 32, 32))
+	sheet.resize_sprites(Vector2i(12, 12))
+	assert_eq(sheet.sprite_size, Vector2i(12, 12), "the typed size includes the space")
+	assert_eq(sheet.get_frame_rect_in_cell(Vector2i.ZERO).size, Vector2i(8, 8))
+
+
+func test_shrinking_canvas_only_crops_transparent_pixels() -> void:
+	var img := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(4, 4, 6, 8), Color.RED)
+	sheet.add_frames([img] as Array[Image])
+	FrameEdits.resize_canvas(sheet, Vector2i(10, 10))
+	assert_eq(sheet.sprite_size, Vector2i(10, 10))
+	assert_eq(sheet.frames[Vector2i.ZERO].get_size(), Vector2i(6, 8), "transparent borders trimmed")
+	FrameEdits.resize_canvas(sheet, Vector2i(2, 2))
+	assert_eq(sheet.sprite_size, Vector2i(6, 8), "what's drawn is never cropped")
+	assert_eq(sheet.get_cell_image(Vector2i.ZERO).get_used_rect().size, Vector2i(6, 8))
+
+
+func test_canvas_is_undone_and_saved() -> void:
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	var state := sheet.get_state()
+	FrameEdits.resize_canvas(sheet, Vector2i(20, 30))
+	var path := temp_path("canvas.sbelli")
+	assert_eq(ProjectFile.save(sheet, path), OK)
+	sheet.set_state(state)
+	assert_eq(sheet.sprite_size, Vector2i(16, 16), "undone")
+	sheet.set_state(ProjectFile.load(path).state)
+	assert_eq(sheet.sprite_size, Vector2i(20, 30), "loaded")
+
+
+func test_canvas_is_only_in_the_grid_layout() -> void:
+	sheet.add_frames([make_image(Color.RED)] as Array[Image])
+	FrameEdits.resize_canvas(sheet, Vector2i(32, 32))
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	assert_eq(sheet.sprite_size, Vector2i(16, 16))
+	sheet.set_layout(Spritesheet.Layout.GRID)
+	assert_eq(sheet.sprite_size, Vector2i(32, 32))
+
+
 func test_move_frames_swaps() -> void:
 	sheet.add_frames(
 		[make_image(Color.RED), make_image(Color.GREEN), make_image(Color.BLUE)] as Array[Image]

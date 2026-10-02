@@ -2127,6 +2127,10 @@ msgid "Keep aspect ratio"
 msgstr ""
 
 #: res://ui/main/main.tscn
+msgid "Resize the canvas: add or take away transparent space around the frames instead of scaling them"
+msgstr ""
+
+#: res://ui/main/main.tscn
 msgid "Half size"
 msgstr ""
 
@@ -2435,6 +2439,10 @@ msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Adding outlines"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Resize canvas"
 msgstr ""
 
 #: res://ui/main/main_ui.gd

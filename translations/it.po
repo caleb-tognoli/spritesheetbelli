@@ -2135,6 +2135,10 @@ msgid "Keep aspect ratio"
 msgstr "Mantieni proporzioni"
 
 #: res://ui/main/main.tscn
+msgid "Resize the canvas: add or take away transparent space around the frames instead of scaling them"
+msgstr "Ridimensiona la tela: aggiungi o togli spazio trasparente attorno ai frame invece di scalarli"
+
+#: res://ui/main/main.tscn
 msgid "Half size"
 msgstr "Metà dimensione"
 
@@ -2444,6 +2448,10 @@ msgstr "Contorno"
 #: res://ui/main/main_ui.gd
 msgid "Adding outlines"
 msgstr "Aggiunta dei contorni"
+
+#: res://ui/main/main_ui.gd
+msgid "Resize canvas"
+msgstr "Ridimensiona tela"
 
 #: res://ui/main/main_ui.gd
 msgid "Resize sprites"

@@ -80,6 +80,8 @@ const DEFAULTS := {
 	&"window_screen": 0,
 	&"window_maximized": false,
 	&"onion_skin": false,
+	# Typing a sprite size adds or takes away transparent space instead of scaling frames
+	&"resize_canvas": false,
 	# Behind the frames in the animation preview: "checkerboard", "color" or "export", the
 	# export background
 	&"animation_background": "checkerboard",
@@ -110,6 +112,7 @@ const REMEMBERED: Array[StringName] = [
 	&"window_screen",
 	&"window_maximized",
 	&"onion_skin",
+	&"resize_canvas",
 	&"animation_background",
 	&"animation_background_color",
 	&"lock_empty_cells",

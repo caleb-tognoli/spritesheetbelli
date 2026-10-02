@@ -2,6 +2,7 @@ extends Control
 
 const LINK_ICON := preload("res://assets/icons/Link.svg")
 const UNLINK_ICON := preload("res://assets/icons/Unlink.svg")
+const RESIZE_CANVAS_ICON := preload("res://assets/icons/ResizeCanvas.svg")
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
 ## Action buttons in the toolbar, in groups, and the view toggles next to the zoom. The
@@ -41,6 +42,8 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 @onready var sprite_width: SpinBox = %SpriteWidth
 @onready var sprite_height: SpinBox = %SpriteHeight
 @onready var keep_ratio_btn: Button = %KeepRatio
+## Typing a sprite size adds or takes away transparent space instead of scaling
+@onready var resize_canvas_btn: Button = %ResizeCanvas
 @onready var half_size_btn: Button = %HalfSize
 @onready var double_size_btn: Button = %DoubleSize
 @onready var triple_size_btn: Button = %TripleSize
@@ -158,6 +161,13 @@ func _ready() -> void:
 	LabelLink.link(resize_filter.get_parent().get_child(0) as Label, resize_filter)
 	keep_ratio_btn.toggled.connect(
 		func(on: bool) -> void: keep_ratio_btn.icon = LINK_ICON if on else UNLINK_ICON
+	)
+	resize_canvas_btn.icon = RESIZE_CANVAS_ICON
+	resize_canvas_btn.button_pressed = Settings.get_value(&"resize_canvas")
+	resize_canvas_btn.toggled.connect(
+		func(on: bool) -> void:
+			if Settings.get_value(&"resize_canvas") != on:
+				Settings.set_value(&"resize_canvas", on)
 	)
 	get_tree().auto_accept_quit = false
 	add_child(shortcuts_dialog)
@@ -427,10 +437,14 @@ func edit_targets(action_name: String, edit: Callable) -> void:
 
 ## Resizes sprites to the given width or height (-1 = unchanged). With the size linked,
 ## the other side follows the current proportions, so a deliberate stretch is kept.
+## With [member resize_canvas_btn] on, the cells change size around the frames instead.
 func set_sprite_size(width: int, height: int) -> void:
 	var sheet := Global.spritesheet
 	var base := sheet.get_base_sprite_size()
 	if base.x <= 0 or base.y <= 0:
+		return
+	if resize_canvas_btn.button_pressed:
+		resize_canvas(_linked_size(sheet.sprite_size, width, height))
 		return
 	# Scale factors are exact, unlike the rounded sprite size
 	var aspect := sheet.frame_scale.y / sheet.frame_scale.x
@@ -444,6 +458,33 @@ func set_sprite_size(width: int, height: int) -> void:
 		if keep_ratio_btn.button_pressed:
 			new_size.x = roundi(base.x * height / float(base.y) / aspect)
 	resize_sprites(new_size)
+
+
+## [param size] with the given width or height (-1 = unchanged), the other side keeping
+## its proportion when the size is linked
+func _linked_size(size: Vector2i, width: int, height: int) -> Vector2i:
+	var new_size := size
+	if width >= 0:
+		new_size.x = width
+		if keep_ratio_btn.button_pressed:
+			new_size.y = roundi(size.y * width / float(size.x))
+	if height >= 0:
+		new_size.y = height
+		if keep_ratio_btn.button_pressed:
+			new_size.x = roundi(size.x * height / float(size.y))
+	return new_size
+
+
+## Adds or takes away transparent space around the frames, see [method FrameEdits.resize_canvas]
+func resize_canvas(new_size: Vector2i) -> void:
+	if new_size.x <= 0 or new_size.y <= 0 or not _check_sprite_size(new_size):
+		set_text_params(Global.spritesheet)
+		return
+	Global.document.perform(
+		L10n.mark("Resize canvas"), FrameEdits.resize_canvas.bind(Global.spritesheet, new_size)
+	)
+	# Cells only shrink as far as what's drawn
+	set_text_params(Global.spritesheet)
 
 
 func resize_sprites(new_size: Vector2i) -> void:

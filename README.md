@@ -56,7 +56,8 @@ A small desktop tool made with Godot.</p>
   animations don't jump.
 - **Resize without losing quality.** Sprites are always resized from the originals, with
   Nearest for sharp pixel art, and pixel-perfect zoom keeps every pixel the same size on
-  screen.
+  screen. Or resize the canvas instead: add transparent space around the frames, or crop
+  it away without touching what's drawn.
 - **Animations:** make named animations from a row, a column or the selected frames in a
   keystroke (F2, Shift+F2, Ctrl+F2), named after what their frames' names share, or from a
   range of cells, each with its own speed and loop, ping-pong or play-once. Put their

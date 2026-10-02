@@ -132,6 +132,19 @@ static func nudge(sheet: Spritesheet, coords: Array[Vector2i], offset: Vector2i)
 	sheet.end_batch()
 
 
+## Adds transparent space around the frames, or takes it away, to make the cells
+## [param size] without scaling the frames (see [method Spritesheet.set_canvas_size]). Only
+## transparent pixels are cropped: shrinking trims the frames' transparent borders, and the
+## cells stay big enough for what's drawn.
+static func resize_canvas(sheet: Spritesheet, size: Vector2i) -> void:
+	sheet.begin_batch()
+	var shrinking := size.x < sheet.sprite_size.x or size.y < sheet.sprite_size.y
+	sheet.set_canvas_size(size)
+	if shrinking:
+		trim_padded(sheet, sheet.get_sorted_coords())
+	sheet.end_batch()
+
+
 ## [param pivot] (in unscaled pixels of the frame at [param coord]) moved inside the frame,
 ## its edges included
 static func pivot_inside(sheet: Spritesheet, coord: Vector2i, pivot: Vector2) -> Vector2:
