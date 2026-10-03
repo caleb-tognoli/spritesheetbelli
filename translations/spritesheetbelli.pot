@@ -1066,11 +1066,11 @@ msgid "No frames"
 msgstr ""
 
 #: res://ui/animation_preview/timeline_tile.gd
-msgid "Take the frame out"
+msgid "How long it's shown: 2 is twice as long as a frame"
 msgstr ""
 
 #: res://ui/animation_preview/timeline_tile.gd
-msgid "How long it's shown: 2 is twice as long as a frame"
+msgid "Take the frame out"
 msgstr ""
 
 #: res://ui/main/about_dialog.gd

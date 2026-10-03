@@ -66,7 +66,6 @@ func test_shows_the_frames() -> void:
 	await get_tree().process_frame
 	assert_eq(timeline.row.get_child_count(), 3, "a tile for each frame")
 	var tile := timeline.get_tile(1)
-	assert_eq(tile.badge.text, "2", "its place, from 1")
 	assert_eq(tile.duration_spin.value, 1.0)
 	assert_eq(tile.duration_spin.prefix, "×")
 	assert_ne(tile.picture.texture, null, "its picture")
@@ -126,8 +125,15 @@ func test_removing_frames() -> void:
 	# The × on a tile
 	await get_tree().process_frame
 	var tile := timeline.get_tile(1)
-	tile.mouse_entered.emit()
-	assert_true(tile.remove_button.visible, "shown when hovered")
+	assert_true(tile.remove_button.is_visible_in_tree(), "always shown")
+	await hover(tile.picture.get_global_rect().get_center())
+	assert_eq(tile.theme_type_variation, &"TimelineFrameHover", "lit when hovered")
+	await hover(tile.remove_button.get_global_rect().get_center())
+	assert_eq(tile.theme_type_variation, &"TimelineFrameHover", "and over the ×")
+	await hover(tile.duration_spin.get_global_rect().get_center())
+	assert_eq(tile.theme_type_variation, &"TimelineFrameHover", "or the duration")
+	await hover(Vector2(-10, -10))
+	assert_eq(tile.theme_type_variation, &"TimelineFrame", "not once the mouse leaves")
 	tile.remove_button.pressed.emit()
 	assert_eq(animation().cells, cells([0, 2]))
 
@@ -192,6 +198,8 @@ func test_picking() -> void:
 	assert_eq(timeline.get_selected(), [0, 2] as Array[int], "Ctrl takes one out")
 	assert_true(timeline.get_tile(2).selected)
 	assert_eq(timeline.get_tile(2).theme_type_variation, &"TimelineFrameSelected")
+	assert_eq(timeline.get_tile(2).label.theme_type_variation, &"TimelineLabelSelected")
+	assert_eq(timeline.get_tile(1).label.theme_type_variation, &"StatusLabel")
 	# Pressing a picked frame keeps the others for dragging, until released
 	click(0, 0, true)
 	assert_eq(timeline.get_selected(), [0, 2] as Array[int])
@@ -215,6 +223,15 @@ func test_picking() -> void:
 	let_go.pressed = false
 	timeline._on_row_input(let_go)
 	assert_eq(timeline.get_selected(), [1, 2] as Array[int], "picked by the box")
+
+
+## Moves the mouse to [param at] in the window
+func hover(at: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.position = at
+	motion.global_position = at
+	get_viewport().push_input(motion)
+	await get_tree().process_frame
 
 
 ## Clicks the tile at [param index] with [param modifiers], or only presses it with

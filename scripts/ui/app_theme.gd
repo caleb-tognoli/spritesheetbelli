@@ -315,22 +315,34 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	]:
 		theme.set_stylebox("panel", entry[0], entry[1])
 		theme.set_type_variation(entry[0], "PanelContainer")
-	# Over a frame's picture: its place in the animation and the button to take it out
+	# Behind a frame's picture, so the tile's colour only frames it, however narrow it is
+	theme.set_type_variation(&"TimelineWell", "Panel")
+	theme.set_stylebox("panel", &"TimelineWell", _box(p.background, 4))
+	# The label under it, readable on the selection
+	theme.set_type_variation(&"TimelineLabelSelected", &"StatusLabel")
+	theme.set_color("font_color", &"TimelineLabelSelected", p.selected_text)
+	# How many frames are dragged, over their pictures
 	theme.set_type_variation(&"TimelineBadge", "Label")
 	theme.set_stylebox(
 		"normal", &"TimelineBadge", _box(Color(p.surface, 0.85), 3, Vector4(3, 0, 3, 0))
 	)
 	theme.set_font_size("font_size", &"TimelineBadge", 11)
 	theme.set_color("font_color", &"TimelineBadge", p.text)
+	# The button taking a frame out, beside its duration and outlined like it, since a
+	# button's own fill is the tile's
 	theme.set_type_variation(&"TimelineRemoveButton", "Button")
-	var remove_margins := Vector4(1, 1, 1, 1)
-	for state: String in ["normal", "focus", "disabled"]:
-		theme.set_stylebox(
-			state, &"TimelineRemoveButton", _box(Color(p.surface, 0.85), 3, remove_margins)
-		)
-	for state: String in ["hover", "pressed", "hover_pressed"]:
-		theme.set_stylebox(state, &"TimelineRemoveButton", _box(p.hover, 3, remove_margins))
+	for entry: Array in [
+		[["normal", "focus", "disabled"], p.raised],
+		[["hover"], p.hover],
+		[["pressed", "hover_pressed"], Color(p.accent, 0.35)],
+	]:
+		for state: String in entry[0]:
+			theme.set_stylebox(
+				state, &"TimelineRemoveButton", _box(entry[1], 4, Vector4(6, 1, 6, 1), p.border, 1)
+			)
 	theme.set_constant("icon_max_width", &"TimelineRemoveButton", 12)
+	# No room for text it doesn't have
+	theme.set_constant("h_separation", &"TimelineRemoveButton", 0)
 	# Floating panels of fields look like menus, with room around the fields
 	theme.set_stylebox(
 		"panel", "PopupPanel", _box(p.surface, 6, Vector4(12, 10, 12, 10), p.border, 1)

@@ -1,31 +1,29 @@
 class_name TimelineTile
 extends PanelContainer
-## A frame in an [AnimationTimeline]: its picture with its place in the animation on a
-## badge and a button to take it out, a short label, and how long it's shown.
+## A frame in an [AnimationTimeline]: its picture, a short label, how long it's shown and
+## a button to take it out.
 
 signal remove_pressed
 signal duration_changed(duration: float)
 
 const REMOVE_ICON := preload("res://assets/icons/Close.svg")
-## The narrowest a tile gets, so its duration field fits
+## The narrowest a tile gets, so its duration field and remove button fit
 const MIN_WIDTH := 58
 
 ## Where the frame is in the animation, from 0
 var index := 0
 var picture := TextureRect.new()
-## The place in the animation, from 1, over the picture's top-left corner
-var badge := Label.new()
-## Takes the frame out, over the picture's top-right corner while hovered or selected
-var remove_button := Button.new()
 var label := Label.new()
 var duration_spin := SpinBox.new()
+## Takes the frame out, right of its duration
+var remove_button := Button.new()
 var selected := false:
 	set = set_selected
 
 ## The full label, before it's shortened to fit
 var _text := ""
 var _hovered := false
-## Holds the picture and what's over it
+## Holds the picture over its well
 var _frame := Control.new()
 
 
@@ -38,24 +36,17 @@ func _init() -> void:
 
 	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_frame)
+	var well := Panel.new()
+	well.theme_type_variation = &"TimelineWell"
+	well.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_frame.add_child(well)
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_frame.add_child(picture)
-	badge.theme_type_variation = &"TimelineBadge"
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_frame.add_child(badge)
-	remove_button.icon = REMOVE_ICON
-	remove_button.theme_type_variation = &"TimelineRemoveButton"
-	remove_button.focus_mode = Control.FOCUS_NONE
-	remove_button.tooltip_text = "Take the frame out"
-	remove_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	remove_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	remove_button.visible = false
-	remove_button.pressed.connect(remove_pressed.emit)
-	_frame.add_child(remove_button)
 
 	label.theme_type_variation = &"StatusLabel"
 	# Names of frames, or text translated where it's made
@@ -77,10 +68,23 @@ func _init() -> void:
 	duration_spin.tooltip_text = "How long it's shown: 2 is twice as long as a frame"
 	duration_spin.get_line_edit().theme_type_variation = &"TimelineDurationEdit"
 	duration_spin.value_changed.connect(duration_changed.emit)
-	box.add_child(duration_spin)
+	duration_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var controls := HBoxContainer.new()
+	controls.add_theme_constant_override("separation", 2)
+	controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	controls.add_child(duration_spin)
+	remove_button.icon = REMOVE_ICON
+	remove_button.theme_type_variation = &"TimelineRemoveButton"
+	remove_button.focus_mode = Control.FOCUS_NONE
+	remove_button.tooltip_text = "Take the frame out"
+	remove_button.pressed.connect(remove_pressed.emit)
+	controls.add_child(remove_button)
+	box.add_child(controls)
 
-	mouse_entered.connect(_set_hovered.bind(true))
-	mouse_exited.connect(_set_hovered.bind(false))
+	# Its fields stop the mouse, which counts as leaving the tile, so they're asked too
+	for target: Control in [self, remove_button, duration_spin, duration_spin.get_line_edit()]:
+		target.mouse_entered.connect(_update_hovered, CONNECT_DEFERRED)
+		target.mouse_exited.connect(_update_hovered, CONNECT_DEFERRED)
 
 
 func _ready() -> void:
@@ -94,7 +98,6 @@ func show_frame(
 ) -> void:
 	index = frame_index
 	picture.texture = texture
-	badge.text = str(frame_index + 1)
 	_text = text
 	_fit_label()
 	tooltip_text = tooltip
@@ -102,7 +105,7 @@ func show_frame(
 
 
 ## Makes the picture [param side] pixels square, and the tile at least as wide as its
-## duration field
+## duration field and remove button
 func set_picture_size(side: int) -> void:
 	_frame.custom_minimum_size = Vector2(maxi(side, MIN_WIDTH), side)
 
@@ -121,9 +124,15 @@ func get_label_text() -> String:
 	return label.text
 
 
-func _set_hovered(hovered: bool) -> void:
-	_hovered = hovered
-	_update_look()
+## Hovered while the mouse is over the tile or anything in it
+func _update_hovered() -> void:
+	if not is_inside_tree():
+		return
+	var over := get_viewport().gui_get_hovered_control()
+	var hovered := over != null and (over == self or is_ancestor_of(over))
+	if hovered != _hovered:
+		_hovered = hovered
+		_update_look()
 
 
 func _update_look() -> void:
@@ -131,7 +140,7 @@ func _update_look() -> void:
 		theme_type_variation = &"TimelineFrameSelected"
 	else:
 		theme_type_variation = &"TimelineFrameHover" if _hovered else &"TimelineFrame"
-	remove_button.visible = _hovered or selected
+	label.theme_type_variation = &"TimelineLabelSelected" if selected else &"StatusLabel"
 
 
 ## Shortens the label at its end to fit the tile

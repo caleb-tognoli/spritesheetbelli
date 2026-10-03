@@ -1,7 +1,7 @@
 class_name AnimationTimeline
 extends PanelContainer
 ## An animation's frames in playing order, left to right, as [TimelineTile]s: each with
-## its picture, its place in the animation, a short label and how long it's shown. Frames
+## its picture, a short label and how long it's shown. Frames
 ## are dragged to reorder them (Alt+drag copies them), taken out with × or Delete, picked
 ## by clicking (Ctrl and Shift pick more) or with a box, and added by dropping frames of
 ## the sheet on it, see [method frames_drag_data]. Changes aren't made here but sent with
