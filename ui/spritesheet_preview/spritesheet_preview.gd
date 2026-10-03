@@ -18,8 +18,8 @@ extends Node2D
 ## mouse instead. Esc puts back what's being dragged.
 ##
 ## Keys: arrows move the selected frames inside their cells, or on their page, a pixel at
-## a time, 8 with Shift, or onto the next guide with Shift+Alt; Ctrl+arrows add the next
-## frame that way to the selection.
+## a time, 8 with Shift, or onto the next guide or edge of their cells with Alt;
+## Ctrl+arrows add the next frame that way to the selection.
 
 ## Emitted when the spritesheet or the selection changed
 signal preview_updated
@@ -32,7 +32,7 @@ signal lock_requested(coord: Vector2i, locked: bool)
 signal move_requested(coords: Array[Vector2i], offset: Vector2i)
 ## The user pressed arrow keys to move frames inside their cells
 signal nudge_requested(coords: Array[Vector2i], offset: Vector2i)
-## The user pressed Shift+Alt+arrow to move frames onto the next guide in [param direction]
+## The user pressed Alt+arrow to move frames onto the next guide in [param direction]
 signal guide_snap_requested(coords: Array[Vector2i], direction: Vector2i)
 ## The cell under the mouse changed. (-1, -1) when outside the grid or the preview. Also
 ## emitted when the sheet changes, since what's in the cell may have.
@@ -167,6 +167,7 @@ func apply_settings() -> void:
 	show_indices = Settings.get_value(&"show_indices")
 	show_checkerboard = Settings.get_value(&"show_checkerboard")
 	grid_color = Settings.get_value(&"grid_color")
+	guides.color = Settings.get_value(&"guides_color")
 	background_color = Settings.get_value(&"background_color")
 	checker_size = Settings.get_value(&"checker_size")
 	zoom_speed = Settings.get_value(&"zoom_speed")
@@ -550,9 +551,9 @@ func _cancel_drag() -> bool:
 
 
 ## Arrow keys move the selected frames inside their cells, or on their page, by a pixel or
-## 8 with Shift, or onto the next guide with Shift+Alt; Ctrl+arrow adds the next frame
-## that way to the selection. Whether [param event] was handled. Ctrl+Shift and Alt are
-## left to shortcuts, like moving rows.
+## 8 with Shift, or onto the next guide or cell edge with Alt; Ctrl+arrow adds the next
+## frame that way to the selection. Whether [param event] was handled. Ctrl+Shift and
+## Shift+Alt are left to shortcuts, like moving rows.
 func _handle_arrow_key(event: InputEventKey) -> bool:
 	var directions := {
 		KEY_LEFT: Vector2i.LEFT,
@@ -581,13 +582,15 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 	return true
 
 
-## Ctrl+arrow adds the next frame that way to the selection, and Shift+Alt+arrow moves the
-## selected frames onto the next guide that way. Whether [param event] was handled.
+## Ctrl+arrow adds the next frame that way to the selection, and Alt+arrow moves the
+## selected frames onto the next guide or edge of their cells that way. Whether
+## [param event] was handled.
 func _handle_modified_arrow(event: InputEventKey, direction: Vector2i) -> bool:
-	if not event.alt_pressed and not event.shift_pressed:
+	var ctrl := event.is_command_or_control_pressed()
+	if ctrl and not event.alt_pressed and not event.shift_pressed:
 		_extend_selection(direction)
 		return true
-	if not event.alt_pressed or not event.shift_pressed or event.is_command_or_control_pressed():
+	if not event.alt_pressed or ctrl or event.shift_pressed:
 		return false
 	if able_to_move_frames and guides.shown and not _selected.is_empty():
 		guide_snap_requested.emit(get_selected_coords(), direction)

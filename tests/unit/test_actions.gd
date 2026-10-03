@@ -373,8 +373,11 @@ func test_buttons_have_the_tooltips_of_their_actions() -> void:
 	assert_true(main.export_btn.tooltip_text.contains("\n"), "and what it does")
 	assert_eq(main.history_panel.close_button.tooltip_text, "Hide the history (Ctrl+H)")
 	assert_eq(layout.sprites_panel.close_button.tooltip_text, "Hide the sprites (Ctrl+L)")
-	for menu_button: Button in area._menu_buttons:
-		assert_true(menu_button.tooltip_text.contains("every frame when none are selected"))
+	for id: StringName in [&"align_menu", &"pivot_menu"]:
+		var tooltip := area._submenu_buttons[id].tooltip_text
+		assert_true(tooltip.contains("every frame when none are selected"), id)
+	var rulers_tooltip := area._submenu_buttons[&"rulers_menu"].tooltip_text
+	assert_true(rulers_tooltip.begins_with("Rulers and Guides\nClick a ruler"))
 
 
 func test_add_actions_are_in_the_same_order_everywhere() -> void:

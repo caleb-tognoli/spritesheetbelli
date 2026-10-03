@@ -477,11 +477,11 @@ msgid "Arrow keys (Shift: 8 px)"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Move frames onto the next guide"
+msgid "Move frames onto or past the next guide or cell edge"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Shift+Alt+arrow keys"
+msgid "Alt+arrow keys"
 msgstr ""
 
 #: res://scripts/ui/shortcuts_dialog.gd
@@ -2237,6 +2237,7 @@ msgid "From the selected frames, or from every frame when none are selected"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+#: res://ui/main/menu_bar.gd
 msgid "Click a ruler to add a guide, repeated in every cell"
 msgstr ""
 
@@ -2440,6 +2441,7 @@ msgid "Frame Numbers"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+#: res://ui/main/menu_bar.gd
 msgid "Rulers and Guides"
 msgstr ""
 
@@ -2449,6 +2451,10 @@ msgstr ""
 
 #: res://ui/main/main_actions.gd
 msgid "Clear guides"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
+msgid "Guide Colour…"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
@@ -2997,6 +3003,10 @@ msgstr ""
 
 #: res://ui/settings/settings_window.gd
 msgid "Grid colour"
+msgstr ""
+
+#: res://ui/settings/settings_window.gd
+msgid "Guide colour"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd

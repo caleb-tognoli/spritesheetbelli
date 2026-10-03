@@ -45,6 +45,8 @@ var _view_bar := HBoxContainer.new()
 var _action_buttons: Dictionary[StringName, Button] = {}
 ## Buttons that open a menu of actions, with the ids in it
 var _menu_buttons: Dictionary[Button, Array] = {}
+## The same buttons, by the id of their menu
+var _submenu_buttons: Dictionary[StringName, Button] = {}
 
 
 func _ready() -> void:
@@ -140,16 +142,14 @@ func _build_overlay() -> void:
 	notice.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 
-## Names animations on the grid, with a button before the view toggles choosing which,
-## see [AnimationLabelControls]
+## Names animations on the grid, with a button choosing which, see
+## [AnimationLabelControls]. The button goes in the toolbar given to
+## [method set_toolbar_actions] as the button of its action.
 func enable_animation_labels() -> AnimationLabelControls:
 	if not label_controls:
 		label_controls = AnimationLabelControls.new()
 		add_child(label_controls)
-		var button := _tool_button(AnimationLabelControls.ICON)
-		_view_bar.add_child(button)
-		_view_bar.move_child(button, 0)
-		label_controls.setup(self, button)
+		label_controls.setup(self, _tool_button(AnimationLabelControls.ICON))
 	return label_controls
 
 
@@ -170,6 +170,16 @@ func enable_rulers() -> Rulers:
 		)
 		update_ui()
 	return rulers
+
+
+## Picks the colour of the guides, below the toolbar button of [param menu_id] when it's
+## shown, else over the top-left corner of the preview. See [method Rulers.pick_color].
+func pick_guides_color(menu_id: StringName) -> void:
+	var button: Button = _submenu_buttons.get(menu_id)
+	var at := stage.get_screen_transform() * (Vector2.ONE * Rulers.WIDTH)
+	if button and button.is_visible_in_tree():
+		at = button.get_screen_transform() * Vector2(0, button.size.y)
+	enable_rulers().pick_color(at)
 
 
 ## Shows [param text] with a warning icon over the preview, or hides it when empty
@@ -339,12 +349,17 @@ func _action_button(id: StringName, submenus: Dictionary, buttons: Dictionary) -
 		var ids: Array[StringName] = []
 		ids.assign(entry[1])
 		menu.set_actions(ids, submenus)
+		# A menu starting with a toggle, like the rulers', looks pressed while it's on
+		menu_button.toggle_mode = Actions.is_toggle(ids[0])
 		menu_button.pressed.connect(
 			func() -> void:
+				if menu_button.toggle_mode:
+					menu_button.set_pressed_no_signal(Actions.is_checked(ids[0]))
 				var below := menu_button.get_screen_transform() * Vector2(0, menu_button.size.y)
 				menu.popup(Rect2i(Vector2i(below), Vector2i.ZERO))
 		)
 		_menu_buttons[menu_button] = ids
+		_submenu_buttons[id] = menu_button
 		return menu_button
 	var action := Actions.get_action(id)
 	var button := _tool_button(action.icon)
@@ -370,6 +385,8 @@ func _refresh_action_buttons() -> void:
 		button.disabled = not ids.any(
 			func(id: StringName) -> bool: return not id.is_empty() and Actions.is_enabled(id)
 		)
+		if button.toggle_mode:
+			button.set_pressed_no_signal(Actions.is_checked(ids[0]))
 	_update_separators()
 
 

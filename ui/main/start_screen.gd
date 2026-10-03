@@ -36,6 +36,7 @@ const EDITOR_ACTIONS: Array[StringName] = [
 	&"toggle_indices",
 	&"toggle_rulers",
 	&"clear_guides",
+	&"guides_color",
 	&"toggle_sprites",
 	&"toggle_history",
 	&"toggle_status_bar",

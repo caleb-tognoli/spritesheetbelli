@@ -308,7 +308,9 @@ func sheet_moved() -> bool:
 func test_arrow_keys_leave_shortcuts_be() -> void:
 	click(Vector2i(0, 0))
 	assert_false(key(KEY_DOWN, true, true), "Ctrl+Shift moves rows")
-	assert_false(key(KEY_LEFT, false, false, true), "Alt is for shortcuts")
+	assert_false(key(KEY_LEFT, false, true, true), "Ctrl+Alt is for shortcuts")
+	assert_true(key(KEY_LEFT, false, false, true), "Alt snaps to guides, here none")
+	assert_false(key(KEY_LEFT, true, false, true), "Shift+Alt is for shortcuts")
 	assert_false(sheet_moved())
 	preview.able_to_move_frames = false
 	assert_false(key(KEY_RIGHT), "nothing to nudge where frames can't move")

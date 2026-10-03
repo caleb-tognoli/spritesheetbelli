@@ -26,6 +26,7 @@ const GRID_ONLY_ACTIONS: Array[StringName] = [
 	&"move_row_down",
 	&"toggle_rulers",
 	&"clear_guides",
+	&"guides_color",
 ]
 ## What tooltips say after an action's name and shortcut, see [member AppAction.description]
 const DESCRIPTIONS := {  # L10n.mark
@@ -160,7 +161,9 @@ func _build_sidebar() -> void:
 			)
 	)
 	atlas_panel.repack_requested.connect(Actions.run.bind(&"repack"))
-	Global.spritesheet.layout_warning.connect(Notify.toast)
+	# The sheet outlives the window, which tests make again and again
+	if not Global.spritesheet.layout_warning.is_connected(Notify.toast):
+		Global.spritesheet.layout_warning.connect(Notify.toast)
 	Settings.changed.connect(
 		func(key: StringName) -> void:
 			if key in [&"atlas_dedupe", &"atlas_power_of_two", &"atlas_square"]:

@@ -28,7 +28,7 @@ const SPEEDS: Array[float] = [4, 6, 8, 10, 12, 15, 20, 24, 30, 60]
 
 var area: PreviewArea
 var labels: AnimationLabels
-## The toolbar button, next to the view toggles
+## The toolbar button, next to the rulers'
 var button: Button
 var flyover := PopupPanel.new()
 var show_all_button := Button.new()
@@ -154,7 +154,7 @@ func open_flyover() -> void:
 	# The screen transform accounts for the window position and the interface's scale
 	var below := button.get_screen_transform() * Rect2(0, button.size.y + 4, button.size.x, 0)
 	flyover.popup(Rect2i(below))
-	# The button is near the window's right edge, so it opens leftwards when it must
+	# Kept inside the window, opening leftwards when it must
 	var window := button.get_window()
 	var past := flyover.position.x + flyover.size.x - (window.position.x + window.size.x)
 	if past > 0:

@@ -36,6 +36,13 @@ const SUBMENUS := {  # L10n.mark
 		preload("res://assets/icons/EditPivot.svg"),
 		"Of the selected frames, or of every frame when none are selected",
 	],
+	&"rulers_menu":
+	[
+		"Rulers and Guides",
+		[&"toggle_rulers", &"clear_guides", &"", &"guides_color"],
+		preload("res://assets/icons/Ruler.svg"),
+		"Click a ruler to add a guide, repeated in every cell",
+	],
 	&"rows_menu":
 	[
 		"Rows",
@@ -135,6 +142,7 @@ const MENUS := {  # L10n.mark
 		&"toggle_indices",
 		&"toggle_rulers",
 		&"clear_guides",
+		&"guides_color",
 		&"toggle_sprites",
 		&"toggle_history",
 		&"toggle_status_bar"

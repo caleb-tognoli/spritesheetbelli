@@ -171,7 +171,7 @@ func _draw_guides(cell: Rect2) -> void:
 			var to := size
 			from[axis] = roundf(cell.position[axis] + in_cell * zoom)
 			to[axis] = from[axis]
-			draw_line(from, to, GuideLines.COLOR)
+			draw_line(from, to, Settings.get_value(&"guides_color"))
 
 
 func _gui_input(event: InputEvent) -> void:

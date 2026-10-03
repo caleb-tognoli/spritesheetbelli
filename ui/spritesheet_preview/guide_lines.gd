@@ -4,14 +4,13 @@ extends RefCounted
 ## drawn in every cell while [member shown], and the ones dragged from its [Rulers]:
 ## where they'd go, and whether they'd be removed.
 
-## Godot's editors/2d/guides_color
-const COLOR := Color(0.6, 0.0, 0.8)
-const DRAGGED_COLOR := Color(0.75, 0.3, 1.0)
 ## No guide grabbed: the guides dragged are new ones
 const NEW := -(1 << 30)
 
 ## Whether guides are shown, with the rulers, see the show_rulers setting
 var shown := false
+## The guides_color setting
+var color: Color = Settings.DEFAULTS[&"guides_color"]
 ## The axes of the guides dragged: one, or both from the rulers' corner. Empty when
 ## nothing is dragged.
 var dragged_axes: Array[int] = []
@@ -21,6 +20,11 @@ var grabbed := NEW
 var dragged_to := Vector2i.ZERO
 ## Whether letting go would remove the guide grabbed, or not add the new ones
 var removing := false
+
+
+## The colour of the guides dragged, lighter than the others
+func get_dragged_color() -> Color:
+	return color.lightened(0.3)
 
 
 func is_dragging() -> bool:
@@ -88,9 +92,10 @@ func draw(canvas: SpritesheetPreview, visible_cells: Rect2i, pixel: float) -> vo
 		else:
 			runs.append(Vector2(first.position[across], last.end[across]))
 		for in_cell in get_cell_guides(canvas.spritesheet, axis, false):
-			_draw_lines(canvas, visible_cells, axis, in_cell, runs, COLOR, pixel)
+			_draw_lines(canvas, visible_cells, axis, in_cell, runs, color, pixel)
 		if axis in dragged_axes and not removing:
-			_draw_lines(canvas, visible_cells, axis, dragged_to[axis], runs, DRAGGED_COLOR, pixel)
+			var dragged_color := get_dragged_color()
+			_draw_lines(canvas, visible_cells, axis, dragged_to[axis], runs, dragged_color, pixel)
 
 
 ## Lines at [param in_cell] across [param axis] of every visible cell
@@ -100,7 +105,7 @@ static func _draw_lines(
 	axis: int,
 	in_cell: float,
 	runs: Array[Vector2],
-	color: Color,
+	line_color: Color,
 	pixel: float
 ) -> void:
 	var grid := canvas.grid_view
@@ -115,4 +120,4 @@ static func _draw_lines(
 			to[axis] = at
 			from[1 - axis] = run.x
 			to[1 - axis] = run.y
-			canvas.draw_line(from, to, color, pixel)
+			canvas.draw_line(from, to, line_color, pixel)

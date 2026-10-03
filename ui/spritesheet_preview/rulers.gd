@@ -9,7 +9,7 @@ extends Control
 ## measures: clicking the left ruler adds a horizontal guide there and the top one a
 ## vertical guide, and dragging from the corner adds both. A guide is dragged by where it
 ## crosses its ruler, and removed by dropping it on the other ruler, or right-clicking it.
-## Double-clicking it types where it goes.
+## Double-clicking it types where it goes, shown as it's typed.
 
 ## The guides of the sheet should be [param guides], one list for each axis, as an edit
 ## named [param action]
@@ -32,9 +32,11 @@ var _hovered := GuideLines.NEW
 var _grab := 0.0
 var _edit_popup: PopupPanel
 var _edit_spin: SpinBox
-var _edit_axis := 0
-var _edit_guide := 0
 var _edit_cancelled := false
+## Where the guide typed was, in pixels from the cells' top-left corner
+var _edit_from := 0
+var _color_popup: PopupPanel
+var _color_picker: ColorPicker
 
 
 func _init() -> void:
@@ -53,6 +55,10 @@ func refresh() -> void:
 		and sheet.sprite_size.y > 0
 		and sheet.grid_size != Vector2i.ZERO
 	)
+	if not shown:
+		for popup: PopupPanel in [_edit_popup, _color_popup]:
+			if popup and popup.visible:
+				popup.hide()
 	if not shown and preview.guides.is_dragging():
 		preview.guides.stop_drag()
 	visible = shown
@@ -62,9 +68,10 @@ func refresh() -> void:
 	queue_redraw()
 
 
-## Only the rulers take the mouse, the preview gets it everywhere else
+## Only the rulers take the mouse, the preview gets it everywhere else. Nothing outside
+## them either, like the toolbar above.
 func _has_point(point: Vector2) -> bool:
-	return point.x < WIDTH or point.y < WIDTH
+	return Rect2(Vector2.ZERO, size).has_point(point) and (point.x < WIDTH or point.y < WIDTH)
 
 
 #region Coordinates
@@ -99,6 +106,9 @@ func _in_cell(axis: int, point: Vector2) -> float:
 
 
 func _gui_input(event: InputEvent) -> void:
+	# The guide typed is shown as if dragged, but the mouse doesn't move it
+	if _is_editing():
+		return
 	var guides := preview.guides
 	if event is InputEventMouseMotion:
 		if guides.is_dragging():
@@ -135,7 +145,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_MOUSE_EXIT and not preview.guides.is_dragging():
+	if what == NOTIFICATION_MOUSE_EXIT and not preview.guides.is_dragging() and not _is_editing():
 		_set_hovered(-1, GuideLines.NEW)
 
 
@@ -255,15 +265,18 @@ func _remove(axis: int, guide: int) -> void:
 	)
 
 
-## Types where the guide goes, in pixels from the cells' top-left corner
+## Types where the guide goes, in pixels from the cells' top-left corner. It's shown there
+## as it's typed, like a dragged guide.
 func _edit(axis: int, guide: int, point: Vector2) -> void:
 	if _edit_popup == null:
 		_edit_popup = PopupPanel.new()
 		_edit_spin = SpinBox.new()
 		_edit_spin.suffix = "px"
 		_edit_spin.select_all_on_focus = true
+		_edit_spin.update_on_text_changed = true
 		_edit_popup.add_child(_edit_spin)
 		add_child(_edit_popup)
+		_edit_spin.value_changed.connect(_show_edit)
 		_edit_spin.get_line_edit().text_submitted.connect(
 			func(_text: String) -> void: _edit_popup.hide()
 		)
@@ -274,11 +287,13 @@ func _edit(axis: int, guide: int, point: Vector2) -> void:
 		)
 		_edit_popup.popup_hide.connect(_commit_edit)
 	var sheet := preview.spritesheet
-	_edit_axis = axis
-	_edit_guide = guide
 	_edit_cancelled = false
+	_edit_from = sheet.guide_to_cell(axis, guide)
+	_set_hovered(-1, GuideLines.NEW)
+	preview.guides.start_drag([axis] as Array[int], guide)
 	_edit_spin.max_value = sheet.sprite_size[axis]
-	_edit_spin.set_value_no_signal(sheet.guide_to_cell(axis, guide))
+	_edit_spin.set_value_no_signal(_edit_from)
+	_show_edit(_edit_from)
 	_edit_spin.tooltip_text = (
 		TranslationServer.translate("From the left of the cells")
 		if axis == Vector2.AXIS_X
@@ -289,29 +304,65 @@ func _edit(axis: int, guide: int, point: Vector2) -> void:
 	_edit_spin.get_line_edit().grab_focus()
 
 
+func _is_editing() -> bool:
+	return _edit_popup != null and _edit_popup.visible
+
+
+## Shows the guide typed at [param value]
+func _show_edit(value: float) -> void:
+	var guides := preview.guides
+	if not guides.is_dragging():
+		return
+	var axis := guides.dragged_axes[0]
+	guides.dragged_to[axis] = clampi(roundi(value), 0, preview.spritesheet.sprite_size[axis])
+	preview.queue_redraw()
+	queue_redraw()
+
+
 func _commit_edit() -> void:
 	_edit_spin.apply()
-	if _edit_cancelled:
+	var guides := preview.guides
+	if not guides.is_dragging():
 		return
+	var axis := guides.dragged_axes[0]
 	var sheet := preview.spritesheet
-	if not _edit_guide in sheet.get_guides(_edit_axis):
-		return
-	var dropped: Array[PackedInt32Array] = [sheet.get_guides(0), sheet.get_guides(1)]
-	var values := dropped[_edit_axis]
-	values.remove_at(values.find(_edit_guide))
-	values.append(sheet.cell_to_guide(_edit_axis, _edit_spin.value))
-	dropped[_edit_axis] = values
-	var before := sheet.get_guides(_edit_axis)
-	values.sort()
-	if values != before:
+	var moved := (
+		not _edit_cancelled
+		and guides.dragged_to[axis] != _edit_from
+		and guides.grabbed in sheet.get_guides(axis)
+	)
+	var dropped: Array[PackedInt32Array] = []
+	if moved:
+		dropped = guides.get_dropped_guides(sheet)
+	guides.stop_drag()
+	preview.queue_redraw()
+	queue_redraw()
+	if moved and dropped != [sheet.get_guides(0), sheet.get_guides(1)]:
 		guides_requested.emit(
 			dropped,
-			(
-				L10n.mark("Move Vertical Guide")
-				if _edit_axis == 0
-				else L10n.mark("Move Horizontal Guide")
-			)
+			L10n.mark("Move Vertical Guide") if axis == 0 else L10n.mark("Move Horizontal Guide")
 		)
+
+
+## Picks the colour of the guides below [param at] on screen, see the guides_color
+## setting. They change as it's picked.
+func pick_color(at: Vector2) -> void:
+	if _color_popup == null:
+		_color_popup = PopupPanel.new()
+		_color_picker = ColorPicker.new()
+		_color_picker.edit_alpha = false
+		_color_picker.presets_visible = false
+		_color_picker.color_changed.connect(
+			func(color: Color) -> void: Settings.set_value(&"guides_color", color)
+		)
+		_color_popup.add_child(_color_picker)
+		add_child(_color_popup)
+	_color_picker.color = Settings.get_value(&"guides_color")
+	_color_popup.popup(Rect2i(Vector2i(at), Vector2i.ZERO))
+	# Kept inside the window, like the animation labels' colours
+	var window := get_window()
+	var past := _color_popup.position + _color_popup.size - (window.position + window.size)
+	_color_popup.position -= past.max(Vector2i.ZERO)
 
 
 func _get_tooltip(at_position: Vector2) -> String:
@@ -373,7 +424,9 @@ func _draw_ruler(axis: int, graduation: Color, text: Color) -> void:
 	var step := label_step(zoom)
 	var tick := maxi(step / 10, 1)
 	var font := get_theme_default_font()
-	var labelled := cell * zoom >= font.get_string_size("00", 0, -1, FONT_SIZE).x + 6
+	var labelled := (
+		cell * zoom >= font.get_string_size("00", HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE).x + 6
+	)
 	var view := Rect2(preview.screen_to_world(Vector2.ZERO), size / preview.camera.zoom)
 	var first := maxi(_cell_at(axis, view.position) - 1, 0)
 	var last := _cell_at(axis, view.end)
@@ -402,7 +455,7 @@ func _draw_ruler(axis: int, graduation: Color, text: Color) -> void:
 				var hovered := (
 					axis == _hovered_axis and in_cell == sheet.guide_to_cell(axis, _hovered)
 				)
-				var color := GuideLines.DRAGGED_COLOR if hovered else GuideLines.COLOR
+				var color := preview.guides.get_dragged_color() if hovered else preview.guides.color
 				_draw_tick(axis, at, 1.0, color, 3.0 if hovered else 1.0)
 
 
@@ -433,7 +486,8 @@ func _draw_label(axis: int, at: float, label: String, color: Color, font: Font) 
 ## Where the dragged guides would go, next to them as in Godot
 func _draw_dragged_label(color: Color) -> void:
 	var guides := preview.guides
-	if not guides.is_dragging() or guides.removing:
+	# The guide typed has its value next to it already
+	if not guides.is_dragging() or guides.removing or _is_editing():
 		return
 	var font := get_theme_default_font()
 	var font_size := 13
@@ -444,12 +498,12 @@ func _draw_dragged_label(color: Color) -> void:
 		var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 		var start := _cell_start(axis, _cell_at(axis, preview.screen_to_world(mouse)))
 		var at := _to_screen(axis, start + guides.dragged_to[axis])
-		var position := Vector2(at + 10, WIDTH + text_size.y / 2 + 10)
+		var text_at := Vector2(at + 10, WIDTH + text_size.y / 2 + 10)
 		if axis == Vector2.AXIS_Y:
-			position = Vector2(WIDTH + 10, at + text_size.y / 2 + 10)
+			text_at = Vector2(WIDTH + 10, at + text_size.y / 2 + 10)
 		draw_string_outline(
-			font, position, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 2, outline
+			font, text_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 2, outline
 		)
-		draw_string(font, position, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+		draw_string(font, text_at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
 #endregion

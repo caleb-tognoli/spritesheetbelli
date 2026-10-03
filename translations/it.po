@@ -477,12 +477,12 @@ msgid "Arrow keys (Shift: 8 px)"
 msgstr "Tasti freccia (Shift: 8 px)"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Move frames onto the next guide"
-msgstr "Spostare i frame sulla guida successiva"
+msgid "Move frames onto or past the next guide or cell edge"
+msgstr "Spostare i frame sulla guida o sul bordo della cella successivo, o oltre"
 
 #: res://scripts/ui/shortcuts_dialog.gd
-msgid "Shift+Alt+arrow keys"
-msgstr "Shift+Alt+tasti freccia"
+msgid "Alt+arrow keys"
+msgstr "Alt+tasti freccia"
 
 #: res://scripts/ui/shortcuts_dialog.gd
 msgid "Add a guide (with rulers on)"
@@ -2460,6 +2460,10 @@ msgid "Clear guides"
 msgstr "Cancella guide"
 
 #: res://ui/main/main_actions.gd
+msgid "Guide Colour…"
+msgstr "Colore delle guide…"
+
+#: res://ui/main/main_actions.gd
 msgid "Command Palette…"
 msgstr "Comandi…"
 
@@ -3006,6 +3010,10 @@ msgstr "Mostra scacchiera"
 #: res://ui/settings/settings_window.gd
 msgid "Grid colour"
 msgstr "Colore della griglia"
+
+#: res://ui/settings/settings_window.gd
+msgid "Guide colour"
+msgstr "Colore delle guide"
 
 #: res://ui/settings/settings_window.gd
 msgid "Background colour"

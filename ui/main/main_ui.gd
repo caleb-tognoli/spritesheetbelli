@@ -6,14 +6,14 @@ const RESIZE_CANVAS_ICON := preload("res://assets/icons/ResizeCanvas.svg")
 ## Pixels to scale before it's done on worker threads behind a progress bar
 const SLOW_SCALE_WORK := 1_000_000
 ## Action buttons in the toolbar, in groups, and the view toggles next to the zoom. The
-## first group works on every frame when none are selected.
+## first group works on every frame when none are selected; the last shows things on the
+## grid.
 const TOOLBAR_GROUPS := [
 	[&"align_menu", &"pivot_menu", &"trim", &"pin_toggle", &"color_key"],
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
+	[&"animation_labels", &"rulers_menu", &"toggle_indices"],
 ]
-const TOOLBAR_TOGGLES: Array[StringName] = [
-	&"toggle_grid", &"toggle_rulers", &"toggle_indices", &"toggle_sprites", &"toggle_history"
-]
+const TOOLBAR_TOGGLES: Array[StringName] = [&"toggle_grid", &"toggle_sprites", &"toggle_history"]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
 	&"cut",
@@ -211,8 +211,12 @@ func _ready() -> void:
 	Actions.set_tooltip(add_folder_btn, &"add_folder")
 	_update_export_button(ExportTarget.list(Global.spritesheet).size())
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
+	var own_buttons := {
+		&"color_key": color_key.dropdown,
+		&"animation_labels": preview_area.label_controls.button,
+	}
 	preview_area.set_toolbar_actions(
-		TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS, {&"color_key": color_key.dropdown}
+		TOOLBAR_GROUPS, TOOLBAR_TOGGLES, MainMenuBar.SUBMENUS, own_buttons
 	)
 	preview_area.empty_hint.text = "Drop images, folders or a .sbelli project here"
 	preview_area.update_ui()
@@ -476,18 +480,18 @@ func set_sprite_size(width: int, height: int) -> void:
 	resize_sprites(new_size)
 
 
-## [param size] with the given width or height (-1 = unchanged), the other side keeping
+## [param from] with the given width or height (-1 = unchanged), the other side keeping
 ## its proportion when the size is linked
-func _linked_size(size: Vector2i, width: int, height: int) -> Vector2i:
-	var new_size := size
+func _linked_size(from: Vector2i, width: int, height: int) -> Vector2i:
+	var new_size := from
 	if width >= 0:
 		new_size.x = width
 		if keep_ratio_btn.button_pressed:
-			new_size.y = roundi(size.y * width / float(size.x))
+			new_size.y = roundi(from.y * width / float(from.x))
 	if height >= 0:
 		new_size.y = height
 		if keep_ratio_btn.button_pressed:
-			new_size.x = roundi(size.x * height / float(size.y))
+			new_size.x = roundi(from.x * height / float(from.y))
 	return new_size
 
 

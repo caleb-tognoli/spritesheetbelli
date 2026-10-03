@@ -102,16 +102,20 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   bottom, left or right of their cells or in the middle (Alt+T, B, L, R, C). Both trim
   the frames' transparent borders first, so it's what's drawn that lines up, and only
   what's drawn grows the cells when moved past them. Projects keep where every frame is.
-- Rulers and guides, turned on with the ruler in the toolbar or View > Rulers and Guides
-  (Y), in the grid layout. The rulers along the top and left of the preview count the
-  pixels of each cell from its corner. Clicking the left ruler adds a horizontal guide
+- Rulers and guides, turned on from the ruler's menu in the toolbar or View > Rulers and
+  Guides (Y), in the grid layout. The rulers along the top and left of the preview count
+  the pixels of each cell from its corner. Clicking the left ruler adds a horizontal guide
   there and the top one a vertical guide (the corner adds both), drawn in every cell and
   in the animation panel. Drag a guide by where it crosses its ruler, drop it on the other
-  ruler or right-click it to remove it, double-click it to type where it goes; View >
-  Clear Guides removes them all. Guides stay where they are against the frames when
-  moving frames makes the cells bigger, and are saved with the project. Shift+Alt+arrow
-  keys move each selected frame until what's drawn touches the next guide that way, to
-  line feet up on a baseline. Like the rulers of Godot's 2D editor.
+  ruler or right-click it to remove it, double-click it to type where it goes (shown as
+  it's typed). The ruler's menu and View also clear every guide and choose their colour,
+  also in Settings. Guides stay where they are against the frames when moving frames
+  makes the cells bigger, and are saved with the project. Alt+arrow keys move each
+  selected frame until what's drawn touches the next guide that way, to line feet up on
+  a baseline; a frame drawn across guides moves past the furthest one, and past the last
+  guide the edge of the cell stops it. Like the rulers of Godot's 2D editor.
+- The toolbar groups what's shown on the grid after the transforms: animation labels,
+  rulers and guides, and frame numbers.
 - Linked files: sprites, spritesheets and GIFs remember the file (and the place in it) they
   came from. When a linked file changes on disk, a dialog asks whether to reload it,
   keeping the edits made here (flip, rotate, trim, background colour, outline, moves in the

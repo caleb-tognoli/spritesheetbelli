@@ -80,7 +80,7 @@ func _fill() -> void:
 	_add_row(tr("Move frames, with the selection when selected"), tr("Drag a frame"))
 	_add_row(tr("Add frames to an animation"), tr("Drag them onto its timeline"))
 	_add_row(tr("Move frames in their cells"), tr("Arrow keys (Shift: 8 px)"))
-	_add_row(tr("Move frames onto the next guide"), tr("Shift+Alt+arrow keys"))
+	_add_row(tr("Move frames onto or past the next guide or cell edge"), tr("Alt+arrow keys"))
 	_add_row(tr("Add a guide (with rulers on)"), tr("Click a ruler"))
 	_add_row(tr("Move or remove a guide"), tr("Drag it on its ruler, or onto the other one"))
 	_add_row(tr("Move a pivot (with pivots on)"), tr("Drag the cross on a frame"))
@@ -91,7 +91,13 @@ func _fill() -> void:
 	_add_row(tr("Copy frames in the timeline"), tr("Alt+drag"))
 	search.clear()
 	filter()
-	search.grab_focus.call_deferred()
+	_focus_search.call_deferred()
+
+
+## Once shown. The window may be out of the tree by then, e.g. closed in tests.
+func _focus_search() -> void:
+	if search.is_inside_tree():
+		search.grab_focus()
 
 
 ## Shows the rows that match the search, under their headings. A heading that matches

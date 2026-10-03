@@ -130,6 +130,21 @@ func test_toolbar_order() -> void:
 	assert_false(shown[-1] is VSeparator)
 
 
+func test_what_shows_on_the_grid_is_a_group_after_the_transforms() -> void:
+	var area: PreviewArea = main.preview_area
+	var buttons: Array[Button] = [
+		area._action_buttons[&"animation_labels"],
+		area._submenu_buttons[&"rulers_menu"],
+		area._action_buttons[&"toggle_indices"],
+	]
+	var after := area._action_buttons[&"rotate_cw"].get_index()
+	for button in buttons:
+		assert_eq(button.get_parent(), area._edit_bar, "on the left, not by the zoom")
+		assert_true(button.get_index() > after)
+		after = button.get_index()
+	assert_true(area._edit_bar.get_child(buttons[0].get_index() - 1) is VSeparator)
+
+
 func test_pivots_are_opt_in() -> void:
 	await get_tree().process_frame
 	assert_false(Actions.is_available(&"pivot_center"))

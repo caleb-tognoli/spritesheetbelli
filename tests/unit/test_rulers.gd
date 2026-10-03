@@ -85,6 +85,8 @@ func test_only_the_rulers_take_the_mouse() -> void:
 	assert_true(rulers._has_point(Vector2(4, 200)))
 	assert_true(rulers._has_point(Vector2(200, 4)))
 	assert_false(rulers._has_point(Vector2(200, 200)), "the preview gets the rest")
+	assert_false(rulers._has_point(Vector2(4, -10)), "not the toolbar above")
+	assert_false(rulers._has_point(Vector2(-10, 4)), "nor what's on the left")
 
 
 func test_clicking_the_left_ruler_adds_a_horizontal_guide() -> void:
@@ -129,6 +131,61 @@ func test_right_click_removes_a_guide() -> void:
 	assert_eq(guides(Vector2.AXIS_X), PackedInt32Array())
 
 
+func test_a_typed_guide_is_shown_before_it_moves() -> void:
+	Global.spritesheet.set_guides(Vector2.AXIS_Y, PackedInt32Array([-2]))
+	rulers._edit(Vector2.AXIS_Y, -2, on_left(6))
+	rulers._edit_spin.value = 9
+	var shown := preview.guides.get_cell_guides(Global.spritesheet, Vector2.AXIS_Y)
+	assert_eq(shown, PackedInt32Array([9]), "shown where typed")
+	assert_eq(guides(Vector2.AXIS_Y), PackedInt32Array([-2]), "not moved yet")
+	var line := rulers._edit_spin.get_line_edit()
+	# As typing does
+	line.text = "11"
+	line.text_changed.emit(line.text)
+	await get_tree().process_frame
+	assert_eq(preview.guides.dragged_to.y, 11, "as it's typed")
+	move_to(on_left(2))
+	assert_eq(preview.guides.dragged_to.y, 11, "the mouse leaves it alone")
+	rulers._edit_popup.hide()
+	assert_false(preview.guides.is_dragging())
+	assert_eq(guides(Vector2.AXIS_Y), PackedInt32Array([3]))
+	assert_eq(Global.document.undo_redo.get_current_action_name(), "Move Horizontal Guide")
+
+
+func test_a_cancelled_typed_guide_stays() -> void:
+	Global.spritesheet.set_guides(Vector2.AXIS_X, PackedInt32Array([-4]))
+	rulers._edit(Vector2.AXIS_X, -4, on_top(4))
+	rulers._edit_spin.value = 10
+	rulers._edit_cancelled = true
+	rulers._edit_popup.hide()
+	assert_false(preview.guides.is_dragging())
+	assert_eq(guides(Vector2.AXIS_X), PackedInt32Array([-4]))
+
+
+func test_the_guides_colour() -> void:
+	Settings.set_value(&"guides_color", Color.RED)
+	assert_eq(preview.guides.color, Color.RED)
+	Actions.run(&"guides_color")
+	assert_true(rulers._color_popup.visible)
+	rulers._color_picker.color_changed.emit(Color.GREEN)
+	assert_eq(Settings.get_value(&"guides_color"), Color.GREEN, "changed as it's picked")
+	rulers._color_popup.hide()
+	Settings.set_value(&"guides_color", Settings.DEFAULTS[&"guides_color"])
+
+
+func test_the_rulers_button_opens_a_menu_and_shows_whether_they_are_on() -> void:
+	var button: Button = main.preview_area._submenu_buttons[&"rulers_menu"]
+	await get_tree().process_frame
+	assert_true(button.button_pressed)
+	Settings.set_value(&"show_rulers", false)
+	await get_tree().process_frame
+	assert_false(button.button_pressed)
+	assert_eq(
+		main.preview_area._menu_buttons[button],
+		[&"toggle_rulers", &"clear_guides", &"", &"guides_color"]
+	)
+
+
 func test_the_corner_adds_both_guides() -> void:
 	drag(Vector2.ONE * Rulers.WIDTH / 2, screen(Vector2(20, 6)))
 	assert_eq(guides(Vector2.AXIS_X), PackedInt32Array([-4]))
@@ -164,25 +221,30 @@ func test_numbers_are_at_least_60_pixels_apart() -> void:
 	assert_eq(Rulers.label_step(0.25), 500)
 
 
-func key(keycode: Key, shift := false, alt := false) -> bool:
+func key(keycode: Key, shift := false, alt := false, ctrl := false) -> bool:
 	var event := InputEventKey.new()
 	event.keycode = keycode
 	event.pressed = true
 	event.shift_pressed = shift
 	event.alt_pressed = alt
+	event.ctrl_pressed = ctrl
 	return preview._handle_arrow_key(event)
 
 
-func test_shift_alt_arrow_keys_move_frames_onto_guides() -> void:
+func test_alt_arrow_keys_move_frames_onto_guides() -> void:
 	var sheet := Global.spritesheet
 	sheet.set_guides(Vector2.AXIS_Y, PackedInt32Array([10]))
 	preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
-	assert_false(key(KEY_DOWN, false, true), "Alt alone is left to shortcuts")
-	assert_true(key(KEY_DOWN, true, true))
+	assert_false(key(KEY_DOWN, true, false, true), "Ctrl+Shift is left to shortcuts")
+	assert_false(key(KEY_DOWN, true, true), "and Shift+Alt")
+	assert_true(key(KEY_DOWN, false, true))
 	# The 16 px frames' bottoms were 8 below the middle of the cells
 	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-8, -6))
 	assert_eq(sheet.get_frame_origin(Vector2i(1, 0)), Vector2i(-8, -6))
 	assert_false(sheet.has_frame_origin(Vector2i(2, 0)), "only the selected ones")
+	# The cells now span -8..10: no guide above, so their top edge
+	assert_true(key(KEY_UP, false, true))
+	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-8, -8))
 	Settings.set_value(&"show_rulers", false)
-	assert_true(key(KEY_UP, true, true))
-	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-8, -6), "not to hidden guides")
+	assert_true(key(KEY_DOWN, false, true))
+	assert_eq(sheet.get_frame_origin(Vector2i(0, 0)), Vector2i(-8, -8), "not to hidden guides")

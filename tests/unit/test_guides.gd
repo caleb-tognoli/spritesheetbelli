@@ -55,34 +55,59 @@ func test_guides_stay_with_the_frames_when_cells_grow() -> void:
 	assert_eq(sheet.guide_to_cell(Vector2.AXIS_Y, feet), other.end.y, "still at the feet")
 
 
-func test_snapping_puts_each_frame_on_the_next_guide() -> void:
-	sheet.add_frames([block_at(Vector2i(2, 2)), block_at(Vector2i(6, 8))] as Array[Image])
-	var both := sheet.get_sorted_coords()
-	# The blocks' bottoms are at 0 and 6 from the middle of the cells
-	sheet.set_guides(Vector2.AXIS_Y, PackedInt32Array([3, 10]))
-	FrameEdits.snap_to_guides(sheet, both, Vector2i.DOWN)
-	assert_eq(drawn(Vector2i(0, 0)).end.y, 3)
-	assert_eq(drawn(Vector2i(1, 0)).end.y, 10)
-	FrameEdits.snap_to_guides(sheet, both, Vector2i.DOWN)
-	assert_eq(drawn(Vector2i(0, 0)).end.y, 10, "from a guide on to the next one")
-	assert_eq(drawn(Vector2i(1, 0)).end.y, 10, "no guide below: stays")
-	FrameEdits.snap_to_guides(sheet, both, Vector2i.UP)
-	assert_eq(drawn(Vector2i(0, 0)).position.y, 3, "the top edge going up")
-	assert_eq(drawn(Vector2i(1, 0)).position.y, 3)
+func test_snapping_goes_to_the_next_guide_then_the_cells_edge() -> void:
+	# The second frame keeps the cells 16 px, from -8 to 8
+	sheet.add_frames([block_at(Vector2i(6, 0)), make_image(Color.BLUE)] as Array[Image])
+	var block: Array[Vector2i] = [Vector2i(0, 0)]
+	# The block spans y -8..-2
+	sheet.set_guides(Vector2.AXIS_Y, PackedInt32Array([0]))
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.DOWN)
+	assert_eq(drawn(Vector2i(0, 0)).end.y, 0)
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.DOWN)
+	assert_eq(drawn(Vector2i(0, 0)).end.y, 8, "past the last guide, the cell's edge")
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.DOWN)
+	assert_eq(drawn(Vector2i(0, 0)).end.y, 8, "nowhere further: stays")
+	assert_eq(sheet.sprite_size, Vector2i(16, 16))
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.UP)
+	assert_eq(drawn(Vector2i(0, 0)).position.y, 0, "the top edge going up")
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.UP)
+	assert_eq(drawn(Vector2i(0, 0)).position.y, -8)
 
 
-func test_snapping_sideways_leaves_frames_with_no_guide_ahead() -> void:
-	sheet.add_frames([block_at(Vector2i(2, 2)), block_at(Vector2i(6, 8))] as Array[Image])
-	# The blocks span x -6..-2 and -2..2 from the middle of the cells
-	sheet.set_guides(Vector2.AXIS_X, PackedInt32Array([-4, 0]))
-	FrameEdits.snap_to_guides(sheet, sheet.get_sorted_coords(), Vector2i.RIGHT)
-	assert_eq(drawn(Vector2i(0, 0)).end.x, 0)
+func test_snapping_sideways_moves_each_frame_on_its_own() -> void:
+	var blocks: Array[Image] = [
+		block_at(Vector2i(2, 2)), block_at(Vector2i(6, 8)), make_image(Color.BLUE)
+	]
+	sheet.add_frames(blocks)
+	# The blocks span x -6..-2 and -2..2 from the middle of the cells, the last one keeps
+	# them 16 px
+	sheet.set_guides(Vector2.AXIS_X, PackedInt32Array([-4, -2]))
+	var two: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
+	FrameEdits.snap_to_guides(sheet, two, Vector2i.RIGHT)
+	assert_eq(drawn(Vector2i(0, 0)).end.x, 0, "drawn across a guide: all of it after")
 	assert_eq(sheet.frames[Vector2i(0, 0)].get_size(), Vector2i(4, 6), "trimmed when moved")
-	assert_eq(sheet.frames[Vector2i(1, 0)].get_size(), Vector2i(16, 16), "else left as it is")
-	assert_false(sheet.has_frame_origin(Vector2i(1, 0)))
-	FrameEdits.snap_to_guides(sheet, sheet.get_sorted_coords(), Vector2i.LEFT)
-	assert_eq(drawn(Vector2i(0, 0)).position.x, -4, "already the last guide that way")
-	assert_eq(drawn(Vector2i(1, 0)).position.x, -4)
+	assert_eq(drawn(Vector2i(1, 0)).end.x, 8, "no guide ahead: the cell's edge")
+	FrameEdits.snap_to_guides(sheet, [Vector2i(1, 0)] as Array[Vector2i], Vector2i.RIGHT)
+	assert_eq(drawn(Vector2i(1, 0)).end.x, 8, "nowhere further: stays")
+	assert_eq(sheet.sprite_size.x, 16)
+	FrameEdits.snap_to_guides(sheet, two, Vector2i.LEFT)
+	assert_eq(drawn(Vector2i(0, 0)).end.x, -2, "all of it before the guide it's across")
+	assert_eq(drawn(Vector2i(1, 0)).position.x, -2)
+
+
+func test_snapping_moves_frames_drawn_across_guides_past_them() -> void:
+	sheet.add_frames([block_at(Vector2i(6, 5)), make_image(Color.BLUE)] as Array[Image])
+	var block: Array[Vector2i] = [Vector2i(0, 0)]
+	# The block spans y -3..3, across the guides at -1 and 1
+	sheet.set_guides(Vector2.AXIS_Y, PackedInt32Array([-1, 1, 5]))
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.DOWN)
+	assert_eq(drawn(Vector2i(0, 0)).position.y, 1, "all of it below the furthest one")
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.DOWN)
+	assert_eq(drawn(Vector2i(0, 0)).position.y, 5, "also past the cell's edge")
+	assert_eq(sheet.sprite_size.y, 19, "the cells grew to hold it")
+	sheet.set_guides(Vector2.AXIS_Y, PackedInt32Array([7, 9]))
+	FrameEdits.snap_to_guides(sheet, block, Vector2i.UP)
+	assert_eq(drawn(Vector2i(0, 0)).end.y, 7, "going up, all of it above the furthest one")
 
 
 func test_guides_are_undone_and_saved() -> void:

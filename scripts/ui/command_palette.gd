@@ -116,7 +116,13 @@ func open(over: Control) -> void:
 	reset_size()
 	var top := over.get_screen_transform() * Vector2(over.size.x / 2, 12)
 	popup(Rect2i(Vector2i(top) - Vector2i(size.x / 2, 0), size))
-	search.grab_focus.call_deferred()
+	_focus_search.call_deferred()
+
+
+## Once shown. The window may be out of the tree by then, e.g. closed in tests.
+func _focus_search() -> void:
+	if search.is_inside_tree():
+		search.grab_focus()
 
 
 ## Every entry: the actions (in the order of the menus, named after where they are in

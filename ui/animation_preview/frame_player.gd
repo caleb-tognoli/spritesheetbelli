@@ -177,6 +177,8 @@ func _ready() -> void:
 				_show_background()
 			elif key == &"show_rulers":
 				_show_guides()
+			elif key == &"guides_color":
+				stage.queue_redraw()
 			# Whole zooms are whole screen pixels, see PixelZoom
 			elif key in [&"pixel_perfect_zoom", &"ui_scale"] and stage.fitted:
 				stage.fit()

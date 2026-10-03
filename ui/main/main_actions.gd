@@ -368,6 +368,11 @@ static func register(main: Control) -> void:
 			),
 		func() -> bool: return sheet.has_guides
 	)
+	add.call(
+		&"guides_color",
+		L10n.mark("Guide Colour…"),
+		preview_area.pick_guides_color.bind(&"rulers_menu")
+	)
 
 	add.call(&"undo", L10n.mark("Undo"), Global.document.undo, Global.document.can_undo)
 	add.call(&"redo", L10n.mark("Redo"), Global.document.redo, Global.document.can_redo)

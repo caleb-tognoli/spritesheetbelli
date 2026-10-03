@@ -23,6 +23,8 @@ const DEFAULTS := {
 	&"show_indices": true,
 	# Rulers along the grid, and the guides made with them, see Rulers
 	&"show_rulers": false,
+	# Godot's editors/2d/guides_color
+	&"guides_color": Color(0.6, 0.0, 0.8),
 	&"show_checkerboard": true,
 	&"grid_color": Color(0.85, 0.85, 0.85, 0.5),
 	&"background_color": Color(0.31, 0.31, 0.31),

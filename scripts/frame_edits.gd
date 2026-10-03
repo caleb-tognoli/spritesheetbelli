@@ -132,16 +132,22 @@ static func nudge(sheet: Spritesheet, coords: Array[Vector2i], offset: Vector2i)
 	sheet.end_batch()
 
 
-## Moves each frame towards [param direction] until the edge of what's drawn facing it
-## is on the next guide that way (see [method Spritesheet.get_guides]), so frames line up
-## on it. Frames with no guide ahead stay where they are; those that move are trimmed
-## first, like with [method nudge].
+## Moves each frame towards [param direction] onto the next guide that way (see
+## [method Spritesheet.get_guides]), so frames line up on it: the edge of what's drawn
+## facing it goes there. A frame drawn across guides goes past them instead, all of it,
+## the edge behind it on the furthest one. The edges of the cells count as guides, so
+## past the last guide a frame goes against its cell's edge. Frames with nowhere to go
+## stay where they are; those that move are trimmed first and grow the cells when they go
+## past them, like with [method nudge].
 static func snap_to_guides(
 	sheet: Spritesheet, coords: Array[Vector2i], direction: Vector2i
 ) -> void:
 	var axis := Vector2.AXIS_X if direction.x != 0 else Vector2.AXIS_Y
 	var towards := direction[axis]
-	var guides := sheet.get_guides(axis)
+	var stops := sheet.get_guides(axis)
+	stops.append(sheet.cell_to_guide(axis, 0))
+	stops.append(sheet.cell_to_guide(axis, sheet.sprite_size[axis]))
+	stops.sort()
 	var by_offset := {}
 	for coord in coords:
 		if not sheet.has_frame(coord):
@@ -150,20 +156,10 @@ static func snap_to_guides(
 		if used.size == Vector2i.ZERO:
 			continue
 		var drawn := Rect2i(sheet.get_frame_origin(coord) + used.position, used.size)
-		var edge := drawn.end[axis] if towards > 0 else drawn.position[axis]
-		# The guides are in order: the first past the edge going down or right, the last
-		# before it going up or left
-		var to := edge
-		for guide in guides:
-			if towards > 0 and guide > edge:
-				to = guide
-				break
-			if towards < 0 and guide < edge:
-				to = guide
-		if to == edge:
-			continue
 		var offset := Vector2i.ZERO
-		offset[axis] = to - edge
+		offset[axis] = _snap_offset(stops, drawn.position[axis], drawn.end[axis], towards)
+		if offset == Vector2i.ZERO:
+			continue
 		if not by_offset.has(offset):
 			by_offset[offset] = [] as Array[Vector2i]
 		by_offset[offset].append(coord)
@@ -173,6 +169,30 @@ static func snap_to_guides(
 	for offset: Vector2i in by_offset:
 		nudge(sheet, by_offset[offset], offset)
 	sheet.end_batch()
+
+
+## How far [method snap_to_guides] moves what's drawn from [param start] to [param end]
+## towards [param towards] (1 or -1), with [param stops] in order
+static func _snap_offset(stops: PackedInt32Array, start: int, end: int, towards: int) -> int:
+	# Past the furthest stop it's drawn across: the last going down or right, the first
+	# going up or left
+	var across := PackedInt32Array()
+	for stop in stops:
+		if stop > start and stop < end:
+			across.append(stop)
+	if not across.is_empty():
+		return across[-1] - start if towards > 0 else across[0] - end
+	# Else onto the next one: the first past the end going down or right, the last before
+	# the start going up or left
+	if towards > 0:
+		for stop in stops:
+			if stop > end:
+				return stop - end
+		return 0
+	for i in range(stops.size() - 1, -1, -1):
+		if stops[i] < start:
+			return stops[i] - start
+	return 0
 
 
 ## Adds transparent space around the frames, or takes it away, to make the cells
