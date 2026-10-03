@@ -477,6 +477,30 @@ msgid "Arrow keys (Shift: 8 px)"
 msgstr "Tasti freccia (Shift: 8 px)"
 
 #: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move frames onto the next guide"
+msgstr "Spostare i frame sulla guida successiva"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Shift+Alt+arrow keys"
+msgstr "Shift+Alt+tasti freccia"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Add a guide (with rulers on)"
+msgstr "Aggiungere una guida (con i righelli attivi)"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Click a ruler"
+msgstr "Clic su un righello"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Move or remove a guide"
+msgstr "Spostare o rimuovere una guida"
+
+#: res://scripts/ui/shortcuts_dialog.gd
+msgid "Drag it on its ruler, or onto the other one"
+msgstr "Trascinala sul suo righello, o sull'altro"
+
+#: res://scripts/ui/shortcuts_dialog.gd
 msgid "Move a pivot (with pivots on)"
 msgstr "Spostare un pivot (con i pivot attivi)"
 
@@ -1114,6 +1138,10 @@ msgstr "Nessun frame in questa riga"
 #: res://ui/main/action_reasons.gd
 msgid "No frames in this column"
 msgstr "Nessun frame in questa colonna"
+
+#: res://ui/main/action_reasons.gd
+msgid "No guides yet"
+msgstr "Ancora nessuna guida"
 
 #: res://ui/main/action_reasons.gd
 #: res://ui/main/export_dialog.gd
@@ -2217,6 +2245,10 @@ msgid "From the selected frames, or from every frame when none are selected"
 msgstr "Dai frame selezionati, o da tutti se nessuno è selezionato"
 
 #: res://ui/main/main_actions.gd
+msgid "Click a ruler to add a guide, repeated in every cell"
+msgstr "Clic su un righello per aggiungere una guida, ripetuta in ogni cella"
+
+#: res://ui/main/main_actions.gd
 msgid "Open…"
 msgstr "Apri…"
 
@@ -2416,6 +2448,18 @@ msgid "Frame Numbers"
 msgstr "Numeri dei frame"
 
 #: res://ui/main/main_actions.gd
+msgid "Rulers and Guides"
+msgstr "Righelli e guide"
+
+#: res://ui/main/main_actions.gd
+msgid "Clear Guides"
+msgstr "Cancella guide"
+
+#: res://ui/main/main_actions.gd
+msgid "Clear guides"
+msgstr "Cancella guide"
+
+#: res://ui/main/main_actions.gd
 msgid "Command Palette…"
 msgstr "Comandi…"
 
@@ -2428,6 +2472,10 @@ msgstr "Filtro di ridimensionamento"
 #: res://ui/main/start_screen.gd
 msgid "Drop images, folders or a .sbelli project here"
 msgstr "Trascina qui immagini, cartelle o un progetto .sbelli"
+
+#: res://ui/main/main_ui.gd
+msgid "Snap to guides"
+msgstr "Allinea alle guide"
 
 #: res://ui/main/main_ui.gd
 msgid "Nudge frames"
@@ -3284,3 +3332,63 @@ msgstr "condivide il posto con un frame uguale"
 #: res://ui/spritesheet_preview/preview_area.gd
 msgid "%s (edited here)"
 msgstr "%s (modificato qui)"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Create Horizontal and Vertical Guides"
+msgstr "Crea guide orizzontale e verticale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Create Vertical Guide"
+msgstr "Crea guida verticale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Remove Vertical Guide"
+msgstr "Rimuovi guida verticale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Move Vertical Guide"
+msgstr "Sposta guida verticale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Create Horizontal Guide"
+msgstr "Crea guida orizzontale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Remove Horizontal Guide"
+msgstr "Rimuovi guida orizzontale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Move Horizontal Guide"
+msgstr "Sposta guida orizzontale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "From the left of the cells"
+msgstr "Dalla sinistra delle celle"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "From the top of the cells"
+msgstr "Dall'alto delle celle"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Drag to add a horizontal and a vertical guide"
+msgstr "Trascina per aggiungere una guida orizzontale e una verticale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid ""
+"Drag to move the guide, or onto the other ruler to remove it.\n"
+"Double-click to type where it goes, right-click to remove it."
+msgstr ""
+"Trascina per spostare la guida, o sull'altro righello per rimuoverla.\n"
+"Doppio clic per scrivere dove va, clic destro per rimuoverla."
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Click to add a horizontal guide"
+msgstr "Clic per aggiungere una guida orizzontale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "Click to add a vertical guide"
+msgstr "Clic per aggiungere una guida verticale"
+
+#: res://ui/spritesheet_preview/rulers.gd
+msgid "%d px"
+msgstr "%d px"

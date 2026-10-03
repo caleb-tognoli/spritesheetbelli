@@ -303,6 +303,9 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 		"panel", &"PreviewOverlay", _box(Color(p.surface, 0.9), 6, Vector4(4, 3, 4, 3), p.border, 1)
 	)
 	theme.set_type_variation(&"PreviewOverlay", "PanelContainer")
+	# Along the preview, see Rulers
+	theme.set_color("background", &"Rulers", p.surface)
+	theme.set_color("font_color", &"Rulers", p.text_muted)
 	# An animation's timeline of frames, with tiles that light up when hovered or selected
 	for entry: Array in [
 		[&"TimelinePanel", _box(p.background, 6, Vector4(3, 3, 3, 3), p.border, 1)],

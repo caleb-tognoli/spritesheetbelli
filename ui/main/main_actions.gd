@@ -6,6 +6,7 @@ extends RefCounted
 
 const SAVE_ICON := preload("res://assets/icons/Save.svg")
 const RELOAD_ICON := preload("res://assets/icons/Reload.svg")
+const CLEAR_ICON := preload("res://assets/icons/Clear.svg")
 ## Icons of actions, also borrowed by the actions of [LayoutController]
 const ICONS := {
 	&"new": preload("res://assets/icons/New.svg"),
@@ -49,6 +50,8 @@ const ICONS := {
 	&"add_outline": preload("res://assets/icons/Rectangle.svg"),
 	&"trim": preload("res://assets/icons/RegionEdit.svg"),
 	&"toggle_grid": preload("res://assets/icons/GridToggle.svg"),
+	&"toggle_rulers": preload("res://assets/icons/Ruler.svg"),
+	&"clear_guides": CLEAR_ICON,
 	&"toggle_indices": preload("res://assets/icons/FrameNumbers.svg"),
 	&"toggle_animation": preload("res://assets/icons/AnimatedTexture.svg"),
 	&"toggle_history": preload("res://assets/icons/History.svg"),
@@ -63,7 +66,7 @@ const ICONS := {
 	&"layout_packed": preload("res://assets/icons/LayoutPacked.svg"),
 	&"pin_toggle": preload("res://assets/icons/Pin.svg"),
 	&"repack": preload("res://assets/icons/GridLayout.svg"),
-	&"pivot_clear": preload("res://assets/icons/Clear.svg"),
+	&"pivot_clear": CLEAR_ICON,
 	&"pivot_top_left": preload("res://assets/icons/ControlAlignTopLeft.svg"),
 	&"pivot_bottom_left": preload("res://assets/icons/ControlAlignBottomLeft.svg"),
 }
@@ -76,6 +79,7 @@ const DESCRIPTIONS := {  # L10n.mark
 	&"add_folder": "A folder's images as sprites, and the ones saved there later",
 	&"trim": "Of the selected frames, or of every frame when none are selected",
 	&"color_key": "From the selected frames, or from every frame when none are selected",
+	&"toggle_rulers": "Click a ruler to add a guide, repeated in every cell",
 }
 
 
@@ -341,6 +345,7 @@ static func register(main: Control) -> void:
 		[&"toggle_grid", L10n.mark("Grid Lines"), &"show_grid"],
 		[&"toggle_pixel_grid", L10n.mark("Pixel Grid"), &"show_pixel_grid"],
 		[&"toggle_indices", L10n.mark("Frame Numbers"), &"show_indices"],
+		[&"toggle_rulers", L10n.mark("Rulers and Guides"), &"show_rulers"],
 	]:
 		Actions.add(
 			toggle[0],
@@ -350,6 +355,19 @@ static func register(main: Control) -> void:
 			ICONS.get(toggle[0]),
 			func() -> bool: return Settings.get_value(toggle[2])
 		)
+
+	add.call(
+		&"clear_guides",
+		L10n.mark("Clear Guides"),
+		func() -> void:
+			Global.document.perform(
+				L10n.mark("Clear guides"),
+				func() -> void:
+					for axis in 2:
+						sheet.set_guides(axis, PackedInt32Array())
+			),
+		func() -> bool: return sheet.has_guides
+	)
 
 	add.call(&"undo", L10n.mark("Undo"), Global.document.undo, Global.document.can_undo)
 	add.call(&"redo", L10n.mark("Redo"), Global.document.redo, Global.document.can_redo)

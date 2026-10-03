@@ -18,7 +18,8 @@ extends Node2D
 ## mouse instead. Esc puts back what's being dragged.
 ##
 ## Keys: arrows move the selected frames inside their cells, or on their page, a pixel at
-## a time, 8 with Shift; Ctrl+arrows add the next frame that way to the selection.
+## a time, 8 with Shift, or onto the next guide with Shift+Alt; Ctrl+arrows add the next
+## frame that way to the selection.
 
 ## Emitted when the spritesheet or the selection changed
 signal preview_updated
@@ -31,6 +32,8 @@ signal lock_requested(coord: Vector2i, locked: bool)
 signal move_requested(coords: Array[Vector2i], offset: Vector2i)
 ## The user pressed arrow keys to move frames inside their cells
 signal nudge_requested(coords: Array[Vector2i], offset: Vector2i)
+## The user pressed Shift+Alt+arrow to move frames onto the next guide in [param direction]
+signal guide_snap_requested(coords: Array[Vector2i], direction: Vector2i)
 ## The cell under the mouse changed. (-1, -1) when outside the grid or the preview. Also
 ## emitted when the sheet changes, since what's in the cell may have.
 signal hover_changed(coord: Vector2i)
@@ -118,6 +121,8 @@ var animation_labels := AnimationLabels.new()
 var pivots := PivotHandles.new()
 ## The frames being moved
 var mover := FrameMover.new()
+## Lines repeated in every cell to line frames up against, with the rulers
+var guides := GuideLines.new()
 
 var _selected: Dictionary[Vector2i, bool] = {}
 ## Selection range start for Shift+click
@@ -125,7 +130,7 @@ var _anchor := NO_CELL
 var _textures: Dictionary[Image, ImageTexture] = {}
 ## Images shown in place of frame images, by the frame image, see [method show_instead]
 var _shown_instead: Dictionary[Image, Image] = {}
-var _checker := _make_checker_texture()
+var _checker := ImageUtils.checker_texture(1, CHECKER_COLORS[0], CHECKER_COLORS[1])
 ## Wheel notches not zoomed by yet: touchpads scroll by parts of a notch, which add up to
 ## a whole zoom step with pixel-perfect zoom
 var _wheel_notches := 0.0
@@ -548,8 +553,9 @@ func _cancel_drag() -> bool:
 
 
 ## Arrow keys move the selected frames inside their cells, or on their page, by a pixel or
-## 8 with Shift; Ctrl+arrow adds the next frame that way to the selection. Whether
-## [param event] was handled. Ctrl+Shift and Alt are left to shortcuts, like moving rows.
+## 8 with Shift, or onto the next guide with Shift+Alt; Ctrl+arrow adds the next frame
+## that way to the selection. Whether [param event] was handled. Ctrl+Shift and Alt are
+## left to shortcuts, like moving rows.
 func _handle_arrow_key(event: InputEventKey) -> bool:
 	var directions := {
 		KEY_LEFT: Vector2i.LEFT,
@@ -557,14 +563,11 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 		KEY_UP: Vector2i.UP,
 		KEY_DOWN: Vector2i.DOWN
 	}
-	if not directions.has(event.keycode) or spritesheet.is_empty() or event.alt_pressed:
+	if not directions.has(event.keycode) or spritesheet.is_empty():
 		return false
 	var direction: Vector2i = directions[event.keycode]
-	if event.is_command_or_control_pressed():
-		if event.shift_pressed:
-			return false
-		_extend_selection(direction)
-		return true
+	if event.alt_pressed or event.is_command_or_control_pressed():
+		return _handle_modified_arrow(event, direction)
 	if not able_to_move_frames:
 		return false
 	if _selected.is_empty():
@@ -578,6 +581,19 @@ func _handle_arrow_key(event: InputEventKey) -> bool:
 			placement_move_requested.emit(coords, page, step)
 	else:
 		nudge_requested.emit(coords, step)
+	return true
+
+
+## Ctrl+arrow adds the next frame that way to the selection, and Shift+Alt+arrow moves the
+## selected frames onto the next guide that way. Whether [param event] was handled.
+func _handle_modified_arrow(event: InputEventKey, direction: Vector2i) -> bool:
+	if not event.alt_pressed and not event.shift_pressed:
+		_extend_selection(direction)
+		return true
+	if not event.alt_pressed or not event.shift_pressed or event.is_command_or_control_pressed():
+		return false
+	if able_to_move_frames and guides.shown and not _selected.is_empty():
+		guide_snap_requested.emit(get_selected_coords(), direction)
 	return true
 
 
@@ -865,6 +881,7 @@ func _draw() -> void:
 	var lifted := _as_set(_get_lifted_coords())
 	var hovered := hovered_cell if _drag == Drag.NONE else NO_CELL
 	grid_view.draw(self, visible_rect, pixel, lifted, hovered)
+	guides.draw(self, grid_view.get_visible_cells(visible_rect), pixel)
 	_draw_selection(pixel)
 	animation_labels.draw(self)
 	if is_index_visible():
@@ -984,14 +1001,5 @@ static func _as_set(coords: Array[Vector2i]) -> Dictionary[Vector2i, bool]:
 	for coord in coords:
 		coords_set[coord] = true
 	return coords_set
-
-
-static func _make_checker_texture() -> ImageTexture:
-	var img := Image.create_empty(2, 2, false, Image.FORMAT_RGBA8)
-	img.set_pixel(0, 0, CHECKER_COLORS[0])
-	img.set_pixel(1, 1, CHECKER_COLORS[0])
-	img.set_pixel(1, 0, CHECKER_COLORS[1])
-	img.set_pixel(0, 1, CHECKER_COLORS[1])
-	return ImageTexture.create_from_image(img)
 
 #endregion

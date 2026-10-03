@@ -47,6 +47,12 @@ var export_color := Color.TRANSPARENT:
 	set(value):
 		export_color = value
 		queue_redraw()
+## Lines over the frames across x and y, in pixels from the top-left corner of their
+## cells, see [method Spritesheet.get_guides]
+var guides: Array[PackedInt32Array] = []:
+	set(value):
+		guides = value
+		queue_redraw()
 var zoom := 1.0
 ## Whether the zoom follows the stage's size, see [method fit]
 var fitted := true
@@ -152,6 +158,20 @@ func _draw() -> void:
 		draw_texture_rect(onion, get_frame_rect(onion), false, Color(1, 1, 1, ONION_ALPHA))
 	if texture:
 		draw_texture_rect(texture, get_frame_rect(texture), false)
+		_draw_guides(get_frame_rect(texture))
+
+
+## [member guides] across the stage, in the frame's cell at [param cell]
+func _draw_guides(cell: Rect2) -> void:
+	for axis in guides.size():
+		for in_cell in guides[axis]:
+			if in_cell < 0 or in_cell > cell.size[axis] / zoom:
+				continue
+			var from := Vector2.ZERO
+			var to := size
+			from[axis] = roundf(cell.position[axis] + in_cell * zoom)
+			to[axis] = from[axis]
+			draw_line(from, to, GuideLines.COLOR)
 
 
 func _gui_input(event: InputEvent) -> void:

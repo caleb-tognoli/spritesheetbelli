@@ -24,6 +24,8 @@ const GRID_ONLY_ACTIONS: Array[StringName] = [
 	&"remove_row",
 	&"move_row_up",
 	&"move_row_down",
+	&"toggle_rulers",
+	&"clear_guides",
 ]
 ## What tooltips say after an action's name and shortcut, see [member AppAction.description]
 const DESCRIPTIONS := {  # L10n.mark

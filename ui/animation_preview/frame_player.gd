@@ -175,6 +175,8 @@ func _ready() -> void:
 				onion_button.button_pressed = Settings.get_value(&"onion_skin")
 			elif key in [&"animation_background", &"animation_background_color"]:
 				_show_background()
+			elif key == &"show_rulers":
+				_show_guides()
 			# Whole zooms are whole screen pixels, see PixelZoom
 			elif key in [&"pixel_perfect_zoom", &"ui_scale"] and stage.fitted:
 				stage.fit()
@@ -190,6 +192,7 @@ func set_sheet(value: Spritesheet) -> void:
 		sheet.updated.connect(_on_sheet_updated)
 		stage.export_color = ExportOptions.from_sheet(sheet).background
 	_textures.clear()
+	_show_guides()
 
 
 func set_playing(value: bool) -> void:
@@ -312,6 +315,19 @@ func _on_sheet_updated() -> void:
 	_textures.clear()
 	stage.export_color = ExportOptions.from_sheet(sheet).background
 	set_cells(_source_cells, _source_durations)
+	_show_guides()
+
+
+## The sheet's guides over the frames, while the rulers show them on the grid
+func _show_guides() -> void:
+	var guides: Array[PackedInt32Array] = []
+	if sheet and Settings.get_value(&"show_rulers") and sheet.layout == Spritesheet.Layout.GRID:
+		for axis in 2:
+			var in_cell := PackedInt32Array()
+			for guide in sheet.get_guides(axis):
+				in_cell.append(sheet.guide_to_cell(axis, guide))
+			guides.append(in_cell)
+	stage.guides = guides
 
 
 func _notification(what: int) -> void:

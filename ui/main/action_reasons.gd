@@ -51,6 +51,7 @@ static func apply(main: Control) -> void:
 		&"mirror_animation": chosen,
 		&"delete_animation": chosen,
 		&"animation_labels": animations,
+		&"clear_guides": [func() -> bool: return sheet.has_guides, L10n.mark("No guides yet")],
 	}
 	for id: StringName in [
 		&"select_none",

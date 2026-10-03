@@ -98,6 +98,8 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			var relative := FrameSource.relative_folder_path(folder, path.get_base_dir())
 			folders.append({"path": folder, "relative": relative})
 		data.folders = folders
+	if sheet.has_guides:
+		data.guides = {"x": Array(sheet.get_guides(0)), "y": Array(sheet.get_guides(1))}
 	if packed:
 		data.layout = "packed" if sheet.layout == Spritesheet.Layout.PACKED else "grid"
 		data.atlas = JSON.from_native(sheet.atlas_settings.to_dictionary())
@@ -189,6 +191,11 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	for linked: Variant in data.get("folders", []):
 		if linked is Dictionary and linked.get("path") is String:
 			folders.append(FrameSource.resolve_path(linked.path, linked.get("relative"), folder))
+	var guides: Array[PackedInt32Array] = []
+	var saved_guides: Variant = data.get("guides", {})
+	for axis: String in ["x", "y"]:
+		var values: Variant = saved_guides.get(axis) if saved_guides is Dictionary else null
+		guides.append(PackedInt32Array(values if values is Array else []))
 	var canvas := Rect2()
 	var saved_canvas: Variant = data.get("canvas")
 	if saved_canvas is Array and saved_canvas.size() >= 4:
@@ -217,6 +224,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"export":
 		ExportTarget.paths_to_absolute(_read_export_settings(data.get("export", {})), folder),
 		"folders": folders,
+		"guides": guides,
 	}
 	return {"state": state, "extra": data.get("extra", {})}
 

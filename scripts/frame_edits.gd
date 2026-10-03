@@ -132,6 +132,49 @@ static func nudge(sheet: Spritesheet, coords: Array[Vector2i], offset: Vector2i)
 	sheet.end_batch()
 
 
+## Moves each frame towards [param direction] until the edge of what's drawn facing it
+## is on the next guide that way (see [method Spritesheet.get_guides]), so frames line up
+## on it. Frames with no guide ahead stay where they are; those that move are trimmed
+## first, like with [method nudge].
+static func snap_to_guides(
+	sheet: Spritesheet, coords: Array[Vector2i], direction: Vector2i
+) -> void:
+	var axis := Vector2.AXIS_X if direction.x != 0 else Vector2.AXIS_Y
+	var towards := direction[axis]
+	var guides := sheet.get_guides(axis)
+	var by_offset := {}
+	for coord in coords:
+		if not sheet.has_frame(coord):
+			continue
+		var used := sheet.frames[coord].get_used_rect()
+		if used.size == Vector2i.ZERO:
+			continue
+		var drawn := Rect2i(sheet.get_frame_origin(coord) + used.position, used.size)
+		var edge := drawn.end[axis] if towards > 0 else drawn.position[axis]
+		# The guides are in order: the first past the edge going down or right, the last
+		# before it going up or left
+		var to := edge
+		for guide in guides:
+			if towards > 0 and guide > edge:
+				to = guide
+				break
+			if towards < 0 and guide < edge:
+				to = guide
+		if to == edge:
+			continue
+		var offset := Vector2i.ZERO
+		offset[axis] = to - edge
+		if not by_offset.has(offset):
+			by_offset[offset] = [] as Array[Vector2i]
+		by_offset[offset].append(coord)
+	if by_offset.is_empty():
+		return
+	sheet.begin_batch()
+	for offset: Vector2i in by_offset:
+		nudge(sheet, by_offset[offset], offset)
+	sheet.end_batch()
+
+
 ## Adds transparent space around the frames, or takes it away, to make the cells
 ## [param size] without scaling the frames (see [method Spritesheet.set_canvas_size]). Only
 ## transparent pixels are cropped: shrinking trims the frames' transparent borders, and the

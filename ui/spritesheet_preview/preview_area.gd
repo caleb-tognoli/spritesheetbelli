@@ -12,6 +12,8 @@ const ZOOM_OUT_ICON := preload("res://assets/icons/ZoomLess.svg")
 const ZOOM_IN_ICON := preload("res://assets/icons/ZoomMore.svg")
 const CENTER_VIEW_ICON := preload("res://assets/icons/CenterView.svg")
 const WARNING_ICON := preload("res://assets/icons/StatusWarning.svg")
+## Room between the zoom and the corner of the preview
+const OVERLAY_MARGIN := 10
 
 @onready var options_menu: ActionPopupMenu = $OptionsMenu
 @onready var spritesheet_preview: SpritesheetPreview = %SpritesheetPreview
@@ -32,6 +34,9 @@ var notice_label := Label.new()
 var empty_hint := Label.new()
 ## Names animations on the grid, once [method enable_animation_labels] is called
 var label_controls: AnimationLabelControls
+## Along the top and left of the grid, with the guides, once [method enable_rulers] is
+## called
+var rulers: Rulers
 
 ## Action buttons, and view toggles before the zoom
 var _edit_bar := HBoxContainer.new()
@@ -124,7 +129,7 @@ func _build_overlay() -> void:
 
 	stage.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(
-		Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 10
+		Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, OVERLAY_MARGIN
 	)
 	overlay.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	stage.add_child(notice)
@@ -146,6 +151,25 @@ func enable_animation_labels() -> AnimationLabelControls:
 		_view_bar.move_child(button, 0)
 		label_controls.setup(self, button)
 	return label_controls
+
+
+## Shows rulers along the top and left of the grid while the show_rulers setting is on,
+## to make guides with, see [Rulers]
+func enable_rulers() -> Rulers:
+	if not rulers:
+		rulers = Rulers.new()
+		rulers.preview = spritesheet_preview
+		stage.add_child(rulers)
+		# Under the zoom and notices
+		stage.move_child(rulers, overlay.get_index())
+		spritesheet_preview.draw.connect(rulers.queue_redraw)
+		Settings.changed.connect(
+			func(key: StringName) -> void:
+				if key == &"show_rulers":
+					update_ui()
+		)
+		update_ui()
+	return rulers
 
 
 ## Shows [param text] with a warning icon over the preview, or hides it when empty
@@ -264,6 +288,10 @@ func _update_hint_color() -> void:
 func update_ui() -> void:
 	var is_empty := spritesheet_preview.spritesheet.is_empty()
 	empty_hint.visible = is_empty and not empty_hint.text.is_empty()
+	if rulers:
+		rulers.refresh()
+		# The zoom stays clear of the top ruler
+		overlay.position.y = OVERLAY_MARGIN + (Rulers.WIDTH if rulers.visible else 0.0)
 
 
 ## Adds buttons for actions to the toolbar: [param edit_groups] are arrays of action ids,

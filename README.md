@@ -53,7 +53,8 @@ A small desktop tool made with Godot.</p>
   automatically, deleted ones can be removed, and renamed ones stay linked.
 - **Line frames up.** Move frames inside their cells a pixel at a time with the arrow
   keys, or align them to an edge of their cells; trimming keeps every pixel where it was, so
-  animations don't jump.
+  animations don't jump. Turn on the rulers (Y) and click them to add guides repeated in
+  every cell, like a baseline, then Shift+Alt+arrow keys put each frame on the next one.
 - **Resize without losing quality.** Sprites are always resized from the originals, with
   Nearest for sharp pixel art, and pixel-perfect zoom keeps every pixel the same size on
   screen. Or resize the canvas instead: add transparent space around the frames, or crop

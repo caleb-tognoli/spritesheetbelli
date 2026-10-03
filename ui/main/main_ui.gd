@@ -12,7 +12,7 @@ const TOOLBAR_GROUPS := [
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
 ]
 const TOOLBAR_TOGGLES: Array[StringName] = [
-	&"toggle_grid", &"toggle_indices", &"toggle_sprites", &"toggle_history"
+	&"toggle_grid", &"toggle_rulers", &"toggle_indices", &"toggle_sprites", &"toggle_history"
 ]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
@@ -237,6 +237,22 @@ func _ready() -> void:
 				L10n.mark("Move frames"), Global.spritesheet.move_frames.bind(coords, offset)
 			)
 			preview.set_selected_coords(targets)
+	)
+	preview_area.enable_rulers().guides_requested.connect(
+		func(guides: Array[PackedInt32Array], action: String) -> void:
+			Global.document.perform(
+				action,
+				func() -> void:
+					for axis in guides.size():
+						Global.spritesheet.set_guides(axis, guides[axis])
+			)
+	)
+	preview.guide_snap_requested.connect(
+		func(coords: Array[Vector2i], direction: Vector2i) -> void:
+			Global.document.perform(
+				L10n.mark("Snap to guides"),
+				FrameEdits.snap_to_guides.bind(Global.spritesheet, coords, direction)
+			)
 	)
 	preview.nudge_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i) -> void:

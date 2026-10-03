@@ -84,6 +84,11 @@ var atlas_settings: AtlasSettings:
 var linked_folders: PackedStringArray:
 	get:
 		return _folders.duplicate()
+## Whether there are lines repeated in every cell to line frames up against, see
+## [method get_guides]
+var has_guides: bool:
+	get:
+		return not _guides[0].is_empty() or not _guides[1].is_empty()
 
 var _grid_size := Vector2i.ZERO
 var _locked: Array[Vector2i] = []
@@ -100,6 +105,9 @@ var _layout := Layout.GRID
 ## The values of [AtlasSettings] that aren't the defaults
 var _atlas := {}
 var _folders: PackedStringArray = []
+## The guides across x (vertical lines) and across y (horizontal lines), see
+## [method get_guides]
+var _guides: Array[PackedInt32Array] = [PackedInt32Array(), PackedInt32Array()]
 
 
 func is_locked(coord: Vector2i) -> bool:
@@ -238,6 +246,7 @@ func get_state() -> Dictionary:
 		"sprite_size": _sprite_size,
 		"cell_origin": _cell_origin,
 		"folders": _folders.duplicate(),
+		"guides": _guides.duplicate(true),
 	}
 
 
@@ -260,6 +269,9 @@ func set_state(state: Dictionary) -> void:
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
 	_cell_origin = state.get("cell_origin", Vector2i.ZERO)
 	_folders = PackedStringArray(state.get("folders", []))
+	var guides: Array = state.get("guides", [])
+	for axis in 2:
+		_guides[axis] = PackedInt32Array(guides[axis] if axis < guides.size() else [])
 	# The places come with the state, so frames aren't packed again
 	_layout_dirty = false
 	pack_cache.signature = 0
@@ -701,6 +713,39 @@ func set_label_playing_only(value: bool) -> void:
 	if value != _label_playing_only:
 		_label_playing_only = value
 		_changed()
+
+
+## Where the guides across [param axis] are: [constant Vector2.AXIS_X] for vertical lines,
+## [constant Vector2.AXIS_Y] for horizontal ones. Each is repeated in every cell, in
+## unscaled pixels from the point frames are placed around (like
+## [method get_frame_origin]), so it stays where it is against the frames when nudging
+## them makes the cells bigger. In order, without repeats.
+func get_guides(axis: int) -> PackedInt32Array:
+	return _guides[axis].duplicate()
+
+
+func set_guides(axis: int, values: PackedInt32Array) -> void:
+	var sorted := PackedInt32Array()
+	for value in values:
+		if not value in sorted:
+			sorted.append(value)
+	sorted.sort()
+	if sorted == _guides[axis]:
+		return
+	_guides[axis] = sorted
+	_changed(false)
+
+
+## Where a guide at [param value] across [param axis] is in the cells, in pixels from
+## their top-left corner, as exported
+func guide_to_cell(axis: int, value: int) -> int:
+	return roundi(value * _scale[axis]) - _cell_origin[axis]
+
+
+## The guide at [param in_cell] pixels from the top-left corner of the cells across
+## [param axis], see [method guide_to_cell]
+func cell_to_guide(axis: int, in_cell: float) -> int:
+	return roundi((in_cell + _cell_origin[axis]) / _scale[axis])
 
 
 ## A name not used by any animation, based on [param base] (see
