@@ -2,8 +2,9 @@ class_name FrameStore
 extends Resource
 ## The frames of a [Spritesheet] by grid coordinate, with what each cell holds besides its
 ## frame: an origin, a link to a file, a pivot and a place in the packed layout. Everything
-## a cell holds moves along with its frame. Changes are batched into one
-## [signal updated] each; [Spritesheet] has everything else.
+## a cell holds moves along with its frame. The folders frames are added from are linked
+## here too. Changes are batched into one [signal updated] each; [Spritesheet] has
+## everything else.
 
 signal updated
 
@@ -24,6 +25,11 @@ var frame_sources: Dictionary[Vector2i, Dictionary]:
 var placements: Dictionary[Vector2i, Dictionary]:
 	get:
 		return _placements
+## Folders whose new and deleted images are followed, see [FolderWatcher]. Read only:
+## changes go through [method link_folder] and [method unlink_folder].
+var linked_folders: PackedStringArray:
+	get:
+		return _folders.duplicate()
 ## The frames with the sheet's scale applied, kept for reuse
 var scaled_frames: ScaledFrames
 ## What packing found out about the frames, kept for reuse
@@ -38,6 +44,7 @@ var _sources: Dictionary[Vector2i, Dictionary] = {}
 var _pivots: Dictionary[Vector2i, Vector2] = {}
 ## Where frames are in the packed layout. Never changed in place, only replaced.
 var _placements: Dictionary[Vector2i, Dictionary] = {}
+var _folders: PackedStringArray = []
 ## Whether frames may need packing again
 var _layout_dirty := false
 var _batch_depth := 0
@@ -123,6 +130,38 @@ func set_placements(changes: Dictionary) -> void:
 	if edited:
 		_changed(false)
 
+
+#region Linked folders
+
+
+## Follows the images in [param folder], see [FolderWatcher]
+func link_folder(folder: String) -> void:
+	if folder not in _folders:
+		_folders.append(folder)
+		_changed(false)
+
+
+func unlink_folder(folder: String) -> void:
+	var index := _folders.find(folder)
+	if index >= 0:
+		_folders.remove_at(index)
+		_changed(false)
+
+
+## Follows [param new_folder] in place of [param folder], where it's listed, e.g. once it's
+## been moved. When [param new_folder] is linked already, [param folder] is just unlinked.
+func relink_folder(folder: String, new_folder: String) -> void:
+	var index := _folders.find(folder)
+	if index < 0 or folder == new_folder:
+		return
+	if new_folder in _folders:
+		_folders.remove_at(index)
+	else:
+		_folders[index] = new_folder
+	_changed(false)
+
+
+#endregion
 
 #region Batching
 

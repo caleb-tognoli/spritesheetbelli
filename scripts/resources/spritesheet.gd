@@ -79,11 +79,6 @@ var atlas_settings: AtlasSettings:
 		settings.power_of_two = Settings.get_value(&"atlas_power_of_two")
 		settings.square = Settings.get_value(&"atlas_square")
 		return settings
-## Folders whose new and deleted images are followed, see [FolderWatcher]. Read only:
-## changes go through [method link_folder] and [method unlink_folder].
-var linked_folders: PackedStringArray:
-	get:
-		return _folders.duplicate()
 ## Whether there are lines repeated in every cell to line frames up against, see
 ## [method get_guides]
 var has_guides: bool:
@@ -104,7 +99,6 @@ var _cell_origin := Vector2i.ZERO
 var _layout := Layout.GRID
 ## The values of [AtlasSettings] that aren't the defaults
 var _atlas := {}
-var _folders: PackedStringArray = []
 ## The guides across x (vertical lines) and across y (horizontal lines), see
 ## [method get_guides]
 var _guides: Array[PackedInt32Array] = [PackedInt32Array(), PackedInt32Array()]
@@ -287,38 +281,6 @@ static func states_equal(a: Dictionary, b: Dictionary) -> bool:
 
 func clear() -> void:
 	set_state({})
-
-
-#endregion
-
-#region Linked folders
-
-
-## Follows the images in [param folder], see [FolderWatcher]
-func link_folder(folder: String) -> void:
-	if folder not in _folders:
-		_folders.append(folder)
-		_changed(false)
-
-
-func unlink_folder(folder: String) -> void:
-	var index := _folders.find(folder)
-	if index >= 0:
-		_folders.remove_at(index)
-		_changed(false)
-
-
-## Follows [param new_folder] in place of [param folder], where it's listed, e.g. once it's
-## been moved. When [param new_folder] is linked already, [param folder] is just unlinked.
-func relink_folder(folder: String, new_folder: String) -> void:
-	var index := _folders.find(folder)
-	if index < 0 or folder == new_folder:
-		return
-	if new_folder in _folders:
-		_folders.remove_at(index)
-	else:
-		_folders[index] = new_folder
-	_changed(false)
 
 
 #endregion
@@ -715,39 +677,6 @@ func set_label_playing_only(value: bool) -> void:
 		_changed()
 
 
-## Where the guides across [param axis] are: [constant Vector2.AXIS_X] for vertical lines,
-## [constant Vector2.AXIS_Y] for horizontal ones. Each is repeated in every cell, in
-## unscaled pixels from the point frames are placed around (like
-## [method get_frame_origin]), so it stays where it is against the frames when nudging
-## them makes the cells bigger. In order, without repeats.
-func get_guides(axis: int) -> PackedInt32Array:
-	return _guides[axis].duplicate()
-
-
-func set_guides(axis: int, values: PackedInt32Array) -> void:
-	var sorted := PackedInt32Array()
-	for value in values:
-		if not value in sorted:
-			sorted.append(value)
-	sorted.sort()
-	if sorted == _guides[axis]:
-		return
-	_guides[axis] = sorted
-	_changed(false)
-
-
-## Where a guide at [param value] across [param axis] is in the cells, in pixels from
-## their top-left corner, as exported
-func guide_to_cell(axis: int, value: int) -> int:
-	return roundi(value * _scale[axis]) - _cell_origin[axis]
-
-
-## The guide at [param in_cell] pixels from the top-left corner of the cells across
-## [param axis], see [method guide_to_cell]
-func cell_to_guide(axis: int, in_cell: float) -> int:
-	return roundi((in_cell + _cell_origin[axis]) / _scale[axis])
-
-
 ## A name not used by any animation, based on [param base] (see
 ## [method SheetAnimation.unique_name])
 func get_unique_animation_name(base := "animation") -> String:
@@ -786,6 +715,43 @@ func _remap_animation_cells(map: Callable) -> void:
 		data.cells = cells
 		if data.has("durations"):
 			data.durations = durations
+
+
+#endregion
+
+#region Guides
+
+
+## Where the guides across [param axis] are: [constant Vector2.AXIS_X] for vertical lines,
+## [constant Vector2.AXIS_Y] for horizontal ones. Each is repeated in every cell, in
+## unscaled pixels from the point frames are placed around (like
+## [method get_frame_origin]), so it stays where it is against the frames when nudging
+## them makes the cells bigger. In order, without repeats.
+func get_guides(axis: int) -> PackedInt32Array:
+	return _guides[axis].duplicate()
+
+
+func set_guides(axis: int, values: PackedInt32Array) -> void:
+	var sorted := PackedInt32Array()
+	for value in values:
+		if not value in sorted:
+			sorted.append(value)
+	sorted.sort()
+	if sorted != _guides[axis]:
+		_guides[axis] = sorted
+		_changed(false)
+
+
+## Where a guide at [param value] across [param axis] is in the cells, in pixels from
+## their top-left corner, as exported
+func guide_to_cell(axis: int, value: int) -> int:
+	return roundi(value * _scale[axis]) - _cell_origin[axis]
+
+
+## The guide at [param in_cell] pixels from the top-left corner of the cells across
+## [param axis], see [method guide_to_cell]
+func cell_to_guide(axis: int, in_cell: float) -> int:
+	return roundi((in_cell + _cell_origin[axis]) / _scale[axis])
 
 
 #endregion

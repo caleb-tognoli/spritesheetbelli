@@ -55,9 +55,6 @@ const HOVER_COLOR := Color(1, 1, 1, 0.08)
 const CHECKER_COLORS: Array[Color] = [Color(0.36, 0.36, 0.36), Color(0.42, 0.42, 0.42)]
 const MAX_ZOOM := 32.0
 const MIN_ZOOM := 0.02
-## Minimum on-screen size of a cell for its index to be shown
-const MIN_SIZE_TO_SHOW_INDEX := Vector2(40, 30)
-const INDEX_FONT_SIZE := 14
 ## Mouse movement in pixels before a press becomes a drag
 const DRAG_THRESHOLD := 4.0
 const NO_CELL := Vector2i(-1, -1)
@@ -416,8 +413,8 @@ func is_index_visible() -> bool:
 	var on_screen := Vector2(spritesheet.sprite_size) * camera.zoom
 	return (
 		show_indices
-		and on_screen.x >= MIN_SIZE_TO_SHOW_INDEX.x
-		and on_screen.y >= MIN_SIZE_TO_SHOW_INDEX.y
+		and on_screen.x >= FrameNumbers.MIN_SIZE.x
+		and on_screen.y >= FrameNumbers.MIN_SIZE.y
 	)
 
 
@@ -885,7 +882,7 @@ func _draw() -> void:
 	_draw_selection(pixel)
 	animation_labels.draw(self)
 	if is_index_visible():
-		_draw_indices(grid_view.get_visible_cells(visible_rect))
+		FrameNumbers.draw_in_cells(self, grid_view.get_visible_cells(visible_rect))
 	pivots.draw(self, pixel, _drag == Drag.MOVE)
 	_draw_box(pixel)
 
@@ -905,11 +902,7 @@ func _draw_packed() -> void:
 	if _drag == Drag.MOVE:
 		mover.draw(self, pixel)
 	if show_indices:
-		for coord in packed_view.get_frames_in(visible_rect):
-			var rect := packed_view.get_frame_rect(coord)
-			if rect.size * camera.zoom >= MIN_SIZE_TO_SHOW_INDEX:
-				_draw_index(coord, rect)
-		draw_set_transform(Vector2.ZERO)
+		FrameNumbers.draw_in_pages(self, visible_rect)
 	pivots.draw(self, pixel, _drag == Drag.MOVE)
 	_draw_box(pixel)
 
@@ -963,33 +956,6 @@ func _draw_selection(pixel: float) -> void:
 		draw_rect(rect.grow(-pixel), selection_color, false, pixel * 2)
 	if _drag == Drag.MOVE:
 		mover.draw(self, pixel)
-
-
-func _draw_indices(visible_cells: Rect2i) -> void:
-	for coord in spritesheet.frames:
-		if not visible_cells.has_point(coord) or _is_index_under_label(coord):
-			continue
-		_draw_index(coord, cell_rect(coord))
-	draw_set_transform(Vector2.ZERO)
-
-
-## Whether an animation's name is drawn where the frame's number would be
-func _is_index_under_label(coord: Vector2i) -> bool:
-	var corner := (cell_rect(coord).position - camera.position) * camera.zoom
-	return animation_labels.covers(Rect2(corner + Vector2(4, 2), Vector2(36, INDEX_FONT_SIZE + 6)))
-
-
-## The frame's number in the top-left corner of [param rect]
-func _draw_index(coord: Vector2i, rect: Rect2) -> void:
-	var font := ThemeDB.fallback_font
-	# Text is drawn unscaled so it keeps the same size at any zoom
-	draw_set_transform(rect.position, 0, Vector2.ONE / camera.zoom)
-	var text := str(spritesheet.index_of(coord) + index_start)
-	var text_position := Vector2(6, 4 + INDEX_FONT_SIZE)
-	draw_string_outline(
-		font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE, 6, Color.BLACK
-	)
-	draw_string(font, text_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, INDEX_FONT_SIZE)
 
 
 func _visible_world_rect() -> Rect2:
