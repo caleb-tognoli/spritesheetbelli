@@ -18,6 +18,7 @@ static func apply(main: Control) -> void:
 	var has_frames := func() -> bool: return not Global.spritesheet.is_empty()
 	var has_selection := preview.has_selection
 	var one_selected := func() -> bool: return selected.call().size() == 1
+	var two_selected := func() -> bool: return selected.call().size() == 2
 	var linked := func() -> bool: return not main.get_selected_linked_coords().is_empty()
 	var not_top := func() -> bool: return selected.call()[0].y > 0
 	var not_bottom := func() -> bool:
@@ -42,6 +43,7 @@ static func apply(main: Control) -> void:
 		&"undo": [func() -> bool: return Global.document.can_undo(), L10n.mark("Nothing to undo")],
 		&"redo": [func() -> bool: return Global.document.can_redo(), L10n.mark("Nothing to redo")],
 		&"replace_image": selection + [one_selected, L10n.mark("Select a single frame")],
+		&"generate_inbetweens": selection + [two_selected, L10n.mark("Select two frames")],
 		&"reload_source": selection + [linked, L10n.mark("Not loaded from a file")],
 		&"move_row_up": selection + [not_top, L10n.mark("Already the top row")],
 		&"move_row_down": selection + [not_bottom, L10n.mark("Already the bottom row")],

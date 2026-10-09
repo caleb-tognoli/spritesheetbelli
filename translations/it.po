@@ -231,6 +231,39 @@ msgstr "Questo file di dati non ha frame."
 msgid "This isn't a spritesheet data file."
 msgstr "Questo non è un file di dati di spritesheet."
 
+#: res://scripts/inbetween/inbetween.gd
+msgid "Even"
+msgstr "Uniforme"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "Ease in"
+msgstr "Accelera"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "Ease out"
+msgstr "Rallenta"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "Ease in and out"
+msgstr "Accelera e rallenta"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "After the first key frame"
+msgstr "Dopo il primo frame chiave"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "In the first free cell"
+msgstr "Nella prima cella libera"
+
+#: res://scripts/inbetween/inbetween.gd
+#: res://ui/settings/settings_window.gd
+msgid "After the last frame"
+msgstr "Dopo l'ultimo frame"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "In a new row"
+msgstr "In una nuova riga"
+
 #: res://scripts/project_file.gd
 msgid "Not a spritesheetbelli project."
 msgstr "Non è un progetto di spritesheetbelli."
@@ -745,6 +778,7 @@ msgid "Pixels to skip at the top-left (vertical)"
 msgstr "Pixel da saltare in alto a sinistra (verticale)"
 
 #: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/inbetween_dialog.gd
 #: res://ui/main/spacing_dropdown.gd
 msgid "Spacing"
 msgstr "Spaziatura"
@@ -978,6 +1012,15 @@ msgid "Drag frames here from the sheet or the Sprites panel"
 msgstr "Trascina qui i frame dallo spritesheet o dal pannello Sprite"
 
 #: res://ui/animation_preview/animation_timeline.gd
+#: res://ui/main/main_actions.gd
+msgid "Generate In-Betweens…"
+msgstr "Genera frame intermedi…"
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Frames between the two picked frames, to smooth the animation"
+msgstr "Frame tra i due frame scelti, per rendere l'animazione più fluida"
+
+#: res://ui/animation_preview/animation_timeline.gd
 #: res://ui/main/main_ui.gd
 msgid "Move frames"
 msgstr "Sposta frame"
@@ -1118,6 +1161,10 @@ msgstr "Niente da ripetere"
 #: res://ui/main/action_reasons.gd
 msgid "Select a single frame"
 msgstr "Seleziona un solo frame"
+
+#: res://ui/main/action_reasons.gd
+msgid "Select two frames"
+msgstr "Seleziona due frame"
 
 #: res://ui/main/action_reasons.gd
 msgid "Not loaded from a file"
@@ -1949,6 +1996,78 @@ msgstr "Nascondi la cronologia"
 msgid "Click a step to go back or forward to it"
 msgstr "Clicca un passaggio per tornare indietro o avanti fino a lì"
 
+#: res://ui/main/inbetween_dialog.gd
+msgid "Generate In-Betweens"
+msgstr "Genera frame intermedi"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Generate"
+msgstr "Genera"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The keys and the frames between them, played"
+msgstr "I frame chiave e quelli intermedi, riprodotti"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Movement"
+msgstr "Movimento"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How far the sprite moves from the first key to the second, found by lining them up"
+msgstr "Quanto si sposta lo sprite dal primo frame chiave al secondo, trovato allineandoli"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Frames"
+msgstr "Frame"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How many frames to make between the keys"
+msgstr "Quanti frame creare tra i frame chiave"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How the frames are spread between the keys. Easing in bunches them up near the first key so the sprite starts slowly, easing out near the second so it stops slowly."
+msgstr "Come sono distribuiti i frame tra i frame chiave. Accelera li raccoglie vicino al primo frame chiave così lo sprite parte piano, Rallenta vicino al secondo così si ferma piano."
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Place"
+msgstr "Posizione"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Where the new frames go in the sheet"
+msgstr "Dove vanno i nuovi frame nello spritesheet"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Add to animations"
+msgstr "Aggiungi alle animazioni"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Play the new frames between the keys wherever an animation plays them one after the other"
+msgstr "Riproduce i nuovi frame tra i frame chiave ovunque un'animazione li riproduca uno dopo l'altro"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Keep their length"
+msgstr "Mantieni la loro durata"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The new frames share the time of the key before them, so the animations last as long as before"
+msgstr "I nuovi frame si dividono il tempo del frame chiave prima di loro, così le animazioni durano quanto prima"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Following every piece…"
+msgstr "Seguendo ogni pezzo…"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Where these frames play one after the other: %s"
+msgstr "Dove questi frame si susseguono: %s"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Key frame"
+msgstr "Frame chiave"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "In-between %d"
+msgstr "Intermedio %d"
+
 #: res://ui/main/layout_controller.gd
 #: res://ui/main/main_actions.gd
 msgid "Top"
@@ -2239,6 +2358,10 @@ msgid "From the selected frames, or from every frame when none are selected"
 msgstr "Dai frame selezionati, o da tutti se nessuno è selezionato"
 
 #: res://ui/main/main_actions.gd
+msgid "Frames between the two selected frames, to smooth an animation"
+msgstr "Frame tra i due frame selezionati, per rendere un'animazione più fluida"
+
+#: res://ui/main/main_actions.gd
 msgid "Click a ruler to add a guide, repeated in every cell"
 msgstr "Clic su un righello per aggiungere una guida, ripetuta in ogni cella"
 
@@ -2494,6 +2617,10 @@ msgstr "Contorno"
 #: res://ui/main/main_ui.gd
 msgid "Adding outlines"
 msgstr "Aggiunta dei contorni"
+
+#: res://ui/main/main_ui.gd
+msgid "Generate in-betweens"
+msgstr "Genera frame intermedi"
 
 #: res://ui/main/main_ui.gd
 msgid "Resize canvas"
@@ -2941,10 +3068,6 @@ msgstr "I nuovi sprite vanno"
 #: res://ui/settings/settings_window.gd
 msgid "The first free cell"
 msgstr "Nella prima cella libera"
-
-#: res://ui/settings/settings_window.gd
-msgid "After the last frame"
-msgstr "Dopo l'ultimo frame"
 
 #: res://ui/settings/settings_window.gd
 msgid "A new row"

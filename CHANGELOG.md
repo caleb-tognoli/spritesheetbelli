@@ -349,6 +349,33 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   panels included. On desktops, a `.po` file put in the translations folder (the button
   next to the setting opens it) adds its language to the list. File dialogs, native ones
   included, name their file types in the chosen language too.
+- Frame > Generate In-Betweens makes frames between two key frames, to smooth an
+  animation: select two frames on the sheet, or right-click two picked frames on an
+  animation's timeline. Each key is cut into pieces, like an arm, a leg, a blade or the
+  body, found by their colours and by how they move: each region of a key is looked for in
+  the other key at every turn, the regions choose their motions together so neighbours
+  stay touching, and regions moving alike merge into pieces. Frames show each piece turned
+  about its joint part of the way, squashed or stretched as it is between the keys, drawn
+  smoothly like RotSprite where it turns and pixel for pixel where it doesn't, in the
+  order the pieces overlap: a blade swings round the hand, legs swing through each other,
+  a slime squashes and stretches, a box tumbles in one piece. What bends rather than
+  turns, like cloth or a bending leg, bends with the whole shape: the keys' outlines are
+  matched point to point and the shape between them bent as rigidly as possible, part of
+  the way, so the frames move evenly from one key to the other. Twin parts, like two arms,
+  each find their own, and a square or round part isn't spun round. Painted sprites with
+  many colours are cut by a few colours standing for theirs, their line work moving with
+  what it's drawn round. An outline round the sprite is drawn again round each frame,
+  going round corners the way the keys' does, and every pixel keeps a key's colour.
+  Something stretched much keeps a smooth outline rather than its pixels' stairs grown,
+  and pixels sticking out alone or notches a pixel wide that the keys don't have are
+  smoothed away.
+  Up to 16 frames at once, spread evenly or eased in, out or both so the sprite starts or
+  stops slowly, previewed between the keys and played as fast as their animation, go
+  right after the first key (moving later frames along), in the first free cell, after
+  the last frame or in a new row. Animations that play the two keys one after the other,
+  either way round or from the end of a loop to its start, can get them too: the dialog
+  names them, and Keep their length has the new frames share the first key's time.
+  Following the pieces shows how far it got, and stops when the dialog is closed.
 - Resize Canvas, a toggle next to the sprite size: typing a size adds transparent space
   evenly around the frames instead of scaling them, or takes it away, trimming only
   transparent pixels. The cells keep that size as frames are added or removed, growing

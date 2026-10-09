@@ -100,6 +100,11 @@ const DEFAULTS := {
 	&"background_tolerance": SheetBackground.DEFAULT_TOLERANCE,
 	# Keys of what the command palette ran last, the latest first, see CommandPalette
 	&"command_palette_recent": [],
+	# How Generate In-Betweens last made frames, how many and where they went, see InBetween
+	&"inbetween_count": 1,
+	&"inbetween_place": InBetween.Place.AFTER_FIRST,
+	&"inbetween_spacing": InBetween.Spacing.LINEAR,
+	&"inbetween_keep_length": false,
 }
 ## Settings that are remembered rather than chosen, left alone by Reset
 const REMEMBERED: Array[StringName] = [
@@ -126,6 +131,10 @@ const REMEMBERED: Array[StringName] = [
 	&"lock_empty_cells",
 	&"background_tolerance",
 	&"command_palette_recent",
+	&"inbetween_count",
+	&"inbetween_place",
+	&"inbetween_spacing",
+	&"inbetween_keep_length",
 ]
 const MAX_RECENT_FILES := 10
 

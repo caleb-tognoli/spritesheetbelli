@@ -52,6 +52,7 @@ const ICONS := {
 	&"align_right": preload("res://assets/icons/ControlAlignCenterRight.svg"),
 	&"align_center": preload("res://assets/icons/ControlAlignCenter.svg"),
 	&"add_outline": preload("res://assets/icons/Rectangle.svg"),
+	&"generate_inbetweens": preload("res://assets/icons/InBetween.svg"),
 	&"trim": preload("res://assets/icons/RegionEdit.svg"),
 	&"toggle_grid": preload("res://assets/icons/GridToggle.svg"),
 	&"toggle_rulers": preload("res://assets/icons/Ruler.svg"),
@@ -85,6 +86,7 @@ const DESCRIPTIONS := {  # L10n.mark
 	&"add_folder": "A folder's images as sprites, and the ones saved there later",
 	&"trim": "Of the selected frames, or of every frame when none are selected",
 	&"color_key": "From the selected frames, or from every frame when none are selected",
+	&"generate_inbetweens": "Frames between the two selected frames, to smooth an animation",
 	&"toggle_rulers": "Click a ruler to add a guide, repeated in every cell",
 }
 
@@ -239,6 +241,14 @@ static func register(main: Control) -> void:
 		L10n.mark("Add Outline…"),
 		func() -> void: (main.outline_dialog as OutlineDialog).popup_centered(),
 		has_selection
+	)
+	add.call(
+		&"generate_inbetweens",
+		L10n.mark("Generate In-Betweens…"),
+		func() -> void:
+			var coords := preview.get_selected_coords()
+			main.open_inbetweens(coords[0], coords[1]),
+		func() -> bool: return preview.get_selected_coords().size() == 2
 	)
 	add.call(
 		&"replace_image",

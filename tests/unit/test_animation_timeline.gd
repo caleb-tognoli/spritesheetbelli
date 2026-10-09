@@ -453,3 +453,49 @@ func test_holding_frames_over_the_dock_button_opens_the_panel() -> void:
 	assert_false(panel.is_expanded(), "leaving the button starts again")
 	panel.dock.hold_over(middle, 0.4)
 	assert_true(panel.is_expanded(), "held long enough")
+
+
+func test_in_betweens_from_the_timeline() -> void:
+	var slow := animation()
+	slow.fps = 6.0
+	Global.document.perform("Speed", Global.spritesheet.set_animation.bind(0, slow))
+	await get_tree().process_frame
+	var requested: Array[Vector2i] = []
+	timeline.inbetweens_requested.connect(
+		func(a: Vector2i, b: Vector2i) -> void: requested.assign([a, b])
+	)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_RIGHT
+	click.pressed = true
+	timeline.get_tile(1).gui_input.emit(click)
+	assert_eq(timeline.get_selected(), [1] as Array[int], "picks the frame right-clicked")
+	assert_true(timeline.get_inbetween_keys().is_empty(), "needs two frames")
+	timeline.select([1, 2] as Array[int])
+	timeline.get_tile(2).gui_input.emit(click)
+	assert_eq(timeline.get_selected(), [1, 2] as Array[int], "keeps the frames picked")
+	timeline.request_inbetweens()
+	assert_eq(requested, cells([1, 2]), "in playing order")
+
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	assert_true(dialog.visible, "opens Generate In-Betweens")
+	assert_true(dialog.animations_check.visible, "the animation plays the keys in a row")
+	assert_eq(dialog.preview_fps, 6.0, "played as fast as the animation")
+	for i in 100:
+		if not dialog.get_ok_button().disabled:
+			break
+		await get_tree().process_frame
+	var before := steps()
+	dialog.place_option.select(dialog.place_option.get_item_index(InBetween.Place.APPEND))
+	dialog.keep_length_check.button_pressed = true
+	dialog.get_ok_button().pressed.emit()
+	assert_eq(steps(), before + 1, "one step")
+	assert_eq(animation().cells, cells([0, 1, 4, 2]), "added between the keys")
+	assert_eq(animation().durations, [1.0, 0.5, 0.5, 1.0], "sharing the first key's time")
+	assert_eq(Global.spritesheet.frames.size(), 5)
+	for key: StringName in [
+		&"inbetween_count",
+		&"inbetween_place",
+		&"inbetween_spacing",
+		&"inbetween_keep_length",
+	]:
+		Settings.set_value(key, Settings.DEFAULTS[key])

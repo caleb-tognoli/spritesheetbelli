@@ -407,3 +407,47 @@ func test_add_folder_has_a_shortcut() -> void:
 	assert_eq(main.files.open_file_dialogs, [main.files.open_folder_dialog] as Array[FileDialog])
 	main.files.open_folder_dialog.canceled.emit()
 	main.files.open_folder_dialog.hide()
+
+
+func test_generate_inbetweens() -> void:
+	assert_false(Actions.is_enabled(&"generate_inbetweens"))
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	assert_eq(Actions.get_disabled_reason(&"generate_inbetweens"), "Select two frames")
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
+	assert_true(Actions.run(&"generate_inbetweens"))
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	assert_true(dialog.visible)
+	assert_false(dialog.animations_check.visible, "no animation plays the keys")
+	assert_eq(dialog.place_option.get_selected_id(), InBetween.Place.AFTER_FIRST, "by default")
+	dialog.count_spin.value = 2
+	for i in 100:
+		if not dialog.get_ok_button().disabled:
+			break
+		await get_tree().process_frame
+	assert_eq(dialog.strip.get_child_count(), 4, "the keys and the two frames between them")
+	dialog.get_ok_button().pressed.emit()
+	assert_eq(Global.spritesheet.frames.size(), 5)
+	assert_eq(main.preview.get_selected_coords().size(), 2, "the new frames are selected")
+	assert_eq(Global.document.get_history()[-1], "Generate in-betweens")
+	Global.document.undo()
+	assert_eq(Global.spritesheet.frames.size(), 3, "one undo step")
+	for key: StringName in [
+		&"inbetween_count",
+		&"inbetween_place",
+		&"inbetween_spacing",
+		&"inbetween_keep_length",
+	]:
+		Settings.set_value(key, Settings.DEFAULTS[key])
+
+
+func test_inbetween_movement_typed_stays() -> void:
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	assert_eq(dialog.preview_fps, InBetweenDialog.DEFAULT_FPS, "no animation plays them")
+	# Before the movement is found on a worker thread
+	dialog.motion_x.value = 3
+	for i in 10:
+		await get_tree().process_frame
+	assert_eq(dialog.motion_x.value, 3.0, "not replaced by the movement found")
+	dialog.hide()

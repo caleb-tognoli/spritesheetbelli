@@ -5,11 +5,15 @@ extends PanelContainer
 ## are dragged to reorder them (Alt+drag copies them), taken out with × or Delete, picked
 ## by clicking (Ctrl and Shift pick more) or with a box, and added by dropping frames of
 ## the sheet on it, see [method frames_drag_data]. Changes aren't made here but sent with
-## [signal frames_edited], so each is one undoable step.
+## [signal frames_edited], so each is one undoable step. Right-clicking two picked frames
+## offers to make frames between them, see [signal inbetweens_requested].
 
 ## The frames should become [param cells], shown [param durations] long, as the step
 ## [param action_name]
 signal frames_edited(action_name: String, cells: Array[Vector2i], durations: Array[float])
+## Frames should be made between key frames [param a] and [param b], in playing order, see
+## [InBetweenDialog]
+signal inbetweens_requested(a: Vector2i, b: Vector2i)
 
 ## Sides of the pictures, which follow the height given with [method fit_height]
 const MIN_PICTURE := 24
@@ -22,6 +26,7 @@ const SCROLL_SPEED := 900.0
 const FRAMES_DRAG := "sheet_frames"
 ## The kind of drag data of frames moved within a timeline
 const TIMELINE_DRAG := "timeline_frames"
+const INBETWEEN_ICON := preload("res://assets/icons/InBetween.svg")
 
 var sheet: Spritesheet
 var scroll := ScrollContainer.new()
@@ -52,6 +57,8 @@ var _box_base: Dictionary[int, bool] = {}
 ## Where the box started in [member row], so it scrolls with the tiles, and where it ends
 var _box_start := Vector2.ZERO
 var _box_end := Vector2.ZERO
+## Shown when right-clicking a frame
+var _menu := PopupMenu.new()
 
 
 func _init() -> void:
@@ -80,6 +87,11 @@ func _init() -> void:
 	add_child(_overlay)
 	_probe.visible = false
 	_overlay.add_child(_probe)
+	_menu.theme = preload("res://resources/themes/popup_menu_theme.tres")
+	_menu.add_icon_item(INBETWEEN_ICON, "Generate In-Betweens…")
+	_menu.set_item_tooltip(0, "Frames between the two picked frames, to smooth the animation")
+	_menu.index_pressed.connect(func(_index: int) -> void: request_inbetweens())
+	add_child(_menu)
 
 	row.gui_input.connect(_on_row_input)
 	# Frames can be dropped anywhere, also after the last one
@@ -508,6 +520,9 @@ func _gui_input(event: InputEvent) -> void:
 ## dragged together.
 func _on_tile_input(event: InputEvent, tile: TimelineTile) -> void:
 	var click := event as InputEventMouseButton
+	if click and click.button_index == MOUSE_BUTTON_RIGHT and click.pressed:
+		_open_menu(tile, click.position)
+		return
 	if not click or click.button_index != MOUSE_BUTTON_LEFT:
 		return
 	var index := tile.index
@@ -537,6 +552,35 @@ func _on_tile_input(event: InputEvent, tile: TimelineTile) -> void:
 		select([index] as Array[int])
 		_anchor = index
 	tile.accept_event()
+
+
+## Picks the frame right-clicked unless it's picked already, and offers what can be done
+## with the frames picked
+func _open_menu(tile: TimelineTile, at: Vector2) -> void:
+	grab_focus()
+	if not _selected.has(tile.index):
+		select([tile.index] as Array[int])
+		_anchor = tile.index
+	_menu.set_item_disabled(0, get_inbetween_keys().is_empty())
+	var screen_position := tile.get_screen_transform() * at
+	_menu.popup(Rect2i(Vector2i(screen_position), Vector2i.ZERO))
+	tile.accept_event()
+
+
+## The two frames picked, in playing order, to make frames between, or none when two
+## different frames aren't picked
+func get_inbetween_keys() -> Array[Vector2i]:
+	var picked := get_selected()
+	if picked.size() != 2 or _cells[picked[0]] == _cells[picked[1]]:
+		return [] as Array[Vector2i]
+	return [_cells[picked[0]], _cells[picked[1]]] as Array[Vector2i]
+
+
+## Asks for frames between the two frames picked, see [signal inbetweens_requested]
+func request_inbetweens() -> void:
+	var keys := get_inbetween_keys()
+	if not keys.is_empty():
+		inbetweens_requested.emit(keys[0], keys[1])
 
 
 ## Dragging between or after the frames draws a box that picks the frames it touches

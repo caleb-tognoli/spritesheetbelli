@@ -20,6 +20,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 	&"copy",
 	&"paste",
 	&"duplicate",
+	&"generate_inbetweens",
 	&"",
 	&"transform_menu",
 	&"align_menu",
@@ -70,6 +71,7 @@ var settings_window := SettingsWindow.new()
 var clipboard := FrameClipboard.new()
 var color_key := ColorKeyPreview.new()
 var outline_dialog := OutlineDialog.new()
+var inbetween_dialog := InBetweenDialog.new()
 var export_dialog := ExportDialog.new()
 var about_dialog := AboutDialog.new()
 var source_watcher := SourceWatcher.new()
@@ -180,6 +182,7 @@ func _ready() -> void:
 	add_child(color_key)
 	color_key.setup(preview_area, edit_selection_in_background)
 	add_child(outline_dialog)
+	add_child(inbetween_dialog)
 	add_child(export_dialog)
 	export_dialog.exports = files.exports
 	files.exports.open_dialog = Actions.run.bind(&"export")
@@ -187,6 +190,14 @@ func _ready() -> void:
 	add_child(source_watcher)
 	animation_panel.setup(preview)
 	outline_dialog.outline_chosen.connect(add_outline)
+	inbetween_dialog.inbetweens_chosen.connect(add_inbetweens)
+	# Played as fast as the animation whose timeline they're on
+	animation_panel.detail.timeline.inbetweens_requested.connect(
+		func(a: Vector2i, b: Vector2i) -> void:
+			var index := animation_panel.get_selected()
+			var animations := Global.spritesheet.animations
+			open_inbetweens(a, b, animations[index].fps if index >= 0 else 0.0)
+	)
 	files.exports.get_selected_coords = preview.get_selected_coords
 	export_dialog.get_selected_coords = preview.get_selected_coords
 	files.get_view = preview.get_view
@@ -436,6 +447,35 @@ func add_outline(color: Color, thickness: int, corners: bool) -> void:
 		FrameEdits.outline_move(thickness),
 		FrameEdits.outline_op(color, thickness, corners)
 	)
+
+
+## Opens Generate In-Betweens for key frames [param a] and [param b], see
+## [InBetweenDialog], playing them at [param fps] or as fast as an animation of them
+func open_inbetweens(a: Vector2i, b: Vector2i, fps := 0.0) -> void:
+	var sheet := Global.spritesheet
+	if a != b and sheet.has_frame(a) and sheet.has_frame(b):
+		inbetween_dialog.open(sheet, a, b, fps)
+
+
+## Adds frames between keys [param a] and [param b] as one undoable step and selects them,
+## see [method InBetween.add]
+func add_inbetweens(
+	a: Vector2i,
+	b: Vector2i,
+	frames: Array[Dictionary],
+	place: int,
+	to_animations: bool,
+	keep_length := false,
+) -> void:
+	var sheet := Global.spritesheet
+	# The keys changed while the frames were made
+	if not sheet.has_frame(a) or not sheet.has_frame(b) or frames.is_empty():
+		return
+	var coords: Array[Vector2i] = Global.document.perform(
+		L10n.mark("Generate in-betweens"),
+		InBetween.add.bind(sheet, a, b, frames, place, to_animations, keep_length)
+	)
+	preview.set_selected_coords(coords)
 
 
 ## Replaces each selected frame (or each of [param coords]) with

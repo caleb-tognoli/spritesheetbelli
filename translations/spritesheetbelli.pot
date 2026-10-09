@@ -232,6 +232,39 @@ msgstr ""
 msgid "This isn't a spritesheet data file."
 msgstr ""
 
+#: res://scripts/inbetween/inbetween.gd
+msgid "Even"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "Ease in"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "Ease out"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "Ease in and out"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "After the first key frame"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "In the first free cell"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+#: res://ui/settings/settings_window.gd
+msgid "After the last frame"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "In a new row"
+msgstr ""
+
 #: res://scripts/project_file.gd
 msgid "Not a spritesheetbelli project."
 msgstr ""
@@ -746,6 +779,7 @@ msgid "Pixels to skip at the top-left (vertical)"
 msgstr ""
 
 #: res://ui/add_spritesheet/add_spritesheet_window.tscn
+#: res://ui/main/inbetween_dialog.gd
 #: res://ui/main/spacing_dropdown.gd
 msgid "Spacing"
 msgstr ""
@@ -974,6 +1008,15 @@ msgid "Drag frames here from the sheet or the Sprites panel"
 msgstr ""
 
 #: res://ui/animation_preview/animation_timeline.gd
+#: res://ui/main/main_actions.gd
+msgid "Generate In-Betweens…"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
+msgid "Frames between the two picked frames, to smooth the animation"
+msgstr ""
+
+#: res://ui/animation_preview/animation_timeline.gd
 #: res://ui/main/main_ui.gd
 msgid "Move frames"
 msgstr ""
@@ -1113,6 +1156,10 @@ msgstr ""
 
 #: res://ui/main/action_reasons.gd
 msgid "Select a single frame"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "Select two frames"
 msgstr ""
 
 #: res://ui/main/action_reasons.gd
@@ -1991,6 +2038,78 @@ msgstr ""
 msgid "Click a step to go back or forward to it"
 msgstr ""
 
+#: res://ui/main/inbetween_dialog.gd
+msgid "Generate In-Betweens"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Generate"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The keys and the frames between them, played"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Movement"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How far the sprite moves from the first key to the second, found by lining them up"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Frames"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How many frames to make between the keys"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How the frames are spread between the keys. Easing in bunches them up near the first key so the sprite starts slowly, easing out near the second so it stops slowly."
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Place"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Where the new frames go in the sheet"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Add to animations"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Play the new frames between the keys wherever an animation plays them one after the other"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Keep their length"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The new frames share the time of the key before them, so the animations last as long as before"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Following every piece…"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Where these frames play one after the other: %s"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Key frame"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "In-between %d"
+msgstr ""
+
 #: res://ui/main/layout_controller.gd
 #: res://ui/main/main_actions.gd
 msgid "Top"
@@ -2279,6 +2398,10 @@ msgid "From the selected frames, or from every frame when none are selected"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+msgid "Frames between the two selected frames, to smooth an animation"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
 #: res://ui/main/menu_bar.gd
 msgid "Click a ruler to add a guide, repeated in every cell"
 msgstr ""
@@ -2539,6 +2662,10 @@ msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Adding outlines"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Generate in-betweens"
 msgstr ""
 
 #: res://ui/main/main_ui.gd
@@ -2981,10 +3108,6 @@ msgstr ""
 
 #: res://ui/settings/settings_window.gd
 msgid "The first free cell"
-msgstr ""
-
-#: res://ui/settings/settings_window.gd
-msgid "After the last frame"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd

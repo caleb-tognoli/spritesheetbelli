@@ -189,6 +189,63 @@ func get_length(sheet: Spritesheet) -> float:
 	return total / fps
 
 
+## How many times [param a] and [param b] are played one right after the other, either
+## way round, see [method insert_between]
+func count_between(a: Vector2i, b: Vector2i) -> int:
+	return _places_between(a, b).size()
+
+
+## Puts [param new_cells] between [param a] and [param b] wherever they're played one
+## right after the other, and the other way round where [param b] comes first, each shown
+## for one frame. With [param keep_length], they share the time of the frame before them
+## instead, so the animation lasts as long as before. A loop goes from its last frame back
+## to its first, so frames between those go at the end. Returns how many places they went
+## in.
+func insert_between(
+	a: Vector2i, b: Vector2i, new_cells: Array[Vector2i], keep_length := false
+) -> int:
+	var places := _places_between(a, b)
+	if places.is_empty() or new_cells.is_empty():
+		return places.size()
+	var backwards := new_cells.duplicate()
+	backwards.reverse()
+	var result_cells: Array[Vector2i] = []
+	var result_durations: Array[float] = []
+	for i in cells.size():
+		var duration := get_duration(i)
+		var each := 1.0
+		if keep_length and i in places:
+			# The frame keeps what's left after its share, so the total stays the same
+			each = snappedf(duration / (new_cells.size() + 1), 0.01)
+			duration = snappedf(duration - each * new_cells.size(), 0.01)
+		result_cells.append(cells[i])
+		result_durations.append(duration)
+		if i in places:
+			for cell: Vector2i in new_cells if cells[i] == a else backwards:
+				result_cells.append(cell)
+				result_durations.append(each)
+	cells = result_cells
+	durations = result_durations
+	return places.size()
+
+
+## Indices of [member cells] followed right away by the other of [param a] and [param b]
+func _places_between(a: Vector2i, b: Vector2i) -> Array[int]:
+	var places: Array[int] = []
+	if a == b:
+		return places
+	for i in cells.size():
+		var next := i + 1
+		if next == cells.size():
+			if mode != Mode.LOOP or cells.size() < 2:
+				break
+			next = 0
+		var pair := [cells[i], cells[next]]
+		if pair == [a, b] or pair == [b, a]:
+			places.append(i)
+	return places
+
+
 ## Adds a copy of the animation at [param index] of [param sheet] with its frames flipped
 ## horizontally in a new row below every frame, e.g. walk_left from walk_right. Returns the new
 ## animation's index, or -1 when it has no frames.
