@@ -375,6 +375,7 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox("grabber_area", &"ScrubBar", _box(Color(p.accent, 0.8), 2, track))
 	theme.set_stylebox("grabber_area_highlight", &"ScrubBar", _box(p.accent, 2, track))
 	_add_lists(theme, p, focus)
+	_add_tabs(theme, p)
 	return theme
 
 
@@ -409,6 +410,36 @@ static func _add_embedded_windows(theme: Theme, p: Palette) -> void:
 
 ## Trees and item lists: a sunken background, rows shaded with the text colour when
 ## hovered and in the accent colour when selected, and scroll bars to match
+## The tabs of the open documents over the canvas, see [DocumentTabs], on a strip of the
+## window's background. The active one is the colour of the toolbar under it, which it
+## joins, with the accent along its top, like the Godot editor's scene tabs.
+static func _add_tabs(theme: Theme, p: Palette) -> void:
+	theme.set_type_variation(&"TabStrip", "PanelContainer")
+	theme.set_stylebox("panel", &"TabStrip", _box(p.background, 0, Vector4(4, 4, 4, 0)))
+	var margins := Vector4(10, 5, 8, 5)
+	var tab := func(color: Color, top: Color) -> StyleBoxFlat:
+		var box := _box(color, 0, margins)
+		box.corner_radius_top_left = 4
+		box.corner_radius_top_right = 4
+		box.border_color = top
+		box.border_width_top = 2
+		return box
+	theme.set_stylebox("tab_selected", "TabBar", tab.call(p.surface, p.accent))
+	theme.set_stylebox("tab_unselected", "TabBar", tab.call(Color.TRANSPARENT, Color.TRANSPARENT))
+	theme.set_stylebox("tab_hovered", "TabBar", tab.call(Color(p.surface, 0.5), Color.TRANSPARENT))
+	theme.set_stylebox("tab_disabled", "TabBar", tab.call(Color.TRANSPARENT, Color.TRANSPARENT))
+	theme.set_stylebox("tab_focus", "TabBar", StyleBoxEmpty.new())
+	theme.set_stylebox("button_pressed", "TabBar", _box(Color(p.text, 0.25 * p.shade), 3))
+	theme.set_stylebox("button_highlight", "TabBar", _box(Color(p.text, 0.15 * p.shade), 3))
+	theme.set_color("font_selected_color", "TabBar", p.text)
+	theme.set_color("font_hovered_color", "TabBar", p.text)
+	theme.set_color("font_unselected_color", "TabBar", p.text_muted)
+	theme.set_color("font_disabled_color", "TabBar", Color(p.text_muted, 0.6))
+	theme.set_color("drop_mark_color", "TabBar", p.accent)
+	theme.set_constant("h_separation", "TabBar", 6)
+	theme.set_icon("close", "TabBar", CLOSE)
+
+
 static func _add_lists(theme: Theme, p: Palette, focus: StyleBox) -> void:
 	var margins := Vector4(4, 4, 4, 4)
 	var hovered := _box(p.hovered, 3, margins)

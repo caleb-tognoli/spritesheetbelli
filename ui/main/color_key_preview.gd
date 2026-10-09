@@ -45,11 +45,13 @@ func setup(area: PreviewArea, edit_in_background: Callable) -> void:
 	# The selection or the frames changed
 	preview.preview_updated.connect(_queue_update)
 	# Another document has other frames
-	Global.document.loaded.connect(
-		func(_view: Dictionary) -> void:
-			if dropdown.is_open():
-				dropdown.cancel()
-	)
+	Global.document_loaded.connect(_cancel.unbind(1))
+	Global.document_switched.connect(_cancel.unbind(1))
+
+
+func _cancel() -> void:
+	if dropdown.is_open():
+		dropdown.cancel()
 
 
 ## Opens the dropdown, as the toolbar button does

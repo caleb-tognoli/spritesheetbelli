@@ -57,7 +57,10 @@ const DEFAULTS := {
 	&"recovery_minutes": 2,
 	&"show_status_bar": true,
 	# Remembered between runs
-	&"last_session": "",
+	# The projects open in tabs when last saved, opened or quit, and which was active, see
+	# FileController.restore_session
+	&"last_session": [],
+	&"last_session_tab": 0,
 	&"recent_files": [],
 	# Widths of the sidebar on the left and of the sprites and history panels on the right,
 	# 0 for as narrow as they can be, see SidebarSplit
@@ -101,6 +104,7 @@ const DEFAULTS := {
 ## Settings that are remembered rather than chosen, left alone by Reset
 const REMEMBERED: Array[StringName] = [
 	&"last_session",
+	&"last_session_tab",
 	&"recent_files",
 	&"sidebar_width",
 	&"panels_width",

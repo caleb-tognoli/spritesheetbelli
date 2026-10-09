@@ -82,13 +82,8 @@ func _make_row(leftover: Dictionary) -> Control:
 	recover.text = "Recover"
 	recover.tooltip_text = "Open it with its unsaved changes"
 	recover.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	recover.pressed.connect(
-		func() -> void:
-			recovery.files.confirm_unsaved_changes(
-				L10n.mark("Save changes to %s before recovering unsaved work?"),
-				recovery.recover.bind(leftover)
-			)
-	)
+	# In a tab of its own
+	recover.pressed.connect(func() -> void: recovery.recover(leftover))
 	row.add_child(recover)
 	var discard := Button.new()
 	discard.text = "Discard"

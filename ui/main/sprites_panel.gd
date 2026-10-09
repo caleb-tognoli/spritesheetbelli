@@ -111,7 +111,8 @@ func _ready() -> void:
 	tree.focus_exited.connect(_highlight_all)
 	# The selected frames are dragged, in the listed order, e.g. into an animation
 	tree.set_drag_forwarding(_get_drag_data_of_tree, Callable(), Callable())
-	Global.spritesheet.updated.connect(refresh)
+	Global.spritesheet_updated.connect(refresh)
+	Global.document_switched.connect(refresh.unbind(1))
 	visibility_changed.connect(refresh)
 	if preview:
 		preview.selection_changed.connect(_show_selection)

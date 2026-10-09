@@ -49,14 +49,14 @@ func setup(main_ui: Control) -> void:
 
 
 func _register_actions() -> void:
-	var sheet := Global.spritesheet
-	var grid := func() -> bool: return sheet.layout == Spritesheet.Layout.GRID
+	var grid := func() -> bool: return Global.spritesheet.layout == Spritesheet.Layout.GRID
 	for line: Array in [
 		[&"animation_from_row", L10n.mark("Animation from Row…"), false],
 		[&"animation_from_column", L10n.mark("Animation from Column…"), true],
 	]:
 		var column: bool = line[2]
-		var cells := func() -> Array[Vector2i]: return line_cells(sheet, target_cell(), column)
+		var cells := func() -> Array[Vector2i]:
+			return line_cells(Global.spritesheet, target_cell(), column)
 		Actions.add(
 			line[0],
 			line[1],
@@ -85,7 +85,7 @@ func _register_actions() -> void:
 		&"animation_labels",
 		L10n.mark("Animation Labels…"),
 		func() -> void: main.preview_area.label_controls.open_flyover(),
-		func() -> bool: return not sheet.animations.is_empty(),
+		func() -> bool: return not Global.spritesheet.animations.is_empty(),
 		ICONS[&"animation_labels"],
 		Callable(),
 		grid

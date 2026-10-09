@@ -13,6 +13,10 @@ const ICONS := {
 	&"open": preload("res://assets/icons/Load.svg"),
 	&"save": SAVE_ICON,
 	&"save_as": SAVE_ICON,
+	&"save_all": SAVE_ICON,
+	&"close_tab": preload("res://assets/icons/Close.svg"),
+	&"next_tab": preload("res://assets/icons/PageNext.svg"),
+	&"previous_tab": preload("res://assets/icons/PagePrevious.svg"),
 	&"export": preload("res://assets/icons/ExternalLink.svg"),
 	&"add_spritesheet": preload("res://assets/icons/SpriteSheet.svg"),
 	&"add_sprites": preload("res://assets/icons/Add.svg"),
@@ -72,6 +76,8 @@ const ICONS := {
 }
 ## What tooltips say after an action's name and shortcut, see [member AppAction.description]
 const DESCRIPTIONS := {  # L10n.mark
+	&"new": "A new tab, to open or add files in",
+	&"close_tab": "Asks to save its changes first",
 	&"export": "The spritesheet as an image, as sprites or for a game engine",
 	&"export_again": "Every export of the project, or else the Export dialog",
 	&"add_spritesheet": "Cut a spritesheet image into frames and add them",
@@ -85,7 +91,6 @@ const DESCRIPTIONS := {  # L10n.mark
 
 ## Registers the actions of [param main] (the main window), in menu order
 static func register(main: Control) -> void:
-	var sheet := Global.spritesheet
 	var files: FileController = main.files
 	var preview_area: PreviewArea = main.preview_area
 	var preview: SpritesheetPreview = main.preview
@@ -93,7 +98,9 @@ static func register(main: Control) -> void:
 	var status_bar: Control = main.status_bar
 	var history_panel: HistoryPanel = main.history_panel
 	var animation_panel: AnimationPanel = main.animation_panel
-	var has_frames := func() -> bool: return not sheet.is_empty()
+	var has_frames := func() -> bool: return not Global.spritesheet.is_empty()
+	var remove_frames := func(coords: Array[Vector2i]) -> void:
+		Global.spritesheet.remove_frames(coords)
 	var has_selection := preview.has_selection
 	var add := func(id: StringName, label: String, run: Callable, can_run := Callable()) -> void:
 		Actions.add(id, label, run, can_run, ICONS.get(id))
@@ -102,6 +109,21 @@ static func register(main: Control) -> void:
 	add.call(&"open", L10n.mark("Open…"), files.open_spritesheet)
 	add.call(&"save", L10n.mark("Save"), files.save, has_frames)
 	add.call(&"save_as", L10n.mark("Save As…"), files.save_as, has_frames)
+	add.call(
+		&"save_all",
+		L10n.mark("Save All"),
+		func() -> void: files.save_all(_unsaved()),
+		func() -> bool: return not _unsaved().is_empty()
+	)
+	add.call(
+		&"close_tab",
+		L10n.mark("Close Tab"),
+		func() -> void: files.close_tabs([Global.document] as Array[Document]),
+		func() -> bool: return Global.documents.size() > 1 or not Global.document.is_blank()
+	)
+	var several_tabs := func() -> bool: return Global.documents.size() > 1
+	add.call(&"next_tab", L10n.mark("Next Tab"), _switch_tab.bind(1), several_tabs)
+	add.call(&"previous_tab", L10n.mark("Previous Tab"), _switch_tab.bind(-1), several_tabs)
 	add.call(
 		&"export",
 		L10n.mark("Export…"),
@@ -129,14 +151,7 @@ static func register(main: Control) -> void:
 		L10n.mark("Settings…"),
 		func() -> void: (main.settings_window as SettingsWindow).popup_centered()
 	)
-	add.call(
-		&"quit",
-		L10n.mark("Quit"),
-		func() -> void:
-			files.confirm_unsaved_changes(
-				L10n.mark("Save changes to %s before quitting?"), main.get_tree().quit
-			)
-	)
+	add.call(&"quit", L10n.mark("Quit"), files.confirm_quit.bind(main.get_tree().quit))
 
 	add.call(&"select_all", L10n.mark("Select All"), preview_area.select_all.bind(true), has_frames)
 	add.call(
@@ -169,7 +184,7 @@ static func register(main: Control) -> void:
 	add.call(
 		&"delete_frames",
 		L10n.mark("Delete"),
-		main.edit_selection.bind(L10n.mark("Delete"), sheet.remove_frames),
+		main.edit_selection.bind(L10n.mark("Delete"), remove_frames),
 		has_selection
 	)
 
@@ -179,7 +194,7 @@ static func register(main: Control) -> void:
 		L10n.mark("Cut"),
 		func() -> void:
 			main.copy_selection()
-			main.edit_selection(L10n.mark("Cut"), sheet.remove_frames),
+			main.edit_selection(L10n.mark("Cut"), remove_frames),
 		has_selection
 	)
 	add.call(
@@ -245,7 +260,9 @@ static func register(main: Control) -> void:
 		L10n.mark("Insert Empty Cell"),
 		func() -> void:
 			var coord := preview.get_selected_coords()[0]
-			Global.document.perform(L10n.mark("Insert cell"), sheet.insert_empty_cell.bind(coord)),
+			Global.document.perform(
+				L10n.mark("Insert cell"), Global.spritesheet.insert_empty_cell.bind(coord)
+			),
 		has_selection
 	)
 	add.call(
@@ -258,7 +275,7 @@ static func register(main: Control) -> void:
 				L10n.mark("Remove cells"),
 				func() -> void:
 					for coord in coords:
-						sheet.remove_cell(coord)
+						Global.spritesheet.remove_cell(coord)
 			),
 		has_selection
 	)
@@ -271,7 +288,9 @@ static func register(main: Control) -> void:
 			var moved: Array[Vector2i] = []
 			for coord in preview.get_selected_coords():
 				moved.append(coord + Vector2i.DOWN if coord.y >= row else coord)
-			Global.document.perform(L10n.mark("Insert row"), sheet.insert_row.bind(row))
+			Global.document.perform(
+				L10n.mark("Insert row"), Global.spritesheet.insert_row.bind(row)
+			)
 			preview.set_selected_coords(moved),
 		has_selection
 	)
@@ -286,7 +305,7 @@ static func register(main: Control) -> void:
 				L10n.mark("Remove rows"),
 				func() -> void:
 					for row in rows:
-						sheet.remove_row(row)
+						Global.spritesheet.remove_row(row)
 			),
 		has_selection
 	)
@@ -303,13 +322,15 @@ static func register(main: Control) -> void:
 				var moved: Array[Vector2i] = []
 				for coord in preview.get_selected_coords():
 					moved.append(coord + Vector2i(0, by) if coord.y == row else coord)
-				Global.document.perform(L10n.mark("Move row"), sheet.move_row.bind(row, by))
+				Global.document.perform(
+					L10n.mark("Move row"), Global.spritesheet.move_row.bind(row, by)
+				)
 				preview.set_selected_coords(moved),
 			func() -> bool:
 				if preview.get_selected_coords().is_empty():
 					return false
 				var target: int = preview.get_selected_coords()[0].y + move[2]
-				return target >= 0 and target < sheet.grid_size.y
+				return target >= 0 and target < Global.spritesheet.grid_size.y
 		)
 
 	add.call(&"zoom_in", L10n.mark("Zoom In"), preview.zoom_by.bind(1.25))
@@ -364,9 +385,9 @@ static func register(main: Control) -> void:
 				L10n.mark("Clear guides"),
 				func() -> void:
 					for axis in 2:
-						sheet.set_guides(axis, PackedInt32Array())
+						Global.spritesheet.set_guides(axis, PackedInt32Array())
 			),
-		func() -> bool: return sheet.has_guides
+		func() -> bool: return Global.spritesheet.has_guides
 	)
 	add.call(
 		&"guides_color",
@@ -374,8 +395,18 @@ static func register(main: Control) -> void:
 		preview_area.pick_guides_color.bind(&"rulers_menu")
 	)
 
-	add.call(&"undo", L10n.mark("Undo"), Global.document.undo, Global.document.can_undo)
-	add.call(&"redo", L10n.mark("Redo"), Global.document.redo, Global.document.can_redo)
+	add.call(
+		&"undo",
+		L10n.mark("Undo"),
+		func() -> void: Global.document.undo(),
+		func() -> bool: return Global.document.can_undo()
+	)
+	add.call(
+		&"redo",
+		L10n.mark("Redo"),
+		func() -> void: Global.document.redo(),
+		func() -> bool: return Global.document.can_redo()
+	)
 
 	add.call(
 		&"about",
@@ -410,3 +441,19 @@ static func _selected_rows(preview: SpritesheetPreview) -> Array[int]:
 ## [param args] after the coordinates
 static func _edit_with(edit: Callable, args := []) -> Callable:
 	return func(coords: Array[Vector2i]) -> void: edit.callv([Global.spritesheet, coords] + args)
+
+
+## The open documents with unsaved changes, in the order of their tabs
+static func _unsaved() -> Array[Document]:
+	var unsaved: Array[Document] = []
+	for document in Global.documents:
+		if document.is_dirty and not document.spritesheet.is_empty():
+			unsaved.append(document)
+	return unsaved
+
+
+## Makes the tab [param by] tabs after the active one active, going round
+static func _switch_tab(by: int) -> void:
+	var documents := Global.documents
+	var index := documents.find(Global.document)
+	Global.switch_to(documents[posmod(index + by, documents.size())])

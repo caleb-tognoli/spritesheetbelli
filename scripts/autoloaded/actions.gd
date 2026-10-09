@@ -13,8 +13,9 @@ var _tooltips: Dictionary[int, Array] = {}
 
 
 func _ready() -> void:
-	Global.spritesheet.updated.connect(refresh)
-	Global.document.changed.connect(refresh)
+	Global.spritesheet_updated.connect(refresh)
+	Global.document_changed.connect(refresh)
+	Global.document_switched.connect(refresh.unbind(1))
 	# Toggles can follow settings
 	Settings.changed.connect(refresh.unbind(1))
 

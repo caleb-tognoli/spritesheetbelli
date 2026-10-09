@@ -44,7 +44,8 @@ func _ready() -> void:
 				Global.document.go_to_history(index)
 	)
 	close_button.pressed.connect(func() -> void: Settings.set_value(&"show_history", false))
-	Global.document.changed.connect(refresh)
+	Global.document_changed.connect(refresh)
+	Global.document_switched.connect(refresh.unbind(1))
 	visibility_changed.connect(refresh)
 	refresh()
 

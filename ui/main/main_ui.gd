@@ -78,8 +78,10 @@ var animation_commands := AnimationCommands.new()
 var start_screen := StartScreen.new()
 ## The linked folders, under Add Sprite(s)
 var linked_folders := LinkedFolders.new()
-## The sidebars, the canvas and the status bar, under the start screen while it shows
-var editor := VBoxContainer.new()
+## The tabs of the open documents, over the canvas
+var tabs := DocumentTabs.new()
+## The canvas and the docks under it, under the start screen while it shows
+var editor: Control
 var recovery := Recovery.new()
 ## The settings and export on the left, and the sprites and history on the right
 var sidebar_split: SidebarSplit
@@ -106,9 +108,9 @@ func _ready() -> void:
 	set_text_params(Global.spritesheet)
 	disable_if_empty()
 
-	Global.spritesheet.updated.connect(set_text_params.bind(Global.spritesheet))
-	Global.spritesheet.updated.connect(disable_if_empty)
-	Global.spritesheet.updated.connect(_prepare_scaled_images)
+	Global.spritesheet_updated.connect(func() -> void: set_text_params(Global.spritesheet))
+	Global.spritesheet_updated.connect(disable_if_empty)
+	Global.spritesheet_updated.connect(_prepare_scaled_images)
 	add_spritesheet_btn.pressed.connect(Actions.run.bind(&"add_spritesheet"))
 	add_sprites_btn.pressed.connect(Actions.run.bind(&"add_sprites"))
 	add_folder_btn.pressed.connect(Actions.run.bind(&"add_folder"))
@@ -209,6 +211,7 @@ func _ready() -> void:
 	Actions.set_tooltip(add_spritesheet_btn, &"add_spritesheet")
 	Actions.set_tooltip(add_sprites_btn, &"add_sprites")
 	Actions.set_tooltip(add_folder_btn, &"add_folder")
+	Actions.set_tooltip(tabs.new_button, &"new")
 	_update_export_button(ExportTarget.list(Global.spritesheet).size())
 	preview_area.set_context_actions(CONTEXT_ACTIONS, MainMenuBar.SUBMENUS)
 	var own_buttons := {
@@ -224,17 +227,17 @@ func _ready() -> void:
 	preview.selection_changed.connect(update_sheet_info)
 	# Another document starts with nothing selected or described; undo and redo keep the
 	# selection
-	Global.document.loaded.connect(preview.clear_selection.unbind(1))
-	Global.document.loaded.connect(preview.clear_hover.unbind(1))
+	Global.document_loaded.connect(preview.clear_selection.unbind(1))
+	Global.document_loaded.connect(preview.clear_hover.unbind(1))
 	# Show the whole sheet when frames first appear, e.g. after adding or opening
-	Global.spritesheet.updated.connect(
+	Global.spritesheet_updated.connect(
 		func() -> void:
 			if _was_empty and not Global.spritesheet.is_empty():
 				_queue_view({})
 			_was_empty = Global.spritesheet.is_empty()
 	)
 	# A new or opened sheet shows the view saved with it, or else the whole sheet
-	Global.document.loaded.connect(_queue_view)
+	Global.document_loaded.connect(_queue_view)
 	preview.move_requested.connect(
 		func(coords: Array[Vector2i], offset: Vector2i) -> void:
 			var targets: Array[Vector2i] = Global.document.perform(
@@ -285,19 +288,59 @@ func _ready() -> void:
 				FrameEdits.set_pivots_inside.bind(Global.spritesheet, coords, pivot)
 			)
 	)
+	# Last, so the panels show the other sheet before its view is put back
+	Global.document_switched.connect(_on_document_switched)
 
 
-## Puts the start screen over the editor and the status bar, which stay laid out under it
-## so that a sheet opened from it is shown where it was, fitting the canvas. Its text is
-## sized like the canvas's.
+## Shows the document of the tab that became active as it was left, see
+## [method get_view_state]
+func _on_document_switched(previous: Document) -> void:
+	if previous:
+		previous.view_state = get_view_state()
+	var sheet := Global.spritesheet
+	preview.spritesheet = sheet
+	preview.clear_selection()
+	preview.clear_hover()
+	_was_empty = sheet.is_empty()
+	set_text_params(sheet)
+	disable_if_empty()
+	var state := Global.document.view_state
+	animation_panel.refresh()
+	animation_panel.select_animation(state.get("animation", -1))
+	preview.set_selected_coords(state.get("selection", [] as Array[Vector2i]))
+	_queue_view(state.get("view", {}))
+	_prepare_scaled_images()
+	Actions.refresh()
+
+
+## Where the editor is in the active document: the preview's view (or the one about to be
+## shown, as when another tab is chosen right after opening), the selected frames and the
+## chosen animation, see [member Document.view_state]
+func get_view_state() -> Dictionary:
+	return {
+		"view": _queued_view if _queued_view != null else preview.get_view(),
+		"selection": preview.get_selected_coords(),
+		"animation": animation_panel.get_selected(),
+	}
+
+
+## Puts the tabs over the canvas, and the start screen over the canvas and the docks
+## under it, which stay laid out under it so that a sheet opened from it is shown where it
+## was, fitting the canvas. Its text is sized like the canvas's. The sidebars stay, empty.
 func _add_start_screen() -> void:
+	editor = %CanvasSplit
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 0)
+	editor.add_sibling(column)
+	preview_split.move_child(column, editor.get_index())
+	tabs.files = files
+	tabs.theme = preview_area.theme
+	column.add_child(tabs)
 	var body := MarginContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.add_sibling(body)
-	editor.add_theme_constant_override("separation", 0)
-	body.add_child(editor)
-	split.reparent(editor)
-	status_bar.reparent(editor)
+	column.add_child(body)
+	editor.reparent(body)
 	start_screen.theme = preview_area.theme
 	body.add_child(start_screen)
 	start_screen.visibility_changed.connect(_cover_editor)
@@ -305,15 +348,16 @@ func _add_start_screen() -> void:
 	_cover_editor()
 
 
-## While the start screen shows, the editor under it can't take focus
+## While the start screen shows, the editor under it and the sidebars can't take focus
 func _cover_editor() -> void:
 	var covered := start_screen.visible
-	editor.focus_behavior_recursive = (
-		Control.FOCUS_BEHAVIOR_DISABLED if covered else Control.FOCUS_BEHAVIOR_INHERITED
-	)
 	var focused := get_viewport().gui_get_focus_owner()
-	if covered and focused and editor.is_ancestor_of(focused):
-		focused.release_focus()
+	for part: Control in [editor, %Sidebar, layout_controller.side_split]:
+		part.focus_behavior_recursive = (
+			Control.FOCUS_BEHAVIOR_DISABLED if covered else Control.FOCUS_BEHAVIOR_INHERITED
+		)
+		if covered and focused and part.is_ancestor_of(focused):
+			focused.release_focus()
 	Actions.refresh()
 
 
@@ -406,7 +450,8 @@ func edit_selection_in_background(
 	op := {},
 	coords: Array[Vector2i] = [],
 ) -> void:
-	var sheet := Global.spritesheet
+	var document := Global.document
+	var sheet := document.spritesheet
 	if coords.is_empty():
 		coords = preview.get_selected_coords()
 	var sources: Array[Image] = []
@@ -418,7 +463,7 @@ func edit_selection_in_background(
 		func(done: int, total: int) -> void: Notify.progress(progress_text, done, total)
 	)
 	Notify.hide_progress()
-	Global.document.perform(
+	document.perform(
 		action_name,
 		func() -> void:
 			for i in coords.size():
@@ -687,9 +732,7 @@ func _notification(what: int) -> void:
 		# The names of pages in the packed layout
 		preview.queue_redraw()
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
-		files.confirm_unsaved_changes(
-			L10n.mark("Save changes to %s before closing?"), get_tree().quit
-		)
+		files.confirm_quit(get_tree().quit, L10n.mark("Save changes to %s before closing?"))
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		clipboard.on_focus_in()
 		source_watcher.on_focus_in()

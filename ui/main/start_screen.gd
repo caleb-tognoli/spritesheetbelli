@@ -136,8 +136,9 @@ func _ready() -> void:
 	card_menu.id_pressed.connect(_on_menu_item)
 	add_child(card_menu)
 
-	Global.document.changed.connect(update)
-	Global.spritesheet.updated.connect(update)
+	Global.document_changed.connect(update)
+	Global.spritesheet_updated.connect(update)
+	Global.document_switched.connect(update.unbind(1))
 	visibility_changed.connect(
 		func() -> void:
 			if visible:

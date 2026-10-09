@@ -120,6 +120,15 @@ func check() -> void:
 			_missing.erase(path)
 
 
+## Forgets what it saw changing, e.g. when another tab becomes active: its folders are
+## looked at from scratch
+func forget() -> void:
+	_pending.clear()
+	_settling.clear()
+	_missing.clear()
+	_deleted_paths.clear()
+
+
 ## Whether [method check] found changes to apply
 func has_changes() -> bool:
 	return not _pending.is_empty()
@@ -180,7 +189,9 @@ func apply() -> void:
 					% [count, ", ".join(folder_names)]
 				)
 			)
-	_ask_about_deleted(deleted)
+	# The deleted files are another tab's when it was chosen while the new ones were added
+	if Global.document == document:
+		_ask_about_deleted(deleted)
 
 
 ## Follows the linked [param folder] at [param new_folder] instead, as one undoable step,

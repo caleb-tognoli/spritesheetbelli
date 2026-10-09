@@ -25,7 +25,7 @@ const CATEGORIES := [  # L10n.mark
 			[&"watch_sources", "Reload changed files", &"check"],
 			[&"use_pivots", "Pivots", &"check"],
 			[&"confirm_grid_shrink", "Confirm grid shrinking", &"check"],
-			[&"restore_session", "Reopen last project", &"check"],
+			[&"restore_session", "Reopen last projects", &"check"],
 			[&"recovery_minutes", "Recovery copy every", &"spin", [0, 60, 1, "min"]],
 		]
 	],
@@ -100,7 +100,7 @@ const DETAILS := {  # L10n.mark
 		+ "frame at, like a character's feet"
 	),
 	&"confirm_grid_shrink": "Ask before making the grid smaller deletes sprites",
-	&"restore_session": "Open the last project again when the app starts",
+	&"restore_session": "Open the projects that were open in tabs again when the app starts",
 	&"recovery_minutes":
 	(
 		"How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes "

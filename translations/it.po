@@ -1849,9 +1849,6 @@ msgstr "Le nuove immagini in %s verranno aggiunte."
 msgid "Linked %s, paused: Reload changed files is off."
 msgstr "Collegamento a %s in pausa: Ricarica file modificati è disattivato."
 
-#: res://ui/main/file_controller.gd
-msgid "Save changes to %s before opening another file?"
-msgstr "Salvare le modifiche a %s prima di aprire un altro file?"
 
 #: res://ui/main/file_controller.gd
 msgid "Drop images, folders of images, a spritesheet data file or a project."
@@ -1894,9 +1891,6 @@ msgstr "Impossibile salvare %s (%s)."
 msgid "Saved %s"
 msgstr "Salvato %s"
 
-#: res://ui/main/file_controller.gd
-msgid "Save changes to %s before creating a new one?"
-msgstr "Salvare le modifiche a %s prima di crearne uno nuovo?"
 
 #: res://ui/main/file_controller.gd
 msgid "%s no longer exists."
@@ -2649,9 +2643,6 @@ msgstr "Recupera"
 msgid "Open it with its unsaved changes"
 msgstr "Aprilo con le modifiche non salvate"
 
-#: res://ui/main/recovery_notice.gd
-msgid "Save changes to %s before recovering unsaved work?"
-msgstr "Salvare le modifiche a %s prima di recuperare il lavoro non salvato?"
 
 #: res://ui/main/recovery_notice.gd
 msgid "Discard"
@@ -2976,8 +2967,8 @@ msgid "Confirm grid shrinking"
 msgstr "Conferma riduzione griglia"
 
 #: res://ui/settings/settings_window.gd
-msgid "Reopen last project"
-msgstr "Riapri l'ultimo progetto"
+msgid "Reopen last projects"
+msgstr "Riapri gli ultimi progetti"
 
 #: res://ui/settings/settings_window.gd
 msgid "Recovery copy every"
@@ -3128,8 +3119,8 @@ msgid "Ask before making the grid smaller deletes sprites"
 msgstr "Chiedi prima che rimpicciolire la griglia elimini degli sprite"
 
 #: res://ui/settings/settings_window.gd
-msgid "Open the last project again when the app starts"
-msgstr "Riapri l'ultimo progetto all'avvio dell'app"
+msgid "Open the projects that were open in tabs again when the app starts"
+msgstr "Riapri all'avvio dell'app i progetti che erano aperti nelle schede"
 
 #: res://ui/settings/settings_window.gd
 msgid "How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes unexpectedly. 0 turns it off."
@@ -3400,3 +3391,49 @@ msgstr "Clic per aggiungere una guida verticale"
 #: res://ui/spritesheet_preview/rulers.gd
 msgid "%d px"
 msgstr "%d px"
+
+#: res://ui/main/document_tabs.gd
+#: res://ui/main/main_actions.gd
+msgid "Close Tab"
+msgstr "Chiudi scheda"
+
+#: res://ui/main/document_tabs.gd
+msgid "Close Other Tabs"
+msgstr "Chiudi le altre schede"
+
+#: res://ui/main/document_tabs.gd
+msgid "Close Tabs to the Right"
+msgstr "Chiudi le schede a destra"
+
+#: res://ui/main/document_tabs.gd
+msgid "Close All Tabs"
+msgstr "Chiudi tutte le schede"
+
+#: res://ui/main/file_controller.gd
+#: res://ui/main/main_actions.gd
+msgid "Save All"
+msgstr "Salva tutto"
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to these projects before closing them?"
+msgstr "Salvare le modifiche a questi progetti prima di chiuderli?"
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to these projects before quitting?"
+msgstr "Salvare le modifiche a questi progetti prima di uscire?"
+
+#: res://ui/main/main_actions.gd
+msgid "A new tab, to open or add files in"
+msgstr "Una nuova scheda, in cui aprire o aggiungere file"
+
+#: res://ui/main/main_actions.gd
+msgid "Asks to save its changes first"
+msgstr "Chiede prima se salvarne le modifiche"
+
+#: res://ui/main/main_actions.gd
+msgid "Next Tab"
+msgstr "Scheda successiva"
+
+#: res://ui/main/main_actions.gd
+msgid "Previous Tab"
+msgstr "Scheda precedente"

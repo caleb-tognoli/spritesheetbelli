@@ -6,6 +6,18 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 ## Unreleased
 
 ### Added
+- Tabs: several projects open at once, one per tab over the canvas, each with its own
+  undo history, selection, zoom and chosen animation. Open, Open Recent and dropping
+  projects open them in a tab of their own, or show the tab of one that's open already;
+  New (Ctrl+N), the + after the tabs or a double click next to them opens an empty tab
+  with the start screen. Close Tab (Ctrl+W), the close button or a middle click closes
+  one, and a tab's menu closes the others, those to its right or all of them, or shows
+  or copies where its file is. Ctrl+Tab and Ctrl+Shift+Tab (or Ctrl+Page Down / Page Up)
+  go to the next and previous tab, tabs are reordered by dragging, and files with the
+  same name show their folder. File > Save All saves every unsaved project. Closing
+  several tabs or quitting with unsaved projects asks once, listing them. Reopen last
+  projects (in Settings) opens every project that was open again, with the same one
+  active, and each tab keeps its own crash recovery copy. Frames copied in one tab paste in another.
 - Opening files from the file manager: `.sbelli` projects open with spritesheetbelli by
   default, and images and spritesheet data files offer it in "Open with". Releases have a
   Windows installer, the macOS app declares the file types, and the Linux archive has an

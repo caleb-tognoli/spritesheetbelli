@@ -39,6 +39,7 @@ func _ready() -> void:
 	add_child(dialog)
 	add_child(folders)
 	dialog.chosen.connect(_on_chosen)
+	Global.document_switched.connect(_on_document_switched.unbind(1))
 
 
 func is_enabled() -> bool:
@@ -52,6 +53,16 @@ func on_focus_in() -> void:
 		folders.check()
 		apply_folders()
 		ask_next()
+
+
+## Another tab's files are looked at from scratch, asking about those that changed while
+## it was in the background
+func _on_document_switched() -> void:
+	changed_paths.clear()
+	_checked_times.clear()
+	_settling.clear()
+	folders.forget()
+	on_focus_in()
 
 
 ## Applies what changed in the linked folders, unless something is being asked or reloaded
@@ -162,7 +173,8 @@ func reload(paths: PackedStringArray, keep_edits: bool) -> void:
 ## Cuts the linked frames at [param coords] again from their files, keeping the edits
 ## made here or not, as one undoable step. Returns how many frames were reloaded.
 func reload_frames(coords: Array[Vector2i], keep_edits: bool, action_name: String) -> int:
-	var sheet := Global.spritesheet
+	var document := Global.document
+	var sheet := document.spritesheet
 	var sources: Array[Dictionary] = []
 	var old_images: Array[Image] = []
 	var keys: PackedStringArray = []
@@ -199,7 +211,7 @@ func reload_frames(coords: Array[Vector2i], keep_edits: bool, action_name: Strin
 		if not results[i].is_empty():
 			(results[i].image as Image).resource_name = old_images[i].resource_name
 			reloaded += 1
-	Global.document.perform(
+	document.perform(
 		action_name,
 		func() -> void:
 			for i in coords.size():

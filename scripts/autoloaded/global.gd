@@ -1,10 +1,28 @@
 extends Node
-## Holds the open document and keeps the window title in sync with it.
+## Holds the open documents, one per tab, and keeps the window title in sync with the
+## active one. Connect to the signals here rather than to a document's own, as they
+## follow whichever document is active.
 
 ## The theme was built again, see [method apply_theme]
 signal theme_applied
+## The active document's [signal Document.changed]
+signal document_changed
+## The active document's [signal Document.loaded]
+signal document_loaded(view: Dictionary)
+## The active document's spritesheet's [signal Spritesheet.updated]
+signal spritesheet_updated
+## The active document's spritesheet's [signal Spritesheet.layout_warning]
+signal layout_warning(message: String)
+## Another document became active, see [method switch_to]. [param previous] is null
+## when it was closed.
+signal document_switched(previous: Document)
+## Documents were opened, closed or reordered, see [member documents]
+signal documents_changed
 
-var document := Document.new()
+## The open documents, in the order of their tabs. Never empty.
+var documents: Array[Document] = []
+## The active document, the one the editor shows. Change it with [method switch_to].
+var document: Document
 ## True when started from the command line to pack or export, without the window
 var cli_mode := false
 ## The interface's scale, the [code]ui_scale[/code] setting or the screen's for "Automatic"
@@ -28,6 +46,11 @@ var spritesheet: Spritesheet:
 		return document.spritesheet
 
 
+func _init() -> void:
+	# Other autoloads connect to the document in their _ready, also on the command line
+	add_document(Document.new())
+
+
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	if Cli.is_cli(args):
@@ -39,7 +62,8 @@ func _ready() -> void:
 	L10n.load_user_translations()
 	L10n.apply(Settings.get_value(&"language"))
 	document.reset()
-	document.changed.connect(update_window_title)
+	document_changed.connect(update_window_title)
+	document_switched.connect(update_window_title.unbind(1))
 	update_window_title()
 	Settings.changed.connect(
 		func(key: StringName) -> void:
@@ -189,6 +213,77 @@ func _on_node_added(node: Node) -> void:
 		scale_window(window, ui_scale)
 	else:
 		window.ready.connect(func() -> void: scale_window(window, ui_scale), CONNECT_ONE_SHOT)
+
+
+## Adds [param doc] as a tab after the active one, or at the end when there's none yet,
+## and makes it active when [param activate]
+func add_document(doc: Document, activate := true) -> void:
+	documents.insert(documents.find(document) + 1 if document else documents.size(), doc)
+	documents_changed.emit()
+	if activate or document == null:
+		switch_to(doc)
+
+
+## Makes [param doc], one of [member documents], the active document
+func switch_to(doc: Document) -> void:
+	if doc == document or doc not in documents:
+		return
+	var previous := document
+	if previous:
+		previous.changed.disconnect(document_changed.emit)
+		previous.loaded.disconnect(document_loaded.emit)
+		previous.spritesheet.updated.disconnect(spritesheet_updated.emit)
+		previous.spritesheet.layout_warning.disconnect(layout_warning.emit)
+	document = doc
+	doc.changed.connect(document_changed.emit)
+	doc.loaded.connect(document_loaded.emit)
+	doc.spritesheet.updated.connect(spritesheet_updated.emit)
+	doc.spritesheet.layout_warning.connect(layout_warning.emit)
+	document_switched.emit(previous if previous in documents else null)
+
+
+## Closes the tab of [param doc] without asking anything. The last one isn't closed but
+## emptied, as after New. The tab after it becomes active, else the one before.
+func close_document(doc: Document) -> void:
+	var index := documents.find(doc)
+	if index < 0:
+		return
+	if documents.size() == 1:
+		doc.reset()
+		return
+	documents.remove_at(index)
+	if doc == document:
+		switch_to(documents[mini(index, documents.size() - 1)])
+	documents_changed.emit()
+
+
+## Puts the tab of [param doc] at [param index]
+func move_document(doc: Document, index: int) -> void:
+	var from := documents.find(doc)
+	if from < 0 or from == index:
+		return
+	documents.remove_at(from)
+	documents.insert(clampi(index, 0, documents.size()), doc)
+	documents_changed.emit()
+
+
+## The open document with [param path] as its project file, or null
+func find_document(path: String) -> Document:
+	if path.is_empty():
+		return null
+	for doc in documents:
+		if doc.path == path:
+			return doc
+	return null
+
+
+## Closes every tab but the active one, which is emptied, as at startup. For tests.
+func reset_documents() -> void:
+	for doc in documents.duplicate():
+		if doc != document:
+			documents.erase(doc)
+	documents_changed.emit()
+	document.reset()
 
 
 func update_window_title() -> void:

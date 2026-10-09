@@ -116,7 +116,8 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	Global.spritesheet.updated.connect(refresh)
+	Global.spritesheet_updated.connect(refresh)
+	Global.document_switched.connect(refresh.unbind(1))
 	Settings.changed.connect(
 		func(key: StringName) -> void:
 			if key == &"watch_sources":

@@ -10,23 +10,25 @@ extends RefCounted
 ## Gives the actions registered by [param main] (the main window) and its helpers their
 ## reasons
 static func apply(main: Control) -> void:
-	var sheet := Global.spritesheet
 	var preview: SpritesheetPreview = main.preview
 	var clipboard: FrameClipboard = main.clipboard
 	var panel: AnimationPanel = main.animation_panel
 	var commands: AnimationCommands = main.animation_commands
 	var selected := func() -> Array[Vector2i]: return preview.get_selected_coords()
-	var has_frames := func() -> bool: return not sheet.is_empty()
+	var has_frames := func() -> bool: return not Global.spritesheet.is_empty()
 	var has_selection := preview.has_selection
 	var one_selected := func() -> bool: return selected.call().size() == 1
 	var linked := func() -> bool: return not main.get_selected_linked_coords().is_empty()
 	var not_top := func() -> bool: return selected.call()[0].y > 0
-	var not_bottom := func() -> bool: return selected.call()[0].y < sheet.grid_size.y - 1
-	var has_animations := func() -> bool: return not sheet.animations.is_empty()
+	var not_bottom := func() -> bool:
+		return selected.call()[0].y < Global.spritesheet.grid_size.y - 1
+	var has_animations := func() -> bool: return not Global.spritesheet.animations.is_empty()
 	var has_current := func() -> bool: return panel.get_selected() >= 0
 	var has_target := func() -> bool: return commands.target_cell() != AnimationCommands.NO_CELL
 	var line_has_frames := func(column: bool) -> bool:
-		var cells := AnimationCommands.line_cells(sheet, commands.target_cell(), column)
+		var cells := AnimationCommands.line_cells(
+			Global.spritesheet, commands.target_cell(), column
+		)
 		return not cells.is_empty()
 
 	# Pairs of a condition and what's said when it doesn't hold, in order
@@ -37,8 +39,8 @@ static func apply(main: Control) -> void:
 	var chosen := animations + [has_current, L10n.mark("No animation chosen")]
 	var needs := {
 		&"paste": [clipboard.has_content, L10n.mark("Nothing copied")],
-		&"undo": [Global.document.can_undo, L10n.mark("Nothing to undo")],
-		&"redo": [Global.document.can_redo, L10n.mark("Nothing to redo")],
+		&"undo": [func() -> bool: return Global.document.can_undo(), L10n.mark("Nothing to undo")],
+		&"redo": [func() -> bool: return Global.document.can_redo(), L10n.mark("Nothing to redo")],
 		&"replace_image": selection + [one_selected, L10n.mark("Select a single frame")],
 		&"reload_source": selection + [linked, L10n.mark("Not loaded from a file")],
 		&"move_row_up": selection + [not_top, L10n.mark("Already the top row")],
@@ -51,7 +53,8 @@ static func apply(main: Control) -> void:
 		&"mirror_animation": chosen,
 		&"delete_animation": chosen,
 		&"animation_labels": animations,
-		&"clear_guides": [func() -> bool: return sheet.has_guides, L10n.mark("No guides yet")],
+		&"clear_guides":
+		[func() -> bool: return Global.spritesheet.has_guides, L10n.mark("No guides yet")],
 	}
 	for id: StringName in [
 		&"select_none",

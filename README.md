@@ -96,10 +96,14 @@ A small desktop tool made with Godot.</p>
   41) package and export with the Unity data file into your project's Assets folder, next
   to the PNG: Unity cuts it into one sprite per frame, named after the frames, with their
   pivots, and cuts it again whenever you export over it.
-- **Start screen.** With nothing open, the canvas shows your recent projects and sheets
-  with thumbnails, to open with a click, and buttons to open a file or add sprites.
-- **Crash recovery.** Unsaved work is copied every few minutes and offered on the start
-  screen after a crash.
+- **Tabs.** Every project opens in a tab of its own over the canvas, with its own undo
+  history, selection and view: switch with a click or Ctrl+Tab, drag tabs to reorder
+  them, and copy frames from one project to paste them in another. With Reopen last
+  projects on in Settings, they all open again at the next start.
+- **Start screen.** A new tab shows your recent projects and sheets with thumbnails, to
+  open with a click, and buttons to open a file or add sprites.
+- **Crash recovery.** Unsaved work in every tab is copied every few minutes and offered
+  on the start screen after a crash.
 - **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
   size and the view you left them at.
 - English and Italian. Light and dark themes, or the system's as it changes, an accent

@@ -16,7 +16,7 @@ func after_each() -> void:
 	await get_tree().process_frame
 	Global.document.reset()
 	Settings.reset_to_defaults()
-	Settings.set_value(&"last_session", "")
+	Settings.set_value(&"last_session", [])
 	Recovery.is_process_running = OS.is_process_running
 	remove_dir(dir)
 	if DirAccess.dir_exists_absolute(Recovery.folder):
@@ -46,9 +46,10 @@ func add_frames(count: int, action_name := "Add sprites") -> void:
 	Global.document.perform(action_name, Global.spritesheet.add_frames.bind(imgs))
 
 
-## A copy left by a run that's no longer running: process 0, with one blue frame
+## A copy left by a run that's no longer running: process 0, with one blue frame. Returns
+## the copy's folder, in the run's.
 func leave_copy(path: String, doc_name: String, time := 1000, session := "0_1_0") -> String:
-	var left := Recovery.folder.path_join(session)
+	var left := Recovery.folder.path_join(session).path_join("1")
 	var sheet := Spritesheet.new()
 	sheet.add_frames([make_image(Color.BLUE)] as Array[Image])
 	Recovery._write(sheet, {}, {"path": path, "name": doc_name, "time": time}, left)
@@ -56,7 +57,7 @@ func leave_copy(path: String, doc_name: String, time := 1000, session := "0_1_0"
 
 
 func read_copy() -> Dictionary:
-	return Recovery.read_info(recovery.session_dir)
+	return Recovery.read_info(recovery.copy_dir())
 
 
 func test_copied_every_few_minutes_when_unsaved() -> void:
@@ -75,15 +76,15 @@ func test_copied_every_few_minutes_when_unsaved() -> void:
 	assert_eq(info.path, "", "never saved")
 	assert_eq(info.name, "")
 	assert_true(absi(info.time - int(Time.get_unix_time_from_system())) < 60, "its time")
-	var loaded := ProjectFile.load(recovery.session_dir.path_join(Recovery.COPY_FILE))
+	var loaded := ProjectFile.load(recovery.copy_dir().path_join(Recovery.COPY_FILE))
 	assert_eq(loaded.state.frames.size(), 1, "the sheet as it is")
 	assert_false(
-		FileAccess.file_exists(recovery.session_dir.path_join(Recovery.COPY_FILE + ".tmp")),
+		FileAccess.file_exists(recovery.copy_dir().path_join(Recovery.COPY_FILE + ".tmp")),
 		"no temporary file left"
 	)
 
 	# Unchanged since: not written again
-	DirAccess.remove_absolute(recovery.session_dir.path_join(Recovery.COPY_FILE))
+	DirAccess.remove_absolute(recovery.copy_dir().path_join(Recovery.COPY_FILE))
 	recovery.timer.timeout.emit()
 	recovery.wait()
 	assert_false(recovery.has_copy(), "nothing new to copy")
@@ -108,7 +109,7 @@ func test_copied_right_after_big_changes() -> void:
 	assert_true(recovery.has_copy(), "written without waiting for the timer")
 
 	# Small changes add up
-	DirAccess.remove_absolute(recovery.session_dir.path_join(Recovery.COPY_FILE))
+	DirAccess.remove_absolute(recovery.copy_dir().path_join(Recovery.COPY_FILE))
 	for i in Recovery.BIG_CHANGE_FRAMES - 1:
 		add_frames(1)
 	await get_tree().process_frame
@@ -171,7 +172,7 @@ func test_clean_exit_deletes_the_copy() -> void:
 func test_crash_offers_the_copy() -> void:
 	var project := dir.path_join("walk.sbelli")
 	Settings.set_value(&"restore_session", true)
-	Settings.set_value(&"last_session", project)
+	Settings.set_value(&"last_session", [project])
 	var sheet := Spritesheet.new()
 	sheet.add_frames([make_image(Color.RED)] as Array[Image])
 	ProjectFile.save(sheet, project)
@@ -263,9 +264,9 @@ func test_a_reused_process_id_doesnt_hide_the_copy() -> void:
 	var now := int(Time.get_unix_time_from_system())
 	var never_said := leave_copy("", "never said", 1000, "4242_1_0")
 	var long_ago := leave_copy("", "long ago", 2000, "4242_2_0")
-	Recovery.write_alive(long_ago, now - Recovery.ALIVE_TIMEOUT)
+	Recovery.write_alive(long_ago.get_base_dir(), now - Recovery.ALIVE_TIMEOUT)
 	var lately := leave_copy("", "lately", 3000, "4242_3_0")
-	Recovery.write_alive(lately, now - 90)
+	Recovery.write_alive(lately.get_base_dir(), now - 90)
 	recovery.find_leftovers()
 	var names := recovery.leftovers.map(func(leftover: Dictionary) -> String: return leftover.name)
 	assert_eq(names, ["long ago", "never said"], "another program has the ID")
@@ -293,9 +294,13 @@ func test_a_run_says_its_running() -> void:
 	# Seen from another process, as a live run, whose ID is running
 	Recovery.is_process_running = func(_pid: int) -> bool: return true
 	var other := recovery.session_dir.get_base_dir().path_join("4242_1_0")
-	DirAccess.make_dir_recursive_absolute(other)
+	DirAccess.make_dir_recursive_absolute(other.path_join("1"))
 	for file in DirAccess.get_files_at(recovery.session_dir):
 		DirAccess.copy_absolute(recovery.session_dir.path_join(file), other.path_join(file))
+	for file in DirAccess.get_files_at(recovery.copy_dir()):
+		DirAccess.copy_absolute(
+			recovery.copy_dir().path_join(file), other.path_join("1").path_join(file)
+		)
 	recovery.find_leftovers()
 	assert_true(recovery.leftovers.is_empty(), "not offered")
 

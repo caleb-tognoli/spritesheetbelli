@@ -58,7 +58,7 @@ func locate_button_of(card: Button) -> Button:
 
 func test_shown_while_nothing_is_open() -> void:
 	assert_true(start.visible, "a new document")
-	assert_eq(start.get_parent(), main.editor.get_parent(), "over the editor")
+	assert_eq(start.get_parent(), main.editor.get_parent(), "over the canvas")
 	Global.document.perform(
 		"Add sprites", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
 	)
@@ -306,12 +306,16 @@ func test_web() -> void:
 
 func test_covers_the_editor() -> void:
 	await get_tree().process_frame
-	var status_bar: Control = main.status_bar
-	assert_true(start.get_global_rect().encloses(main.split.get_global_rect()))
-	assert_true(
-		start.get_global_rect().encloses(status_bar.get_global_rect()), "and the status bar"
-	)
+	var tabs: DocumentTabs = main.tabs
+	assert_true(start.get_global_rect().encloses(main.editor.get_global_rect()), "the canvas")
+	assert_false(start.get_global_rect().intersects(tabs.get_global_rect()), "under the tabs")
+	assert_false(start.get_global_rect().intersects(main.sidebar_split.sidebar.get_global_rect()))
 	assert_eq(main.editor.focus_behavior_recursive, Control.FOCUS_BEHAVIOR_DISABLED)
+	assert_eq(
+		(main.get_node("%Sidebar") as Control).focus_behavior_recursive,
+		Control.FOCUS_BEHAVIOR_DISABLED,
+		"nor the sidebar"
+	)
 	assert_false(Actions.is_enabled(&"toggle_history"), "the editor's actions can't run")
 	assert_eq(Actions.get_disabled_reason(&"toggle_history"), "Nothing open")
 	assert_true(Actions.is_enabled(&"open"))
@@ -327,10 +331,12 @@ func test_covers_the_editor() -> void:
 func test_as_wide_as_five_cards_at_most() -> void:
 	for i in 7:
 		Settings.add_recent_file(dir.path_join("%d.png" % i))
+	# It covers the canvas only, between the sidebars
+	main.size.x = 2000
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var width := StartScreen.MAX_COLUMNS * StartScreen.CARD_SIZE.x + 4 * StartScreen.CARD_GAP
-	assert_true(main.size.x > width + 100, "room for more")
+	assert_true(start.size.x > width + 100, "room for more")
 	assert_eq(start.recent_list.size.x, width)
 	assert_eq(start.drop_zone.size.x, width, "lined up with the cards")
 	var sixth := start.cards[dir.path_join("1.png")]

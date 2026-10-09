@@ -70,6 +70,8 @@ func _ready() -> void:
 			get_viewport().update_mouse_cursor_state()
 			await test.call(method_name)
 			await test.after_each()
+			# Tabs a test opened don't stay open for the next one
+			Global.reset_documents()
 			test_count += 1
 
 			if test.failures.is_empty():

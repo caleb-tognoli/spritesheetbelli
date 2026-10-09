@@ -19,6 +19,7 @@ msgid "Not available now"
 msgstr ""
 
 #: res://scripts/autoloaded/global.gd
+#: res://ui/main/document_tabs.gd
 #: res://ui/main/recovery.gd
 #: res://ui/main/recovery_notice.gd
 msgid "Untitled"
@@ -1341,6 +1342,35 @@ msgid_plural "In all %d frames"
 msgstr[0] ""
 msgstr[1] ""
 
+#: res://ui/main/document_tabs.gd
+#: res://ui/main/main_actions.gd
+msgid "Close Tab"
+msgstr ""
+
+#: res://ui/main/document_tabs.gd
+msgid "Close Other Tabs"
+msgstr ""
+
+#: res://ui/main/document_tabs.gd
+msgid "Close Tabs to the Right"
+msgstr ""
+
+#: res://ui/main/document_tabs.gd
+msgid "Close All Tabs"
+msgstr ""
+
+#: res://ui/main/document_tabs.gd
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Show in File Manager"
+msgstr ""
+
+#: res://ui/main/document_tabs.gd
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Copy Path"
+msgstr ""
+
 #: res://ui/main/export_controller.gd
 msgid "Pick where to export %s."
 msgstr ""
@@ -1842,10 +1872,6 @@ msgid "Linked %s, paused: Reload changed files is off."
 msgstr ""
 
 #: res://ui/main/file_controller.gd
-msgid "Save changes to %s before opening another file?"
-msgstr ""
-
-#: res://ui/main/file_controller.gd
 msgid "Drop images, folders of images, a spritesheet data file or a project."
 msgstr ""
 
@@ -1875,6 +1901,28 @@ msgid "the spritesheet"
 msgstr ""
 
 #: res://ui/main/file_controller.gd
+#: res://ui/main/main_actions.gd
+msgid "Save All"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+#: res://ui/main/main_ui.gd
+msgid "Save changes to %s before closing?"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to these projects before closing them?"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to %s before quitting?"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
+msgid "Save changes to these projects before quitting?"
+msgstr ""
+
+#: res://ui/main/file_controller.gd
 msgid "Saving"
 msgstr ""
 
@@ -1884,10 +1932,6 @@ msgstr ""
 
 #: res://ui/main/file_controller.gd
 msgid "Saved %s"
-msgstr ""
-
-#: res://ui/main/file_controller.gd
-msgid "Save changes to %s before creating a new one?"
 msgstr ""
 
 #: res://ui/main/file_controller.gd
@@ -2069,16 +2113,6 @@ msgstr ""
 
 #: res://ui/main/linked_folders.gd
 #: res://ui/main/start_screen.gd
-msgid "Show in File Manager"
-msgstr ""
-
-#: res://ui/main/linked_folders.gd
-#: res://ui/main/start_screen.gd
-msgid "Copy Path"
-msgstr ""
-
-#: res://ui/main/linked_folders.gd
-#: res://ui/main/start_screen.gd
 msgid "Locate…"
 msgstr ""
 
@@ -2208,6 +2242,14 @@ msgid "Lanczos"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+msgid "A new tab, to open or add files in"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
+msgid "Asks to save its changes first"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
 msgid "The spritesheet as an image, as sprites or for a game engine"
 msgstr ""
 
@@ -2250,6 +2292,14 @@ msgid "Save As…"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+msgid "Next Tab"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
+msgid "Previous Tab"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
 msgid "Export Again"
 msgstr ""
 
@@ -2271,10 +2321,6 @@ msgstr ""
 
 #: res://ui/main/main_actions.gd
 msgid "Quit"
-msgstr ""
-
-#: res://ui/main/main_actions.gd
-msgid "Save changes to %s before quitting?"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
@@ -2563,10 +2609,6 @@ msgstr[1] ""
 msgid "Resize"
 msgstr ""
 
-#: res://ui/main/main_ui.gd
-msgid "Save changes to %s before closing?"
-msgstr ""
-
 #: res://ui/main/menu_bar.gd
 msgid "Transform"
 msgstr ""
@@ -2641,10 +2683,6 @@ msgstr ""
 
 #: res://ui/main/recovery_notice.gd
 msgid "Open it with its unsaved changes"
-msgstr ""
-
-#: res://ui/main/recovery_notice.gd
-msgid "Save changes to %s before recovering unsaved work?"
 msgstr ""
 
 #: res://ui/main/recovery_notice.gd
@@ -2970,7 +3008,7 @@ msgid "Confirm grid shrinking"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
-msgid "Reopen last project"
+msgid "Reopen last projects"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
@@ -3122,7 +3160,7 @@ msgid "Ask before making the grid smaller deletes sprites"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
-msgid "Open the last project again when the app starts"
+msgid "Open the projects that were open in tabs again when the app starts"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd

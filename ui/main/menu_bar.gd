@@ -65,6 +65,7 @@ const MENUS := {  # L10n.mark
 		&"",
 		&"save",
 		&"save_as",
+		&"save_all",
 		&"",
 		&"export",
 		&"export_again",
@@ -73,6 +74,7 @@ const MENUS := {  # L10n.mark
 		&"add_sprites",
 		&"add_folder",
 		&"",
+		&"close_tab",
 		&"settings",
 		&"quit",
 	],
@@ -145,7 +147,10 @@ const MENUS := {  # L10n.mark
 		&"guides_color",
 		&"toggle_sprites",
 		&"toggle_history",
-		&"toggle_status_bar"
+		&"toggle_status_bar",
+		&"",
+		&"next_tab",
+		&"previous_tab",
 	],
 	"Help": [&"command_palette", &"show_shortcuts", &"", &"about"],
 }

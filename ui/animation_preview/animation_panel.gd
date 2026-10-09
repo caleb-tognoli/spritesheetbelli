@@ -123,11 +123,11 @@ func setup(sheet_preview: SpritesheetPreview) -> void:
 	columns.drag_ended.connect(_on_preview_width_dragged)
 	columns.get_drag_area_control().gui_input.connect(_on_preview_handle_input)
 	list_sidebar = SidebarSplit.new(list_split, _list_column, &"animation_list_width")
-	Global.spritesheet.updated.connect(refresh)
+	Global.spritesheet_updated.connect(refresh)
 	preview.selection_changed.connect(_refresh_selection_title)
 	columns.resized.connect(_apply_preview_width)
 	# Another sheet starts with its frames playing
-	Global.document.loaded.connect(func(_view: Dictionary) -> void: select_animation(-1))
+	Global.document_loaded.connect(func(_view: Dictionary) -> void: select_animation(-1))
 	set_expanded(Settings.get_value(&"animation_panel") == "open", false)
 	refresh()
 

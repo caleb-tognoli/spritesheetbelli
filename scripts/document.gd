@@ -43,6 +43,10 @@ var unwatched_paths: PackedStringArray = []
 ## The names of the images each linked folder had when last looked at, to tell new and
 ## deleted ones, see [FolderWatcher]. Not part of the undo history.
 var folder_files: Dictionary[String, PackedStringArray] = {}
+## Where the editor was in this document when another tab became active, to show it the
+## same way when it's back, see [code]get_view_state[/code] in [code]main_ui.gd[/code].
+## Empty until then.
+var view_state := {}
 var undo_redo := UndoRedo.new()
 var _saved_version := undo_redo.get_version()
 ## The export choices when last saved or opened. They aren't undo steps, so the version of
