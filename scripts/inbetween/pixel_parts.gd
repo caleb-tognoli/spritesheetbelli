@@ -75,7 +75,7 @@ static func find(
 ## are, 0 to 1020
 static func distance(first: int, second: int) -> int:
 	var apart := 0
-	for shift in [24, 16, 8, 0]:
+	for shift: int in [24, 16, 8, 0]:
 		apart += absi((first >> shift & 255) - (second >> shift & 255))
 	return apart
 

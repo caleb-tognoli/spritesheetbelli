@@ -279,7 +279,7 @@ func find_document(path: String) -> Document:
 
 ## Closes every tab but the active one, which is emptied, as at startup. For tests.
 func reset_documents() -> void:
-	for doc in documents.duplicate():
+	for doc: Document in documents.duplicate():
 		if doc != document:
 			documents.erase(doc)
 	documents_changed.emit()

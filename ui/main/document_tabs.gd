@@ -121,7 +121,9 @@ static func get_titles(documents: Array[Document]) -> PackedStringArray:
 	var names: PackedStringArray = []
 	for document in documents:
 		var display_name := document.get_display_name()
-		names.append(display_name if display_name else TranslationServer.translate("Untitled"))
+		if not display_name:
+			display_name = TranslationServer.translate("Untitled")
+		names.append(display_name)
 	var titles := names.duplicate()
 	for i in documents.size():
 		var path := documents[i].get_name_path()

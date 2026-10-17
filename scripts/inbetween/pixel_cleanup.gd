@@ -192,8 +192,8 @@ static func _shown(data: PackedByteArray, least_alpha: int) -> PackedByteArray:
 static func _shape_at(mask: PackedByteArray, p: int, width: int) -> int:
 	var bits := 0
 	var bit := 0
-	for dy in [-width, 0, width]:
-		for dx in [-1, 0, 1]:
+	for dy: int in [-width, 0, width]:
+		for dx: int in [-1, 0, 1]:
 			if mask[p + dy + dx] == 1:
 				bits |= 1 << bit
 			bit += 1

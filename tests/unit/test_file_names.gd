@@ -129,7 +129,7 @@ func test_dialogs_get_a_name_and_keep_their_folder() -> void:
 
 	add_linked([folder.path_join("walk_0.png")])
 	var dialog: ExportDialog = main.export_dialog
-	dialog.popup_centered()
+	dialog.open()
 	dialog.select_type(ExportOptions.Target.SPRITES)
 	var sprites_dialog := dialog.output.file_dialog
 	sprites_dialog.current_dir = "C:/"

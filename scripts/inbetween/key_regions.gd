@@ -48,20 +48,22 @@ static func of(
 	data: PackedByteArray, canvas_width: int, split_colors: PackedInt32Array
 ) -> KeyRegions:
 	var found := PixelParts.find(split_colors, canvas_width, PixelParts.sides_of(canvas_width))
-	var labels := found.part_of
-	var count := found.parts.size()
-	var colors := _average_colors(data, labels, count)
+	var part_of := found.part_of
+	var part_count := found.parts.size()
+	var part_colors := _average_colors(data, part_of, part_count)
 	var sizes := PackedInt32Array()
-	sizes.resize(count)
-	for p in labels.size():
-		if labels[p] >= 0:
-			sizes[labels[p]] += 1
+	sizes.resize(part_count)
+	for p in part_of.size():
+		if part_of[p] >= 0:
+			sizes[part_of[p]] += 1
 	var shown := 0
 	for size in sizes:
 		shown += size
-	_merge_small(labels, canvas_width, sizes, colors, maxi(MIN_PIXELS, int(shown * MIN_SHARE)))
-	_dissolve_lines(labels, canvas_width, data.size() / 4 / canvas_width, colors)
-	return from_labels(data, canvas_width, _renumbered(labels))
+	_merge_small(
+		part_of, canvas_width, sizes, part_colors, maxi(MIN_PIXELS, int(shown * MIN_SHARE))
+	)
+	_dissolve_lines(part_of, canvas_width, data.size() / 4 / canvas_width, part_colors)
+	return from_labels(data, canvas_width, _renumbered(part_of))
 
 
 ## [param a_data] and [param b_data]'s colours (see [method PixelCanvas.colors]) to split
@@ -73,10 +75,10 @@ static func split_colors_of(
 	var a_colors := PixelCanvas.colors(a_data)
 	var b_colors := PixelCanvas.colors(b_data)
 	# Only fully shown pixels count as the sprite's
-	for colors in [a_colors, b_colors]:
-		for p in colors.size():
-			if colors[p] != 0 and (colors[p] & 255) < 128:
-				colors[p] = 0
+	for key_colors: PackedInt32Array in [a_colors, b_colors]:
+		for p in key_colors.size():
+			if key_colors[p] != 0 and (key_colors[p] & 255) < 128:
+				key_colors[p] = 0
 	if PixelPalette.count(a_colors + b_colors, MANY_COLORS) <= MANY_COLORS:
 		return [a_colors, b_colors]
 	return PixelPalette.reduce(a_colors, b_colors, PALETTE)
@@ -91,26 +93,26 @@ static func from_labels(
 	regions.width = canvas_width
 	regions.height = region_labels.size() / canvas_width
 	regions.labels = region_labels
-	var count := 0
+	var region_count := 0
 	for label in region_labels:
-		count = maxi(count, label + 1)
-	for r in count:
+		region_count = maxi(region_count, label + 1)
+	for r in region_count:
 		regions.pixels.append(PackedInt32Array())
 	for p in region_labels.size():
 		if region_labels[p] >= 0:
 			regions.pixels[region_labels[p]].append(p)
-	regions.centers.resize(count)
-	regions.colors = _average_colors(data, region_labels, count)
-	regions.axes.resize(count)
-	regions.elongations.resize(count)
-	for r in count:
+	regions.centers.resize(region_count)
+	regions.colors = _average_colors(data, region_labels, region_count)
+	regions.axes.resize(region_count)
+	regions.elongations.resize(region_count)
+	for r in region_count:
 		regions._shape(r)
 	# Borders: midway between pixels of two regions side by side
 	for p in region_labels.size():
 		var label := region_labels[p]
 		if label < 0:
 			continue
-		for side in [1, canvas_width]:
+		for side: int in [1, canvas_width]:
 			var q: int = p + side
 			if q >= region_labels.size():
 				continue
@@ -124,12 +126,12 @@ static func from_labels(
 	return regions
 
 
-## The average colour, red, green and blue from 0 to 1, of [param pixels] of [param data]
-static func mean_color(data: PackedByteArray, pixels: PackedInt32Array) -> Vector3:
+## The average colour, red, green and blue from 0 to 1, of [param region_pixels] of [param data]
+static func mean_color(data: PackedByteArray, region_pixels: PackedInt32Array) -> Vector3:
 	var sum := Vector3.ZERO
-	for p in pixels:
+	for p in region_pixels:
 		sum += Vector3(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) / 255.0
-	return sum / maxi(pixels.size(), 1)
+	return sum / maxi(region_pixels.size(), 1)
 
 
 ## The middle of canvas pixel [param p]
@@ -178,18 +180,18 @@ func _shape(r: int) -> void:
 
 
 static func _average_colors(
-	data: PackedByteArray, region_labels: PackedInt32Array, count: int
+	data: PackedByteArray, region_labels: PackedInt32Array, region_count: int
 ) -> PackedVector3Array:
 	var sums := PackedVector3Array()
-	sums.resize(count)
+	sums.resize(region_count)
 	var sizes := PackedInt32Array()
-	sizes.resize(count)
+	sizes.resize(region_count)
 	for p in region_labels.size():
 		var r := region_labels[p]
 		if r >= 0:
 			sums[r] += Vector3(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) / 255.0
 			sizes[r] += 1
-	for r in count:
+	for r in region_count:
 		if sizes[r] > 0:
 			sums[r] /= sizes[r]
 	return sums
@@ -201,7 +203,7 @@ static func _merge_small(
 	region_labels: PackedInt32Array,
 	canvas_width: int,
 	sizes: PackedInt32Array,
-	colors: PackedVector3Array,
+	averages: PackedVector3Array,
 	least: int
 ) -> void:
 	var members: Array[PackedInt32Array] = []
@@ -243,7 +245,7 @@ static func _merge_small(
 			var best := -1
 			var best_score := INF
 			for other: int in touching:
-				var apart := colors[other] - colors[r]
+				var apart := averages[other] - averages[r]
 				var score: float = (
 					absf(apart.x) + absf(apart.y) + absf(apart.z) - 0.02 * touching[other]
 				)
@@ -254,8 +256,8 @@ static func _merge_small(
 				region_labels[p] = best
 			members[best].append_array(members[r])
 			members[r] = PackedInt32Array()
-			colors[best] = (
-				(colors[best] * sizes[best] + colors[r] * sizes[r]) / (sizes[best] + sizes[r])
+			averages[best] = (
+				(averages[best] * sizes[best] + averages[r] * sizes[r]) / (sizes[best] + sizes[r])
 			)
 			sizes[best] += sizes[r]
 			sizes[r] = 0
@@ -268,17 +270,17 @@ static func _dissolve_lines(
 	region_labels: PackedInt32Array,
 	canvas_width: int,
 	canvas_height: int,
-	colors: PackedVector3Array
+	averages: PackedVector3Array
 ) -> void:
-	var count := colors.size()
+	var region_count := averages.size()
 	var sizes := PackedInt32Array()
-	sizes.resize(count)
+	sizes.resize(region_count)
 	var in_squares := PackedInt32Array()
-	in_squares.resize(count)
+	in_squares.resize(region_count)
 	var touching_light := PackedFloat32Array()
-	touching_light.resize(count)
+	touching_light.resize(region_count)
 	var touching := PackedInt32Array()
-	touching.resize(count)
+	touching.resize(region_count)
 	var size := region_labels.size()
 	var square := PackedByteArray()
 	square.resize(size)
@@ -292,7 +294,7 @@ static func _dissolve_lines(
 			and region_labels[p + canvas_width] == r
 			and region_labels[p + canvas_width + 1] == r
 		):
-			for q in [p, p + 1, p + canvas_width, p + canvas_width + 1]:
+			for q: int in [p, p + 1, p + canvas_width, p + canvas_width + 1]:
 				square[q] = 1
 	var sides := PixelParts.sides_of(canvas_width)
 	for p in size:
@@ -307,16 +309,16 @@ static func _dissolve_lines(
 				continue
 			var other := region_labels[q]
 			if other >= 0 and other != r:
-				var c := colors[other]
+				var c := averages[other]
 				touching_light[r] += c.x + c.y + c.z
 				touching[r] += 1
 	var lines := PackedByteArray()
-	lines.resize(count)
+	lines.resize(region_count)
 	var any := false
-	for r in count:
+	for r in region_count:
 		if sizes[r] == 0 or touching[r] == 0 or in_squares[r] > sizes[r] * LINE_SQUARES:
 			continue
-		var light := colors[r].x + colors[r].y + colors[r].z
+		var light := averages[r].x + averages[r].y + averages[r].z
 		if light <= touching_light[r] / touching[r] - LINE_DARKER:
 			lines[r] = 1
 			any = true

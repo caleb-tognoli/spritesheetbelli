@@ -106,13 +106,13 @@ static func find(
 	var size := float(maxi(1, maxi(a_shown.merge(b_shown).size.x, a_shown.merge(b_shown).size.y)))
 	morph.shift = Vector2(whole_motion)
 	# Big sprites are worked out smaller, then drawn at their size
-	var zoom := maxi(1, ceili(size / ANALYSIS_SIZE))
-	morph.zoom = zoom
-	var small_width := ceili(float(width) / zoom)
-	var small_height := ceili(float(height) / zoom)
-	var a_small := _shrunk(a_data, width, height, zoom)
-	var b_small := _shrunk(b_data, width, height, zoom)
-	var small_size := size / zoom
+	var shrink := maxi(1, ceili(size / ANALYSIS_SIZE))
+	morph.zoom = shrink
+	var small_width := ceili(float(width) / shrink)
+	var small_height := ceili(float(height) / shrink)
+	var a_small := _shrunk(a_data, width, height, shrink)
+	var b_small := _shrunk(b_data, width, height, shrink)
+	var small_size := size / shrink
 	var depth := clampf(roundf(small_size / 12.0), 2.0, 12.0)
 	var a_features := KeyFeatures.of(a_small, small_width, small_height, depth)
 	var b_features := KeyFeatures.of(b_small, small_width, small_height, depth)
@@ -120,19 +120,19 @@ static func find(
 	var painted := (
 		split[0] != PixelCanvas.colors(a_small)
 		or split[1] != PixelCanvas.colors(b_small)
-		or zoom > 1
+		or shrink > 1
 	)
 	var a_regions := KeyRegions.of(a_small, small_width, split[0])
 	var b_regions := KeyRegions.of(b_small, small_width, split[1])
 	progress.total += a_regions.count() + b_regions.count() + 2 * KeyMesh.steps()
-	var shift := morph.shift / zoom
+	var small_shift := morph.shift / shrink
 	var forward := RegionMotions.find(
-		a_regions, a_features, b_regions, b_features, shift, small_size, progress
+		a_regions, a_features, b_regions, b_features, small_shift, small_size, progress
 	)
 	if progress.cancelled:
 		return null
 	var backward := RegionMotions.find(
-		b_regions, b_features, a_regions, a_features, -shift, small_size, progress
+		b_regions, b_features, a_regions, a_features, -small_shift, small_size, progress
 	)
 	if progress.cancelled:
 		return null
@@ -140,8 +140,10 @@ static func find(
 		forward.agree(backward)
 		backward.agree(forward)
 	_pair_leftovers(forward, backward, a_small, b_small)
-	morph.blend = ShapeBlend.between(a_small, b_small, small_width, small_height, shift, small_size)
-	if zoom == 1:
+	morph.blend = ShapeBlend.between(
+		a_small, b_small, small_width, small_height, small_shift, small_size
+	)
+	if shrink == 1:
 		# Painted keys' soft edges are told by the pixels at least half opaque
 		morph.jag_alpha = 128 if painted else 1
 		morph.key_shapes = PixelCleanup.shapes_of(a_data, width, height, morph.jag_alpha)
@@ -155,7 +157,7 @@ static func find(
 			if a_data[p * 4 + 3] >= morph.jag_alpha:
 				shown += 1
 		morph.smallest_part = int(shown * FLOATING_SHARE)
-		for data in [a_data, b_data]:
+		for data: PackedByteArray in [a_data, b_data]:
 			var parts := PixelCleanup.parts_of(data, width, morph.jag_alpha)
 			var biggest := 0
 			for part in parts:
@@ -165,7 +167,7 @@ static func find(
 					morph.smallest_part = mini(morph.smallest_part, part.size())
 		for k in b_shapes.size():
 			morph.key_shapes[k] += b_shapes[k]
-	for follower in [forward, backward]:
+	for follower: RegionMotions in [forward, backward]:
 		var side := KeySide.new()
 		side.painted = painted
 		side.data = a_small if follower == forward else b_small
@@ -194,14 +196,14 @@ static func find(
 				> LOST_TURNS_APART
 			)
 		):
-			a_mesh.draw_from(a_data, zoom)
-			b_mesh.draw_from(b_data, zoom)
+			a_mesh.draw_from(a_data, shrink)
+			b_mesh.draw_from(b_data, shrink)
 			morph.meshes = [a_mesh, b_mesh]
 	else:
 		progress.done += 2 * KeyMesh.steps()
-	if zoom > 1:
-		morph.sides[0].enlarge(a_data, width, zoom)
-		morph.sides[1].enlarge(b_data, width, zoom)
+	if shrink > 1:
+		morph.sides[0].enlarge(a_data, width, shrink)
+		morph.sides[1].enlarge(b_data, width, shrink)
 	return morph
 
 
@@ -267,9 +269,9 @@ static func _pair_leftovers(
 		for k in b_left.size():
 			if taken.has(k):
 				continue
-			var b_patch: PackedInt32Array = b_left[k][0]
-			var ratio := float(b_patch.size()) / a_patch.size()
-			var apart := KeyRegions.mean_color(b_data, b_patch) - a_color
+			var candidate: PackedInt32Array = b_left[k][0]
+			var ratio := float(candidate.size()) / a_patch.size()
+			var apart := KeyRegions.mean_color(b_data, candidate) - a_color
 			var color := absf(apart.x) + absf(apart.y) + absf(apart.z)
 			if ratio < 0.5 or ratio > 2.0 or color > LEFTOVER_COLOR:
 				continue
@@ -286,20 +288,20 @@ static func _pair_leftovers(
 			backward.split_off(b_left[best], motion.affine_inverse(), b_data)
 
 
-## [param data], a canvas [param width] × [param height] pixels, [param zoom] times
+## [param data], a canvas [param width] × [param height] pixels, [param shrink] times
 ## smaller: each pixel the average of the ones it stands for, weighed by how shown
-static func _shrunk(data: PackedByteArray, width: int, height: int, zoom: int) -> PackedByteArray:
-	if zoom == 1:
+static func _shrunk(data: PackedByteArray, width: int, height: int, shrink: int) -> PackedByteArray:
+	if shrink == 1:
 		return data
-	var small_width := ceili(float(width) / zoom)
-	var small_height := ceili(float(height) / zoom)
+	var small_width := ceili(float(width) / shrink)
+	var small_height := ceili(float(height) / shrink)
 	var out := PixelCanvas.blank(small_width * small_height)
 	for sy in small_height:
 		for sx in small_width:
 			var sum := Vector4.ZERO
 			var count := 0
-			for y in range(sy * zoom, mini((sy + 1) * zoom, height)):
-				for x in range(sx * zoom, mini((sx + 1) * zoom, width)):
+			for y in range(sy * shrink, mini((sy + 1) * shrink, height)):
+				for x in range(sx * shrink, mini((sx + 1) * shrink, width)):
 					var i := (y * width + x) * 4
 					var alpha := data[i + 3]
 					sum += Vector4(data[i] * alpha, data[i + 1] * alpha, data[i + 2] * alpha, alpha)

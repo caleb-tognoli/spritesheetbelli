@@ -111,8 +111,8 @@ static func cropped(data: PackedByteArray, rect: Rect2i) -> Dictionary:
 	var img := Image.create_from_data(rect.size.x, rect.size.y, false, Image.FORMAT_RGBA8, data)
 	var used := img.get_used_rect()
 	if not used.has_area():
-		var blank := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
-		return {"image": blank, "origin": rect.get_center()}
+		var empty := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
+		return {"image": empty, "origin": rect.get_center()}
 	return {"image": img.get_region(used), "origin": rect.position + used.position}
 
 

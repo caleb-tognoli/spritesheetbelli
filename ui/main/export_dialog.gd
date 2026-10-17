@@ -366,7 +366,6 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	about_to_popup.connect(refresh)
 	# The label stays next to the field when a warning shows under it
 	_pattern_label.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_pattern_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -374,6 +373,13 @@ func _ready() -> void:
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		SpinScroll.enable(spin)
+
+
+## Opens the dialog on the project's targets. They're shown first, so it opens as big as
+## the selected one's settings need rather than as big as every setting at once.
+func open() -> void:
+	refresh()
+	popup_centered()
 
 
 ## Shows the project's targets, or a new one when there are none, selecting the one

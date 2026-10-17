@@ -24,7 +24,7 @@ static func reduce(
 ) -> Array[PackedInt32Array]:
 	# Every colour once, with how many pixels have it
 	var weights := {}
-	for colors in [first, second]:
+	for colors: PackedInt32Array in [first, second]:
 		for color: int in colors:
 			if color != 0:
 				var rgb := color >> 8 & 0xffffff
@@ -58,7 +58,7 @@ static func reduce(
 			(roundi(center.x) << 24 | roundi(center.y) << 16 | roundi(center.z) << 8) | 255
 		)
 	var reduced: Array[PackedInt32Array] = []
-	for colors in [first, second]:
+	for colors: PackedInt32Array in [first, second]:
 		var out := PackedInt32Array()
 		out.resize(colors.size())
 		for p in colors.size():

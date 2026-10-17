@@ -129,7 +129,7 @@ static func register(main: Control) -> void:
 	add.call(
 		&"export",
 		L10n.mark("Export…"),
-		func() -> void: (main.export_dialog as ExportDialog).popup_centered(),
+		func() -> void: (main.export_dialog as ExportDialog).open(),
 		has_frames
 	)
 	add.call(&"export_again", L10n.mark("Export Again"), files.exports.export_again, has_frames)

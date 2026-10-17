@@ -191,9 +191,9 @@ func _cut(data: PackedByteArray, spacing: float) -> bool:
 	while y < height:
 		var x := spacing / 2.0
 		while x < width:
-			var at := Vector2(x, y)
-			if shown[int(y) * width + int(x)] == 1 and not near.any_within(at, spacing * 0.6):
-				points.append(at)
+			var place := Vector2(x, y)
+			if shown[int(y) * width + int(x)] == 1 and not near.any_within(place, spacing * 0.6):
+				points.append(place)
 			x += spacing
 		y += spacing
 	for k in range(near.count(), points.size()):
@@ -203,11 +203,11 @@ func _cut(data: PackedByteArray, spacing: float) -> bool:
 	for p in size:
 		if shown[p] == 0:
 			continue
-		var at := Vector2(p % width + 0.5, p / width + 0.5)
-		if near.any_within(at, spacing * 0.9) or extra.any_within(at, spacing * 0.7):
+		var place := Vector2(p % width + 0.5, p / width + 0.5)
+		if near.any_within(place, spacing * 0.9) or extra.any_within(place, spacing * 0.7):
 			continue
-		extra.add(at)
-		points.append(at)
+		extra.add(place)
+		points.append(place)
 	if points.size() < 3:
 		return false
 	var found := Geometry2D.triangulate_delaunay(points)
@@ -464,8 +464,8 @@ func _match_round(
 				var turned := Vector2(ox, oy).rotated(turn)
 				ways.append(floori(turned.x + 0.5))
 				ways.append(floori(turned.y + 0.5))
-		var at := landed[s]
-		var base := Vector2i(floori(at.x), floori(at.y))
+		var place := landed[s]
+		var base := Vector2i(floori(place.x), floori(place.y))
 		var best := INF
 		var best_cost := 0.0
 		var best_spot := base
@@ -476,7 +476,7 @@ func _match_round(
 			var least := maxf(Vector2(spot).length() - 0.71, 0.0)
 			if near_cost * least * least >= best:
 				break
-			var apart := Vector2(cx + 0.5, cy + 0.5) - at
+			var apart := Vector2(cx + 0.5, cy + 0.5) - place
 			var prior := near_cost * apart.length_squared()
 			if prior >= best:
 				continue
@@ -610,7 +610,6 @@ func _add_pull(
 		var a: float = amounts[e]
 		matrix.diagonal[i] += pull * a * a
 		right[i] += goal * (pull * a)
-		var j := triangles[k * 3 + (e + 1) % 3]
 		var b: float = amounts[(e + 1) % 3]
 		matrix.sides[_triangle_sides[k * 3 + e]] += pull * a * b
 
@@ -788,8 +787,8 @@ func _unwrapped(raw: PackedFloat32Array) -> PackedFloat32Array:
 			heap.push(_frame_weights[j], j, root)
 		while not heap.is_empty():
 			var top := heap.pop()
-			var j: int = top.y
-			var from: int = top.z
+			var j := int(top.y)
+			var from := int(top.z)
 			if seen[j] == 1:
 				continue
 			result[j] = result[from] + wrapf(raw[j] - result[from], -PI, PI)

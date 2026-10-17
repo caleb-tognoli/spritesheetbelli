@@ -464,14 +464,14 @@ func test_in_betweens_from_the_timeline() -> void:
 	timeline.inbetweens_requested.connect(
 		func(a: Vector2i, b: Vector2i) -> void: requested.assign([a, b])
 	)
-	var click := InputEventMouseButton.new()
-	click.button_index = MOUSE_BUTTON_RIGHT
-	click.pressed = true
-	timeline.get_tile(1).gui_input.emit(click)
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	timeline.get_tile(1).gui_input.emit(right_click)
 	assert_eq(timeline.get_selected(), [1] as Array[int], "picks the frame right-clicked")
 	assert_true(timeline.get_inbetween_keys().is_empty(), "needs two frames")
 	timeline.select([1, 2] as Array[int])
-	timeline.get_tile(2).gui_input.emit(click)
+	timeline.get_tile(2).gui_input.emit(right_click)
 	assert_eq(timeline.get_selected(), [1, 2] as Array[int], "keeps the frames picked")
 	timeline.request_inbetweens()
 	assert_eq(requested, cells([1, 2]), "in playing order")

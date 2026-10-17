@@ -174,6 +174,14 @@ func test_files_listed_are_the_files_written() -> void:
 	)
 
 
+func test_dialog_opens_at_its_smallest_size() -> void:
+	Actions.run(&"export")
+	assert_eq(dialog.size, dialog.min_size, "not sized for every setting at once")
+	for entry: Dictionary in ExportDialog.TYPES:
+		dialog.select_type(entry.target)
+		assert_eq(dialog.size, dialog.min_size, "fits %s" % entry.name)
+
+
 func test_dialog_lists_the_files_of_an_export() -> void:
 	Actions.run(&"export")
 	dialog.select_type(ExportOptions.Target.IMAGE)

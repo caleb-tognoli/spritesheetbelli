@@ -21,8 +21,8 @@ var pieces := PackedInt32Array()
 static func of(data: PackedByteArray, canvas_width: int, labels: PackedInt32Array) -> SmoothKey:
 	var smooth := SmoothKey.new()
 	var canvas_height := labels.size() / canvas_width
-	var colors := PixelCanvas.colors(data)
-	var codes := {Vector2i(0, -1): 0}
+	var key_colors := PixelCanvas.colors(data)
+	var code_of := {Vector2i(0, -1): 0}
 	smooth.colors.append(0)
 	smooth.pieces.append(-1)
 	var grid := PackedInt32Array()
@@ -30,12 +30,12 @@ static func of(data: PackedByteArray, canvas_width: int, labels: PackedInt32Arra
 	for p in labels.size():
 		if labels[p] < 0:
 			continue
-		var key := Vector2i(colors[p], labels[p])
-		if not codes.has(key):
-			codes[key] = smooth.colors.size()
-			smooth.colors.append(colors[p])
+		var key := Vector2i(key_colors[p], labels[p])
+		if not code_of.has(key):
+			code_of[key] = smooth.colors.size()
+			smooth.colors.append(key_colors[p])
 			smooth.pieces.append(labels[p])
-		grid[p] = codes[key]
+		grid[p] = code_of[key]
 	var w := canvas_width
 	var h := canvas_height
 	var zoom := 1

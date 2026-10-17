@@ -178,8 +178,8 @@ func leftovers(least: int) -> Array[Array]:
 			while next < patch.size():
 				var p := patch[next]
 				next += 1
-				for side in sides:
-					var q: int = p + side
+				for offset in sides:
+					var q: int = p + offset
 					if misfit.has(q) and not seen.has(q):
 						seen[q] = true
 						patch.append(q)
@@ -206,8 +206,8 @@ func split_off(leftover: Array, motion: Transform2D, data: PackedByteArray) -> b
 	var sides := PixelParts.sides_of(regions.width)
 	while not queue.is_empty():
 		var p: int = queue.pop_back()
-		for side in sides:
-			var q: int = p + side
+		for offset in sides:
+			var q: int = p + offset
 			if grown.has(q) or labels[q] != r:
 				continue
 			var point := regions.point_of(q)
@@ -382,13 +382,13 @@ func refined(pixels: PackedInt32Array, motion: Transform2D, rounds := 1) -> Tran
 		var tries: Array[Transform2D] = []
 		for move: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN, Vector2.UP]:
 			tries.append(Transform2D(motion.x, motion.y, motion.origin + move * step))
-		for sign: float in [1.0, -1.0]:
-			var turned := about(center, sign * turn, Vector2.ZERO)
+		for direction: float in [1.0, -1.0]:
+			var turned := about(center, direction * turn, Vector2.ZERO)
 			tries.append(motion * turned)
 			# Stretched a little along either axis, about the middle
 			for axis in 2:
 				var scale := Vector2.ONE
-				scale[axis] = 1.0 + sign * turn
+				scale[axis] = 1.0 + direction * turn
 				var stretched := Transform2D(0.0, scale, 0.0, Vector2.ZERO)
 				stretched.origin = center - stretched.basis_xform(center)
 				tries.append(motion * stretched)
@@ -530,7 +530,7 @@ func _search_pixels(pixels: PackedInt32Array, voters: Array) -> Array[Transform2
 				break
 	found.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
 	var best: Array[Transform2D] = []
-	for entry in found.slice(0, KEPT):
+	for entry: Array in found.slice(0, KEPT):
 		best.append(entry[1])
 	return best
 
@@ -568,7 +568,7 @@ func _pairings(to_regions: KeyRegions) -> Array[Transform2D]:
 			var moved := to_regions.centers[s] - regions.centers[r]
 			paired.append([color + 0.01 * moved.distance_to(shift), s])
 		paired.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
-		for entry in paired.slice(0, PAIRS):
+		for entry: Array in paired.slice(0, PAIRS):
 			var s: int = entry[1]
 			var move := to_regions.centers[s] - regions.centers[r]
 			var turns: Array[float] = [0.0]
@@ -630,7 +630,7 @@ func _choose(candidates: Array[Transform2D]) -> Array[Transform2D]:
 			scored.append([cost(r, motion), motion])
 		scored.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
 		var best: Array[Transform2D] = []
-		for entry in scored.slice(0, OWN_CHOICES):
+		for entry: Array in scored.slice(0, OWN_CHOICES):
 			best.append(entry[1])
 		own.append(best)
 	var neighbours: Array[Array] = []
@@ -691,7 +691,7 @@ func _choose(candidates: Array[Transform2D]) -> Array[Transform2D]:
 				message[j] = 0.5 * old[j] + 0.5 * (message[j] - lowest)
 			updated[edge] = message
 		messages = updated
-	var chosen: Array[Transform2D] = []
+	var picked: Array[Transform2D] = []
 	for r in count:
 		var belief := costs[r].duplicate()
 		for k: int in neighbours[r]:
@@ -702,8 +702,8 @@ func _choose(candidates: Array[Transform2D]) -> Array[Transform2D]:
 		for i in belief.size():
 			if belief[i] < belief[best]:
 				best = i
-		chosen.append(choices[r][best])
-	return chosen
+		picked.append(choices[r][best])
+	return picked
 
 
 ## What neighbours [param r] and [param s] moving by each of their choices costs: how far
@@ -748,8 +748,8 @@ static func _mean_nearest(points: PackedVector2Array, others: PackedVector2Array
 	var total := 0.0
 	for point in points:
 		var nearest := INF
-		for other_point in others:
-			nearest = minf(nearest, point.distance_squared_to(other_point))
+		for spot in others:
+			nearest = minf(nearest, point.distance_squared_to(spot))
 		total += sqrt(nearest)
 	return total / maxi(points.size(), 1)
 

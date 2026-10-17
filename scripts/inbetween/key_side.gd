@@ -215,7 +215,7 @@ static func _moving_alike(
 			if q <= p or alive[q] == 0:
 				continue
 			var apart := 0.0
-			for pixels in [members[p], members[q]]:
+			for pixels: PackedInt32Array in [members[p], members[q]]:
 				for k in range(0, pixels.size(), maxi(1, pixels.size() / 64)):
 					var point := follower.regions.point_of(pixels[k])
 					apart = maxf(
@@ -263,7 +263,7 @@ static func _merging(
 	var both := first + second
 	var best_cost := INF
 	var best_motion := first_motion
-	for motion in [first_motion, second_motion]:
+	for motion: Transform2D in [first_motion, second_motion]:
 		var cost := follower.cost_of(both, motion) * both.size()
 		if cost < best_cost:
 			best_cost = cost
@@ -354,7 +354,7 @@ func settle(other_data: PackedByteArray) -> void:
 		var best := Vector3i(-1, -1, -1)
 		for key in pieces.borders:
 			var length := pieces.borders[key].size()
-			for pair in [Vector2i(key.x, key.y), Vector2i(key.y, key.x)]:
+			for pair: Vector2i in [Vector2i(key.x, key.y), Vector2i(key.y, key.x)]:
 				if reached.has(pair.x) and not reached.has(pair.y) and length > best.z:
 					best = Vector3i(pair.x, pair.y, length)
 		if best.x < 0:

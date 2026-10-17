@@ -133,10 +133,10 @@ static func shape_of(
 	outside.resize(size)
 	var queue := PackedInt32Array()
 	for x in canvas_width:
-		for y in [0, canvas_height - 1]:
+		for y: int in [0, canvas_height - 1]:
 			queue.append(y * canvas_width + x)
 	for y in canvas_height:
-		for x in [0, canvas_width - 1]:
+		for x: int in [0, canvas_width - 1]:
 			queue.append(y * canvas_width + x)
 	var head := 0
 	while head < queue.size():
@@ -233,10 +233,10 @@ static func _traced(
 	while not ways.is_empty():
 		var start: Vector2i = ways.keys()[0]
 		var loop: Array[Vector2i] = [start]
-		var at := start
+		var place := start
 		var heading := Vector2i.ZERO
 		while true:
-			var outs: Array = ways.get(at, [])
+			var outs: Array = ways.get(place, [])
 			if outs.is_empty():
 				break
 			var pick := 0
@@ -244,7 +244,7 @@ static func _traced(
 				# Turning right first, so pixels touching only by corners stay apart
 				var best := INF
 				for k in outs.size():
-					var way: Vector2i = outs[k] - at
+					var way: Vector2i = outs[k] - place
 					var turn := float(heading.y * way.x - heading.x * way.y)
 					if turn < best:
 						best = turn
@@ -252,12 +252,12 @@ static func _traced(
 			var next: Vector2i = outs[pick]
 			outs.remove_at(pick)
 			if outs.is_empty():
-				ways.erase(at)
-			heading = next - at
-			at = next
-			if at == start:
+				ways.erase(place)
+			heading = next - place
+			place = next
+			if place == start:
 				break
-			loop.append(at)
+			loop.append(place)
 		if loop.size() > longest.size():
 			longest = loop
 	return longest
@@ -278,9 +278,9 @@ static func _inside_colors(
 	for i in n:
 		var along := points[(i + 1) % n] - points[posmod(i - 1, n)]
 		var inward := Vector2(-along.y, along.x).normalized()
-		var at := points[i] + inward * INSIDE
-		var x := clampi(floori(at.x), 0, canvas_width - 1)
-		var y := clampi(floori(at.y), 0, canvas_height - 1)
+		var place := points[i] + inward * INSIDE
+		var x := clampi(floori(place.x), 0, canvas_width - 1)
+		var y := clampi(floori(place.y), 0, canvas_height - 1)
 		var q := (y * canvas_width + x) * 4
 		var alpha := data[q + 3] / 255.0
 		result.append(Vector3(data[q], data[q + 1], data[q + 2]) / 255.0 * alpha)
@@ -369,15 +369,15 @@ static func _matched(
 		var sum := 0.0
 		var weight := 0.0
 		for d in range(-MATCH_SMOOTHING, MATCH_SMOOTHING + 1):
-			var at := k + d
+			var place := k + d
 			# Past the ends, round the outline
 			var value := 0.0
-			if at < 0:
-				value = alongs[at + n] - m
-			elif at >= n:
-				value = alongs[at - n] + m
+			if place < 0:
+				value = alongs[place + n] - m
+			elif place >= n:
+				value = alongs[place - n] + m
 			else:
-				value = alongs[at]
+				value = alongs[place]
 			sum += value
 			weight += 1.0
 		smoothed.append(sum / weight)
@@ -433,15 +433,15 @@ func _mesh(shape: PackedByteArray, outline: PackedVector2Array) -> void:
 	while y < height:
 		var x := spacing / 2.0
 		while x < width:
-			var at := Vector2(x, y)
+			var place := Vector2(x, y)
 			if shape[int(y) * width + int(x)] == 1:
 				var clear := true
 				for o in outline:
-					if o.distance_squared_to(at) < spacing * spacing * 0.36:
+					if o.distance_squared_to(place) < spacing * spacing * 0.36:
 						clear = false
 						break
 				if clear:
-					points.append(at)
+					points.append(place)
 			x += spacing
 		y += spacing
 	var found := Geometry2D.triangulate_delaunay(points)

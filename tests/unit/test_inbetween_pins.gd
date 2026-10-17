@@ -49,9 +49,9 @@ static func blob(at: Vector2) -> Image:
 			var reach := Vector2(offset.x / 7.0, offset.y / 11.0).length()
 			if reach <= 1.1:
 				var light := clampf(1.0 - (offset - Vector2(-2, -4)).length() / 14.0, 0.0, 1.0)
-				var color := Color(0.8, 0.2, 0.2).lerp(Color(1.0, 0.8, 0.6), light)
-				color.a = clampf((1.1 - reach) * 6.0, 0.0, 1.0)
-				img.set_pixel(x, y, color)
+				var pixel := Color(0.8, 0.2, 0.2).lerp(Color(1.0, 0.8, 0.6), light)
+				pixel.a = clampf((1.1 - reach) * 6.0, 0.0, 1.0)
+				img.set_pixel(x, y, pixel)
 	return img
 
 
@@ -108,7 +108,7 @@ func test_the_three_kinds() -> void:
 
 func test_no_pins_changes_nothing() -> void:
 	for morph in morphs():
-		for t in [0.25, 0.5, 0.75]:
+		for t: float in [0.25, 0.5, 0.75]:
 			var none: Array[Dictionary] = []
 			assert_true(same(morph.frame(t), morph.frame(t, none)))
 		assert_true(same(InBetween.middle(morph), morph.frame(0.5)))
@@ -120,7 +120,7 @@ func test_the_keys_stay_as_they_are() -> void:
 		{"at": Vector2(12, 24), "to": Vector2(12, 24)}
 	]
 	for morph in morphs():
-		for t in [0.0, 1.0]:
+		for t: float in [0.0, 1.0]:
 			assert_true(same(morph.frame(t, pins), morph.frame(t)), "at %s" % t)
 
 
@@ -180,7 +180,7 @@ func test_an_anchored_pin_holds_while_another_drags() -> void:
 	var to := dragged + Vector2(0, -6)
 	var pins: Array[Dictionary] = [{"at": held, "to": held}, {"at": dragged, "to": to}]
 	var pinned := morph.frame(0.5, pins)
-	for frame in [plain, pinned]:
+	for frame: Dictionary in [plain, pinned]:
 		assert_true(shows(frame, held), "the held end shown")
 	assert_true(shown(pinned).position.y <= shown(plain).position.y - 3, "the dragged end up")
 	# The triangles: the held point stays, the dragged one lands where it's dragged, and a
@@ -230,7 +230,7 @@ func test_pinned_frames_can_be_drawn_on_several_threads() -> void:
 		]
 		var times := [0.2, 0.4, 0.5, 0.6, 0.8]
 		var alone := []
-		for t in times:
+		for t: float in times:
 			alone.append(morph.frame(t, pins))
 		var together := []
 		together.resize(times.size())

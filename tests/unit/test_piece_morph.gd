@@ -169,7 +169,7 @@ func test_shapes_the_pieces_dont_fit_are_bent() -> void:
 	assert_eq(mesh.at(1.0), mesh.target, "laid on the other key at the end")
 	# Laid onto the tall one, and halfway there in between
 	var heights := []
-	for corners in [mesh.rest, mesh.at(0.5), mesh.target]:
+	for corners: PackedVector2Array in [mesh.rest, mesh.at(0.5), mesh.target]:
 		var low := INF
 		var high := -INF
 		for corner: Vector2 in corners:
@@ -190,15 +190,15 @@ func test_no_new_colours() -> void:
 
 func test_an_outline_is_drawn_round_each_frame() -> void:
 	var outlined := func(raised: int) -> Image:
-		var img := figure(raised)
-		var out := img.duplicate()
+		var drawn := figure(raised)
+		var out := drawn.duplicate()
 		for y in 32:
 			for x in 32:
-				if img.get_pixel(x, y).a > 0:
+				if drawn.get_pixel(x, y).a > 0:
 					continue
 				for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 					var at := Vector2i(x, y) + side
-					if Rect2i(0, 0, 32, 32).has_point(at) and img.get_pixelv(at).a > 0:
+					if Rect2i(0, 0, 32, 32).has_point(at) and drawn.get_pixelv(at).a > 0:
 						out.set_pixel(x, y, OUTLINE)
 						break
 		return out
@@ -335,17 +335,17 @@ func test_stretched_shapes_stay_smooth() -> void:
 		var img: Image = frame.image
 		# Round: across and down, one run each, growing then shrinking (give or take a pixel,
 		# as it may turn on its way, and a slanted outline steps)
-		for across in [true, false]:
+		for across: bool in [true, false]:
 			var lines := img.get_height() if across else img.get_width()
 			var length := img.get_width() if across else img.get_height()
 			var runs := PackedInt32Array()
-			for line in lines:
+			for row in lines:
 				var starts := 0
 				var count := 0
 				var was := false
 				for k in length:
 					var shown := (
-						(img.get_pixel(k, line) if across else img.get_pixel(line, k)).a > 0
+						(img.get_pixel(k, row) if across else img.get_pixel(row, k)).a > 0
 					)
 					if shown and not was:
 						starts += 1

@@ -80,7 +80,7 @@ var key_wide_shapes := {}
 static func soft(a: Image, b: Image) -> bool:
 	var edge := 0
 	var partly := 0
-	for img in [a, b]:
+	for img: Image in [a, b]:
 		var data: PackedByteArray = img.get_data()
 		var w: int = img.get_width()
 		var h: int = img.get_height()
@@ -107,13 +107,13 @@ static func soft(a: Image, b: Image) -> bool:
 	return edge > 0 and partly >= edge * SOFT_SHARE
 
 
-## Keys [param a_data] and [param b_data], RGBA bytes on a canvas [param canvas_width] ×
+## Keys [param a_bytes] and [param b_bytes], RGBA bytes on a canvas [param canvas_width] ×
 ## [param canvas_height] pixels, matched pixel by pixel, the whole sprite moving by
 ## [param shift] from A to B (see [method SpriteMotion.detect]). Null when either key
 ## shows nothing or [param progress] is cancelled.
 static func between(
-	a_data: PackedByteArray,
-	b_data: PackedByteArray,
+	a_bytes: PackedByteArray,
+	b_bytes: PackedByteArray,
 	canvas_width: int,
 	canvas_height: int,
 	shift: Vector2,
@@ -123,7 +123,7 @@ static func between(
 		progress = WorkProgress.new()
 	var low := Vector2i(canvas_width, canvas_height)
 	var high := Vector2i(-1, -1)
-	for data in [a_data, b_data]:
+	for data: PackedByteArray in [a_bytes, b_bytes]:
 		for p in canvas_width * canvas_height:
 			if data[p * 4 + 3] > 0:
 				var at := Vector2i(p % canvas_width, p / canvas_width)
@@ -135,8 +135,8 @@ static func between(
 	var morph := FlowMorph.new()
 	morph.width = canvas_width
 	morph.height = canvas_height
-	morph.a_data = a_data
-	morph.b_data = b_data
+	morph.a_data = a_bytes
+	morph.b_data = b_bytes
 	var zoom := maxi(1, ceili(size / ANALYSIS_SIZE))
 	var zooms: Array[int] = [zoom]
 	while size / zooms[-1] > COARSEST_SIZE * 1.5:
@@ -148,8 +148,8 @@ static func between(
 	var b_moves := PackedVector2Array()
 	for k in range(zooms.size() - 1, -1, -1):
 		var z := zooms[k]
-		a_level = FlowLevel.new(a_data, canvas_width, canvas_height, z)
-		b_level = FlowLevel.new(b_data, canvas_width, canvas_height, z)
+		a_level = FlowLevel.new(a_bytes, canvas_width, canvas_height, z)
+		b_level = FlowLevel.new(b_bytes, canvas_width, canvas_height, z)
 		if a_moves.is_empty():
 			var start := (shift / z).round()
 			var reach := ceili(SEARCH_SHARE * size / z)
@@ -169,11 +169,11 @@ static func between(
 	morph.b_flow = _enlarged(b_moves, b_level, canvas_width, canvas_height)
 	morph.a_doubt = morph._doubts(morph.a_flow, morph.b_flow)
 	morph.b_doubt = morph._doubts(morph.b_flow, morph.a_flow)
-	morph.key_shapes = PixelCleanup.shapes_of(a_data, canvas_width, canvas_height, TIDY_ALPHA)
-	var b_shapes := PixelCleanup.shapes_of(b_data, canvas_width, canvas_height, TIDY_ALPHA)
+	morph.key_shapes = PixelCleanup.shapes_of(a_bytes, canvas_width, canvas_height, TIDY_ALPHA)
+	var b_shapes := PixelCleanup.shapes_of(b_bytes, canvas_width, canvas_height, TIDY_ALPHA)
 	for k in b_shapes.size():
 		morph.key_shapes[k] += b_shapes[k]
-	for data in [a_data, b_data]:
+	for data: PackedByteArray in [a_bytes, b_bytes]:
 		morph.key_wide_shapes.merge(
 			PixelCleanup.wide_shapes_of(data, canvas_width, canvas_height, TIDY_ALPHA)
 		)

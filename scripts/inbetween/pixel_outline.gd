@@ -61,9 +61,9 @@ static func _detect_one(img: Image) -> PixelOutline:
 	if edge < MIN_EDGE:
 		return null
 	var best := 0
-	for color: int in counts:
-		if best == 0 or counts[color] > counts[best]:
-			best = color
+	for candidate: int in counts:
+		if best == 0 or counts[candidate] > counts[best]:
+			best = candidate
 	if counts[best] < edge * EDGE_SHARE:
 		return null
 	var outline := PixelOutline.new()
@@ -86,10 +86,10 @@ static func _detect_one(img: Image) -> PixelOutline:
 	# Drawn across corners when doing so gives back the outline the key has
 	var missed := [0, 0]
 	for corners in 2:
-		var drawn := stripped.duplicate()
+		var redrawn := stripped.duplicate()
 		outline.diagonal = corners == 1
-		outline.draw_data(drawn, width, height)
-		var drawn_colors := PixelCanvas.colors(drawn)
+		outline.draw_data(redrawn, width, height)
+		var drawn_colors := PixelCanvas.colors(redrawn)
 		for p in colors.size():
 			if (colors[p] == best) != (drawn_colors[p] == best):
 				missed[corners] += 1
