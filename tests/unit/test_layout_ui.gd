@@ -135,6 +135,7 @@ func test_what_shows_on_the_grid_is_a_group_after_the_transforms() -> void:
 	var buttons: Array[Button] = [
 		area._action_buttons[&"animation_labels"],
 		area._submenu_buttons[&"rulers_menu"],
+		area._action_buttons[&"toggle_grid"],
 		area._action_buttons[&"toggle_indices"],
 	]
 	var after := area._action_buttons[&"rotate_cw"].get_index()

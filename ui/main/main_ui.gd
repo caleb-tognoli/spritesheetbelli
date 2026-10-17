@@ -11,9 +11,9 @@ const SLOW_SCALE_WORK := 1_000_000
 const TOOLBAR_GROUPS := [
 	[&"align_menu", &"pivot_menu", &"trim", &"pin_toggle", &"color_key"],
 	[&"flip_h", &"flip_v", &"rotate_ccw", &"rotate_cw"],
-	[&"animation_labels", &"rulers_menu", &"toggle_indices"],
+	[&"animation_labels", &"rulers_menu", &"toggle_grid", &"toggle_indices"],
 ]
-const TOOLBAR_TOGGLES: Array[StringName] = [&"toggle_grid", &"toggle_sprites", &"toggle_history"]
+const TOOLBAR_TOGGLES: Array[StringName] = [&"toggle_sprites", &"toggle_history"]
 ## Actions offered when right-clicking frames
 const CONTEXT_ACTIONS: Array[StringName] = [
 	&"cut",
