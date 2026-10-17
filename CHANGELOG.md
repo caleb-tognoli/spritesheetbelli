@@ -87,6 +87,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   file it writes, saved relative to the project. The Export dialog lists them on the
   left, with Add, Duplicate and Remove, and the selected one's settings and Export to path
   (with Browse…) on the right; Export writes the selected one and Export All every one.
+  The list is made wider by dragging its edge, for long file names, and stays so.
   File > Export Again (Ctrl+Shift+E) writes them all without asking, and opens the dialog
   when there are none. The sidebar's Export button shows how many there are. In the web
   version they download instead.

@@ -330,6 +330,34 @@ func test_opens_on_the_export_last_selected() -> void:
 	assert_eq(dialog.get_options().target, ExportOptions.Target.IMAGE)
 
 
+func test_list_is_as_wide_as_dragged() -> void:
+	var before: int = Settings.get_value(&"export_list_width")
+	Settings.set_value(&"export_list_width", 0)
+	Actions.run(&"export")
+	await get_tree().process_frame
+	var narrowest := roundi(dialog.target_list.size.x)
+	var dialog_width := dialog.size.x
+	# Made wider first, as the dialog is only as wide as its content needs
+	dialog.size.x += 300
+	await get_tree().process_frame
+	# Dragged
+	dialog.list_split.split.split_offset = narrowest + 300
+	await get_tree().process_frame
+	dialog.list_split.split.drag_ended.emit()
+	await get_tree().process_frame
+	assert_eq(roundi(dialog.target_list.size.x), narrowest + 300, "wider")
+	assert_eq(Settings.get_value(&"export_list_width"), narrowest + 300, "remembered")
+	dialog.hide()
+	Actions.run(&"export")
+	await get_tree().process_frame
+	assert_eq(roundi(dialog.target_list.size.x), narrowest + 300, "as wide when opened again")
+	assert_true(dialog.size.x > dialog_width, "with room for it")
+	dialog.list_split.reset_width()
+	await get_tree().process_frame
+	assert_eq(roundi(dialog.target_list.size.x), narrowest, "as narrow as it can be")
+	Settings.set_value(&"export_list_width", before)
+
+
 ## Writes a template file of the user's own in the test's folder
 func write_template(file_name: String, text: String) -> String:
 	var path := dir.path_join(file_name)

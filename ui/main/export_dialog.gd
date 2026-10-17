@@ -101,6 +101,8 @@ var get_selected_coords := func() -> Array[Vector2i]: return []
 var exports: ExportController
 ## The project's targets, with the type's icon, where each writes and its format
 var target_list := ItemList.new()
+## The list's side of the dialog, as wide as it was last dragged
+var list_split: SidebarSplit
 var add_target := Button.new()
 var duplicate_target := Button.new()
 var remove_target := Button.new()
@@ -170,7 +172,8 @@ func _init() -> void:
 	DialogButtons.apply(self)
 	# Big enough for every export type, so it doesn't change size when switching
 	min_size = Vector2i(840, 500)
-	var layout := HBoxContainer.new()
+	# The list is made wider by dragging its edge, for long file names
+	var layout := HSplitContainer.new()
 	layout.add_theme_constant_override("separation", 16)
 	add_child(layout)
 
@@ -198,6 +201,7 @@ func _init() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 12)
 	layout.add_child(right)
+	list_split = SidebarSplit.new(layout, left, &"export_list_width")
 	var head := _grid()
 	right.add_child(head)
 	var every_type := TYPES.map(func(entry: Dictionary) -> int: return entry.target)
@@ -376,10 +380,16 @@ func _ready() -> void:
 
 
 ## Opens the dialog on the project's targets. They're shown first, so it opens as big as
-## the selected one's settings need rather than as big as every setting at once.
+## the selected one's settings need rather than as big as every setting at once, and as
+## wide as the list was last dragged. Dragging it wider than that needs the dialog wider.
 func open() -> void:
 	refresh()
+	var narrowest := target_list.custom_minimum_size.x
+	target_list.custom_minimum_size.x = maxf(narrowest, Settings.get_value(list_split.setting))
 	popup_centered()
+	# Still as narrow as it can be when dragged
+	target_list.custom_minimum_size.x = narrowest
+	list_split.apply_width()
 
 
 ## Shows the project's targets, or a new one when there are none, selecting the one
