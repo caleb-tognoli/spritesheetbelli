@@ -182,6 +182,7 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_stylebox("hover", &"InsetRow", _box(p.hovered, 4, row_margins))
 	theme.set_stylebox("background", "ProgressBar", _box(p.raised, 3))
 	theme.set_stylebox("fill", "ProgressBar", _box(p.accent, 3))
+	theme.set_color("font_color", "ProgressBar", p.text)
 	theme.set_type_variation(&"StatusLabel", "Label")
 	theme.set_font_size("font_size", &"StatusLabel", 12)
 	theme.set_color("font_color", &"StatusLabel", p.text_muted)
@@ -193,6 +194,18 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_type_variation(&"AccentLabel", "Label")
 	theme.set_color("font_color", &"AccentLabel", p.accent_text)
 	theme.set_color("font_color", "Label", p.text)
+	# Such as the help tooltips, see HelpTooltip
+	theme.set_color("default_color", "RichTextLabel", p.text)
+	# Links in the accent colour, like headings
+	for color: StringName in [
+		&"font_color",
+		&"font_hover_color",
+		&"font_pressed_color",
+		&"font_focus_color",
+		&"font_hover_pressed_color"
+	]:
+		theme.set_color(color, "LinkButton", p.accent_text)
+	theme.set_color("font_disabled_color", "LinkButton", Color(p.text_muted, 0.6))
 
 	# Buttons and everything drawn like them
 	var normal := _box(p.raised, 4, Vector4(8, 4, 8, 4))
@@ -200,7 +213,12 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	var pressed := _box(Color(p.accent, 0.35), 4, Vector4(8, 4, 8, 4))
 	var disabled := _box(Color(p.raised, 0.5), 4, Vector4(8, 4, 8, 4))
 	var focus := _box(Color.TRANSPARENT, 4, Vector4.ZERO, p.accent, 1)
+	# Same margins as the others so the text doesn't move when hovered
 	var flat := StyleBoxEmpty.new()
+	flat.content_margin_left = 8
+	flat.content_margin_top = 4
+	flat.content_margin_right = 8
+	flat.content_margin_bottom = 4
 	# Icons keep their own colours. Pressed ones become the accent colour, the same in both
 	# themes although the light theme's icons are darker.
 	var icon_grey := LIGHT_ICON_GREY if light else DARK_ICON_GREY
@@ -268,6 +286,7 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("clear_button_color", "LineEdit", p.text)
 	theme.set_color("clear_button_color_pressed", "LineEdit", p.accent)
 	theme.set_color("selection_color", "LineEdit", Color(p.accent, 0.35))
+	theme.set_color("font_selected_color", "LineEdit", p.text)
 	# Compact, and as narrow as its place, for how long each frame of a timeline is shown
 	var compact := Vector4(4, 1, 4, 1)
 	theme.set_type_variation(&"TimelineDurationEdit", "LineEdit")
@@ -277,14 +296,30 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_constant("minimum_character_width", &"TimelineDurationEdit", 0)
 	for color: StringName in [&"up_icon_modulate", &"down_icon_modulate"]:
 		theme.set_color(color, "SpinBox", p.text)
-	for color: StringName in [&"up_hover_icon_modulate", &"down_hover_icon_modulate"]:
+	for color: StringName in [
+		&"up_hover_icon_modulate",
+		&"down_hover_icon_modulate",
+		&"up_pressed_icon_modulate",
+		&"down_pressed_icon_modulate"
+	]:
 		theme.set_color(color, "SpinBox", p.accent)
+	for color: StringName in [&"up_disabled_icon_modulate", &"down_disabled_icon_modulate"]:
+		theme.set_color(color, "SpinBox", Color(p.text_muted, 0.6))
 
 	# Menus, popups and dialogs
-	theme.set_color("font_color", "MenuBar", p.text)
-	theme.set_color("font_hover_color", "MenuBar", p.text)
+	# Also while a menu is open
+	for color: StringName in [
+		&"font_color",
+		&"font_hover_color",
+		&"font_pressed_color",
+		&"font_hover_pressed_color",
+		&"font_focus_color"
+	]:
+		theme.set_color(color, "MenuBar", p.text)
+	theme.set_color("font_disabled_color", "MenuBar", Color(p.text_muted, 0.6))
 	var menu_item := _box(Color.TRANSPARENT, 4, Vector4(8, 4, 8, 4))
 	theme.set_stylebox("normal", "MenuBar", menu_item)
+	theme.set_stylebox("disabled", "MenuBar", menu_item)
 	theme.set_stylebox("hover", "MenuBar", _box(p.hover, 4, Vector4(8, 4, 8, 4)))
 	theme.set_stylebox("pressed", "MenuBar", _box(p.hover, 4, Vector4(8, 4, 8, 4)))
 	var popup := _box(p.surface, 6, Vector4(4, 4, 4, 4), p.border, 1)
@@ -295,6 +330,12 @@ static func build(light: bool, accent := DEFAULT_ACCENT) -> Theme:
 	theme.set_color("font_disabled_color", "PopupMenu", Color(p.text_muted, 0.6))
 	theme.set_color("font_accelerator_color", "PopupMenu", p.text_muted)
 	theme.set_color("font_separator_color", "PopupMenu", p.text_muted)
+	# Separator lines keep Godot's shapes, in the border colour like the others
+	var defaults := ThemeDB.get_default_theme()
+	for style: StringName in [&"separator", &"labeled_separator_left", &"labeled_separator_right"]:
+		var line := defaults.get_stylebox(style, "PopupMenu").duplicate() as StyleBoxLine
+		line.color = p.border
+		theme.set_stylebox(style, "PopupMenu", line)
 	# Arrows from the icons, so they follow the theme like them
 	theme.set_icon("submenu", "PopupMenu", ARROW_RIGHT)
 	theme.set_icon("arrow", "OptionButton", ARROW_DOWN)
@@ -408,8 +449,6 @@ static func _add_embedded_windows(theme: Theme, p: Palette) -> void:
 	theme.set_icon("close_pressed", "Window", CLOSE)
 
 
-## Trees and item lists: a sunken background, rows shaded with the text colour when
-## hovered and in the accent colour when selected, and scroll bars to match
 ## The tabs of the open documents over the canvas, see [DocumentTabs], on a strip of the
 ## window's background. The active one is the colour of the toolbar under it, which it
 ## joins, with the accent along its top, like the Godot editor's scene tabs.
@@ -440,6 +479,8 @@ static func _add_tabs(theme: Theme, p: Palette) -> void:
 	theme.set_icon("close", "TabBar", CLOSE)
 
 
+## Trees and item lists: a sunken background, rows shaded with the text colour when
+## hovered and in the accent colour when selected, and scroll bars to match
 static func _add_lists(theme: Theme, p: Palette, focus: StyleBox) -> void:
 	var margins := Vector4(4, 4, 4, 4)
 	var hovered := _box(p.hovered, 3, margins)

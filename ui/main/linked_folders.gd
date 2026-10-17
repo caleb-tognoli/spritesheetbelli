@@ -154,9 +154,6 @@ func refresh() -> void:
 	visible = not folders.is_empty()
 	count_label.text = str(folders.size())
 	paused_row.visible = not watched
-	var link_color := get_theme_color("font_color", &"AccentLabel")
-	for color: StringName in [&"font_color", &"font_hover_color", &"font_pressed_color"]:
-		turn_on_button.add_theme_color_override(color, link_color)
 	turn_on_button.add_theme_font_size_override(
 		"font_size", get_theme_font_size("font_size", &"StatusLabel")
 	)

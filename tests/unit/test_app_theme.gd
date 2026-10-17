@@ -221,6 +221,60 @@ func test_text_on_the_selection_is_readable_whatever_the_accent() -> void:
 	assert_eq(white.get_color("font_selected_color", "Tree"), AppTheme.LIGHT_TEXT)
 
 
+func test_button_text_stays_put_when_hovered_or_pressed() -> void:
+	var theme := AppTheme.build(false)
+	for type: StringName in [
+		&"Button", &"MenuButton", &"OptionButton", &"CheckBox", &"CheckButton"
+	]:
+		var normal := theme.get_stylebox("normal", type)
+		for state: StringName in [&"hover", &"pressed", &"hover_pressed", &"disabled"]:
+			var box := theme.get_stylebox(state, type)
+			for side: Side in [SIDE_LEFT, SIDE_TOP]:
+				assert_eq(
+					box.get_margin(side),
+					normal.get_margin(side),
+					"%s %s, side %d" % [type, state, side]
+				)
+
+
+## Godot's own colours are for a dark background, so text left in them is white on white
+## in the light theme
+func test_no_text_is_left_in_godots_colours() -> void:
+	var defaults := ThemeDB.get_default_theme()
+	for light: bool in [false, true]:
+		var theme := AppTheme.build(light)
+		for type: StringName in [
+			&"Label",
+			&"RichTextLabel",
+			&"TooltipLabel",
+			&"Button",
+			&"LinkButton",
+			&"CheckBox",
+			&"CheckButton",
+			&"OptionButton",
+			&"MenuButton",
+			&"ColorPickerButton",
+			&"MenuBar",
+			&"PopupMenu",
+			&"LineEdit",
+			&"SpinBox",
+			&"ProgressBar",
+			&"Tree",
+			&"ItemList",
+			&"TabBar",
+			&"Window"
+		]:
+			for color: StringName in defaults.get_color_list(type):
+				var is_text := color.begins_with("font_") or color == &"default_color"
+				if not is_text and not color.ends_with("_icon_modulate"):
+					continue
+				var godots := defaults.get_color(color, type)
+				# Shadows and outlines, which are dark or hidden
+				if godots.a == 0.0 or godots.get_luminance() < 0.5:
+					continue
+				assert_true(_has_color(theme, color, type), "%s %s" % [type, color])
+
+
 func test_windows_inside_the_main_one_have_an_opaque_title_bar() -> void:
 	for light: bool in [false, true]:
 		var theme := AppTheme.build(light)
@@ -238,6 +292,16 @@ func test_windows_inside_the_main_one_have_an_opaque_title_bar() -> void:
 
 static func _distance(a: Color, b: Color) -> float:
 	return Vector3(a.r - b.r, a.g - b.g, a.b - b.b).length()
+
+
+## Whether [param theme] has the colour for [param type] or a class it's drawn like,
+## which Godot looks in before its own theme
+static func _has_color(theme: Theme, color: StringName, type: StringName) -> bool:
+	while type != &"":
+		if theme.has_color(color, type):
+			return true
+		type = ClassDB.get_parent_class(type)
+	return false
 
 
 func _use_stand_in_system() -> void:
