@@ -2,324 +2,127 @@
 
 <h1 align="center">spritesheetbelli</h1>
 
-<p align="center">Combine sprites into spritesheets and cut spritesheets into sprites.<br>
-A small desktop tool made with Godot.</p>
+<p align="center"><b>Your sprites, game-ready.</b><br>
+Cut, pack, animate and export spritesheets for any engine.</p>
 
-![spritesheetbelli with a slime spritesheet, its idle and jump rows and the animation preview](docs/screenshot.png)
+<p align="center">
+  <a href="https://github.com/caleb-tognoli/spritesheetbelli/releases"><b>Download</b></a> ·
+  <a href="docs/features.md">Features</a> ·
+  <a href="docs/command-line.md">Command line</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-## Features
+<p align="center">
+  <img src="https://img.shields.io/badge/Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Web-555?style=flat-square" alt="Windows, macOS, Linux and the web">
+  <img src="https://img.shields.io/badge/made%20with-Godot%204.7-478cbf?style=flat-square&logo=godotengine&logoColor=white" alt="Made with Godot 4.7">
+  <img src="https://img.shields.io/badge/license-MIT-3a3?style=flat-square" alt="MIT license">
+</p>
 
-- **Build sheets from sprites.** Add image files (PNG, JPG, WebP, animated GIF), whole
-  folders or dropped files. They're
-  sorted by name and placed in the first free cell, after the last frame or on a new row.
-- **Cut sheets into frames.** The grid is set by columns × rows or by cell size in pixels,
-  each following the other, and guessed from the file name (`hero_32x32.png`,
-  `walk_8x2.png`) or from the gaps between sprites, or where they touch; offset and
-  spacing handle sheets that aren't packed edge to edge, and pixels left over are pointed
-  out. The window starts in
-  Grid or Find sprites to match the sheet's layout, unless a data file comes with the
-  image. The empty cells of an added sheet are locked so added sprites skip them, unless
-  "Lock empty cells" is unticked. Sheets drawn on a solid colour, like magenta, have it
-  made transparent before they're cut, so the grid is guessed from the gaps and frames
-  come in clean; the eyedropper button in the toolbar picks another colour (from the
-  colour picker, or by clicking the preview), sets how close a colour must be, or turns it
-  off.
-- **Unpack packed sheets.** A TexturePacker, Aseprite or Phaser JSON or a libGDX / Spine
-  `.atlas` next to the image says where every frame is, on every page; trimmed and rotated
-  frames are restored and tags become animations. Without one, the sprites are found by
-  the transparent space around them, in boxes on the image you can move, resize, merge,
-  delete or draw before adding them.
-- **Packed layout.** Instead of a grid, frames can be laid out packed tightly on pages,
-  like a texture atlas, and edited right there: drag frames anywhere (or onto a new page),
-  pin them, pack again. An opened atlas keeps every frame where it is, so exporting it
-  again after adding or editing frames keeps the places engines know. Page size, packing,
-  spacing, padding, extrusion, turning frames to fit and trimming are in the sidebar;
-  sharing identical frames and power-of-two or square pages are in Settings.
-- **Pivots** (turn them on in Settings): the point engines anchor each frame at, shown on
-  the selected frames and the one under the mouse and dragged there (all the selected
-  frames' at once), or set with presets, and exported where the format has them.
-- **Edit frames.** Click or box-select frames and drag them where they go: there are no
-  tools to switch between. Flip, rotate, trim, remove a background colour (from the
-  eyedropper button in the toolbar, picked by clicking a frame and previewed on the
-  selected frames, or every frame, until you Apply; only where it reaches the frame's
-  edges unless Contiguous only is off), add an outline, replace,
-  cut/copy/paste (also images copied in other apps), duplicate, insert or remove cells,
-  insert, remove or reorder rows. Everything can be undone.
-- **Stay linked to your art files.** Sprites and sheets remember the file they came from.
-  When you save it again in your drawing program, spritesheetbelli asks whether to reload
-  it, keeping the flips, trims, outlines and moves made here or going back to the file as
-  it is; with several changed files, answer once for all of them. Sheets are cut again in
-  the same places (data-file frames by name), GIF frames by number. Link a folder with Add
-  Folder or by dropping it on the window: new images you save there are added
-  automatically, deleted ones can be removed, and renamed ones stay linked.
-- **Line frames up.** Move frames inside their cells a pixel at a time with the arrow
-  keys, or align them to an edge of their cells; trimming keeps every pixel where it was, so
-  animations don't jump. Turn on the rulers (Y) and click them to add guides repeated in
-  every cell, like a baseline, then Alt+arrow keys put each frame on the next one.
-- **Resize without losing quality.** Sprites are always resized from the originals, with
-  Nearest for sharp pixel art, and pixel-perfect zoom keeps every pixel the same size on
-  screen. Or resize the canvas instead: add transparent space around the frames, or crop
-  it away without touching what's drawn.
-- **Animations:** make named animations from a row, a column or the selected frames in a
-  keystroke (F2, Shift+F2, Ctrl+F2), named after what their frames' names share, or from
-  a range of cells, each with its own speed and loop, ping-pong or play-once. Put their
-  frames together on a timeline by dragging them from the sheet or the Sprites panel
-  (dropped anywhere else in the panel, they make a new animation), reordering or copying
-  them and setting how long each is shown, or type them by number or name (`0-3, 4*2`);
-  mirror walk_right into walk_left; generate the frames between two key frames, each
-  piece of the sprite turned about its joint, squashed or stretched part of the way, cloth
-  and bending limbs bent, without new colours, and add them to the animations that play
-  the keys in a row; play them in the animation panel under the sheet, with onion skin,
-  zoom, a scrub bar and a choice of background, and export them; only animations are
-  exported as animations.
-  Animations are named on the grid, next to or around their frames; the tag button in
-  the toolbar chooses which. Click a name to play it, double-click to rename it,
-  right-click for more.
-- **Export** the sheet as PNG, JPG or WebP; every frame as its own PNG with file names
-  like `{animation}_{animation_frame:2}` (walk_00, walk_01…); a tightly packed atlas, or
-  its pages as images; an animation as an animated GIF, or a GIF of each animation; or
-  GameMaker strips (`walk_strip8.png`, each animation's frames side by side). Images, data
-  files, atlases and strips can be written at several scales at once (`hero.png`,
-  `hero@2x.png`, pages `hero_0@2x.png`, strips `walk@2x_strip8.png`), each resized from
-  the original frames with its own data file. A project keeps a list of exports, each with
-  its settings and where it writes (relative to the project), so Export Again or the
-  command line writes them all at once. The Export button sits at the top of the sidebar
-  with the size of what it writes and how many exports there are, and the Export dialog
-  shows only the settings that matter for each, with a Tokens… list for file names and the
-  files it will write. Padding, spacing and edge extrusion are set in the sidebar, where
-  the preview shows them, for the grid and the atlas.
-- **Metadata for game engines:** TexturePacker-style JSON (hash or array, with
-  Aseprite-style tags), a Phaser 3 multi-atlas, a libGDX / Spine `.atlas`, Sparrow /
-  Starling XML, a Godot `SpriteFrames` resource with the sheet's animations (or every
-  frame in one "default" animation when there are none), a Unity `.tpsheet`, a Cocos2d-x
-  `.plist`, CSS or SCSS sprites (with the @2x image for high-density screens when exported
-  at scales 1 and 2), and for grid sheets a Defold tile source, for a grid sheet or every
-  page of a packed atlas, with pivots and turned frames where the format has them. Every
-  data file comes from a template, and your own templates can add formats (see [Data file
-  templates](#data-file-templates)). For Unity, install the free [TexturePacker Importer](
-  https://assetstore.unity.com/packages/tools/sprite-management/texturepacker-importer-166
-  41) package and export with the Unity data file into your project's Assets folder, next
-  to the PNG: Unity cuts it into one sprite per frame, named after the frames, with their
-  pivots, and cuts it again whenever you export over it.
-- **Tabs.** Every project opens in a tab of its own over the canvas, with its own undo
-  history, selection and view: switch with a click or Ctrl+Tab, drag tabs to reorder
-  them, and copy frames from one project to paste them in another. With Reopen last
-  projects on in Settings, they all open again at the next start.
-- **Start screen.** A new tab shows your recent projects and sheets with thumbnails, to
-  open with a click, and buttons to open a file or add sprites.
-- **Crash recovery.** Unsaved work in every tab is copied every few minutes and offered
-  on the start screen after a crash.
-- **Projects** (`.sbelli`) reopen exactly as they were, with frames at their original
-  size and the view you left them at.
-- English and Italian. Light and dark themes, or the system's as it changes, an accent
-  colour of your choice or the system's, interface scaling and keyboard shortcuts.
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshot-light.png">
+  <img src="docs/screenshot.png" alt="spritesheetbelli with a slime spritesheet, its hop and idle animations, and the hop animation playing in the panel below">
+</picture>
+
+spritesheetbelli sits between your drawing program and your game engine. Drop in loose
+frames or a finished sheet, line them up, turn them into animations, and export exactly
+what your engine expects. No copying numbers into import settings, no re-cutting a sheet
+because one frame changed.
+
+## Cut any sheet
+
+![The Add Spritesheet window cutting a slime sheet drawn on magenta into 12 frames, with the magenta already gone, and the original file in a corner](docs/cut.png)
+
+Open a sheet and the grid is already worked out, from the file name (`hero_32x32.png`),
+the gaps between sprites or the data file next to it. Solid backgrounds like magenta are
+made transparent before cutting. Loose sprites are found by the space around them, and
+atlases from TexturePacker, Aseprite, Phaser, libGDX or Spine unpack frame for frame,
+tags included.
+
+## Your art files stay in charge
+
+![The main window asking whether to reload slime_sheet.png, which changed on disk, keeping the 3 frames edited in spritesheetbelli](docs/reload.png)
+
+Every frame remembers the file it came from. Save it again in Aseprite, Photoshop or
+Krita and spritesheetbelli offers to reload it, keeping the flips, trims and moves you
+made here. Link a folder and new frames show up on their own as you save them.
+
+## Export for every engine
+
+![The Export dialog with five exports: a Godot SpriteFrames, a Unity sheet, a Phaser 3 atlas, a GIF of each animation and GameMaker strips](docs/export.png)
+
+One project, every format you ship:
+
+| Engine or tool | What you get |
+| --- | --- |
+| **Godot** | A `SpriteFrames` resource with every animation |
+| **Unity** | A `.tpsheet` for the free TexturePacker Importer, with pivots |
+| **Phaser 3** | A multi-atlas JSON |
+| **GameMaker** | `walk_strip8.png` strips, one per animation |
+| **libGDX / Spine** | An `.atlas` file |
+| **Defold, Cocos2d-x, Sparrow / Starling** | A tile source, a `.plist`, an XML |
+| **Web** | CSS or SCSS sprites, with @2x images |
+| **Everything else** | TexturePacker / Aseprite JSON, or [a template of your own](docs/templates.md) |
+
+Plus PNG, JPG and WebP sheets, every frame as its own file, packed atlases and animated
+GIFs, at as many scales as you need. A project remembers its exports, so **Export Again**
+writes them all at once, from the app or from your build script:
+
+```sh
+spritesheetbelli --headless -- --export hero.sbelli
+```
+
+## Draw the keys, get the rest
+
+<p align="center"><img src="docs/inbetweens.gif" width="456" alt="A slime bouncing: on the left the two drawn frames, jumping from one to the other; on the right the same two with six generated frames between them, bouncing smoothly"></p>
+
+Pick two frames and spritesheetbelli fills in the ones between them, evenly or eased in
+and out. Each part of the sprite turns around its joint, cloth and limbs bend, and no
+new colours show up in your palette. Preview the result, nudge it with pins if a limb
+goes the wrong way, and the new frames land in every animation that plays those keys.
 
 <details>
-<summary>Packed layout</summary>
+<summary>The Generate In-Betweens window</summary>
 
-![Sprites of different sizes packed on a page, one of them turned to fit, with the atlas settings in the sidebar and the list of sprites](docs/screenshot-packed.png)
+![The Generate In-Betweens window: two frames of the slime's bounce onion-skinned at the top, three generated frames between them in a list, and the result playing](docs/inbetweens.png)
 </details>
 
-<details>
-<summary>Light theme</summary>
+## And the rest
 
-![The same spritesheet in the light theme](docs/screenshot-light.png)
-</details>
+- **Animations.** Turn a row into an animation in one keystroke, set how long each frame
+  shows on a timeline, mirror `walk_right` into `walk_left`, and preview with onion skin.
+- **Packed atlases.** Trimmed, rotated and tightly packed, with frames you can drag
+  around and pin in place.
+- **Pixel-perfect.** Resizing always starts from the originals, the zoom never blurs, and
+  guides repeat in every cell so frames line up on one baseline.
+- **Frame editing.** Flip, rotate, trim, outline, remove backgrounds, paste from other
+  apps. All undoable.
+- **Comfortable.** Projects in tabs, crash recovery, a command palette (Ctrl+Shift+P),
+  pivots, light and dark themes, in English and Italian.
+
+[See everything it does →](docs/features.md)
 
 ## Download
 
-Builds for Windows, macOS, Linux and the web are attached to each
-[release](https://github.com/caleb-tognoli/spritesheetbelli/releases). The web version
-runs in the browser: opening files uses the browser's file picker and saving downloads
-the result.
-
-Installed, spritesheetbelli opens `.sbelli` projects when you double-click them, and
-shows up in "Open with" for images and spritesheet data files (`.json`, `.atlas`):
+Grab the latest build for Windows, macOS, Linux or the web from
+[Releases](https://github.com/caleb-tognoli/spritesheetbelli/releases).
 
 - **Windows:** run `spritesheetbelli-…-windows-setup.exe` (no administrator rights
-  needed). The `.zip` is the same app without installing it.
+  needed), or use the `.zip` without installing.
 - **macOS:** move the app to Applications.
-- **Linux:** extract the archive and run `./install.sh`, which also adds the launcher and
-  the `spritesheetbelli` command (`./install.sh --uninstall` removes it all).
+- **Linux:** extract the archive and run `./install.sh`, which adds the launcher and the
+  `spritesheetbelli` command (`./install.sh --uninstall` removes it).
+- **Web:** runs in the browser; opening files uses the browser's file picker and saving
+  downloads the result.
 
-### Publishing a release
+Installed, it opens `.sbelli` projects on double-click and shows up in "Open with" for
+images and spritesheet data files.
 
-Push a tag such as `v0.2.0`. The Release workflow builds every platform, attaches the
-builds to a GitHub release and publishes the web version to GitHub Pages (set
-*Settings > Pages > Source* to *GitHub Actions* once). To also publish on itch.io, add
-the repository variable `ITCH_GAME` (like `your-name/spritesheetbelli`) and the secret
-`BUTLER_API_KEY`.
+## For developers
 
-## Keyboard shortcuts
+- [Command line](docs/command-line.md): pack, cut and export from build scripts.
+- [Data file templates](docs/templates.md): add your own export formats.
+- [Contributing](CONTRIBUTING.md): building from source, tests, translations and releases.
 
-Press **F1** in the app for every shortcut and what the mouse does in the preview; type in
-its search box to find one by name or by key (like "ctrl+e"). Menus show each action's
-shortcut, and toolbar buttons show it when hovered. **Ctrl+Shift+P** (or Ctrl+K, which
-also works in browsers) opens the command palette: type part of an action's name, an
-animation or an export, then press Enter.
+## License
 
-## Command line
-
-The same packing and exporting can run in build scripts. Arguments go after `--`:
-
-```sh
-# Pack a folder of frames, 8 per row, with a Godot SpriteFrames file
-spritesheetbelli --headless -- --pack ./frames --out hero.png --columns 8 --metadata godot
-
-# Export a saved project, also writing every frame as its own PNG
-spritesheetbelli --headless -- --export hero.sbelli --out hero.png --sprites ./hero_frames
-
-# Write every export the project has, as set up in the Export dialog
-spritesheetbelli --headless -- --export hero.sbelli
-
-# Write a 1x and a 2x sheet, each with its JSON file
-spritesheetbelli --headless -- --export hero.sbelli --out hero.png --metadata json --scales 1,2
-
-# A GIF of each animation, and GameMaker strips at 1x and 2x
-spritesheetbelli --headless -- --export hero.sbelli --gifs ./gifs --strips ./gamemaker --scales 1,2
-
-# Cut a packed sheet into frames by the space around the sprites
-spritesheetbelli --headless -- --cut packed.png --detect --sprites ./frames
-
-# Cut a sheet drawn on magenta into frames, keeping the magenta
-spritesheetbelli --headless -- --cut hero_magenta.png --grid 8x2 --keep-background --sprites ./frames
-
-# Pack a project tightly with a JSON file, and make a GIF of its walk animation
-spritesheetbelli --headless -- --export hero.sbelli --out hero_atlas.png --atlas
-spritesheetbelli --headless -- --export hero.sbelli --out walk.gif --animation walk --scale 4
-
-# Keep an atlas's layout in a project, then write it for libGDX on pages of up to 1024 px
-spritesheetbelli --headless -- --cut ui.atlas --layout packed --out ui.sbelli
-spritesheetbelli --headless -- --export ui.sbelli --out ui.png --atlas-data atlas --max-size 1024
-
-# Write the data file from a template of your own
-spritesheetbelli --headless -- --export hero.sbelli --out hero.png --template my_engine.template
-```
-
-`--cut` makes a solid background colour, like magenta, transparent unless
-`--keep-background` is given; `--tolerance` sets how close a colour must be, and
-`--all-matching` removes it inside the sprites too, not only where it reaches the edges. Run with
-`--help` for every option. The exit code is 0 on success, 1 on errors and 2 on bad usage.
-
-## Data file templates
-
-Every data file is written from a template: plain text with Mustache-like tags. The
-bundled ones are in `templates/`; put your own in the templates folder (Export dialog >
-Open templates folder) to list them with the others, or pick one file with Custom
-template. A template there with the file name of a bundled one (like `json.template`)
-replaces it, marked "(yours)"; take it out to get the bundled one back. On the command
-line a template's id is its file name without `.template` (`--metadata <id>`,
-`--atlas-data <id>`), and `--template <file>` uses any file.
-
-    {{name}}                 a value; nothing when it isn't set
-    {{page.w}}  {{list.0}}   a value inside another
-    {{.}}                    the current item, in a section over plain values
-    {{name | json-escape}}   a value through filters, left to right
-    {{#frames}}…{{/frames}}  once for every item of a list, or once when a value is set
-    {{^frames}}…{{/frames}}  once when a value isn't set or a list is empty
-    {{! comment }}           left out
-
-Not set: nothing, false, empty text, an empty list. Numbers are always set, 0 too. Names
-are looked up in the current item, then in the sections around it, then in the export.
-Inside a list, `@index` is the item's position from 0, and `@first` and `@last` say
-whether it's the first or the last: `{{#frames}}"{{name}}"{{^@last}}, {{/@last}}{{/frames}}`.
-A line holding only sections and comments is left out, and so is the line break at the
-very end. Filters: `json`, `json-escape`, `xml-escape`, `css-ident`, `tpsheet-escape`,
-`lower`, `upper`, `pad N`, `plus N`, `minus N`, `times N`, `divide N`, `negate`,
-`round N`; N is a number or a value's name (`{{x | plus w}}`).
-
-A template starts with a header comment of `key: value` lines, up to an empty line:
-
-    {{! my engine
-    name: My engine
-    extension: txt
-    per_page: false
-    rotation: none
-    layouts: grid, packed
-    }}
-    {{#frames}}{{name}} {{x}} {{y}} {{w}} {{h}}
-    {{/frames}}
-
-`per_page`: a file for each page of an atlas. `rotation`: which way turned frames are
-stored (clockwise, counter-clockwise, or none when the format can't say, and then frames
-aren't turned). `layouts`: grid sheets, packed atlases or both. Without a header, the
-extension comes from the file name (`list.csv.template`), else txt.
-
-Values:
-- the export: app, version, fps, frames, frame_count, animations, animation_count, pages,
-  page_count, page, image, image_w, image_h, all_frames, related, and for a grid sheet
-  columns, rows, cell_w, cell_h, padding, spacing, extrude;
-- each frame: index, name, file_name, column, row, cell, page, x, y, w, h, packed_w,
-  packed_h, rotated, trimmed, source_w, source_h, trim_left/top/right/bottom, has_pivot,
-  pivot_x, pivot_y, pivot_px_x, pivot_px_y, duration;
-- each animation: name, color (like Aseprite's `#rrggbbff`), fps, mode, loop, ping_pong,
-  once, frames, frame_count, played_frames, from, to, direction, reversed, from_cell,
-  to_cell; its frames also have relative_duration;
-- each page: index, image, w, h, frames, frame_count, retina_image (its image at twice the
-  size, in the 1x file of an export at scales 1 and 2).
-
-At scales other than 1, every size and position (and a grid's cell_w, cell_h, padding,
-spacing and extrude) is scaled.
-
-The comments in `scripts/export/template_data.gd` describe each one.
-
-## Translations
-
-spritesheetbelli is in English and Italian; pick one in Settings > Interface > Language
-(System follows the operating system). To add a language:
-
-1. Copy `translations/spritesheetbelli.pot` to a file named after the language's code,
-   like `de.po`, and translate it with a gettext editor such as Poedit, with the
-   language's plural forms.
-2. To try it, put it in the translations folder (the folder button next to the Language
-   setting) and reopen Settings: the language is in the list. This works in the released
-   app too, on desktops.
-3. To ship it, put it in `translations/` and add it in Project Settings > Localization >
-   Translations.
-
-The text to translate is collected with
-`godot --headless --path . -s res://_dev/generate_pot.gd`, which writes
-`translations/spritesheetbelli.pot` from the scripts and scenes listed in Project Settings
-> Localization > POT Generation. Run it after changing text (the tests say when it's out
-of date), then update each `.po` from it, e.g.
-`msgmerge --update translations/it.po translations/spritesheetbelli.pot` or Poedit's
-Update from POT. In code, text goes through `tr()` (`tr_n()` for counts, with whole
-sentences as formats like `tr("Saved %s") % name`); text kept to translate where it's
-shown, like action names, is marked with `L10n.mark()`, or with a `# L10n.mark` comment on
-a constant.
-
-## Building from source
-
-1. Install [Godot 4.7](https://godotengine.org/download).
-2. Open `project.godot` in Godot, or run it directly: `godot --path .`
-3. To make builds, install the export templates and use Project > Export; the presets
-   in `export_presets.cfg` are ready for Windows, macOS, Linux and the web.
-
-### Tests and style
-
-```sh
-godot --headless --path . res://tests/test_runner.tscn   # exit code = failures
-pip install "gdtoolkit==4.*"
-gdlint scripts ui tests
-gdformat scripts ui tests
-```
-
-CI runs the same on every push. Godot's script editor keeps indentation on blank lines,
-so run `gdformat` before committing (or enable *Trim trailing whitespace on save* in the
-editor settings).
-
-### How it's organised
-
-| Path | What's there |
-| --- | --- |
-| `scripts/resources/spritesheet.gd` | The spritesheet data and every edit |
-| `scripts/resources/packed_layout.gd` | Where frames are in the packed layout |
-| `scripts/frame_edits.gd`, `scripts/frame_source.gd` | Pixel edits that can be made again, and the files frames are linked to |
-| `scripts/document.gd` | The open document: file, unsaved state, undo history |
-| `scripts/export/` | Exporting images, sprites, atlases and metadata; the packer |
-| `scripts/import/` | Reading where frames are in packed sheets |
-| `scripts/autoloaded/` | Global state, actions and shortcuts, settings, dialogs |
-| `ui/main/` | The main window, menus and file handling |
-| `ui/spritesheet_preview/` | The preview that draws and edits the grid |
-| `tests/` | The test runner and tests |
-
+[MIT](LICENSE)

@@ -30,7 +30,7 @@ A template is plain text with Mustache-like tags, filled with the frames, animat
 pages of the export. The comment at its top says the format's name, the extension of its
 file, whether an atlas gets a file per page, which way turned frames are stored and which
 layouts it can describe. How to write one:
-%s#data-file-templates
+%s/blob/main/docs/templates.md
 """
 
 ## The folder of the user's own templates, listed after the bundled ones
