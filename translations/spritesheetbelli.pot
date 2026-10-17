@@ -1130,6 +1130,10 @@ msgstr ""
 msgid "Made with Godot %s · MIT License"
 msgstr ""
 
+#: res://ui/main/about_dialog.gd
+msgid "Licenses"
+msgstr ""
+
 #: res://ui/main/action_reasons.gd
 msgid "No frames selected"
 msgstr ""

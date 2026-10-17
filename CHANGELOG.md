@@ -3,7 +3,7 @@
 All notable changes to spritesheetbelli. The version is set in `project.godot`
 (`application/config/version`) and shown in Help > About.
 
-## Unreleased
+## 1.0.0
 
 ### Added
 - Tabs: several projects open at once, one per tab over the canvas, each with its own

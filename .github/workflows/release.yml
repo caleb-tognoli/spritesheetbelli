@@ -1,8 +1,10 @@
 name: Release
 
-# Push a tag like v0.2.0 to build every platform, attach the builds to a GitHub
-# release and publish the web version to GitHub Pages. Run it by hand to get the
-# builds as workflow artifacts without releasing.
+# Push a tag like v1.0.0 to build every platform, attach the builds to a GitHub
+# release and publish the web version to GitHub Pages. The tag must match the version
+# in project.godot and export_presets.cfg, and the release notes are the CHANGELOG.md
+# section of that version. Run it by hand to get the builds as workflow artifacts
+# without releasing.
 on:
   push:
     tags: ["v*"]
@@ -16,6 +18,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check the version and write the release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          fail() { echo "::error::$1"; exit 1; }
+          grep -qxF "config/version=\"$VERSION\"" project.godot \
+            || fail "project.godot's config/version isn't $VERSION"
+          for line in "application/file_version=\"$VERSION.0\"" "application/product_version=\"$VERSION.0\"" \
+            "application/short_version=\"$VERSION\"" "application/version=\"$VERSION\""; do
+            grep -qxF "$line" export_presets.cfg || fail "export_presets.cfg has no $line"
+          done
+          # The section of this version, with its wrapped lines joined: GitHub shows
+          # every line break in release notes
+          awk -v v="$VERSION" '
+            $0 == "## " v { found = 1; next }
+            !found { next }
+            /^## / { exit }
+            /^$/ || /^#/ { flush(); print; next }
+            /^- / { flush(); line = $0; next }
+            { sub(/^ +/, ""); line = line == "" ? $0 : line " " $0 }
+            function flush() { if (line != "") print line; line = "" }
+            END { flush() }
+          ' CHANGELOG.md > release_notes.md
+          grep -q '[^[:space:]]' release_notes.md || fail "CHANGELOG.md has no \"## $VERSION\" section"
 
       - name: Cache Godot and export templates
         id: cache
@@ -85,7 +112,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
-          generate_release_notes: true
+          body_path: release_notes.md
 
   pages:
     # Needs Settings > Pages > Source set to "GitHub Actions"

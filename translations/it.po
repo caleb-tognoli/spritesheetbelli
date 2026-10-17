@@ -1134,6 +1134,10 @@ msgstr "Informazioni su spritesheetbelli"
 msgid "Made with Godot %s · MIT License"
 msgstr "Fatto con Godot %s · Licenza MIT"
 
+#: res://ui/main/about_dialog.gd
+msgid "Licenses"
+msgstr "Licenze"
+
 #: res://ui/main/action_reasons.gd
 msgid "No frames selected"
 msgstr "Nessun frame selezionato"

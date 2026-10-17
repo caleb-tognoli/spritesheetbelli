@@ -1,6 +1,6 @@
 class_name AboutDialog
 extends AcceptDialog
-## Shows the logo, version and links.
+## Shows the logo, version and links, and the licenses of the app and of Godot.
 
 const REPOSITORY := "https://github.com/caleb-tognoli/spritesheetbelli"
 # L10n.mark
@@ -8,6 +8,8 @@ const REPOSITORY := "https://github.com/caleb-tognoli/spritesheetbelli"
 const DESCRIPTION := "Combine sprites into spritesheets and cut spritesheets into sprites."
 
 var _engine := Label.new()
+var _licenses := AcceptDialog.new()
+var _license_text := TextEdit.new()
 
 
 func _init() -> void:
@@ -55,6 +57,51 @@ func _init() -> void:
 	link.pressed.connect(OS.shell_open.bind(REPOSITORY))
 	box.add_child(link)
 
+	var licenses_button := Button.new()
+	licenses_button.text = "Licenses"
+	licenses_button.flat = true
+	licenses_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	licenses_button.pressed.connect(_show_licenses)
+	box.add_child(licenses_button)
+
+	_licenses.title = "Licenses"
+	_licenses.ok_button_text = "Close"
+	DialogButtons.apply(_licenses)
+	_license_text.editable = false
+	_license_text.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	_license_text.custom_minimum_size = Vector2(560, 420)
+	_licenses.add_child(_license_text)
+	add_child(_licenses)
+
 
 static func get_version() -> String:
 	return ProjectSettings.get_setting("application/config/version", "")
+
+
+## The app's license, Godot's, and those of the libraries in Godot, which every copy of
+## the app has to show. Left in English, as licenses are.
+static func get_license_text() -> String:
+	var sections := PackedStringArray()
+	var own := FileAccess.get_file_as_string("res://LICENSE").strip_edges()
+	if own:
+		sections.append("spritesheetbelli\n\n" + own)
+	sections.append("Godot Engine\n\n" + Engine.get_license_text().strip_edges())
+	var components := PackedStringArray()
+	for component: Dictionary in Engine.get_copyright_info():
+		var lines := PackedStringArray([component.name])
+		for part: Dictionary in component.parts:
+			for holder: String in part.copyright:
+				lines.append("    © " + holder)
+			lines.append("    License: " + part.license)
+		components.append("\n".join(lines))
+	sections.append("Third-party components of Godot Engine\n\n" + "\n\n".join(components))
+	var licenses := Engine.get_license_info()
+	for license: String in licenses:
+		sections.append("%s\n\n%s" % [license, (licenses[license] as String).strip_edges()])
+	return "\n\n\n".join(sections)
+
+
+func _show_licenses() -> void:
+	if _license_text.text.is_empty():
+		_license_text.text = get_license_text()
+	_licenses.popup_centered()

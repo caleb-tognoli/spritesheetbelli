@@ -107,8 +107,12 @@ Grab the latest build for Windows, macOS, Linux or the web from
 [Releases](https://github.com/caleb-tognoli/spritesheetbelli/releases).
 
 - **Windows:** run `spritesheetbelli-…-windows-setup.exe` (no administrator rights
-  needed), or use the `.zip` without installing.
-- **macOS:** move the app to Applications.
+  needed), or use the `.zip` without installing. The builds aren't signed, so the first
+  time Windows may say it protected your PC: click **More info**, then **Run anyway**.
+- **macOS:** move the app to Applications. The app isn't notarized by Apple, so the
+  first time macOS won't open it: click **Done**, open **System Settings > Privacy &
+  Security**, and click **Open Anyway** next to spritesheetbelli. Or, in Terminal:
+  `xattr -dr com.apple.quarantine /Applications/spritesheetbelli.app`.
 - **Linux:** extract the archive and run `./install.sh`, which adds the launcher and the
   `spritesheetbelli` command (`./install.sh --uninstall` removes it).
 - **Web:** runs in the browser; opening files uses the browser's file picker and saving

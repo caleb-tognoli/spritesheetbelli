@@ -1,5 +1,5 @@
 ; Windows installer, built by the Release workflow with NSIS:
-;   makensis -DVERSION=0.2.0 -DEXE=path/to/spritesheetbelli.exe -DOUTFILE=setup.exe installer.nsi
+;   makensis -DVERSION=1.0.0 -DEXE=path/to/spritesheetbelli.exe -DOUTFILE=setup.exe installer.nsi
 ; Installs for the current user (no administrator rights needed), makes spritesheetbelli
 ; the app that opens .sbelli projects, and offers it in "Open with" for the files it can
 ; import, without taking them over.

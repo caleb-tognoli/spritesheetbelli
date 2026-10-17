@@ -64,8 +64,16 @@ a constant.
 
 ## Publishing a release
 
-Push a tag such as `v0.2.0`. The Release workflow builds every platform, attaches the
-builds to a GitHub release and publishes the web version to GitHub Pages (set
+1. Set the version in `project.godot` (`application/config/version`) and in
+   `export_presets.cfg` (the Windows `file_version` and `product_version`, with a `.0`
+   at the end, and the macOS `short_version` and `version`).
+2. Rename `## Unreleased` in `CHANGELOG.md` to `## <version>`: that section becomes the
+   release notes.
+3. Push a tag such as `v1.0.0`.
+
+The Release workflow stops if the tag doesn't match those versions or the changelog has
+no section for it. Otherwise it builds every platform, attaches the builds to a GitHub
+release and publishes the web version to GitHub Pages (set
 *Settings > Pages > Source* to *GitHub Actions* once). To also publish on itch.io, add
 the repository variable `ITCH_GAME` (like `your-name/spritesheetbelli`) and the secret
 `BUTLER_API_KEY`.
