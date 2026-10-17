@@ -2009,6 +2009,22 @@ msgid "The keys and the frames between them, played"
 msgstr "I frame chiave e quelli intermedi, riprodotti"
 
 #: res://ui/main/inbetween_dialog.gd
+msgid "The frame halfway between the keys"
+msgstr "Il frame a metà tra i frame chiave"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Click to pin a spot, drag a pin to move it, right-click to take it away. Frames pass through what you pin."
+msgstr "Clicca per fissare un punto, trascina una puntina per spostarlo, clic destro per toglierla. I frame passano per ciò che fissi."
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Clear pins"
+msgstr "Togli le puntine"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Take every pin away"
+msgstr "Toglie tutte le puntine"
+
+#: res://ui/main/inbetween_dialog.gd
 msgid "Movement"
 msgstr "Movimento"
 

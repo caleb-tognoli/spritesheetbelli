@@ -147,6 +147,39 @@ func test_moving_keeps_the_pixels_and_colours() -> void:
 	assert_eq(img.get_data(), used.get_data(), "pixel for pixel")
 
 
+func test_pieces_landing_well_are_not_bent() -> void:
+	var morph := InBetween.prepare(key(figure(0)), key(figure(8)))
+	assert_true(morph.meshes.is_empty(), "the arm just moves")
+
+
+func test_shapes_the_pieces_dont_fit_are_bent() -> void:
+	var wide := blank(Vector2i(40, 32))
+	var tall := blank(Vector2i(40, 32))
+	for y in 32:
+		for x in 40:
+			var at := Vector2(x + 0.5, y + 0.5) - Vector2(20, 16)
+			if (at / Vector2(14, 3)).length() <= 1.0:
+				wide.set_pixel(x, y, Color.SEA_GREEN)
+			if (at / Vector2(5, 13)).length() <= 1.0:
+				tall.set_pixel(x, y, Color.SEA_GREEN)
+	var morph := InBetween.prepare(key(wide), key(tall))
+	assert_eq(morph.meshes.size(), 2, "both keys cut into triangles")
+	var mesh: KeyMesh = morph.meshes[0]
+	assert_eq(mesh.at(0.0), mesh.rest, "as drawn at the start")
+	assert_eq(mesh.at(1.0), mesh.target, "laid on the other key at the end")
+	# Laid onto the tall one, and halfway there in between
+	var heights := []
+	for corners in [mesh.rest, mesh.at(0.5), mesh.target]:
+		var low := INF
+		var high := -INF
+		for corner: Vector2 in corners:
+			low = minf(low, corner.y)
+			high = maxf(high, corner.y)
+		heights.append(high - low)
+	assert_true(heights[2] > 20.0, "as tall as the other key: %s" % [heights])
+	assert_true(heights[0] < heights[1] and heights[1] < heights[2], "growing: %s" % [heights])
+
+
 func test_no_new_colours() -> void:
 	var frames := InBetween.generate(key(sword(0.0)), key(sword(PI / 2)), 3)
 	var allowed := colors_in(sword(0.0))
@@ -300,7 +333,8 @@ func test_stretched_shapes_stay_smooth() -> void:
 				tall.set_pixel(x, y, Color.SEA_GREEN)
 	for frame in InBetween.generate(key(wide), key(tall), 3):
 		var img: Image = frame.image
-		# Round: across and down, one run each, growing then shrinking
+		# Round: across and down, one run each, growing then shrinking (give or take a pixel,
+		# as it may turn on its way, and a slanted outline steps)
 		for across in [true, false]:
 			var lines := img.get_height() if across else img.get_width()
 			var length := img.get_width() if across else img.get_height()
@@ -327,9 +361,9 @@ func test_stretched_shapes_stay_smooth() -> void:
 					widest = k
 			for k in range(1, runs.size()):
 				if k <= widest:
-					assert_true(runs[k] >= runs[k - 1], "growing: %s" % runs)
+					assert_true(runs[k] >= runs[k - 1] - 1, "growing: %s" % runs)
 				else:
-					assert_true(runs[k] <= runs[k - 1], "shrinking: %s" % runs)
+					assert_true(runs[k] <= runs[k - 1] + 1, "shrinking: %s" % runs)
 
 
 func test_a_round_outlined_shape_moved_keeps_its_outline() -> void:
@@ -347,3 +381,47 @@ func test_a_round_outlined_shape_moved_keeps_its_outline() -> void:
 	var used := ball.get_region(ball.get_used_rect())
 	for frame in frames:
 		assert_eq((frame.image as Image).get_data(), used.get_data(), "pixel for pixel")
+
+
+func test_soft_edged_keys_are_followed_pixel_by_pixel() -> void:
+	# A painted blob with a soft edge, shaded, moving and leaning
+	var blob := func(at: Vector2, lean: float) -> Image:
+		var img := blank(Vector2i(48, 40))
+		for y in 40:
+			for x in 48:
+				var offset := Vector2(x + 0.5, y + 0.5) - at
+				offset.x -= offset.y * lean
+				var reach := Vector2(offset.x / 7.0, offset.y / 11.0).length()
+				if reach <= 1.1:
+					var light := clampf(1.0 - (offset - Vector2(-2, -4)).length() / 14.0, 0.0, 1.0)
+					var color := Color(0.8, 0.2, 0.2).lerp(Color(1.0, 0.8, 0.6), light)
+					color.a = clampf((1.1 - reach) * 6.0, 0.0, 1.0)
+					img.set_pixel(x, y, color)
+		return img
+	var a: Image = blob.call(Vector2(14, 20), 0.0)
+	var b: Image = blob.call(Vector2(30, 18), 0.4)
+	assert_true(FlowMorph.soft(a, b), "soft-edged")
+	assert_false(FlowMorph.soft(figure(0), figure(8)), "pixel art")
+	var prepared := InBetween.prepare(key(a), key(b))
+	assert_ne(prepared.flow, null, "followed pixel by pixel")
+	var frame := prepared.frame(0.5)
+	var allowed := colors_in(a)
+	allowed.merge(colors_in(b))
+	for color: String in colors_in(frame.image):
+		assert_true(allowed.has(color), "%s comes from a key" % color)
+	var used := (frame.image as Image).get_used_rect()
+	var middle: int = frame.origin.x + used.position.x + used.size.x / 2
+	assert_true(middle >= 20 and middle <= 26, "halfway across: %s" % middle)
+	assert_true(used.size.y >= 21 and used.size.y <= 27, "whole: %s" % used.size.y)
+	# Hard-edged keys are still cut into pieces
+	assert_eq(InBetween.prepare(key(figure(0)), key(figure(8))).flow, null)
+
+
+func test_following_soft_keys_can_be_cancelled() -> void:
+	var a := blank(Vector2i(24, 24))
+	var b := blank(Vector2i(24, 24))
+	a.fill_rect(Rect2i(4, 4, 8, 8), Color(0.5, 0.2, 0.9, 0.6))
+	b.fill_rect(Rect2i(10, 6, 8, 8), Color(0.5, 0.2, 0.9, 0.6))
+	var cancelled := WorkProgress.new()
+	cancelled.cancelled = true
+	assert_eq(InBetween.prepare(key(a), key(b), Vector2i.ZERO, cancelled), null)

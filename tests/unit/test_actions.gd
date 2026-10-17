@@ -420,9 +420,9 @@ func test_generate_inbetweens() -> void:
 	assert_false(dialog.animations_check.visible, "no animation plays the keys")
 	assert_eq(dialog.place_option.get_selected_id(), InBetween.Place.AFTER_FIRST, "by default")
 	dialog.count_spin.value = 2
-	for i in 100:
-		if not dialog.get_ok_button().disabled:
-			break
+	# Working the frames out takes a while, on another thread
+	var waiting := Time.get_ticks_msec()
+	while dialog.get_ok_button().disabled and Time.get_ticks_msec() - waiting < 20000:
 		await get_tree().process_frame
 	assert_eq(dialog.strip.get_child_count(), 4, "the keys and the two frames between them")
 	dialog.get_ok_button().pressed.emit()
@@ -450,4 +450,110 @@ func test_inbetween_movement_typed_stays() -> void:
 	for i in 10:
 		await get_tree().process_frame
 	assert_eq(dialog.motion_x.value, 3.0, "not replaced by the movement found")
+	dialog.hide()
+
+
+## Waits for the dialog's frames, made on worker threads
+func _wait_for_frames(dialog: InBetweenDialog) -> void:
+	var waiting := Time.get_ticks_msec()
+	while dialog.get_ok_button().disabled and Time.get_ticks_msec() - waiting < 20000:
+		await get_tree().process_frame
+
+
+static func _click(view: MiddlePins, button: MouseButton, pressed: bool, at: Vector2) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = button
+	event.pressed = pressed
+	event.position = at
+	view._gui_input(event)
+
+
+static func _drag(view: MiddlePins, at: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT
+	event.position = at
+	view._gui_input(event)
+
+
+func test_middle_pins_convert_both_ways() -> void:
+	var view := MiddlePins.new()
+	add_child(view)
+	view.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	view.size = Vector2(240, 240)
+	view.area = Rect2i(10, 20, 16, 8)
+	assert_eq(view.get_zoom(), 15.0, "as big as it fits, in whole pixels")
+	assert_eq(view.get_picture_rect(), Rect2(0, 60, 240, 120), "centred")
+	assert_eq(view.to_screen(Vector2(10, 20)), Vector2(0, 60))
+	assert_eq(view.to_sheet(Vector2(15, 75)), Vector2(11, 21))
+	assert_eq(view.to_sheet(view.to_screen(Vector2(17.5, 23))), Vector2(17.5, 23))
+	view.area = Rect2i(0, 0, 480, 240)
+	assert_eq(view.get_zoom(), 0.5, "smaller when it doesn't fit")
+	assert_eq(view.to_sheet(view.to_screen(Vector2(100, 7))), Vector2(100, 7))
+	view.free()
+
+
+func test_inbetween_pins() -> void:
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	var view := dialog.pins_view
+	await _wait_for_frames(dialog)
+	assert_true(view.has_frame(), "the middle frame shows")
+	assert_true(dialog.clear_pins_button.disabled, "no pins yet")
+	var spot := Vector2(view.area.position) + Vector2(6, 5)
+	var half := Vector2(0.5, 0.5)
+
+	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))
+	assert_eq(view.pins, [{"at": spot, "to": spot}] as Array[Dictionary], "pinned in place")
+	_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(spot + half))
+	assert_true(dialog.get_ok_button().disabled, "the frames are made again")
+	assert_false(dialog.clear_pins_button.disabled)
+	await _wait_for_frames(dialog)
+	assert_eq(dialog._frames_pins, view.pins, "made with the pin")
+
+	# Dragging remakes only the middle frame until the pin is let go
+	var middle_passes := dialog._middle_passes
+	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))
+	_drag(view, view.to_screen(spot + Vector2(2, 1) + half))
+	assert_eq(view.pins.size(), 1, "the pin is grabbed, not a new one made")
+	assert_eq(view.pins[0], {"at": spot, "to": spot + Vector2(2, 1)}, "moved")
+	assert_false(dialog.get_ok_button().disabled, "the frames wait for the pin to be let go")
+	assert_true(dialog._middle_passes > middle_passes, "the middle frame is made again")
+	_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(spot + Vector2(2, 1) + half))
+	assert_true(dialog.get_ok_button().disabled, "let go: the frames are made again")
+	await _wait_for_frames(dialog)
+	assert_eq(dialog._frames_pins, view.pins, "made with the pin moved")
+
+	# Right-clicking a pin takes it away
+	_click(view, MOUSE_BUTTON_RIGHT, true, view.to_screen(spot + Vector2(2, 1) + half))
+	assert_true(view.pins.is_empty())
+	assert_true(dialog.clear_pins_button.disabled)
+	assert_true(dialog.get_ok_button().disabled, "the frames are made again")
+	await _wait_for_frames(dialog)
+	assert_true(dialog._frames_pins.is_empty())
+
+	# Clearing takes every pin away
+	for at: Vector2 in [spot, spot + Vector2(3, 3)]:
+		_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(at + half))
+		_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(at + half))
+	assert_eq(view.pins.size(), 2)
+	await _wait_for_frames(dialog)
+	dialog.clear_pins_button.pressed.emit()
+	assert_true(view.pins.is_empty(), "cleared")
+	assert_true(dialog.get_ok_button().disabled, "the frames are made again")
+	await _wait_for_frames(dialog)
+	assert_true(dialog._frames_pins.is_empty())
+
+	# Pins are for the movement they were placed with
+	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))
+	_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(spot + half))
+	dialog.motion_x.value = 2
+	assert_true(view.pins.is_empty(), "cleared when the movement changes")
+	await _wait_for_frames(dialog)
+	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))
+	_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(spot + half))
+	dialog.hide()
+	Actions.run(&"generate_inbetweens")
+	assert_true(view.pins.is_empty(), "cleared when opened again")
+	await _wait_for_frames(dialog)
 	dialog.hide()

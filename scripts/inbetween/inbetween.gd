@@ -5,8 +5,10 @@ extends RefCounted
 ## and in-betweens come out the same way, ready for [method Spritesheet.set_cell].
 ##
 ## Each key is cut into pieces, like an arm, a leg, a blade or the body, each followed to
-## where it went in the other key, turning about its joint along the way (see
-## [PieceMorph]). Every pixel is taken from a key, so no new colours appear.
+## where it went in the other key; then each key is bent onto the other, as rigidly as it
+## can, and frames bend it part of the way, turning pieces about their joints (see
+## [PieceMorph]). Painted keys with soft edges are followed pixel by pixel instead (see
+## [FlowMorph]). Every pixel is taken from a key, so no new colours appear.
 
 ## How the frames are spread between the keys: evenly, or bunched up near a key so the
 ## sprite starts or ends slowly
@@ -55,19 +57,31 @@ static func prepare(
 
 ## [param count] frames between keys [param a] and [param b], spread as [param spacing]
 ## says (see [method time_of]), the whole sprite moving by [param motion] from [param a]
-## to [param b] (found when zero)
+## to [param b] (found when zero), steered by [param pins] (see [method PieceMorph.frame])
 static func generate(
-	a: Dictionary, b: Dictionary, count: int, motion := Vector2i.ZERO, spacing := Spacing.LINEAR
+	a: Dictionary,
+	b: Dictionary,
+	count: int,
+	motion := Vector2i.ZERO,
+	spacing := Spacing.LINEAR,
+	pins: Array[Dictionary] = [],
 ) -> Array[Dictionary]:
 	var frames: Array[Dictionary] = []
 	var prepared := prepare(a, b, motion)
 	for i in count:
-		frames.append(generate_one(a, b, i, count, prepared, spacing))
+		frames.append(generate_one(a, b, i, count, prepared, spacing, pins))
 	return frames
 
 
+## The frame halfway between the keys, from [param prepared] (see [method prepare]),
+## steered by [param pins]: the frame pins are placed on, see [method PieceMorph.frame]
+static func middle(prepared: PieceMorph, pins: Array[Dictionary] = []) -> Dictionary:
+	return prepared.frame(0.5, pins)
+
+
 ## The frame at [param index] of [method generate], from [param prepared], what
-## [method prepare] worked out about the same keys
+## [method prepare] worked out about the same keys, steered by [param pins] (see
+## [method PieceMorph.frame])
 static func generate_one(
 	a: Dictionary,
 	b: Dictionary,
@@ -75,9 +89,10 @@ static func generate_one(
 	count: int,
 	prepared: PieceMorph,
 	spacing := Spacing.LINEAR,
+	pins: Array[Dictionary] = [],
 ) -> Dictionary:
 	var t := time_of(index, count, spacing)
-	var frame := prepared.frame(t)
+	var frame := prepared.frame(t, pins)
 	var img: Image = frame.image
 	var base := (a.image as Image).resource_name.get_basename()
 	img.resource_name = (

@@ -2051,6 +2051,22 @@ msgid "The keys and the frames between them, played"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
+msgid "The frame halfway between the keys"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Click to pin a spot, drag a pin to move it, right-click to take it away. Frames pass through what you pin."
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Clear pins"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Take every pin away"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
 msgid "Movement"
 msgstr ""
 

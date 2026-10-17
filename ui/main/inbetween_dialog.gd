@@ -1,8 +1,9 @@
 class_name InBetweenDialog
 extends ConfirmationDialog
 ## Makes frames between two key frames, see [InBetween]: how many, and where they go,
-## shown between the keys and played. Opened from the sheet with two frames selected, or
-## from an animation's timeline.
+## shown between the keys and played. The frame halfway between the keys shows big, to pin
+## spots of the sprite where they should be, see [MiddlePins]: every frame passes through
+## them. Opened from the sheet with two frames selected, or from an animation's timeline.
 
 ## Emitted with the frames made, to add between keys [param a] and [param b], see
 ## [method InBetween.add]
@@ -18,6 +19,8 @@ signal inbetweens_chosen(
 ## Side of each frame in the preview
 const TILE := 72
 const PLAYER := 120
+## Side of the frame halfway between the keys, to pin
+const MIDDLE := 240
 ## How fast the preview plays when no animation shows the keys, like a new animation
 const DEFAULT_FPS := 12.0
 ## Most movement that can be typed, in pixels
@@ -38,6 +41,10 @@ var preview_fps := DEFAULT_FPS
 var strip := HBoxContainer.new()
 ## Plays the keys and the frames between them
 var player := TextureRect.new()
+## The frame halfway between the keys, with the pins every frame passes through. They're
+## for these keys and this movement only, so they're cleared when either changes.
+var pins_view := MiddlePins.new()
+var clear_pins_button := Button.new()
 
 var _sheet: Spritesheet
 var _a := Vector2i.ZERO
@@ -69,6 +76,14 @@ var _preparing := Vector2i.ZERO
 ## Whether the movement was typed, so the one found later doesn't replace it
 var _motion_edited := false
 var _checker := ImageUtils.checker_texture(6)
+## The pins [member _frames] were made with
+var _frames_pins: Array[Dictionary] = []
+## Counts the times the middle frame was asked for, so only the last one is shown
+var _middle_passes := 0
+## Whether the middle frame is being made while a pin is dragged, and whether the pins
+## changed meanwhile, so it's made again once it's done
+var _middle_busy := false
+var _middle_stale := false
 
 
 func _init() -> void:
@@ -94,11 +109,40 @@ func _init() -> void:
 	previews.add_child(_framed(player, PLAYER))
 	player.tooltip_text = "The keys and the frames between them, played"
 
+	var work := HBoxContainer.new()
+	work.add_theme_constant_override("separation", 16)
+	box.add_child(work)
+	var middle := VBoxContainer.new()
+	middle.add_theme_constant_override("separation", 8)
+	work.add_child(middle)
+	var pins_tile := _checkered(MIDDLE)
+	pins_tile.add_child(pins_view)
+	middle.add_child(pins_tile)
+	pins_view.tooltip_text = "The frame halfway between the keys"
+	var pins_hint := Label.new()
+	pins_hint.text = (
+		"Click to pin a spot, drag a pin to move it, right-click to take it away. Frames "
+		+ "pass through what you pin."
+	)
+	pins_hint.theme_type_variation = &"StatusLabel"
+	pins_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pins_hint.custom_minimum_size.x = MIDDLE
+	middle.add_child(pins_hint)
+	clear_pins_button.text = "Clear pins"
+	clear_pins_button.icon = preload("res://assets/icons/Clear.svg")
+	clear_pins_button.tooltip_text = "Take every pin away"
+	clear_pins_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	clear_pins_button.disabled = true
+	middle.add_child(clear_pins_button)
+	var settings := VBoxContainer.new()
+	settings.add_theme_constant_override("separation", 12)
+	work.add_child(settings)
+
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 8)
-	box.add_child(grid)
+	settings.add_child(grid)
 
 	_motion_label.text = "Movement"
 	grid.add_child(_motion_label)
@@ -146,17 +190,17 @@ func _init() -> void:
 		"Play the new frames between the keys wherever an animation plays them one after "
 		+ "the other"
 	)
-	box.add_child(animations_check)
+	settings.add_child(animations_check)
 	_animations_info.theme_type_variation = &"StatusLabel"
 	_animations_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_animations_info.custom_minimum_size.x = 240
-	box.add_child(_animations_info)
+	settings.add_child(_animations_info)
 	keep_length_check.text = "Keep their length"
 	keep_length_check.tooltip_text = (
 		"The new frames share the time of the key before them, so the animations last as "
 		+ "long as before"
 	)
-	box.add_child(keep_length_check)
+	settings.add_child(keep_length_check)
 	var working_label := Label.new()
 	working_label.text = "Following every piece…"
 	working_label.theme_type_variation = &"StatusLabel"
@@ -179,8 +223,11 @@ func _init() -> void:
 		spin.value_changed.connect(
 			func(_value: float) -> void:
 				_motion_edited = true
+				_clear_pins_quietly()
 				_generate()
 		)
+	pins_view.pins_changed.connect(_on_pins_changed)
+	clear_pins_button.pressed.connect(pins_view.remove_all)
 	count_spin.value_changed.connect(func(_value: float) -> void: _generate())
 	spacing_option.item_selected.connect(func(_index: int) -> void: _generate())
 	animations_check.toggled.connect(func(on: bool) -> void: keep_length_check.disabled = not on)
@@ -191,6 +238,7 @@ func _init() -> void:
 				_timer.stop()
 				_passes += 1
 				_openings += 1
+				_middle_passes += 1
 				_cancel_preparing()
 	)
 
@@ -210,6 +258,8 @@ func open(sheet: Spritesheet, a: Vector2i, b: Vector2i, fps := 0.0) -> void:
 	_keys = [InBetween.key_of(sheet, a), InBetween.key_of(sheet, b)]
 	_frames.clear()
 	_prepared.clear()
+	pins_view.show_keys(_keys[0], _keys[1])
+	_clear_pins_quietly()
 	_cancel_preparing()
 	preview_fps = fps if fps > 0 else _animation_fps(sheet, a, b)
 	_timer.wait_time = 1.0 / preview_fps
@@ -244,6 +294,8 @@ func open(sheet: Spritesheet, a: Vector2i, b: Vector2i, fps := 0.0) -> void:
 		return
 	motion_x.set_value_no_signal(motion.x)
 	motion_y.set_value_no_signal(motion.y)
+	# The middle frame moves under the pins
+	_clear_pins_quietly()
 	_generate()
 
 
@@ -270,7 +322,8 @@ func _fill_places() -> void:
 	place_option.select(maxi(index, 0))
 
 
-## Makes the frames on worker threads, then shows them
+## Makes the frames, and the one halfway between the keys, on worker threads, passing
+## through the pins, then shows them
 func _generate() -> void:
 	_passes += 1
 	var pass_number := _passes
@@ -278,7 +331,7 @@ func _generate() -> void:
 	var a := _keys[0]
 	var b := _keys[1]
 	var count := int(count_spin.value)
-	var motion := Vector2i(int(motion_x.value), int(motion_y.value))
+	var motion := _motion()
 	var spacing: InBetween.Spacing = spacing_option.get_selected_id()
 	if not _prepared.has(motion) and (_work == null or _preparing != motion):
 		_prepare(a, b, motion)
@@ -287,15 +340,72 @@ func _generate() -> void:
 		if pass_number != _passes:
 			return
 	var prepared := _prepared[motion]
+	var pins := _pins()
+	_middle_passes += 1
+	var middle_pass := _middle_passes
+	# The middle frame last
 	var frames := await Parallel.map(
-		count,
-		func(i: int) -> Dictionary: return InBetween.generate_one(a, b, i, count, prepared, spacing)
+		count + 1,
+		func(i: int) -> Dictionary:
+			if i == count:
+				return InBetween.middle(prepared, pins)
+			return InBetween.generate_one(a, b, i, count, prepared, spacing, pins)
 	)
+	if middle_pass == _middle_passes:
+		pins_view.show_frame(frames[count])
 	if pass_number != _passes:
 		return
+	frames.resize(count)
 	_frames.assign(frames)
+	_frames_pins = pins
 	_show_preview()
 	get_ok_button().disabled = false
+
+
+## Remakes only the middle frame with the pins as they are, while one is dragged, on a
+## worker thread. While it's being made, the pins only change what's made next.
+func _refresh_middle() -> void:
+	if _middle_busy:
+		_middle_stale = true
+		return
+	_middle_busy = true
+	_middle_stale = true
+	while _middle_stale and _prepared.has(_motion()):
+		_middle_stale = false
+		_middle_passes += 1
+		var middle_pass := _middle_passes
+		var frame: Dictionary = await Parallel.run(
+			InBetween.middle.bind(_prepared[_motion()], _pins())
+		)
+		if middle_pass == _middle_passes:
+			pins_view.show_frame(frame)
+	_middle_busy = false
+
+
+## The pins as they are, to make frames with
+func _pins() -> Array[Dictionary]:
+	return pins_view.pins.duplicate(true)
+
+
+## The movement typed or found, see [method InBetween.prepare]
+func _motion() -> Vector2i:
+	return Vector2i(int(motion_x.value), int(motion_y.value))
+
+
+## Remakes the middle frame while a pin is dragged, and every frame once it's let go
+func _on_pins_changed(done: bool) -> void:
+	clear_pins_button.disabled = pins_view.pins.is_empty()
+	if done:
+		_generate()
+	else:
+		_refresh_middle()
+
+
+## Takes the pins away without remaking the frames, when they no longer fit the middle
+## frame
+func _clear_pins_quietly() -> void:
+	pins_view.remove_all(false)
+	clear_pins_button.disabled = true
 
 
 ## Prepares keys [param a] and [param b] with the whole sprite moving by [param motion]
@@ -361,18 +471,24 @@ func _show_preview() -> void:
 ## [param picture] on a checkerboard, [param side] wide and tall, scaled to fit without
 ## blurring
 func _framed(picture: TextureRect, side: int) -> Control:
-	var tile := TextureRect.new()
-	tile.texture = _checker
-	tile.stretch_mode = TextureRect.STRETCH_TILE
-	tile.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tile.custom_minimum_size = Vector2(side, side)
-	tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var tile := _checkered(side)
 	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	picture.mouse_filter = Control.MOUSE_FILTER_PASS
 	picture.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	tile.add_child(picture)
+	return tile
+
+
+## A checkerboard [param side] wide and tall
+func _checkered(side: int) -> Control:
+	var tile := TextureRect.new()
+	tile.texture = _checker
+	tile.stretch_mode = TextureRect.STRETCH_TILE
+	tile.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tile.custom_minimum_size = Vector2(side, side)
+	tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return tile
 
 

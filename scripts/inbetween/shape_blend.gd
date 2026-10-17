@@ -164,9 +164,14 @@ static func shape_of(
 
 
 ## The outline of [param shape] (see [method shape_of]), clockwise on screen, smoothed and
-## spaced evenly: [param count] points, or as many as its length needs when 0
+## spaced evenly: [param count] points, or as many as its length needs when 0, about
+## [param spacing] pixels apart
 static func outline_of(
-	shape: PackedByteArray, canvas_width: int, canvas_height: int, count: int
+	shape: PackedByteArray,
+	canvas_width: int,
+	canvas_height: int,
+	count: int,
+	spacing := SPACING
 ) -> PackedVector2Array:
 	var corners := _traced(shape, canvas_width, canvas_height)
 	var n := corners.size()
@@ -193,7 +198,7 @@ static func outline_of(
 		lengths.append(lengths[i] + smooth[i].distance_to(smooth[(i + 1) % n]))
 	var length := lengths[n]
 	if count <= 0:
-		count = clampi(int(length / SPACING), 24, MOST_POINTS)
+		count = clampi(int(length / spacing), 24, MOST_POINTS)
 	var result := PackedVector2Array()
 	var k := 0
 	for i in count:
