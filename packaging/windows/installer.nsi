@@ -21,8 +21,8 @@ OutFile "${OUTFILE}"
 InstallDir "$LOCALAPPDATA\Programs\${APP}"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
 
-!define MUI_ICON "${__FILEDIR__}/../../assets/branding/icon.ico"
-!define MUI_UNICON "${__FILEDIR__}/../../assets/branding/icon.ico"
+!define MUI_ICON "../../assets/branding/icon.ico"
+!define MUI_UNICON "../../assets/branding/icon.ico"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP}.exe"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
