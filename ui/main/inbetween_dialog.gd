@@ -555,9 +555,9 @@ func _texture_of(frame: Dictionary) -> ImageTexture:
 ## Shows the frame of the tile at [param index] in the player, paused
 func _show_tile(index: int) -> void:
 	player.playing = false
-	var position := player.get_cells().find(Vector2i(index, 0))
-	if position >= 0:
-		player.go_to(position)
+	var cell := player.get_cells().find(Vector2i(index, 0))
+	if cell >= 0:
+		player.go_to(cell)
 	_highlight(index)
 
 

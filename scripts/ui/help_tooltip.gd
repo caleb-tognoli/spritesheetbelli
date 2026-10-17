@@ -23,8 +23,8 @@ static func explain(title: String, text: String, controls: Array[Control]) -> vo
 
 
 ## What a tooltip shows: [param title] in bold over [param text], as wide as the longest
-## line up to [constant WIDTH], in the fonts [param owner] would use
-static func make(title: String, text: String, owner: Control) -> RichTextLabel:
+## line up to [constant WIDTH], in the fonts [param control] would use
+static func make(title: String, text: String, control: Control) -> RichTextLabel:
 	var label := RichTextLabel.new()
 	label.bbcode_enabled = true
 	label.fit_content = true
@@ -34,11 +34,13 @@ static func make(title: String, text: String, owner: Control) -> RichTextLabel:
 	if title:
 		bbcode = "[b]%s[/b]\n%s" % [_escaped(title), bbcode]
 	label.text = bbcode
-	var font := owner.get_theme_font(&"bold_font", &"RichTextLabel")
-	var font_size := owner.get_theme_font_size(&"bold_font_size", &"RichTextLabel")
+	var font := control.get_theme_font(&"bold_font", &"RichTextLabel")
+	var font_size := control.get_theme_font_size(&"bold_font_size", &"RichTextLabel")
 	var widest := 0.0
-	for line in [title] + Array(text.split("\n")):
-		widest = maxf(widest, font.get_string_size(line, 0, -1, font_size).x)
+	for line: String in [title] + Array(text.split("\n")):
+		widest = maxf(
+			widest, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		)
 	label.custom_minimum_size.x = minf(WIDTH, ceilf(widest) + 2.0)
 	return label
 
