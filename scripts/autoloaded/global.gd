@@ -89,6 +89,12 @@ func _ready() -> void:
 		window_placement.restore()
 
 
+func _exit_tree() -> void:
+	# The display server outlives the scripts, and freeing the lambda it holds after them
+	# crashes on quit
+	DisplayServer.set_system_theme_change_callback(Callable())
+
+
 ## Frees the nodes held in [param holder]'s variables that were never added to the tree,
 ## such as dialogs when the command line quits before the window is set up
 func free_unused_nodes(holder: Object) -> void:

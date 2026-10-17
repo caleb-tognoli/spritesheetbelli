@@ -105,7 +105,7 @@ func _ready() -> void:
 	for side: String in ["left", "top", "right", "bottom"]:
 		_margin.add_theme_constant_override("margin_" + side, MARGIN)
 	_scroll.add_child(_margin)
-	_scroll.resized.connect(_fit_width)
+	resized.connect(_fit_width)
 	_scroll.get_v_scroll_bar().visibility_changed.connect(_fit_width)
 	var column := VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -376,9 +376,13 @@ static func format_date(time: int, with_time := false) -> String:
 
 ## Makes the column as wide as the most cards that fit in a row, [constant MAX_COLUMNS]
 ## at most, in the middle, so the drop zone lines up with the cards
+## The room is this panel's width, not the scroll container's: that one is as wide as the
+## margins and what's between them at least, so wider margins would make more room for
+## wider margins again, laying out over and over until the queue of deferred calls
+## overflows and the app crashes, while it's narrower than the cards (as when it quits).
 func _fit_width() -> void:
 	var bar := _scroll.get_v_scroll_bar()
-	var room := _scroll.size.x - (bar.size.x if bar.visible else 0.0)
+	var room := size.x - (bar.size.x if bar.visible else 0.0)
 	var fitting := floori((room - MARGIN * 2 + CARD_GAP) / (CARD_SIZE.x + CARD_GAP))
 	var columns := clampi(fitting, 1, MAX_COLUMNS)
 	var width := columns * CARD_SIZE.x + (columns - 1) * CARD_GAP

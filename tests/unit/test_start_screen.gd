@@ -343,6 +343,20 @@ func test_as_wide_as_five_cards_at_most() -> void:
 	assert_eq(sixth.position.x, 0.0, "on the next row, under the first card")
 
 
+## Narrower than a card, as the window can be when it closes, its margins once grew with
+## the room they made, laying out over and over until the app crashed
+func test_narrower_than_a_card() -> void:
+	var narrow := StartScreen.new()
+	add_child(narrow)
+	narrow.size = Vector2(120, 600)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_eq(narrow._margin.get_theme_constant(&"margin_left"), 0)
+	assert_eq(narrow._margin.get_theme_constant(&"margin_right"), 0)
+	assert_eq(narrow.size.x, 120.0, "not widened by what it holds")
+	narrow.queue_free()
+
+
 func test_says_how_long_ago() -> void:
 	var now := 1_800_000_000
 	var ages := [

@@ -624,6 +624,8 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   a 6×3 sheet). Missing frames keep the spacing, sprites that touch are cut where they
   meet, an axis that can't be read gets square cells from the other, and a single sprite
   is one cell instead of 16 px tiles.
+- The app crashed every time it quit. The start screen also laid itself out over and
+  over while narrower than a recent file's card, until it crashed.
 
 ## 0.2.0
 
