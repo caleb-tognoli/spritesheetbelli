@@ -9,6 +9,7 @@ func before_each() -> void:
 	Global.document.reset()
 	# Remembered between runs, so each test starts from the default
 	Settings.set_value(&"background_tolerance", SheetBackground.DEFAULT_TOLERANCE)
+	Settings.set_value(&"background_contiguous", true)
 	window = load("res://ui/add_spritesheet/add_spritesheet_window.tscn").instantiate()
 	add_child(window)
 
@@ -27,6 +28,17 @@ static func magenta_sheet() -> Image:
 			var sprite := Rect2i(Vector2i(1, 1) + Vector2i(column, row) * 13, Vector2i(12, 12))
 			img.fill_rect(sprite, Color.RED)
 			img.fill_rect(Rect2i(sprite.position + Vector2i(2, 2), Vector2i(2, 2)), Color.BLUE)
+	return img
+
+
+## [method magenta_sheet] with a magenta hole of 2 px in the middle of each sprite, at
+## 6, 6 of it
+static func holed_sheet() -> Image:
+	var img := magenta_sheet()
+	for row in 2:
+		for column in 4:
+			var hole := Vector2i(7, 7) + Vector2i(column, row) * 13
+			img.fill_rect(Rect2i(hole, Vector2i(2, 2)), MAGENTA)
 	return img
 
 
@@ -121,7 +133,7 @@ func test_big_images_are_keyed_the_same_on_threads() -> void:
 	for y in 480:
 		img.fill_rect(Rect2i(0, y, 640, 1), Color8(y % 256, 0, 255 - y % 256))
 	assert_true(img.get_width() * img.get_height() >= ImageUtils.THREADED_PIXELS)
-	var keyed := SheetBackground.remove(img, Color8(100, 0, 155), 0.05)
+	var keyed := SheetBackground.remove(img, Color8(100, 0, 155), 0.05, false)
 	var max_distance := (0.05 * 255.0) ** 2 * 3.0
 	for y in 480:
 		var shade := y % 256
@@ -130,13 +142,64 @@ func test_big_images_are_keyed_the_same_on_threads() -> void:
 		for x: int in [0, 321, 639]:
 			assert_eq(keyed.get_pixel(x, y).a, alpha, "%d, %d" % [x, y])
 	# In bands of rows, while the main thread goes on
-	var in_bands := await SheetBackground.remove_async(img, Color8(100, 0, 155), 0.05)
+	var in_bands := await SheetBackground.remove_async(img, Color8(100, 0, 155), 0.05, false)
 	assert_eq(in_bands.get_size(), img.get_size())
 	assert_eq(in_bands.get_data(), keyed.get_data(), "the same pixels")
 	var small := magenta_sheet()
 	var small_keyed := await SheetBackground.remove_async(small, MAGENTA)
 	assert_eq(small_keyed.get_data(), SheetBackground.remove(small, MAGENTA).get_data())
 	assert_eq(small.get_pixel(0, 0), MAGENTA, "the image is left alone")
+
+
+func test_only_the_colour_reaching_the_edges_goes_when_contiguous() -> void:
+	var keyed := SheetBackground.remove(holed_sheet(), MAGENTA)
+	assert_eq(keyed.get_pixel(0, 0).a, 0.0, "around the sprites")
+	assert_eq(keyed.get_pixel(13, 13).a, 0.0, "between them")
+	assert_eq(keyed.get_pixel(7, 7), MAGENTA, "inside them")
+	assert_eq(keyed.get_pixel(46, 20), MAGENTA, "inside every one")
+	var everywhere := SheetBackground.remove(holed_sheet(), MAGENTA, 0.1, false)
+	assert_eq(everywhere.get_pixel(7, 7).a, 0.0, "all of it otherwise")
+
+
+func test_the_fill_does_not_go_through_diagonal_gaps() -> void:
+	# A magenta pixel walled in on its 4 sides, with magenta across every corner
+	var img := make_image(MAGENTA, Vector2i(5, 5))
+	for side: Vector2i in [Vector2i(1, 2), Vector2i(3, 2), Vector2i(2, 1), Vector2i(2, 3)]:
+		img.set_pixelv(side, Color.RED)
+	var keyed := SheetBackground.remove(img, MAGENTA)
+	assert_eq(keyed.get_pixel(1, 1).a, 0.0, "the corners go")
+	assert_eq(keyed.get_pixel(2, 2), MAGENTA, "the middle stays")
+
+
+func test_the_fill_goes_through_transparency() -> void:
+	# Magenta inside a transparent margin, a red square on it with a magenta hole
+	var img := Image.create_empty(12, 12, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(2, 2, 8, 8), MAGENTA)
+	img.fill_rect(Rect2i(4, 4, 4, 4), Color.RED)
+	img.set_pixel(5, 5, MAGENTA)
+	var keyed := SheetBackground.remove(img, MAGENTA)
+	assert_eq(keyed.get_pixel(2, 2).a, 0.0, "reached through the margin")
+	assert_eq(keyed.get_pixel(5, 5), MAGENTA, "the hole stays")
+	assert_eq(keyed.get_pixel(4, 4), Color.RED)
+
+
+func test_big_images_are_filled_the_same_on_threads() -> void:
+	# Sprites with holes on magenta, across the parts keyed on threads
+	var img := make_image(MAGENTA, Vector2i(640, 480))
+	for y in range(8, 480, 40):
+		for x in range(8, 640, 40):
+			img.fill_rect(Rect2i(x, y, 24, 24), Color.RED)
+			img.fill_rect(Rect2i(x + 8, y + 8, 8, 8), MAGENTA)
+	assert_true(img.get_width() * img.get_height() >= ImageUtils.THREADED_PIXELS)
+	var keyed := SheetBackground.remove(img, MAGENTA)
+	assert_eq(keyed.get_pixel(0, 0).a, 0.0)
+	assert_eq(keyed.get_pixel(639, 479).a, 0.0)
+	assert_eq(keyed.get_pixel(20, 20), MAGENTA, "a hole")
+	assert_eq(keyed.get_pixel(620, 460), MAGENTA, "the last hole")
+	# On one worker thread, filled whole rather than in bands
+	var on_worker := await SheetBackground.remove_async(img, MAGENTA)
+	assert_eq(on_worker.get_data(), keyed.get_data(), "the same pixels")
+	assert_eq(img.get_pixel(0, 0), MAGENTA, "the image is left alone")
 
 
 func test_the_grid_is_guessed_from_the_gaps_of_the_background() -> void:
@@ -192,10 +255,43 @@ func test_the_import_makes_the_background_transparent() -> void:
 	assert_clean(Global.spritesheet, "added")
 
 
+## How many opaque magenta pixels the frames of [param sheet] have
+func count_magenta(sheet: Spritesheet) -> int:
+	var count := 0
+	for img: Image in sheet.frames.values():
+		for y in img.get_height():
+			for x in img.get_width():
+				if img.get_pixel(x, y) == MAGENTA:
+					count += 1
+	return count
+
+
+func test_the_import_keeps_the_colour_inside_sprites() -> void:
+	window.setup(holed_sheet())
+	assert_true(window.background.is_contiguous(), "on by default")
+	assert_eq(window.spritesheet.grid_size, Vector2i(4, 2))
+	assert_eq(count_magenta(window.spritesheet), 8 * 4, "the holes stay")
+
+	window.background.open()
+	window.background.contiguous_check.button_pressed = false
+	window.background.confirm()
+	assert_eq(count_magenta(window.spritesheet), 0, "every pixel of it goes")
+	assert_false(Settings.get_value(&"background_contiguous"), "remembered")
+	window.setup(holed_sheet())
+	assert_false(window.background.is_contiguous(), "starts as it was left")
+	assert_eq(count_magenta(window.spritesheet), 0)
+
+	# Prepared otherwise: keyed again
+	var prepared := await AddSpritesheetWindow.prepare(holed_sheet(), "", null, "", 0.1, true)
+	window.setup(holed_sheet(), "", null, "", prepared)
+	assert_false(window.spritesheet_image == prepared.keyed[0], "keyed again")
+	assert_eq(count_magenta(window.spritesheet), 0)
+
+
 func test_the_import_can_be_prepared_on_worker_threads() -> void:
 	var img := magenta_sheet()
 	var tolerance: float = Settings.get_value(&"background_tolerance")
-	var prepared := await AddSpritesheetWindow.prepare(img, "", null, "", tolerance)
+	var prepared := await AddSpritesheetWindow.prepare(img, "", null, "", tolerance, true)
 	window.setup(img, "", null, "", prepared)
 	assert_true(window.spritesheet_image == prepared.keyed[0], "the keyed image is taken")
 	assert_true(window.background.is_on())
@@ -407,7 +503,7 @@ func test_reloading_removes_the_background_again() -> void:
 	window.background.tolerance_field.value = 5
 	window.background.confirm()
 	var source: Dictionary = window.spritesheet.frame_sources[Vector2i(1, 0)]
-	assert_eq(source.key, {"color": "ff00ff", "tolerance": 0.05})
+	assert_eq(source.key, {"color": "ff00ff", "tolerance": 0.05, "contiguous": true})
 	assert_eq(Settings.get_value(&"background_tolerance"), 0.05, "remembered")
 	window.setup(magenta_sheet(), path)
 	assert_eq(window.background.get_tolerance(), 0.05, "starts with the last tolerance")

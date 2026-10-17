@@ -1366,6 +1366,14 @@ msgid "How different a pixel can be and still be made transparent"
 msgstr ""
 
 #: res://ui/main/color_key_dropdown.gd
+msgid "Contiguous only"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
+msgid "Only makes the colour transparent where it reaches the edges, keeping it inside the sprites"
+msgstr ""
+
+#: res://ui/main/color_key_dropdown.gd
 msgid "Apply"
 msgstr ""
 

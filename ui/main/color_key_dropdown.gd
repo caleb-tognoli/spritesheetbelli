@@ -3,15 +3,17 @@ extends OptionsDropdown
 ## An eyedropper button that drops down a colour to make transparent, like a sheet's
 ## background, and how close a pixel must be to it: the colour as a long field that opens
 ## the colour picker, an eyedropper at its end that picks it by clicking a preview (see
-## [method add_picker]), a tolerance, then Confirm and Cancel.
+## [method add_picker]), a tolerance, whether only the colour reaching the edges goes, then
+## Confirm and Cancel.
 ##
 ## Changes are told with [signal changed] as they're made, to preview them. Confirm keeps
-## them and remembers the tolerance; Cancel, Escape or clicking away puts back what was set
-## when it opened. The panel isn't a popup that closes on any click outside: that would
-## eat the click that picks a colour, or one let through to a preview, see
-## [method let_clicks_through]. Clicking away is handled here instead, see [method _input].
+## them and remembers the tolerance and contiguity; Cancel, Escape or clicking away puts
+## back what was set when it opened. The panel isn't a popup that closes on any click
+## outside: that would eat the click that picks a colour, or one let through to a preview,
+## see [method let_clicks_through]. Clicking away is handled here instead, see
+## [method _input].
 
-## It was turned on or off, or its colour or tolerance changed. Changes can come many at
+## It was turned on or off, or its colour, tolerance or contiguity changed. Changes can come many at
 ## once, e.g. while dragging in the picker.
 signal changed
 ## The eyedropper was turned on or off
@@ -36,6 +38,8 @@ var swatch := ColorPickerButton.new()
 var eyedropper := Button.new()
 ## How different a pixel can be from the colour, in percent
 var tolerance_field := SpinBox.new()
+## Only the colour reaching the edges is made transparent, see [method ImageUtils.color_key]
+var contiguous_check := CheckBox.new()
 ## Says what the colour is removed from, when there's something to say
 var note := Label.new()
 var confirm_button := Button.new()
@@ -47,7 +51,7 @@ var shows_color := false
 var _pick_areas: Array[Control] = []
 ## Where clicks go through to what's under them, rather than close the panel
 var _open_areas: Array[Control] = []
-## What was set when it opened: on, colour and tolerance
+## What was set when it opened: on, colour, tolerance and contiguity
 var _opened_with := []
 ## Whether it's being closed here, rather than by the panel going away
 var _closing := false
@@ -116,6 +120,17 @@ func _init(optional := false) -> void:
 		func() -> void: tolerance_field.value = default_percent,
 		func() -> bool: return tolerance_field.value == default_percent
 	)
+	contiguous_check.text = "Contiguous only"
+	contiguous_check.tooltip_text = (
+		"Only makes the colour transparent where it reaches the edges, keeping it inside "
+		+ "the sprites"
+	)
+	contiguous_check.toggled.connect(
+		func(_on: bool) -> void:
+			if is_on():
+				changed.emit()
+	)
+	content.add_child(contiguous_check)
 
 	note.theme_type_variation = &"StatusLabel"
 	note.visible = false
@@ -150,19 +165,33 @@ func get_tolerance() -> float:
 	return tolerance_field.value / 100.0
 
 
+## Whether only the colour reaching the edges is made transparent, see
+## [method ImageUtils.color_key]
+func is_contiguous() -> bool:
+	return contiguous_check.button_pressed
+
+
 ## Shows [param color] with [param tolerance] (0 to 1), made transparent when [param on],
-## without [signal changed]
-func set_key(on: bool, color: Color, tolerance := SheetBackground.DEFAULT_TOLERANCE) -> void:
+## only where it reaches the edges when [param contiguous], without [signal changed]
+func set_key(
+	on: bool, color: Color, tolerance := SheetBackground.DEFAULT_TOLERANCE, contiguous := true
+) -> void:
 	enabled_check.set_pressed_no_signal(on)
 	swatch.color = Color(color, 1.0)
 	tolerance_field.set_value_no_signal(roundf(tolerance * 100.0))
+	contiguous_check.set_pressed_no_signal(contiguous)
 	update_text()
 	_update_state()
 
 
 ## Whether something changed since it opened
 func has_changed() -> bool:
-	return _opened_with != [is_on(), get_color(), get_tolerance()]
+	return _opened_with != _get_set()
+
+
+## What's set: on, colour, tolerance and contiguity
+func _get_set() -> Array:
+	return [is_on(), get_color(), get_tolerance(), is_contiguous()]
 
 
 func is_open() -> bool:
@@ -184,7 +213,7 @@ func set_picking(on: bool) -> void:
 func pick(color: Color) -> void:
 	if color.a <= 0.0:
 		return
-	set_key(true, color, get_tolerance())
+	set_key(true, color, get_tolerance(), is_contiguous())
 	set_picking(false)
 	changed.emit()
 
@@ -212,13 +241,15 @@ func open() -> void:
 		cancel()
 		return
 	opening.emit()
-	_opened_with = [is_on(), get_color(), get_tolerance()]
+	_opened_with = _get_set()
 	super()
 
 
-## Keeps what's set, remembering the tolerance for next time, and closes the panel
+## Keeps what's set, remembering the tolerance and contiguity for next time, and closes
+## the panel
 func confirm() -> void:
 	Settings.set_value(&"background_tolerance", get_tolerance())
+	Settings.set_value(&"background_contiguous", is_contiguous())
 	_close()
 	confirmed.emit()
 
@@ -226,7 +257,7 @@ func confirm() -> void:
 ## Puts back what was set when it opened, and closes the panel
 func cancel() -> void:
 	if not _opened_with.is_empty():
-		set_key(_opened_with[0], _opened_with[1], _opened_with[2])
+		set_key.callv(_opened_with)
 	_close()
 	canceled.emit()
 
@@ -287,9 +318,11 @@ func _escape() -> void:
 		cancel()
 
 
-## The colour and the tolerance only matter when the colour is made transparent
+## The colour, the tolerance and the contiguity only matter when the colour is made
+## transparent
 func _update_state() -> void:
 	tolerance_field.editable = is_on()
+	contiguous_check.disabled = not is_on()
 	queue_redraw()
 
 

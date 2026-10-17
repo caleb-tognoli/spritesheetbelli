@@ -50,17 +50,24 @@ static func detect(img: Image) -> Variant:
 	return background
 
 
-## A copy of [param img] with the pixels close to [param color] made transparent, see
-## [method ImageUtils.color_key]
-static func remove(img: Image, color: Color, tolerance := DEFAULT_TOLERANCE) -> Image:
+## A copy of [param img] with the pixels close to [param color] made transparent, only
+## those reaching its edges when [param contiguous], see [method ImageUtils.color_key]
+static func remove(
+	img: Image, color: Color, tolerance := DEFAULT_TOLERANCE, contiguous := true
+) -> Image:
 	var copy := img.duplicate() as Image
-	ImageUtils.color_key(copy, color, tolerance)
+	ImageUtils.color_key(copy, color, tolerance, contiguous)
 	return copy
 
 
 ## Like [method remove], but worked out on worker threads, in bands of rows, while the main
 ## thread goes on, e.g. to preview a colour as it's being picked. To be awaited.
-static func remove_async(img: Image, color: Color, tolerance := DEFAULT_TOLERANCE) -> Image:
+static func remove_async(
+	img: Image, color: Color, tolerance := DEFAULT_TOLERANCE, contiguous := true
+) -> Image:
+	if contiguous:
+		# The background reaches across bands, so it's filled whole
+		return await Parallel.run(remove.bind(img, color, tolerance, true))
 	var size := img.get_size()
 	var bands := clampi(size.x * size.y / BAND_PIXELS, 1, OS.get_processor_count() * 2)
 	bands = mini(bands, size.y)

@@ -240,7 +240,8 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "", prep
 	background.set_key(
 		found != null,
 		found if found != null else img.get_pixel(0, 0),
-		Settings.get_value(&"background_tolerance")
+		Settings.get_value(&"background_tolerance"),
+		Settings.get_value(&"background_contiguous")
 	)
 	background.set_picking(false)
 	_boxes_found = false
@@ -273,9 +274,10 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "", prep
 
 ## What [method setup] works out that takes a while on big sheets, worked out on worker
 ## threads while the window goes on: the other pages of a data file loaded, the background
-## found and made transparent with [param tolerance], and the grid guessed. To be awaited.
+## found and made transparent with [param tolerance], only where it reaches the edges when
+## [param contiguous], and the grid guessed. To be awaited.
 static func prepare(
-	img: Image, path: String, data: SheetData, data_file: String, tolerance: float
+	img: Image, path: String, data: SheetData, data_file: String, tolerance: float, contiguous: bool
 ) -> Dictionary:
 	var pages: Array[Image] = await Parallel.run(_load_other_pages.bind(data, data_file))
 	var found: Variant = await Parallel.run(SheetBackground.detect.bind(img))
@@ -284,10 +286,10 @@ static func prepare(
 	var keyed: Array[Image] = [img]
 	keyed.append_array(pages)
 	if found != null:
-		key = [true, Color(found, 1.0), roundf(tolerance * 100.0) / 100.0]
+		key = [true, Color(found, 1.0), roundf(tolerance * 100.0) / 100.0, contiguous]
 		for i in keyed.size():
 			if keyed[i]:
-				keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2])
+				keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2], key[3])
 	return {
 		"pages": pages,
 		"background": found,
@@ -351,17 +353,18 @@ func _key_images(key: Array, threaded: bool) -> Array[Image]:
 		return keyed
 	for i in keyed.size():
 		if keyed[i] and threaded:
-			keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2])
+			keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2], key[3])
 		elif keyed[i]:
-			keyed[i] = SheetBackground.remove(keyed[i], key[1], key[2])
+			keyed[i] = SheetBackground.remove(keyed[i], key[1], key[2], key[3])
 	return keyed
 
 
-## Whether the background is made transparent, and its colour and tolerance when it is
+## Whether the background is made transparent, and its colour, tolerance and contiguity
+## when it is
 func _get_key() -> Array:
 	if not background.is_on():
 		return [false]
-	return [true, background.get_color(), background.get_tolerance()]
+	return [true, background.get_color(), background.get_tolerance(), background.is_contiguous()]
 
 
 ## Previews the background at the end of the frame, once for all the changes made until
@@ -454,7 +457,9 @@ static func _link_background(sheet: Spritesheet, key: Array) -> Spritesheet:
 	sheet.batch(
 		func() -> void:
 			for coord: Vector2i in sheet.frame_sources.keys():
-				var source := FrameSource.with_key(sheet.frame_sources[coord], key[1], key[2])
+				var source := FrameSource.with_key(
+					sheet.frame_sources[coord], key[1], key[2], key[3]
+				)
 				var origin: Variant = FrameSource.get_origin(sheet, coord)
 				sheet.set_frame(coord, sheet.frames[coord], source, origin)
 	)

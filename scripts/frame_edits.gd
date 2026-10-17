@@ -65,21 +65,27 @@ static func trim(sheet: Spritesheet, coords: Array[Vector2i]) -> void:
 	)
 
 
-## Makes pixels close to [param color] transparent
+## Makes pixels close to [param color] transparent, only those reaching the edges of each
+## frame when [param contiguous], see [method ImageUtils.color_key]
 static func color_key(
-	sheet: Spritesheet, coords: Array[Vector2i], color: Color, tolerance := 0.1
+	sheet: Spritesheet, coords: Array[Vector2i], color: Color, tolerance := 0.1, contiguous := false
 ) -> void:
 	sheet.edit_frames(
 		coords,
-		func(img: Image) -> void: ImageUtils.color_key(img, color, tolerance),
+		func(img: Image) -> void: ImageUtils.color_key(img, color, tolerance, contiguous),
 		Callable(),
 		false,
-		color_key_op(color, tolerance)
+		color_key_op(color, tolerance, contiguous)
 	)
 
 
-static func color_key_op(color: Color, tolerance: float) -> Dictionary:
-	return {"op": "color_key", "color": color.to_html(), "tolerance": tolerance}
+static func color_key_op(color: Color, tolerance: float, contiguous: bool) -> Dictionary:
+	return {
+		"op": "color_key",
+		"color": color.to_html(),
+		"tolerance": tolerance,
+		"contiguous": contiguous,
+	}
 
 
 ## Draws an outline around the pixels of frames. The frames grow on every side, so they
@@ -287,7 +293,13 @@ static func apply(sheet: Spritesheet, coords: Array[Vector2i], op: Dictionary) -
 		"trim":
 			trim(sheet, coords)
 		"color_key":
-			color_key(sheet, coords, Color.html(str(op.get("color"))), op.get("tolerance", 0.1))
+			color_key(
+				sheet,
+				coords,
+				Color.html(str(op.get("color"))),
+				op.get("tolerance", 0.1),
+				bool(op.get("contiguous", false))
+			)
 		"outline":
 			outline(
 				sheet,

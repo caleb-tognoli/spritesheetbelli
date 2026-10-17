@@ -79,12 +79,20 @@ Cutting:
   --keep-background              Keep a solid background colour instead of making it
                                  transparent
   --tolerance <percent>          How different a pixel can be from the background colour
-                                 and still be made transparent (default 10)"""
+                                 and still be made transparent (default 10)
+  --all-matching                 Make every pixel of the background colour transparent,
+                                 not only those reaching the edges of the image"""
 
 const COMMANDS: Array[String] = ["--pack", "--export", "--cut", "--help"]
 ## Options without a value
 const FLAGS: Array[String] = [
-	"--help", "--atlas", "--detect", "--rotate", "--repack", "--keep-background"
+	"--help",
+	"--atlas",
+	"--detect",
+	"--rotate",
+	"--repack",
+	"--keep-background",
+	"--all-matching",
 ]
 ## Options saying where to write, without which a project writes its own exports
 const OUTPUTS: Array[String] = ["--out", "--sprites", "--gifs", "--strips"]
@@ -410,10 +418,14 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		if not percent.is_valid_float() or float(percent) < 0 or float(percent) > 100:
 			return {"error": "--tolerance must be from 0 to 100.", "code": 2}
 		tolerance = float(percent) / 100.0
+	# Only where it reaches the edges, so the same colour inside sprites stays
+	var contiguous := not options.has("--all-matching")
 	# A sheet on a solid colour has it made transparent, like Add Spritesheet does. Its
 	# gaps are found in the keyed image even when the colour is kept.
 	var background: Variant = SheetBackground.detect(img)
-	var keyed := SheetBackground.remove(img, background, tolerance) if background != null else img
+	var keyed := img
+	if background != null:
+		keyed = SheetBackground.remove(img, background, tolerance, contiguous)
 	var keep_background := options.has("--keep-background")
 	var cut_from := img if keep_background else keyed
 
@@ -441,7 +453,7 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		for page in range(1, pages.size()):
 			var other := Image.load_from_file(pages[page])
 			if other and background != null and not keep_background:
-				other = SheetBackground.remove(other, background, tolerance)
+				other = SheetBackground.remove(other, background, tolerance, contiguous)
 			others.append(other)
 		var keep: bool = options.get("--layout") == "packed"
 		return {"sheet": data.to_spritesheet(cut_from, "", "", keep, others)}

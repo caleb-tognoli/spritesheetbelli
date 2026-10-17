@@ -216,7 +216,8 @@ func test_projects_keep_links() -> void:
 	DirAccess.make_dir_recursive_absolute(image_path.get_base_dir())
 	drawing().save_png(image_path)
 	sheet.set_frame(FIRST, drawing(), FrameSource.for_file(image_path))
-	FrameEdits.color_key(sheet, [FIRST] as Array[Vector2i], Color(1, 0, 0), 0.25)
+	FrameEdits.color_key(sheet, [FIRST] as Array[Vector2i], Color(1, 0, 0), 0.25, true)
+	assert_eq(sheet.frame_sources[FIRST].ops[-1].contiguous, true, "kept with the edit")
 	var project := dir.path_join("walk.sbelli")
 	assert_eq(ProjectFile.save(sheet, project), OK)
 

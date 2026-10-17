@@ -26,7 +26,7 @@ var _stale := false
 ## Frame images with the colour removed, at the sheet's scale, by the frame image, for
 ## [member _keyed_with]
 var _keyed: Dictionary[Image, Image] = {}
-## The colour, tolerance, scale and filter [member _keyed] was made with
+## The colour, tolerance, contiguity, scale and filter [member _keyed] was made with
 var _keyed_with := []
 
 
@@ -67,21 +67,27 @@ func get_target_coords() -> Array[Vector2i]:
 
 
 ## Suggests the top-left pixel of the first frame it works on, usually the background, and
-## the tolerance used last
+## the tolerance and contiguity used last
 func _on_opening() -> void:
 	var coords := get_target_coords()
 	var color := dropdown.get_color()
 	if not coords.is_empty() and not preview.spritesheet.frames[coords[0]].is_empty():
 		color = preview.spritesheet.frames[coords[0]].get_pixel(0, 0)
-	dropdown.set_key(true, color, Settings.get_value(&"background_tolerance"))
+	dropdown.set_key(
+		true,
+		color,
+		Settings.get_value(&"background_tolerance"),
+		Settings.get_value(&"background_contiguous")
+	)
 	_update_note()
 	# Once it's open
 	_queue_update.call_deferred()
 
 
 ## Makes pixels close to [param color] transparent in the selected frames, or in every
-## frame when none are selected, as one step to undo. It can take a while.
-func remove(color: Color, tolerance: float) -> void:
+## frame when none are selected, as one step to undo, only those reaching the edges of each
+## frame when [param contiguous]. It can take a while.
+func remove(color: Color, tolerance: float, contiguous: bool) -> void:
 	var coords := get_target_coords()
 	if coords.is_empty():
 		return
@@ -89,10 +95,10 @@ func remove(color: Color, tolerance: float) -> void:
 		L10n.mark("Remove background"),
 		tr("Removing background"),
 		func(img: Image) -> Image:
-			ImageUtils.color_key(img, color, tolerance)
+			ImageUtils.color_key(img, color, tolerance, contiguous)
 			return img,
 		Callable(),
-		FrameEdits.color_key_op(color, tolerance),
+		FrameEdits.color_key_op(color, tolerance, contiguous),
 		coords
 	)
 
@@ -100,7 +106,7 @@ func remove(color: Color, tolerance: float) -> void:
 ## Removes the colour from the frames. They're previewed with it removed until then.
 func _on_confirmed() -> void:
 	_keyed.clear()
-	await remove(dropdown.get_color(), dropdown.get_tolerance())
+	await remove(dropdown.get_color(), dropdown.get_tolerance(), dropdown.is_contiguous())
 	if not dropdown.is_open():
 		preview.show_instead({})
 
@@ -144,8 +150,9 @@ func _update_preview() -> void:
 	var coords := get_target_coords()
 	var color := dropdown.get_color()
 	var tolerance := dropdown.get_tolerance()
+	var contiguous := dropdown.is_contiguous()
 	var filter := sheet.scale_filter
-	var made_with := [color, tolerance, sheet.frame_scale, filter]
+	var made_with := [color, tolerance, contiguous, sheet.frame_scale, filter]
 	if made_with != _keyed_with:
 		_keyed.clear()
 		_keyed_with = made_with
@@ -163,7 +170,7 @@ func _update_preview() -> void:
 		sources.size(),
 		func(i: int) -> Image:
 			var img := sources[i].duplicate() as Image
-			ImageUtils.color_key(img, color, tolerance)
+			ImageUtils.color_key(img, color, tolerance, contiguous)
 			if img.get_size() != sizes[i]:
 				img.resize(sizes[i].x, sizes[i].y, filter)
 			return img

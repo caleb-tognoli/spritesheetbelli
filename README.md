@@ -41,7 +41,8 @@ A small desktop tool made with Godot.</p>
 - **Edit frames.** Click or box-select frames and drag them where they go: there are no
   tools to switch between. Flip, rotate, trim, remove a background colour (from the
   eyedropper button in the toolbar, picked by clicking a frame and previewed on the
-  selected frames, or every frame, until you Apply), add an outline, replace,
+  selected frames, or every frame, until you Apply; only where it reaches the frame's
+  edges unless Contiguous only is off), add an outline, replace,
   cut/copy/paste (also images copied in other apps), duplicate, insert or remove cells,
   insert, remove or reorder rows. Everything can be undone.
 - **Stay linked to your art files.** Sprites and sheets remember the file they came from.
@@ -196,7 +197,8 @@ spritesheetbelli --headless -- --export hero.sbelli --out hero.png --template my
 ```
 
 `--cut` makes a solid background colour, like magenta, transparent unless
-`--keep-background` is given; `--tolerance` sets how close a colour must be. Run with
+`--keep-background` is given; `--tolerance` sets how close a colour must be, and
+`--all-matching` removes it inside the sprites too, not only where it reaches the edges. Run with
 `--help` for every option. The exit code is 0 on success, 1 on errors and 2 on bad usage.
 
 ## Data file templates

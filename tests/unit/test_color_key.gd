@@ -15,6 +15,7 @@ func before_each() -> void:
 	Global.document.reset()
 	# Remembered between runs, so each test starts from the default
 	Settings.set_value(&"background_tolerance", SheetBackground.DEFAULT_TOLERANCE)
+	Settings.set_value(&"background_contiguous", true)
 	main = load("res://ui/main/main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -137,6 +138,45 @@ func test_confirm_is_one_step_on_the_selected_frames() -> void:
 	assert_eq(shown(Vector2i(0, 0)).get_pixel(0, 0), Color.MAGENTA, "the preview is gone")
 
 
+func test_contiguous_only_keeps_the_colour_inside_sprites() -> void:
+	# A red square on magenta with a magenta hole
+	var holed := magenta_sprite(Color.RED)
+	holed.fill_rect(Rect2i(3, 3, 2, 2), Color.MAGENTA)
+	Global.document.perform("Add", sheet.add_frames.bind([holed] as Array[Image]))
+	var coord := Vector2i(3, 0)
+	select([coord] as Array[Vector2i])
+	Actions.run(&"color_key")
+	assert_true(dropdown.is_contiguous(), "on by default")
+	await settle()
+	assert_eq(shown(coord).get_pixel(0, 0).a, 0.0, "around the sprite")
+	assert_eq(shown(coord).get_pixel(3, 3), Color.MAGENTA, "inside it")
+	var passes := color_key.passes
+	dropdown.contiguous_check.button_pressed = false
+	await settle()
+	assert_eq(color_key.passes, passes + 1, "previewed again")
+	assert_eq(shown(coord).get_pixel(3, 3).a, 0.0, "inside it too")
+	dropdown.cancel()
+	assert_true(dropdown.is_contiguous(), "put back")
+	assert_true(Settings.get_value(&"background_contiguous"), "not remembered")
+
+	Actions.run(&"color_key")
+	dropdown.confirm()
+	await settle()
+	assert_eq(sheet.frames[coord].get_pixel(0, 0).a, 0.0)
+	assert_eq(sheet.frames[coord].get_pixel(3, 3), Color.MAGENTA, "the hole stays")
+	Global.document.undo()
+
+	Actions.run(&"color_key")
+	dropdown.contiguous_check.button_pressed = false
+	dropdown.confirm()
+	await settle()
+	assert_eq(sheet.frames[coord].get_pixel(3, 3).a, 0.0, "the hole goes")
+	assert_false(Settings.get_value(&"background_contiguous"), "remembered")
+	Actions.run(&"color_key")
+	assert_false(dropdown.is_contiguous(), "starts as it was left")
+	dropdown.cancel()
+
+
 func test_every_frame_when_none_are_selected() -> void:
 	select([] as Array[Vector2i])
 	assert_true(Actions.is_enabled(&"color_key"), "enabled with frames")
@@ -248,8 +288,11 @@ func test_the_eyedropper_picks_from_a_frame_as_it_is() -> void:
 		"picking doesn't select"
 	)
 	await settle()
-	assert_eq(shown(Vector2i(1, 0)).get_pixel(3, 3).a, 0.0, "previews the picked colour")
-	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0), Color.MAGENTA)
+	assert_eq(shown(Vector2i(1, 0)).get_pixel(0, 0), Color.MAGENTA, "previews the picked colour")
+	assert_eq(shown(Vector2i(1, 0)).get_pixel(3, 3), Color.GREEN, "kept inside the sprite")
+	dropdown.contiguous_check.button_pressed = false
+	await settle()
+	assert_eq(shown(Vector2i(1, 0)).get_pixel(3, 3).a, 0.0, "removed when not contiguous")
 
 
 func test_clicks_on_the_canvas_select_and_the_preview_follows() -> void:

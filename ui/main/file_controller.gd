@@ -414,7 +414,12 @@ func _show_add_spritesheet_window(spritesheet_path: String) -> void:
 		Notify.error(tr("Could not load %s.") % spritesheet_path.get_file())
 		return
 	var prepared := await AddSpritesheetWindow.prepare(
-		img, spritesheet_path, data, data_path, Settings.get_value(&"background_tolerance")
+		img,
+		spritesheet_path,
+		data,
+		data_path,
+		Settings.get_value(&"background_tolerance"),
+		Settings.get_value(&"background_contiguous")
 	)
 
 	if set_filepath_when_opening_spritesheet:

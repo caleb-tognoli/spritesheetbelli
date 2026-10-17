@@ -392,6 +392,12 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   transparent pixels. The cells keep that size as frames are added or removed, growing
   only to hold a bigger one, and scale along with the frames (½×, 2×, typing a size with
   the toggle off). The toggle is remembered.
+- Contiguous only, on by default, in Remove Background Colour and Add Spritesheet's
+  background: only the colour reaching the edges of each frame (or of the sheet, when
+  adding one) through itself or transparency is made transparent, so the same colour
+  inside the sprites stays. It's remembered with the tolerance, and kept with frames
+  linked to their file. The command line's `--cut` does the same, unless
+  `--all-matching` is given.
 
 ### Changed
 - The Keep Aspect Ratio button looks like the other toggles: bordered, and in the accent

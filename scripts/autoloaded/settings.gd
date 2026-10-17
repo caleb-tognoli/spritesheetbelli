@@ -100,6 +100,9 @@ const DEFAULTS := {
 	# How different a pixel can be from a background colour and still be made transparent,
 	# from 0 to 1, shared by Add Spritesheet and Remove Background Colour
 	&"background_tolerance": SheetBackground.DEFAULT_TOLERANCE,
+	# Whether only a background colour reaching the edges is made transparent, keeping it
+	# inside sprites, shared by Add Spritesheet and Remove Background Colour
+	&"background_contiguous": true,
 	# Keys of what the command palette ran last, the latest first, see CommandPalette
 	&"command_palette_recent": [],
 	# How Generate In-Betweens last made frames, how many and where they went, see InBetween
@@ -133,6 +136,7 @@ const REMEMBERED: Array[StringName] = [
 	&"animation_background_color",
 	&"lock_empty_cells",
 	&"background_tolerance",
+	&"background_contiguous",
 	&"command_palette_recent",
 	&"inbetween_count",
 	&"inbetween_place",

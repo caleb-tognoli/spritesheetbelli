@@ -165,6 +165,8 @@ func test_cut_removes_a_background_colour() -> void:
 	for i in 3:
 		sheet.fill_rect(Rect2i(i * 16 + 3, 3, 10, 10), Color.from_hsv(i / 3.0, 1, 0.8))
 		sheet.fill_rect(Rect2i(i * 16 + 3, 3, 2, 2), Color.MAGENTA)
+	# And a magenta hole in the first one
+	sheet.fill_rect(Rect2i(7, 7, 2, 2), Color.MAGENTA)
 	# A little off the background colour
 	sheet.set_pixel(0, 15, Color8(242, 0, 242))
 	var path := dir.path_join("magenta.png")
@@ -194,6 +196,16 @@ func test_cut_removes_a_background_colour() -> void:
 	cut_sheet.set_state(ProjectFile.load(project).state)
 	assert_eq(cut_sheet.frames[Vector2i(0, 0)].get_pixel(0, 15).a, 1.0, "not within 0%")
 	assert_eq((await run(["--cut", path, "--out", project, "--tolerance", "x"]))[0], "2")
+
+	# Only the background reaching the edges goes, unless every pixel of it is to
+	await run(["--cut", path, "--out", project, "--grid", "3x1"])
+	cut_sheet.set_state(ProjectFile.load(project).state)
+	assert_eq(cut_sheet.frames[Vector2i(0, 0)].get_pixel(7, 7), Color.MAGENTA, "the hole stays")
+	assert_eq(cut_sheet.frames[Vector2i(0, 0)].get_pixel(3, 3).a, 0.0, "the notch goes")
+	var all := await run(["--cut", path, "--out", project, "--grid", "3x1", "--all-matching"])
+	assert_eq(all[0], "0", str(all))
+	cut_sheet.set_state(ProjectFile.load(project).state)
+	assert_eq(cut_sheet.frames[Vector2i(0, 0)].get_pixel(7, 7).a, 0.0, "the hole goes too")
 
 
 func test_cut_with_a_data_file_to_an_atlas_and_gif() -> void:

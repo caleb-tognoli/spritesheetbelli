@@ -51,11 +51,13 @@ static func with_origin(source: Dictionary, origin: Variant) -> Dictionary:
 
 
 ## [param source] cut after making the pixels of its file close to [param color]
-## transparent, with [param tolerance] from 0 to 1 (see [method ImageUtils.color_key]),
-## like the background of a sheet
-static func with_key(source: Dictionary, color: Color, tolerance: float) -> Dictionary:
+## transparent, with [param tolerance] from 0 to 1, only those reaching its edges when
+## [param contiguous] (see [method ImageUtils.color_key]), like the background of a sheet
+static func with_key(
+	source: Dictionary, color: Color, tolerance: float, contiguous: bool
+) -> Dictionary:
 	var result := source.duplicate(true)
-	result.key = {"color": color.to_html(false), "tolerance": tolerance}
+	result.key = {"color": color.to_html(false), "tolerance": tolerance, "contiguous": contiguous}
 	return result
 
 
@@ -152,8 +154,16 @@ static func get_load_key(source: Dictionary) -> String:
 		key = "gif:" + str(source.path)
 	var color_key: Variant = source.get("key")
 	if color_key is Dictionary:
-		# The colour and tolerance before the paths, which can hold anything
-		key = "key:%s,%s|%s" % [color_key.get("color"), color_key.get("tolerance"), key]
+		# The colour, tolerance and contiguity before the paths, which can hold anything
+		key = (
+			"key:%s,%s,%d|%s"
+			% [
+				color_key.get("color"),
+				color_key.get("tolerance"),
+				int(bool(color_key.get("contiguous", false))),
+				key
+			]
+		)
 	return key
 
 
@@ -175,8 +185,10 @@ static func load_key(key: String) -> Variant:
 			elif file is Array:
 				images = file
 			var color := Color.html(spec.get_slice(",", 0))
+			var tolerance := float(spec.get_slice(",", 1))
+			var contiguous := spec.get_slice(",", 2) == "1"
 			for img: Image in images:
-				ImageUtils.color_key(img, color, float(spec.get_slice(",", 1)))
+				ImageUtils.color_key(img, color, tolerance, contiguous)
 			return file
 		"gif":
 			var gif := GifDecoder.load_file(path)
