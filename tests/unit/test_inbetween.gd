@@ -44,6 +44,14 @@ func test_motion_detection_without_pixels() -> void:
 	assert_eq(SpriteMotion.detect(a, b), Vector2i.ZERO)
 
 
+func test_a_movement_given_is_used_even_when_zero() -> void:
+	var a := key(make_image(Color.RED, Vector2i(2, 2)))
+	var b := key(make_image(Color.RED, Vector2i(2, 2)), Vector2i(8, 0))
+	assert_eq(InBetween.prepare(a, b).shift, Vector2(8, 0), "found when not given")
+	assert_eq(InBetween.prepare(a, b, Vector2i(3, 0)).shift, Vector2(3, 0))
+	assert_eq(InBetween.prepare(a, b, Vector2i.ZERO).shift, Vector2.ZERO, "not moving at all")
+
+
 func test_in_betweens_are_evenly_spaced() -> void:
 	var a := key(make_image(Color.RED, Vector2i(2, 2)))
 	var b := key(make_image(Color.RED, Vector2i(2, 2)), Vector2i(8, 0))

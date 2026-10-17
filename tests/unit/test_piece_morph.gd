@@ -225,12 +225,12 @@ func test_working_it_out_can_be_cancelled() -> void:
 	var a := key(figure(0))
 	var b := key(figure(8))
 	var progress := WorkProgress.new()
-	assert_ne(InBetween.prepare(a, b, Vector2i.ZERO, progress), null)
+	assert_ne(InBetween.prepare(a, b, null, progress), null)
 	assert_true(progress.total > 0)
 	assert_eq(progress.get_ratio(), 1.0, "all done")
 	var cancelled := WorkProgress.new()
 	cancelled.cancelled = true
-	assert_eq(InBetween.prepare(a, b, Vector2i.ZERO, cancelled), null)
+	assert_eq(InBetween.prepare(a, b, null, cancelled), null)
 
 
 func test_an_empty_key() -> void:
@@ -424,4 +424,4 @@ func test_following_soft_keys_can_be_cancelled() -> void:
 	b.fill_rect(Rect2i(10, 6, 8, 8), Color(0.5, 0.2, 0.9, 0.6))
 	var cancelled := WorkProgress.new()
 	cancelled.cancelled = true
-	assert_eq(InBetween.prepare(key(a), key(b), Vector2i.ZERO, cancelled), null)
+	assert_eq(InBetween.prepare(key(a), key(b), null, cancelled), null)

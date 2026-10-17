@@ -482,7 +482,7 @@ func test_in_betweens_from_the_timeline() -> void:
 	assert_eq(dialog.preview_fps, 6.0, "played as fast as the animation")
 	# Working the frames out takes a while, on another thread
 	var waiting := Time.get_ticks_msec()
-	while dialog.get_ok_button().disabled and Time.get_ticks_msec() - waiting < 20000:
+	while not dialog.is_ready() and Time.get_ticks_msec() - waiting < 20000:
 		await get_tree().process_frame
 	var before := steps()
 	dialog.place_option.select(dialog.place_option.get_item_index(InBetween.Place.APPEND))

@@ -73,21 +73,20 @@ var meshes: Array[KeyMesh] = []
 
 
 ## Pieces of keys [param a] and [param b] (see [method InBetween.key_of]) and how they
-## move, the whole sprite moving by [param whole_motion] (found when zero, see
-## [method SpriteMotion.detect]). Slow: [param progress] tells how far it got, and stops it
-## when cancelled, returning null.
+## move, the whole sprite moving by [param whole_motion], a [Vector2i], even when it's
+## zero; found when null (see [method SpriteMotion.detect]). Slow: [param progress] tells
+## how far it got, and stops it when cancelled, returning null.
 static func find(
-	a: Dictionary, b: Dictionary, whole_motion := Vector2i.ZERO, progress: WorkProgress = null
+	a: Dictionary, b: Dictionary, whole_motion: Variant = null, progress: WorkProgress = null
 ) -> PieceMorph:
 	if progress == null:
 		progress = WorkProgress.new()
-	if whole_motion == Vector2i.ZERO:
-		whole_motion = SpriteMotion.detect(a, b)
+	var motion: Vector2i = SpriteMotion.detect(a, b) if whole_motion == null else whole_motion
 	var morph := PieceMorph.new()
 	var a_img := PixelCanvas.rgba(a.image)
 	var b_img := PixelCanvas.rgba(b.image)
 	if FlowMorph.soft(a_img, b_img):
-		var flowing := _flowing(a, b, a_img, b_img, whole_motion, progress)
+		var flowing := _flowing(a, b, a_img, b_img, motion, progress)
 		if flowing != null or progress.cancelled:
 			return flowing
 	morph.outline = PixelOutline.detect(a_img, b_img)
@@ -104,7 +103,7 @@ static func find(
 	var a_shown := PixelCanvas.shown_area(PixelCanvas.colors(a_data), width, height)
 	var b_shown := PixelCanvas.shown_area(PixelCanvas.colors(b_data), width, height)
 	var size := float(maxi(1, maxi(a_shown.merge(b_shown).size.x, a_shown.merge(b_shown).size.y)))
-	morph.shift = Vector2(whole_motion)
+	morph.shift = Vector2(motion)
 	# Big sprites are worked out smaller, then drawn at their size
 	var shrink := maxi(1, ceili(size / ANALYSIS_SIZE))
 	morph.zoom = shrink

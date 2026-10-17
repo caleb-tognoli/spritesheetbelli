@@ -420,12 +420,22 @@ func test_generate_inbetweens() -> void:
 	assert_false(dialog.animations_check.visible, "no animation plays the keys")
 	assert_eq(dialog.place_option.get_selected_id(), InBetween.Place.AFTER_FIRST, "by default")
 	dialog.count_spin.value = 2
-	# Working the frames out takes a while, on another thread
-	var waiting := Time.get_ticks_msec()
-	while dialog.get_ok_button().disabled and Time.get_ticks_msec() - waiting < 20000:
-		await get_tree().process_frame
-	assert_eq(dialog.strip.get_child_count(), 4, "the keys and the two frames between them")
+	assert_eq(dialog.frame_list.get_child_count(), 4, "the keys and the two frames between them")
+	assert_ne(dialog.status_label.text, "", "says what it's working on")
+	await _wait_for_frames(dialog)
+	assert_eq(dialog.status_label.text, "2 frames ready")
+	assert_eq(dialog.player.get_cells().size(), 4, "the player plays them all")
+	var tile: InBetweenTile = dialog.frame_list.get_child(1)
+	assert_false(tile.stale, "made")
+	tile.pressed.emit()
+	assert_eq(dialog.player.get_current_cell(), Vector2i(1, 0), "the player shows the one clicked")
+	assert_true(tile.current)
+	assert_false(dialog.player.playing, "paused on it")
+	dialog.player.step(1)
+	assert_true((dialog.frame_list.get_child(2) as InBetweenTile).current, "follows the player")
+	assert_false(tile.current)
 	dialog.get_ok_button().pressed.emit()
+	assert_false(dialog.visible)
 	assert_eq(Global.spritesheet.frames.size(), 5)
 	assert_eq(main.preview.get_selected_coords().size(), 2, "the new frames are selected")
 	assert_eq(Global.document.get_history()[-1], "Generate in-betweens")
@@ -450,13 +460,50 @@ func test_inbetween_movement_typed_stays() -> void:
 	for i in 10:
 		await get_tree().process_frame
 	assert_eq(dialog.motion_x.value, 3.0, "not replaced by the movement found")
+	assert_false(dialog.find_motion_button.disabled, "the one found can be put back")
+	dialog.find_motion_button.pressed.emit()
+	assert_ne(dialog.motion_x.value, 3.0, "put back")
+	assert_true(dialog.find_motion_button.disabled)
 	dialog.hide()
+
+
+func test_inbetweens_pressed_early_are_added_once_made() -> void:
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	assert_false(dialog.is_ready(), "the frames take a while")
+	assert_false(dialog.get_ok_button().disabled, "Generate can be pressed meanwhile")
+	dialog.get_ok_button().pressed.emit()
+	assert_true(dialog.visible, "waiting for them")
+	assert_true(dialog.get_ok_button().disabled)
+	assert_false(dialog.count_spin.editable, "the settings stay as they are")
+	var waiting := Time.get_ticks_msec()
+	while dialog.visible and Time.get_ticks_msec() - waiting < 20000:
+		await get_tree().process_frame
+	assert_false(dialog.visible, "closed once they're made")
+	assert_eq(Global.spritesheet.frames.size(), 4, "and added")
+	assert_true(dialog.count_spin.editable, "ready for next time")
+	Global.document.undo()
+	for key: StringName in [&"inbetween_count", &"inbetween_place", &"inbetween_spacing"]:
+		Settings.set_value(key, Settings.DEFAULTS[key])
+
+
+func test_closing_inbetweens_stops_making_them() -> void:
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(2, 0)] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	dialog.count_spin.value = 8
+	dialog.hide()
+	assert_eq(dialog.maker.get_stage(), InBetweenMaker.Stage.IDLE, "nothing more is made")
+	while dialog.maker.count_running() > 0:
+		await get_tree().process_frame
+	assert_eq(Global.spritesheet.frames.size(), 3)
 
 
 ## Waits for the dialog's frames, made on worker threads
 func _wait_for_frames(dialog: InBetweenDialog) -> void:
 	var waiting := Time.get_ticks_msec()
-	while dialog.get_ok_button().disabled and Time.get_ticks_msec() - waiting < 20000:
+	while not dialog.is_ready() and Time.get_ticks_msec() - waiting < 20000:
 		await get_tree().process_frame
 
 
@@ -473,6 +520,22 @@ static func _drag(view: MiddlePins, at: Vector2) -> void:
 	event.button_mask = MOUSE_BUTTON_MASK_LEFT
 	event.position = at
 	view._gui_input(event)
+
+
+func test_options_explain_themselves() -> void:
+	var label := Label.new()
+	var spin := SpinBox.new()
+	add_child(spin)
+	HelpTooltip.explain("Frames", "How many [frames]", [label, spin])
+	assert_eq(label.mouse_filter, Control.MOUSE_FILTER_STOP, "hovering the label shows it too")
+	for control: Control in [label, spin]:
+		assert_eq(control.tooltip_text, "How many [frames]")
+		var tooltip: RichTextLabel = control._make_custom_tooltip(control.tooltip_text)
+		assert_eq(tooltip.text, "[b]Frames[/b]\nHow many [lb]frames]", "the name in bold over it")
+		assert_true(tooltip.custom_minimum_size.x <= HelpTooltip.WIDTH, "wrapped")
+		tooltip.free()
+	label.free()
+	spin.free()
 
 
 func test_middle_pins_convert_both_ways() -> void:
@@ -498,7 +561,6 @@ func test_inbetween_pins() -> void:
 	var dialog: InBetweenDialog = main.inbetween_dialog
 	var view := dialog.pins_view
 	await _wait_for_frames(dialog)
-	assert_true(view.has_frame(), "the middle frame shows")
 	assert_true(dialog.clear_pins_button.disabled, "no pins yet")
 	var spot := Vector2(view.area.position) + Vector2(6, 5)
 	var half := Vector2(0.5, 0.5)
@@ -506,31 +568,31 @@ func test_inbetween_pins() -> void:
 	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))
 	assert_eq(view.pins, [{"at": spot, "to": spot}] as Array[Dictionary], "pinned in place")
 	_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(spot + half))
-	assert_true(dialog.get_ok_button().disabled, "the frames are made again")
+	assert_false(dialog.is_ready(), "the frames are made again")
 	assert_false(dialog.clear_pins_button.disabled)
 	await _wait_for_frames(dialog)
-	assert_eq(dialog._frames_pins, view.pins, "made with the pin")
+	assert_eq(dialog.maker.get_pins(), view.pins, "made with the pin")
 
 	# Dragging remakes only the middle frame until the pin is let go
-	var middle_passes := dialog._middle_passes
 	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))
 	_drag(view, view.to_screen(spot + Vector2(2, 1) + half))
 	assert_eq(view.pins.size(), 1, "the pin is grabbed, not a new one made")
 	assert_eq(view.pins[0], {"at": spot, "to": spot + Vector2(2, 1)}, "moved")
-	assert_false(dialog.get_ok_button().disabled, "the frames wait for the pin to be let go")
-	assert_true(dialog._middle_passes > middle_passes, "the middle frame is made again")
+	assert_eq(dialog.maker.get_pins(), view.pins, "the middle frame is made again")
+	assert_true(dialog.maker.get_times().is_empty(), "the others wait for the pin to be let go")
 	_click(view, MOUSE_BUTTON_LEFT, false, view.to_screen(spot + Vector2(2, 1) + half))
-	assert_true(dialog.get_ok_button().disabled, "let go: the frames are made again")
+	assert_eq(dialog.maker.get_times().size(), 1, "let go: the frames are made again")
+	assert_false(dialog.is_ready())
 	await _wait_for_frames(dialog)
-	assert_eq(dialog._frames_pins, view.pins, "made with the pin moved")
+	assert_eq(dialog.maker.get_pins(), view.pins, "made with the pin moved")
 
 	# Right-clicking a pin takes it away
 	_click(view, MOUSE_BUTTON_RIGHT, true, view.to_screen(spot + Vector2(2, 1) + half))
 	assert_true(view.pins.is_empty())
 	assert_true(dialog.clear_pins_button.disabled)
-	assert_true(dialog.get_ok_button().disabled, "the frames are made again")
+	assert_false(dialog.is_ready(), "the frames are made again")
 	await _wait_for_frames(dialog)
-	assert_true(dialog._frames_pins.is_empty())
+	assert_true(dialog.maker.get_pins().is_empty())
 
 	# Clearing takes every pin away
 	for at: Vector2 in [spot, spot + Vector2(3, 3)]:
@@ -540,9 +602,9 @@ func test_inbetween_pins() -> void:
 	await _wait_for_frames(dialog)
 	dialog.clear_pins_button.pressed.emit()
 	assert_true(view.pins.is_empty(), "cleared")
-	assert_true(dialog.get_ok_button().disabled, "the frames are made again")
+	assert_false(dialog.is_ready(), "the frames are made again")
 	await _wait_for_frames(dialog)
-	assert_true(dialog._frames_pins.is_empty())
+	assert_true(dialog.maker.get_pins().is_empty())
 
 	# Pins are for the movement they were placed with
 	_click(view, MOUSE_BUTTON_LEFT, true, view.to_screen(spot + half))

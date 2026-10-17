@@ -2084,6 +2084,64 @@ msgstr "Frame chiave"
 msgid "In-between %d"
 msgstr "Intermedio %d"
 
+#: res://ui/main/inbetween_dialog.gd
+msgid "Middle frame"
+msgstr "Frame a metà"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The frame halfway between the keys, in front of them: the first one reddish, the second bluish. Click to pin a spot, drag a pin to move it, right-click to take it away. Every frame passes through what you pin."
+msgstr "Il frame a metà tra i frame chiave, davanti a loro: il primo rossastro, il secondo bluastro. Clicca per fissare un punto, trascina una puntina per spostarlo, clic destro per toglierla. Ogni frame passa per ciò che fissi."
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How far the whole sprite moves from the first key to the second, across and down, in pixels. It's found by lining the keys up: type another one if it's wrong, or 0 for none."
+msgstr "Quanto si sposta tutto lo sprite dal primo frame chiave al secondo, in orizzontale e in verticale, in pixel. Si trova allineando i frame chiave: scrivine un altro se è sbagliato, o 0 per nessuno."
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Keep animation length"
+msgstr "Mantieni la durata dell'animazione"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Click a frame below to see it here."
+msgstr "Clicca un frame qui sotto per vederlo qui."
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Use the movement found by lining the keys up"
+msgstr "Usa il movimento trovato allineando i frame chiave"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Key"
+msgstr "Chiave"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Finding how the sprite moves…"
+msgstr "Cercando come si sposta lo sprite…"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The other frames are made when the pin is let go"
+msgstr "Gli altri frame si creano quando lasci la puntina"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Making the frame halfway…"
+msgstr "Creando il frame a metà…"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Making frames: %d of %d"
+msgstr "Creando i frame: %d di %d"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "%d frame ready"
+msgid_plural "%d frames ready"
+msgstr[0] "%d frame pronto"
+msgstr[1] "%d frame pronti"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The frames couldn't be made"
+msgstr "Non è stato possibile creare i frame"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Generating…"
+msgstr "Generazione…"
+
 #: res://ui/main/layout_controller.gd
 #: res://ui/main/main_actions.gd
 msgid "Top"

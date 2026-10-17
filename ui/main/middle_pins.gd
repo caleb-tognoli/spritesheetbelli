@@ -1,9 +1,10 @@
 class_name MiddlePins
 extends Control
-## The frame halfway between two keys, big enough to pin (see [method InBetween.middle]).
-## Clicking the sprite adds a pin, dragging a pin moves that spot, right-clicking a pin
-## takes it away. A pin left where it was holds its spot still. Pins are in sheet space,
-## the same place frames are put in, see [member pins].
+## Two keys one over the other like onion skin, the first reddish, the second bluish, big
+## enough to pin spots of the frame halfway between them (see [method InBetween.middle]).
+## Clicking adds a pin, dragging a pin moves that spot, right-clicking a pin takes it away.
+## A pin left where it was holds its spot still. Pins are in sheet space, the same place
+## frames are put in, see [member pins].
 
 ## Emitted when [member pins] change: with [param done] false while a pin is dragged, and
 ## true once it's let go, added, taken away or all cleared
@@ -15,6 +16,9 @@ const SIZE := 5.0
 const REACH := 9.0
 ## How much room is left around the keys to drag pins into, as a part of their longest side
 const MARGIN := 0.125
+## How the keys show, see [method show_keys]
+const ONION_A := Color(1.0, 0.5, 0.5, 0.6)
+const ONION_B := Color(0.5, 0.7, 1.0, 0.6)
 
 ## The pins, each [code]{"at": Vector2, "to": Vector2}[/code] in sheet space: a pixel of the
 ## sprite as the middle frame shows it without pins, and where it should be. A pin with
@@ -25,7 +29,8 @@ var area := Rect2i(0, 0, 1, 1)
 ## The pin being dragged, or -1
 var dragged := -1
 
-var _texture: ImageTexture
+## The keys on [member area]
+var _onions: Array[ImageTexture] = []
 ## Where the dragged pin is from the mouse in sheet space, so it doesn't jump when grabbed
 var _grab := Vector2.ZERO
 
@@ -36,32 +41,37 @@ func _init() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
-## Shows the room around keys [param a] and [param b] (see [method InBetween.key_of]), with
-## nothing on it and no pins, until [method show_frame]
+## Shows the room around what keys [param a] and [param b] show (see
+## [method InBetween.key_of]), with the keys on it and no pins
 func show_keys(a: Dictionary, b: Dictionary) -> void:
-	var keys := Rect2i(a.origin, (a.image as Image).get_size())
-	keys = keys.merge(Rect2i(b.origin, (b.image as Image).get_size()))
+	var keys := _shown_rect(a).merge(_shown_rect(b))
 	area = keys.grow(maxi(2, ceili(maxi(keys.size.x, keys.size.y) * MARGIN)))
-	_texture = null
+	_onions.clear()
+	for key: Dictionary in [a, b]:
+		_onions.append(ImageTexture.create_from_image(_on_area(key)))
 	remove_all(false)
+	queue_redraw()
 
 
-## Shows [param frame], an image with where it's placed (its [code]origin[/code]), cut to
-## [member area]
-func show_frame(frame: Dictionary) -> void:
+## Where the pixels [param key] shows are placed, leaving out what's clear round them, or
+## where the whole key is when it shows nothing
+static func _shown_rect(key: Dictionary) -> Rect2i:
+	var img: Image = key.image
+	var used := img.get_used_rect()
+	if not used.has_area():
+		used = Rect2i(Vector2i.ZERO, img.get_size())
+	return Rect2i(key.origin + used.position, used.size)
+
+
+## [param frame], an image with where it's placed, on [member area]
+func _on_area(frame: Dictionary) -> Image:
 	var canvas := Image.create_empty(area.size.x, area.size.y, false, Image.FORMAT_RGBA8)
 	var img: Image = frame.image
 	if img.get_format() != Image.FORMAT_RGBA8:
 		img = img.duplicate()
 		img.convert(Image.FORMAT_RGBA8)
 	canvas.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), frame.origin - area.position)
-	_texture = ImageTexture.create_from_image(canvas)
-	queue_redraw()
-
-
-## Whether a frame is shown, so it can be pinned
-func has_frame() -> bool:
-	return _texture != null
+	return canvas
 
 
 ## Takes every pin away, telling with [signal pins_changed] when [param notify]
@@ -114,8 +124,6 @@ func pin_at(at: Vector2) -> int:
 func _gui_input(event: InputEvent) -> void:
 	var button := event as InputEventMouseButton
 	if button and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
-		if not has_frame():
-			return
 		var index := pin_at(button.position)
 		if index < 0:
 			var spot := _pixel_at(button.position)
@@ -157,8 +165,9 @@ func _pixel_at(at: Vector2) -> Vector2:
 
 
 func _draw() -> void:
-	if _texture:
-		draw_texture_rect(_texture, get_picture_rect(), false)
+	var rect := get_picture_rect()
+	for i in _onions.size():
+		draw_texture_rect(_onions[i], rect, false, ONION_A if i == 0 else ONION_B)
 	var accent := Global.accent_color
 	var half := Vector2(0.5, 0.5)
 	for i in pins.size():

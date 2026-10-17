@@ -3,7 +3,11 @@ extends VBoxContainer
 ## Plays cells of a spritesheet on a [FrameStage], with a bar to scrub through them, and
 ## buttons to go back to the first frame, play or pause, step to the previous or next
 ## frame, show the previous frame faintly behind the current one (onion skin), choose
-## what's behind the frames and fit them in the stage again.
+## what's behind the frames and fit them in the stage again. Without a sheet, it plays
+## pictures instead, see [method set_pictures].
+
+## Emitted when it shows another frame, or the same one again, with its cell
+signal frame_shown(cell: Vector2i)
 
 const PLAY_ICON := preload("res://assets/icons/Play.svg")
 const PAUSE_ICON := preload("res://assets/icons/Pause.svg")
@@ -58,6 +62,8 @@ var _position := 0
 var _direction := 1
 var _elapsed := 0.0
 var _textures: Dictionary[Image, ImageTexture] = {}
+## What's played without a sheet, see [method set_pictures]
+var _pictures: Array[Texture2D] = []
 ## Whether it was playing when scrubbing started, to play on after
 var _played_before_scrub := false
 var _updating_scrub := false
@@ -216,15 +222,35 @@ func set_cells(cells: Array[Vector2i], durations: Array[float] = []) -> void:
 	_cells.clear()
 	_durations.clear()
 	for i in cells.size():
-		if sheet == null or sheet.has_frame(cells[i]):
+		if _has_frame(cells[i]):
 			_cells.append(cells[i])
 			_durations.append(durations[i] if i < durations.size() else 1.0)
 	# Stay on the same frame when it's still there
 	_position = maxi(_cells.find(current), 0)
 	# Frames are shown in their cells, which are all as big
-	var has_cells := sheet != null and not _cells.is_empty()
-	stage.content_size = sheet.sprite_size if has_cells else Vector2i.ZERO
+	if _cells.is_empty():
+		stage.content_size = Vector2i.ZERO
+	elif sheet:
+		stage.content_size = sheet.sprite_size
+	else:
+		stage.content_size = Vector2i(_texture(_cells[0]).get_size())
 	_show_current()
+
+
+## Plays [param pictures] in order, all as big, when there's no sheet: the cell of each is
+## its index across, [code]Vector2i(index, 0)[/code]. Pictures missing (null) are skipped.
+func set_pictures(pictures: Array[Texture2D]) -> void:
+	_pictures = pictures.duplicate()
+	var cells: Array[Vector2i] = []
+	for i in pictures.size():
+		cells.append(Vector2i(i, 0))
+	set_cells(cells)
+
+
+func _has_frame(cell: Vector2i) -> bool:
+	if sheet:
+		return sheet.has_frame(cell)
+	return cell.y == 0 and cell.x >= 0 and cell.x < _pictures.size() and _pictures[cell.x] != null
 
 
 func get_cells() -> Array[Vector2i]:
@@ -357,9 +383,12 @@ func _show_current() -> void:
 	var show_onion := onion_button.button_pressed and previous != Spritesheet.NO_CELL
 	stage.onion = _texture(previous) if show_onion else null
 	counter.text = "%d / %d" % [_position + 1, _cells.size()]
+	frame_shown.emit(cell)
 
 
-func _texture(cell: Vector2i) -> ImageTexture:
+func _texture(cell: Vector2i) -> Texture2D:
+	if sheet == null:
+		return _pictures[cell.x]
 	var source := sheet.frames[cell]
 	if not _textures.has(source):
 		_textures[source] = ImageTexture.create_from_image(sheet.get_cell_image(cell))

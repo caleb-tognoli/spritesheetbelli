@@ -46,23 +46,25 @@ static func key_of(sheet: Spritesheet, coord: Vector2i) -> Dictionary:
 
 
 ## What's worked out about keys [param a] and [param b] once, for every frame made from
-## them: their pieces and where they went, the whole sprite moving by [param motion] (see
+## them: their pieces and where they went, the whole sprite moving by [param motion], a
+## [Vector2i] (zero for not at all), or as found when null (see
 ## [method SpriteMotion.detect]). Null when [param progress] is cancelled. Slow: run it on a
 ## worker thread, see [WorkProgress].
 static func prepare(
-	a: Dictionary, b: Dictionary, motion := Vector2i.ZERO, progress: WorkProgress = null
+	a: Dictionary, b: Dictionary, motion: Variant = null, progress: WorkProgress = null
 ) -> PieceMorph:
 	return PieceMorph.find(a, b, motion, progress)
 
 
 ## [param count] frames between keys [param a] and [param b], spread as [param spacing]
 ## says (see [method time_of]), the whole sprite moving by [param motion] from [param a]
-## to [param b] (found when zero), steered by [param pins] (see [method PieceMorph.frame])
+## to [param b] (found when null, see [method prepare]), steered by [param pins] (see
+## [method PieceMorph.frame])
 static func generate(
 	a: Dictionary,
 	b: Dictionary,
 	count: int,
-	motion := Vector2i.ZERO,
+	motion: Variant = null,
 	spacing := Spacing.LINEAR,
 	pins: Array[Dictionary] = [],
 ) -> Array[Dictionary]:
@@ -92,13 +94,21 @@ static func generate_one(
 	pins: Array[Dictionary] = [],
 ) -> Dictionary:
 	var t := time_of(index, count, spacing)
-	var frame := prepared.frame(t, pins)
+	return finish(a, b, prepared.frame(t, pins), index, t)
+
+
+## [param frame], made [param t] of the way from key [param a] to key [param b] (see
+## [method PieceMorph.frame]), made in-between [param index]: named after the first key,
+## with a pivot of its own when a key has one, as far along as the frame. Changes
+## [param frame] and its image, and returns it.
+static func finish(
+	a: Dictionary, b: Dictionary, frame: Dictionary, index: int, t: float
+) -> Dictionary:
 	var img: Image = frame.image
 	var base := (a.image as Image).resource_name.get_basename()
 	img.resource_name = (
 		("%s_inbetween%d" % [base, index + 1]) if base else "inbetween%d" % [index + 1]
 	)
-	# A pivot of their own when a key has one, as far along as the frame
 	if a.has("pivot") or b.has("pivot"):
 		var a_pivot := Vector2(a.origin) + _pivot(a)
 		var b_pivot := Vector2(b.origin) + _pivot(b)

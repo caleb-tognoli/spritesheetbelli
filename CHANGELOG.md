@@ -373,9 +373,19 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   stops slowly, previewed between the keys and played as fast as their animation, go
   right after the first key (moving later frames along), in the first free cell, after
   the last frame or in a new row. Animations that play the two keys one after the other,
-  either way round or from the end of a loop to its start, can get them too: the dialog
-  names them, and Keep their length has the new frames share the first key's time.
-  Following the pieces shows how far it got, and stops when the dialog is closed.
+  either way round or from the end of a loop to its start, can get them too, and Keep
+  animation length has the new frames share the first key's time.
+  Frames are made in the background and show as they're made. Pins go on the keys, shown
+  big one over the other like onion skin (the first reddish, the second bluish), beside
+  the settings, each explained when hovered. Below, the keys and the frames between them
+  play with the animation preview's controls, beside a list of them with a spinner on
+  each one still being made; clicking one shows it in the player. A line at the bottom
+  says what's being worked on and how far it got.
+  Only the latest settings are worked on, a few frames at a time, and frames made come
+  back at once, so changing the count or the spacing never waits behind earlier work;
+  closing the dialog stops it. Generate can be pressed before every frame is made, and
+  adds them once they are. A movement typed is used as it is, none at all included, and
+  can be swapped back for the one found.
 - Resize Canvas, a toggle next to the sprite size: typing a size adds transparent space
   evenly around the frames instead of scaling them, or takes it away, trimming only
   transparent pixels. The cells keep that size as frames are added or removed, growing

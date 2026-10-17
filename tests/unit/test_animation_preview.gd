@@ -532,6 +532,24 @@ func test_onion_skin_shows_the_previous_frame() -> void:
 	player.queue_free()
 
 
+func test_plays_pictures_without_a_sheet() -> void:
+	var player := FramePlayer.new()
+	add_child(player)
+	var shown: Array[Vector2i] = []
+	player.frame_shown.connect(func(cell: Vector2i) -> void: shown.append(cell))
+	var picture := ImageTexture.create_from_image(make_image(Color.RED, Vector2i(6, 4)))
+	player.set_pictures([picture, null, picture] as Array[Texture2D])
+	var cells: Array[Vector2i] = [Vector2i(0, 0), Vector2i(2, 0)]
+	assert_eq(player.get_cells(), cells, "skips the missing one")
+	assert_eq(player.stage.content_size, Vector2i(6, 4))
+	assert_eq(player.stage.texture, picture)
+	player.step(1)
+	assert_eq(shown[-1], Vector2i(2, 0), "tells which one it shows")
+	player.set_pictures([picture, picture, picture] as Array[Texture2D])
+	assert_eq(player.get_current_cell(), Vector2i(2, 0), "stays on it")
+	player.queue_free()
+
+
 func test_frames_are_shown_by_name_when_they_have_one() -> void:
 	var sheet := Global.spritesheet
 	sheet.rename_frame(Vector2i(1, 0), "idle")

@@ -2047,34 +2047,6 @@ msgid "Generate"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
-msgid "The keys and the frames between them, played"
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
-msgid "The frame halfway between the keys"
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
-msgid "Click to pin a spot, drag a pin to move it, right-click to take it away. Frames pass through what you pin."
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
-msgid "Clear pins"
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
-msgid "Take every pin away"
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
-msgid "Movement"
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
-msgid "How far the sprite moves from the first key to the second, found by lining them up"
-msgstr ""
-
-#: res://ui/main/inbetween_dialog.gd
 msgid "Frames"
 msgstr ""
 
@@ -2084,6 +2056,18 @@ msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
 msgid "How the frames are spread between the keys. Easing in bunches them up near the first key so the sprite starts slowly, easing out near the second so it stops slowly."
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Use the movement found by lining the keys up"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Movement"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "How far the whole sprite moves from the first key to the second, across and down, in pixels. It's found by lining the keys up: type another one if it's wrong, or 0 for none."
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
@@ -2103,7 +2087,7 @@ msgid "Play the new frames between the keys wherever an animation plays them one
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
-msgid "Keep their length"
+msgid "Keep animation length"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
@@ -2111,11 +2095,15 @@ msgid "The new frames share the time of the key before them, so the animations l
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
-msgid "Following every piece…"
+msgid "Clear pins"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
-msgid "Where these frames play one after the other: %s"
+msgid "Take every pin away"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Key"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
@@ -2124,6 +2112,40 @@ msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
 msgid "In-between %d"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Finding how the sprite moves…"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Following every piece…"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The other frames are made when the pin is let go"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Making the frame halfway…"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Making frames: %d of %d"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "%d frame ready"
+msgid_plural "%d frames ready"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "The frames couldn't be made"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Generating…"
 msgstr ""
 
 #: res://ui/main/layout_controller.gd
