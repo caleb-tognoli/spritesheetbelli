@@ -54,7 +54,9 @@ const TIDY_ALPHA := 128
 ## Numbers worked out for each pixel matched: colour (3), opacity and depth
 const FEATURES := 5
 ## The corners of a pixel, round it, and the pixels sharing each
-const CORNERS: Array[Vector2i] = [Vector2i(-1, -1), Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1)]
+const CORNERS: Array[Vector2i] = [
+	Vector2i(-1, -1), Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1)
+]
 
 ## The canvas both keys are on
 var width := 0
