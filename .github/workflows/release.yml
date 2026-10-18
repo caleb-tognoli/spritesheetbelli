@@ -3,8 +3,8 @@ name: Release
 # Push a tag like v1.0.0 to build every platform, attach the builds to a GitHub
 # release and publish the web version to GitHub Pages. The tag must match the version
 # in project.godot and export_presets.cfg, and the release notes are the CHANGELOG.md
-# section of that version. Run it by hand to get the builds as workflow artifacts
-# without releasing.
+# section of that version (see .github/scripts/release_notes.py). Run it by hand to
+# get the builds as workflow artifacts without releasing.
 on:
   push:
     tags: ["v*"]
@@ -30,19 +30,8 @@ jobs:
             "application/short_version=\"$VERSION\"" "application/version=\"$VERSION\""; do
             grep -qxF "$line" export_presets.cfg || fail "export_presets.cfg has no $line"
           done
-          # The section of this version, with its wrapped lines joined: GitHub shows
-          # every line break in release notes
-          awk -v v="$VERSION" '
-            $0 == "## " v { found = 1; next }
-            !found { next }
-            /^## / { exit }
-            /^$/ || /^#/ { flush(); print; next }
-            /^- / { flush(); line = $0; next }
-            { sub(/^ +/, ""); line = line == "" ? $0 : line " " $0 }
-            function flush() { if (line != "") print line; line = "" }
-            END { flush() }
-          ' CHANGELOG.md > release_notes.md
-          grep -q '[^[:space:]]' release_notes.md || fail "CHANGELOG.md has no \"## $VERSION\" section"
+          python3 .github/scripts/release_notes.py "$VERSION" CHANGELOG.md "$GITHUB_REPOSITORY" \
+            > release_notes.md || fail "CHANGELOG.md has no \"## $VERSION\" section"
 
       - name: Cache Godot and export templates
         id: cache

@@ -5,6 +5,28 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 
 ## 1.0.0
 
+The first public release. spritesheetbelli sits between your drawing program and your
+game engine: it cuts and packs spritesheets, turns frames into animations and exports
+exactly what your engine expects.
+
+- **Cut any sheet:** the grid is worked out from the file name, the gaps or a data file,
+  solid backgrounds are made transparent, loose sprites are found, and TexturePacker,
+  Aseprite, Phaser, libGDX and Spine atlases unpack frame for frame.
+- **Export for every engine:** Godot SpriteFrames, a Unity `.tpsheet`, Phaser 3, GameMaker
+  strips, libGDX / Spine, Defold, Cocos2d-x, Sparrow / Starling, CSS sprites, GIFs and
+  templates of your own, at several scales. Export Again writes them all, also from the
+  command line.
+- **Packed atlases:** trimmed, rotated and tightly packed, with frames you can drag and pin.
+- **Animations:** from a row in one key, with frame timing on a timeline, mirroring and
+  onion skin.
+- **Linked art files:** frames reload when saved again in Aseprite, Photoshop or Krita,
+  keeping the edits made here.
+- **In-betweens:** frames generated between two keys, evenly or eased.
+- Tabs, crash recovery, a command palette, pivots, light and dark themes, in English and
+  Italian.
+
+The lists below are the changes since 0.2.0, which was never published.
+
 ### Added
 - Tabs: several projects open at once, one per tab over the canvas, each with its own
   undo history, selection, zoom and chosen animation. Open, Open Recent and dropping
@@ -314,7 +336,7 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
   bigger, with frames resized from their originals with the sheet's filter and padding,
   spacing and extrusion scaled too, and its own data file, named with a suffix
   (`hero@2x.png`, `hero@2x.json`); an atlas's pages are numbered before it
-  (`hero_0@2x.png`, `hero_0@2x.json`). CSS and SCSS sprites show the @2x image on
+  (`hero_0@2x.png`, `hero_0@2x.json`). CSS and SCSS sprites show the `@2x` image on
   high-density screens when 2 is among the scales. On the command line, `--scales 1,2`,
   which applies to `--strips` too.
 - Theme: a System option, now the default, follows the operating system's dark or light

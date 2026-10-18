@@ -60,7 +60,7 @@ One project, every format you ship:
 | **GameMaker** | `walk_strip8.png` strips, one per animation |
 | **libGDX / Spine** | An `.atlas` file |
 | **Defold, Cocos2d-x, Sparrow / Starling** | A tile source, a `.plist`, an XML |
-| **Web** | CSS or SCSS sprites, with @2x images |
+| **Web** | CSS or SCSS sprites, with `@2x` images |
 | **Everything else** | TexturePacker / Aseprite JSON, or [a template of your own](docs/templates.md) |
 
 Plus PNG, JPG and WebP sheets, every frame as its own file, packed atlases and animated

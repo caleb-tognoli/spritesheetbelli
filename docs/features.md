@@ -85,7 +85,7 @@ The full tour. For the short version, see the [README](../README.md).
   Aseprite-style tags), a Phaser 3 multi-atlas, a libGDX / Spine `.atlas`, Sparrow /
   Starling XML, a Godot `SpriteFrames` resource with the sheet's animations (or every
   frame in one "default" animation when there are none), a Unity `.tpsheet`, a Cocos2d-x
-  `.plist`, CSS or SCSS sprites (with the @2x image for high-density screens when exported
+  `.plist`, CSS or SCSS sprites (with the `@2x` image for high-density screens when exported
   at scales 1 and 2), and for grid sheets a Defold tile source, for a grid sheet or every
   page of a packed atlas, with pivots and turned frames where the format has them. Every
   data file comes from a template, and your own templates can add formats (see [Data file
