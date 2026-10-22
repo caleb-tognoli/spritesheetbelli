@@ -47,6 +47,8 @@ const MAGNIFIED := 1.25
 ## of each other are one
 const ALIKE_PIXELS := 0.75
 const BENDING := -2
+## Merges worked out on each thread at least, see [method merge]
+const MERGINGS_LEAST := 4
 
 ## The key on its canvas
 var data := PackedByteArray()
@@ -68,6 +70,7 @@ var parents := PackedInt32Array()
 var joints := PackedVector2Array()
 ## The pieces, back to front
 var order := PackedInt32Array()
+## The key blown up for drawing pieces turned, see [method make_smooth]
 var smooth: SmoothKey
 ## The whole shape bending, see [ShapeBlend], and whether this is key B
 var blend: ShapeBlend
@@ -79,8 +82,10 @@ var layered := PackedByteArray()
 var meshed := PackedByteArray()
 ## How many times bigger than the bending the key is drawn
 var scale := 1
-## The smoothed outlines of pieces grown much, by piece, see [method _smooth_covering]
+## The smoothed outlines of pieces grown much, by piece, see [method _smooth_covering]:
+## worked out as frames need them, which can be drawn on several threads at once
 var _outlines := {}
+var _outlines_lock := Mutex.new()
 ## The piece each pixel is drawn with: [member KeyRegions.labels] of [member pieces],
 ## with faint pixels too
 var drawing := PackedInt32Array()
@@ -112,6 +117,21 @@ func merge(follower: RegionMotions, width: int) -> void:
 	var owner := PackedInt32Array(range(count))
 	var cache := {}
 	while true:
+		# What merging each two touching pieces costs, for those not worked out yet: each
+		# on its own, so they're shared out among threads
+		var missing: Array[Vector2i] = []
+		for p in count:
+			if alive[p] == 0:
+				continue
+			for q: int in touching[p]:
+				if q > p and alive[q] == 1 and not cache.has(Vector2i(p, q)):
+					missing.append(Vector2i(p, q))
+		var mergings := _mergings.bind(missing, follower, members, piece_motions, costs, total)
+		var found := []
+		for part: Array in Parallel.split(missing.size(), MERGINGS_LEAST, mergings):
+			found.append_array(part)
+		for k in missing.size():
+			cache[missing[k]] = found[k]
 		var best := Vector3(INF, -1, -1)
 		for p in count:
 			if alive[p] == 0:
@@ -120,17 +140,6 @@ func merge(follower: RegionMotions, width: int) -> void:
 				if q <= p or alive[q] == 0:
 					continue
 				var key := Vector2i(p, q)
-				if not cache.has(key):
-					cache[key] = _merging(
-						follower,
-						members[p],
-						members[q],
-						piece_motions[p],
-						piece_motions[q],
-						costs[p],
-						costs[q],
-						total
-					)
 				var increase: float = cache[key][0]
 				if increase < best.x:
 					best = Vector3(increase, p, q)
@@ -195,7 +204,6 @@ func merge(follower: RegionMotions, width: int) -> void:
 			labels[p] = numbers[owner[labels[p]]]
 	pieces = KeyRegions.from_labels(data, width, labels)
 	drawing = _with_faint(labels, width)
-	smooth = SmoothKey.of(data, width, drawing)
 
 
 ## Two touching pieces, alive in [param alive], whose motions take each of their pixels
@@ -226,26 +234,90 @@ static func _moving_alike(
 	return Vector2i(-1, -1)
 
 
+## Blows the key up for drawing its pieces turned (see [SmoothKey]), once they're merged
+## (see [method merge]): only needed for drawing the key as its pieces, not bent
+func make_smooth() -> void:
+	smooth = SmoothKey.of(data, pieces.width, drawing)
+
+
 ## [param labels] with the faint pixels (less than half shown, like a glow or soft edges),
 ## which no region has, given to the piece of the nearest pixel that has one, so they're
 ## drawn with it
 func _with_faint(labels: PackedInt32Array, width: int) -> PackedInt32Array:
 	var height := labels.size() / width
+	# Worked out round the pixels shown only, which holds every pixel with a piece, so the
+	# nearest are as on the whole canvas (see PixelCanvas.distances)
+	var area := PixelCanvas.shown_rect(data, width, height, 0)
 	var has := PackedByteArray()
-	has.resize(labels.size())
+	has.resize(area.size.x * area.size.y)
 	var any_faint := false
-	for p in labels.size():
-		has[p] = 1 if labels[p] >= 0 else 0
-		if labels[p] < 0 and data[p * 4 + 3] > 0:
-			any_faint = true
+	for y in range(area.position.y, area.end.y):
+		var row := (y - area.position.y) * area.size.x - area.position.x
+		for x in range(area.position.x, area.end.x):
+			var p := y * width + x
+			if labels[p] >= 0:
+				has[row + x] = 1
+			elif data[p * 4 + 3] > 0:
+				any_faint = true
 	if not any_faint:
 		return labels
-	var nearest: PackedInt32Array = PixelCanvas.distances(has, width, height, 1)[1]
+	var nearest := _nearest_in(has, area, width, height)
 	var result := labels.duplicate()
-	for p in labels.size():
-		if labels[p] < 0 and data[p * 4 + 3] > 0 and nearest[p] >= 0:
-			result[p] = labels[nearest[p]]
+	for y in range(area.position.y, area.end.y):
+		var row := (y - area.position.y) * area.size.x - area.position.x
+		for x in range(area.position.x, area.end.x):
+			var p := y * width + x
+			if labels[p] < 0 and data[p * 4 + 3] > 0 and nearest[row + x] >= 0:
+				result[p] = labels[nearest[row + x]]
 	return result
+
+
+## For each pixel of [param area] of a canvas [param width] × [param height] pixels, by
+## its place in the area, the canvas pixel nearest it that [param has] (by place in the
+## area) marks, or -1: as on the whole canvas when the area holds every pixel marked
+static func _nearest_in(
+	has: PackedByteArray, area: Rect2i, width: int, height: int
+) -> PackedInt32Array:
+	var far := (width + height) * 4
+	var nearest: PackedInt32Array = PixelCanvas.distances(has, area.size.x, area.size.y, 1, far)[1]
+	for i in nearest.size():
+		var n := nearest[i]
+		if n >= 0:
+			var x := n % area.size.x + area.position.x
+			nearest[i] = (n / area.size.x + area.position.y) * width + x
+	return nearest
+
+
+## [method _merging] for the pairs of pieces [param pairs] [param start] to [param end]
+## (past the last) say, each piece having [param members], [param piece_motions] and
+## [param costs], of [param total] pixels in all
+static func _mergings(
+	start: int,
+	end: int,
+	pairs: Array[Vector2i],
+	follower: RegionMotions,
+	members: Array[PackedInt32Array],
+	piece_motions: Array[Transform2D],
+	costs: PackedFloat32Array,
+	total: int
+) -> Array:
+	var found := []
+	for k in range(start, end):
+		var p := pairs[k].x
+		var q := pairs[k].y
+		found.append(
+			_merging(
+				follower,
+				members[p],
+				members[q],
+				piece_motions[p],
+				piece_motions[q],
+				costs[p],
+				costs[q],
+				total
+			)
+		)
+	return found
 
 
 ## What merging pieces of [param first] and [param second] pixels costs, see [PieceMorph]:
@@ -295,42 +367,55 @@ static func _merging(
 func enlarge(full_data: PackedByteArray, width: int, zoom: int) -> void:
 	var small_width := pieces.width
 	var count := full_data.size() / 4
+	var height := count / width
 	var labels := PackedInt32Array()
 	labels.resize(count)
 	labels.fill(-1)
+	# Only pixels shown have pieces: worked out round them
+	var area := PixelCanvas.shown_rect(full_data, width, height, 0)
 	var has := PackedByteArray()
-	has.resize(count)
+	has.resize(area.size.x * area.size.y)
 	var missing := false
-	for p in count:
-		if full_data[p * 4 + 3] == 0:
-			continue
-		var small := (p / width / zoom) * small_width + (p % width) / zoom
-		labels[p] = drawing[small] if small < drawing.size() else -1
-		if labels[p] >= 0:
-			has[p] = 1
-		else:
-			missing = true
+	for y in range(area.position.y, area.end.y):
+		var row := (y - area.position.y) * area.size.x - area.position.x
+		var small_row := (y / zoom) * small_width
+		for x in range(area.position.x, area.end.x):
+			var p := y * width + x
+			if full_data[p * 4 + 3] == 0:
+				continue
+			var small := small_row + x / zoom
+			labels[p] = drawing[small] if small < drawing.size() else -1
+			if labels[p] >= 0:
+				has[row + x] = 1
+			else:
+				missing = true
 	if missing:
-		var nearest: PackedInt32Array = PixelCanvas.distances(has, width, count / width, 1)[1]
-		for p in count:
-			if full_data[p * 4 + 3] > 0 and labels[p] < 0 and nearest[p] >= 0:
-				labels[p] = labels[nearest[p]]
+		var nearest := _nearest_in(has, area, width, height)
+		for y in range(area.position.y, area.end.y):
+			var row := (y - area.position.y) * area.size.x - area.position.x
+			for x in range(area.position.x, area.end.x):
+				var p := y * width + x
+				if full_data[p * 4 + 3] > 0 and labels[p] < 0 and nearest[row + x] >= 0:
+					labels[p] = labels[nearest[row + x]]
 	for r in motions.size():
 		var motion := motions[r]
 		motions[r] = Transform2D(motion.x, motion.y, motion.origin * zoom)
 		joints[r] *= zoom
 	data = full_data
-	pieces = KeyRegions.from_labels(full_data, width, labels)
+	pieces = KeyRegions.from_labels(full_data, width, labels, area)
 	drawing = labels
 	smooth = null
 	scale = zoom
-	var full_meshed := PackedByteArray()
-	full_meshed.resize(count)
-	if not meshed.is_empty():
-		for p in count:
-			var small := (p / width / zoom) * small_width + (p % width) / zoom
-			full_meshed[p] = meshed[small] if small < meshed.size() else 0
-	meshed = full_meshed
+	if meshed.is_empty():
+		meshed.resize(count)
+	else:
+		# Each pixel as the smaller pixel it's in, blown up natively
+		var small_height := meshed.size() / small_width
+		var image := Image.create_from_data(
+			small_width, small_height, false, Image.FORMAT_L8, meshed
+		)
+		image.resize(small_width * zoom, small_height * zoom, Image.INTERPOLATE_NEAREST)
+		meshed = image.get_region(Rect2i(0, 0, width, height)).get_data()
 
 
 ## Works out what pieces are attached to (see [member parents]) and the order they're
@@ -513,7 +598,8 @@ func drawn(t: float, width: int, height: int) -> PackedByteArray:
 	# Pixels the bending would show of pieces moving on their own, and from where
 	var left_out := PackedInt32Array()
 	if blend != null and layered.has(0):
-		var bent := blend.sources(1.0 - t if is_b else t, is_b, scale)
+		var grown := PackedFloat32Array()
+		var bent := blend.sources(1.0 - t if is_b else t, is_b, scale, grown)
 		var bent_width := blend.width * scale
 		for y in height:
 			for x in width:
@@ -529,7 +615,7 @@ func drawn(t: float, width: int, height: int) -> PackedByteArray:
 					left_out.append_array([y * width + x, q])
 					continue
 				# What bends, its outline smooth where it's stretched
-				if blend.magnified[y * bent_width + x] >= MAGNIFIED:
+				if grown[y * bent_width + x] >= MAGNIFIED:
 					q = _smooth_covering(source, BENDING, width, height)
 				else:
 					q = _covering(source, BENDING, width, height)
@@ -661,13 +747,16 @@ func _covering(at: Vector2, r: int, width: int, height: int) -> int:
 ## stretched its stairs become curves, see [SmoothOutline]. The pixel is the piece's
 ## nearest.
 func _smooth_covering(at: Vector2, r: int, width: int, height: int) -> int:
+	_outlines_lock.lock()
 	if not _outlines.has(r):
 		var mask := PackedByteArray()
 		mask.resize(drawing.size())
 		for p in drawing.size():
 			mask[p] = 1 if _belongs(drawing[p], r) else 0
 		_outlines[r] = SmoothOutline.of(mask, width, height, scale)
-	if not (_outlines[r] as SmoothOutline).covers(at):
+	var outline: SmoothOutline = _outlines[r]
+	_outlines_lock.unlock()
+	if not outline.covers(at):
 		return -1
 	var cx := floori(at.x)
 	var cy := floori(at.y)

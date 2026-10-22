@@ -13,6 +13,8 @@ const STRAY_OPEN := 7
 const JAG_ROUNDS := 2
 const CENTER := 1 << 4
 const WIDE_CENTER := 1 << 12
+## Every pixel 5 × 5 round shown
+const WIDE_FULL := (1 << 25) - 1
 
 
 ## [param frame] ([code]{"image", "origin"}[/code]) tidied up, see [PixelCleanup]
@@ -27,6 +29,9 @@ static func tidy(frame: Dictionary) -> Dictionary:
 ## Tidies up [param data], a canvas [param width] × [param height] pixels with a
 ## transparent border, in place
 static func tidy_data(data: PackedByteArray, width: int, height: int) -> void:
+	if NativeKernels.kernels:
+		NativeKernels.tidy_data(data, width, height)
+		return
 	var colors := PixelCanvas.colors(data)
 	var sides := PixelParts.sides_of(width, true)
 	var area := PixelCanvas.shown_area(colors, width, height)
@@ -64,6 +69,21 @@ static func _enclosed(colors: PackedInt32Array, p: int, width: int) -> bool:
 	)
 
 
+## [method _most_common] of the colours of [param data]'s pixels (RGBA bytes)
+static func _most_common_of(data: PackedByteArray, p: int, sides: Array[int]) -> int:
+	var counts := {}
+	var best := 0
+	for side in sides:
+		var i := (p + side) * 4
+		if data[i + 3] == 0:
+			continue
+		var other := data[i] << 24 | data[i + 1] << 16 | data[i + 2] << 8 | data[i + 3]
+		counts[other] = counts.get(other, 0) + 1
+		if best == 0 or counts[other] > counts[best]:
+			best = other
+	return best
+
+
 ## The colour most of the neighbours of pixel [param p] have, across [param sides]
 static func _most_common(colors: PackedInt32Array, p: int, sides: Array[int]) -> int:
 	var counts := {}
@@ -83,6 +103,8 @@ static func _most_common(colors: PackedInt32Array, p: int, sides: Array[int]) ->
 static func shapes_of(
 	data: PackedByteArray, width: int, height: int, least_alpha := 1
 ) -> PackedInt32Array:
+	if NativeKernels.kernels:
+		return NativeKernels.shapes_of(data, width, height, least_alpha)
 	var counts := PackedInt32Array()
 	counts.resize(512)
 	var mask := _shown(data, least_alpha)
@@ -106,11 +128,19 @@ static func smooth_jags(
 	least_alpha := 1,
 	wide_shapes := {}
 ) -> void:
+	if NativeKernels.kernels:
+		NativeKernels.smooth_jags(data, width, height, shapes, least_alpha, wide_shapes)
+		return
 	var sides := PixelParts.sides_of(width, true)
+	var wide := not wide_shapes.is_empty()
+	# Most pixels have nothing or everything shown 5 × 5 round them
+	var wide_empty := wide_shapes.has(WIDE_CENTER) and not wide_shapes.has(0)
+	var wide_full := wide_shapes.has(WIDE_FULL ^ WIDE_CENTER) and not wide_shapes.has(WIDE_FULL)
 	for _round in JAG_ROUNDS:
 		var mask := _shown(data, least_alpha)
-		var colors := PixelCanvas.colors(data)
-		var area := PixelCanvas.shown_area(colors, width, height)
+		# The colours as the round starts, for filling
+		var before := data.duplicate()
+		var area := _shown_area(data, width, height)
 		var changed := false
 		for y in range(area.position.y, area.end.y):
 			for x in range(area.position.x, area.end.x):
@@ -122,16 +152,23 @@ static func smooth_jags(
 				var jag := (shown_sides <= 1) if mask[p] == 1 else (shown_sides >= 3)
 				var smoothed := jag and shapes[shape] == 0 and shapes[flipped] > 0
 				# Or wider: the 5 × 5 round it the keys never have, but would flipped
-				if not smoothed and not wide_shapes.is_empty() and _wide_fits(p, width, height):
-					var wide := _wide_at(mask, p, width)
-					smoothed = (not wide_shapes.has(wide) and wide_shapes.has(wide ^ WIDE_CENTER))
+				if not smoothed and wide and x >= 2 and y >= 2 and x < width - 2 and y < height - 2:
+					var around := _wide_at(mask, p, width)
+					if around == 0:
+						smoothed = wide_empty
+					elif around == WIDE_FULL:
+						smoothed = wide_full
+					else:
+						smoothed = (
+							not wide_shapes.has(around) and wide_shapes.has(around ^ WIDE_CENTER)
+						)
 				if not smoothed:
 					continue
 				if mask[p] == 1:
 					for c in 4:
 						data[p * 4 + c] = 0
 				else:
-					var best := _most_common(colors, p, sides)
+					var best := _most_common_of(before, p, sides)
 					data[p * 4] = best >> 24 & 255
 					data[p * 4 + 1] = best >> 16 & 255
 					data[p * 4 + 2] = best >> 8 & 255
@@ -147,6 +184,8 @@ static func smooth_jags(
 static func wide_shapes_of(
 	data: PackedByteArray, width: int, height: int, least_alpha := 1
 ) -> Dictionary:
+	if NativeKernels.kernels:
+		return NativeKernels.wide_shapes_of(data, width, height, least_alpha)
 	var found := {}
 	var mask := _shown(data, least_alpha)
 	var area := PixelCanvas.shown_area(PixelCanvas.colors(data), width, height)
@@ -165,16 +204,18 @@ static func _wide_fits(p: int, width: int, height: int) -> bool:
 	return x >= 2 and y >= 2 and x < width - 2 and y < height - 2
 
 
-## The 5 × 5 shape of [param mask] round pixel [param p] as 25 bits, the pixel itself
-## [constant WIDE_CENTER]
+## The 5 × 5 shape of [param mask] (1 for shown, else 0) round pixel [param p] as 25 bits,
+## from the top left across and down, the pixel itself [constant WIDE_CENTER]
 static func _wide_at(mask: PackedByteArray, p: int, width: int) -> int:
 	var bits := 0
 	var bit := 0
 	for dy in range(-2, 3):
-		for dx in range(-2, 3):
-			if mask[p + dy * width + dx] == 1:
-				bits |= 1 << bit
-			bit += 1
+		var q := p + dy * width
+		bits |= (
+			(mask[q - 2] | mask[q - 1] << 1 | mask[q] << 2 | mask[q + 1] << 3 | mask[q + 2] << 4)
+			<< bit
+		)
+		bit += 5
 	return bits
 
 
@@ -187,17 +228,32 @@ static func _shown(data: PackedByteArray, least_alpha: int) -> PackedByteArray:
 	return result
 
 
-## The 3 × 3 shape of [param mask] round pixel [param p] as 9 bits, the pixel itself
-## [constant CENTER]
+## The 3 × 3 shape of [param mask] (1 for shown, else 0) round pixel [param p] as 9 bits,
+## from the top left across and down, the pixel itself [constant CENTER]
 static func _shape_at(mask: PackedByteArray, p: int, width: int) -> int:
-	var bits := 0
-	var bit := 0
-	for dy: int in [-width, 0, width]:
-		for dx: int in [-1, 0, 1]:
-			if mask[p + dy + dx] == 1:
-				bits |= 1 << bit
-			bit += 1
-	return bits
+	var up := p - width
+	var down := p + width
+	return (
+		mask[up - 1]
+		| mask[up] << 1
+		| mask[up + 1] << 2
+		| mask[p - 1] << 3
+		| mask[p] << 4
+		| mask[p + 1] << 5
+		| mask[down - 1] << 6
+		| mask[down] << 7
+		| mask[down + 1] << 8
+	)
+
+
+## Where the pixels shown in [param data] (a canvas [param width] × [param height] pixels)
+## are, as [method PixelCanvas.shown_area] says
+static func _shown_area(data: PackedByteArray, width: int, height: int) -> Rect2i:
+	var img := Image.create_from_data(width, height, false, Image.FORMAT_RGBA8, data)
+	var used := img.get_used_rect()
+	if not used.has_area():
+		return Rect2i()
+	return used.grow(1).intersection(Rect2i(1, 1, width - 2, height - 2))
 
 
 ## The separate parts of what [param data] (a canvas [param width] pixels wide) shows at

@@ -14,10 +14,21 @@ env:
   GODOT_VERSION: 4.7.2
 
 jobs:
+  native:
+    uses: ./.github/workflows/native.yml
+
   export:
+    needs: native
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Exports copy them next to the app (inside it on macOS)
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: extension/bin
+          merge-multiple: true
 
       - name: Check the version and write the release notes
         if: startsWith(github.ref, 'refs/tags/')
@@ -66,20 +77,16 @@ jobs:
           godot --headless --export-release "macOS" build/macos/spritesheetbelli.zip
           godot --headless --export-release "Web" build/web/index.html
 
-      - name: Install NSIS
-        run: sudo apt-get install -y nsis
-
       - name: Package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p dist
-          (cd build/windows && zip -q "../../dist/spritesheetbelli-${VERSION}-windows.zip" spritesheetbelli.exe)
-          # The installer opens .sbelli projects with the app and offers it for importable files
-          makensis -V2 -DVERSION="$VERSION" -DEXE="$PWD/build/windows/spritesheetbelli.exe" \
-            -DOUTFILE="$PWD/dist/spritesheetbelli-${VERSION}-windows-setup.exe" packaging/windows/installer.nsi
+          (cd build/windows && zip -q "../../dist/spritesheetbelli-${VERSION}-windows.zip" \
+            spritesheetbelli.exe sbelli_native.windows.x86_64.dll)
           # With install.sh, which adds the launcher and the file types
           mkdir -p build/linux/spritesheetbelli
-          mv build/linux/spritesheetbelli.x86_64 build/linux/spritesheetbelli/
+          mv build/linux/spritesheetbelli.x86_64 build/linux/libsbelli_native.linux.x86_64.so \
+            build/linux/spritesheetbelli/
           cp packaging/linux/* build/linux/spritesheetbelli/
           cp icon.svg build/linux/spritesheetbelli/spritesheetbelli.svg
           chmod +x build/linux/spritesheetbelli/spritesheetbelli.x86_64 build/linux/spritesheetbelli/install.sh
@@ -92,13 +99,82 @@ jobs:
           name: builds
           path: dist/
 
+      # For the installer, made on Windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-app
+          path: |
+            build/windows/spritesheetbelli.exe
+            build/windows/sbelli_native.windows.x86_64.dll
+
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: release-notes
+          path: release_notes.md
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
-      - name: Create release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+  installer:
+    # Inno Setup only runs on Windows
+    needs: export
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-app
+          path: build/windows
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Inno Setup
+        run: |
+          [ -f "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" ] || choco install innosetup -y --no-progress
+          pip install pillow
+
+      # Opens .sbelli projects with the app and offers it for importable files
+      - name: Make the installer
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python packaging/windows/wizard_images.py build/wizard
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" -Q "-DVersion=$VERSION" \
+            "-DBuild=$PWD/build/windows" "-DImages=$PWD/build/wizard" "-O$PWD/dist" \
+            packaging/windows/installer.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: dist/
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [export, installer]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: builds
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: installer
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           body_path: release_notes.md

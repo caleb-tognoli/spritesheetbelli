@@ -180,6 +180,27 @@ func test_shapes_the_pieces_dont_fit_are_bent() -> void:
 	assert_true(heights[0] < heights[1] and heights[1] < heights[2], "growing: %s" % [heights])
 
 
+func test_big_keys_worked_out_smaller_are_bent() -> void:
+	# Worked out at half their size, on a canvas an odd number of pixels wide: the keys' own
+	# canvas isn't quite twice the one worked out
+	var wide := blank(Vector2i(175, 175))
+	var tall := blank(Vector2i(175, 175))
+	for y in 175:
+		for x in 175:
+			var at := Vector2(x + 0.5, y + 0.5) - Vector2(87.5, 87.5)
+			if (at / Vector2(84, 18)).length() <= 1.0:
+				wide.set_pixel(x, y, Color.SEA_GREEN)
+			if (at / Vector2(30, 78)).length() <= 1.0:
+				tall.set_pixel(x, y, Color.SEA_GREEN)
+	var morph := InBetween.prepare(key(wide), key(tall))
+	assert_eq(morph.zoom, 2, "worked out smaller")
+	assert_eq(morph.rect.size.x % 2, 1, "on a canvas an odd number of pixels wide")
+	assert_eq(morph.meshes.size(), 2, "bent")
+	var shape := (morph.frame(0.5).image as Image).get_used_rect().size
+	assert_true(shape.x > 60 and shape.x < 168, "narrower than the wide one: %s" % [shape.x])
+	assert_true(shape.y > 36 and shape.y < 156, "shorter than the tall one: %s" % [shape.y])
+
+
 func test_no_new_colours() -> void:
 	var frames := InBetween.generate(key(sword(0.0)), key(sword(PI / 2)), 3)
 	var allowed := colors_in(sword(0.0))

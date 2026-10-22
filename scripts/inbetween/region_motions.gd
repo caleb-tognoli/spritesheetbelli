@@ -61,21 +61,6 @@ const PAIRS := 6
 ## A region and the one paired with it, both this many times longer than wide, may have
 ## turned by how much their directions differ
 const LONG := 1.6
-## Motions each region chooses from: its own best few, and its neighbours' best
-const OWN_CHOICES := 12
-const SHARED_CHOICES := 3
-## How much neighbours coming apart costs per pixel of border, each pixel they're apart
-## (beyond one, up to [constant GAP_CAP]): little for unlike colours, which are likely
-## parts that move on their own, much for alike ones, likely shades of one thing
-const APART_COST := 0.03
-const ALIKE_APART_COST := 1.0
-const ALIKE := 0.15
-const GAP_CAP := 6.0
-## Points of a border, and of each region, compared when scoring them coming apart
-const BORDER_POINTS := 10
-const REGION_POINTS := 32
-## Rounds of belief propagation
-const ROUNDS := 30
 
 ## Each region's motion, once found
 var chosen: Array[Transform2D] = []
@@ -108,13 +93,15 @@ static func find(
 	motions.side = size
 	var candidates: Array[Transform2D] = [Transform2D(0.0, whole)]
 	var voters := motions._voters()
-	for r in from_regions.count():
-		if progress.cancelled:
-			return null
-		progress.done += 1
-		candidates.append_array(motions._search(r, voters))
+	# Each region is searched for on its own, so they're shared out among threads
+	var searches := motions._searches.bind(voters, progress)
+	var biggest := RegionChoice.biggest_first(from_regions)
+	for part: Array[Transform2D] in RegionChoice.shared(biggest, searches):
+		candidates.append_array(part)
+	if progress.cancelled:
+		return null
 	candidates.append_array(motions._pairings(to_regions))
-	motions.chosen = motions._choose(candidates)
+	motions.chosen = RegionChoice.choose(motions, candidates)
 	return motions
 
 
@@ -125,23 +112,40 @@ static func find(
 ## region keeps its motion or takes the reverse of one of the other key's that lands on it,
 ## whichever fits best, counting how far its pixels end up from where they started.
 func agree(back: RegionMotions) -> void:
+	# The other key's regions landing on each of these, in order
+	var landing: Array[PackedInt32Array] = []
 	for r in regions.count():
+		landing.append(PackedInt32Array())
+	for s in back.regions.count():
+		var hit := {}
+		for k in range(0, back.regions.pixels[s].size(), 4):
+			var at := back.chosen[s] * back.regions.point_of(back.regions.pixels[s][k])
+			var x := floori(at.x)
+			var y := floori(at.y)
+			if x >= 0 and y >= 0 and x < regions.width and y < regions.height:
+				var r := regions.labels[y * regions.width + x]
+				if r >= 0 and not hit.has(r):
+					hit[r] = true
+					landing[r].append(s)
+	# Each region on its own, so they're shared out among threads
+	var agreeing := _agreeing.bind(back, landing)
+	var agreed: Array[Transform2D] = []
+	for part: Array[Transform2D] in Parallel.split(regions.count(), 1, agreeing):
+		agreed.append_array(part)
+	for r in agreed.size():
+		chosen[r] = agreed[r]
+
+
+## [method agree]'s motions for regions [param start] to [param end] (past the last), given
+## the other key's regions [param landing] on each
+func _agreeing(
+	start: int, end: int, back: RegionMotions, landing: Array[PackedInt32Array]
+) -> Array[Transform2D]:
+	var found: Array[Transform2D] = []
+	for r in range(start, end):
 		var candidates: Array[Transform2D] = [chosen[r]]
-		var landing := {}
-		for s in back.regions.count():
-			var reverse := back.chosen[s].affine_inverse()
-			var hits := 0
-			for k in range(0, back.regions.pixels[s].size(), 4):
-				var at := back.chosen[s] * back.regions.point_of(back.regions.pixels[s][k])
-				var x := floori(at.x)
-				var y := floori(at.y)
-				if x >= 0 and y >= 0 and x < regions.width and y < regions.height:
-					if regions.labels[y * regions.width + x] == r:
-						hits += 1
-			if hits > 0:
-				landing[s] = reverse
-		for s: int in landing:
-			candidates.append(landing[s])
+		for s in landing[r]:
+			candidates.append(back.chosen[s].affine_inverse())
 		var best := chosen[r]
 		var best_score := INF
 		for motion in candidates:
@@ -149,7 +153,8 @@ func agree(back: RegionMotions) -> void:
 			if score < best_score:
 				best_score = score
 				best = motion
-		chosen[r] = best
+		found.append(best)
+	return found
 
 
 ## Parts of regions that land badly with their region's motion, in patches of at least
@@ -325,31 +330,37 @@ func cost(r: int, motion: Transform2D) -> float:
 ## [method cost] for any [param pixels] of the key
 func cost_of(pixels: PackedInt32Array, motion: Transform2D) -> float:
 	var stride := maxi(1, ceili(float(pixels.size()) / SAMPLES))
-	var total := 0.0
-	var counted := 0
-	for k in range(0, pixels.size(), stride):
-		var p := pixels[k]
-		var at := regions.point_of(p)
-		var landed := motion * at
-		total += minf(features.difference(p, other, landed), CAP)
-		total += MOVE_COST * landed.distance_to(at + shift)
-		counted += 1
+	var total := features.landing_sum(pixels, stride, motion, other, CAP, MOVE_COST, shift)
+	var counted := (pixels.size() + stride - 1) / stride
 	# Growing or shrinking costs: a region shrunk small lands well anywhere
 	var area := absf(motion.determinant())
 	return total / maxi(counted, 1) + AREA_COST * absf(log(maxf(area, 1e-3)))
+
+
+## [method cost_of] when it's at most [param limit]; otherwise any number over
+## [param limit] (worked out only as far as needed to tell), which the cost is at least
+func cost_below(pixels: PackedInt32Array, motion: Transform2D, limit: float) -> float:
+	var stride := maxi(1, ceili(float(pixels.size()) / SAMPLES))
+	var counted := (pixels.size() + stride - 1) / stride
+	var area := absf(motion.determinant())
+	var area_cost := AREA_COST * absf(log(maxf(area, 1e-3)))
+	var bound := (limit - area_cost) * maxi(counted, 1)
+	var total := features.landing_sum_below(
+		pixels, stride, motion, other, CAP, MOVE_COST, shift, bound
+	)
+	var value := total / maxi(counted, 1) + area_cost
+	# Given up early, though rounding left it within the limit: worked out whole
+	if total > bound and value <= limit:
+		return cost_of(pixels, motion)
+	return value
 
 
 ## How badly [param pixels] land on the other key with [param motion], as
 ## [method cost_of] but counting only how they fit, not how far they move
 func fit_of(pixels: PackedInt32Array, motion: Transform2D) -> float:
 	var stride := maxi(1, ceili(float(pixels.size()) / SAMPLES))
-	var total := 0.0
-	var counted := 0
-	for k in range(0, pixels.size(), stride):
-		var p := pixels[k]
-		total += minf(features.difference(p, other, motion * regions.point_of(p)), CAP)
-		counted += 1
-	return total / maxi(counted, 1)
+	var total := features.landing_sum(pixels, stride, motion, other, CAP)
+	return total / maxi((pixels.size() + stride - 1) / stride, 1)
 
 
 ## How badly [param pixels] fit their own key moved a pixel across and down: how much a
@@ -393,7 +404,8 @@ func refined(pixels: PackedInt32Array, motion: Transform2D, rounds := 1) -> Tran
 				stretched.origin = center - stretched.basis_xform(center)
 				tries.append(motion * stretched)
 		for candidate in tries:
-			var score := cost_of(pixels, candidate)
+			# Only worked out whole when it might be better
+			var score := cost_below(pixels, candidate, best)
 			if score < best:
 				best = score
 				motion = candidate
@@ -430,27 +442,34 @@ func simplest(pixels: PackedInt32Array, motion: Transform2D) -> Transform2D:
 ## How unlike themselves [param pixels] are moved by [param motion], on their own key
 func _self_cost(pixels: PackedInt32Array, motion: Transform2D) -> float:
 	var stride := maxi(1, ceili(float(pixels.size()) / SAMPLES))
-	var total := 0.0
-	var counted := 0
-	for k in range(0, pixels.size(), stride):
-		var p := pixels[k]
-		total += minf(features.difference(p, features, motion * regions.point_of(p)), CAP)
-		counted += 1
-	return total / maxi(counted, 1)
+	var total := features.landing_sum(pixels, stride, motion, features, CAP)
+	return total / maxi((pixels.size() + stride - 1) / stride, 1)
 
 
-## The other key's shown pixels, by colour: for each, its canvas index and colour
+## The other key's shown pixels, by colour: for each, its middle and colour
 func _voters() -> Array:
-	var points := PackedInt32Array()
+	var points := PackedVector2Array()
 	var colours := PackedVector3Array()
 	var values := other.values
 	for p in other.width * other.height:
 		var i := p * KeyFeatures.COUNT
 		if values[i + 3] >= 0.5 * KeyFeatures.SHOWN_WEIGHT:
-			points.append(p)
+			points.append(other_point(p))
 			var alpha := values[i + 3] / KeyFeatures.SHOWN_WEIGHT
 			colours.append(Vector3(values[i], values[i + 1], values[i + 2]) / alpha)
 	return [points, colours]
+
+
+## [method _search] for regions [param start] to [param end] (past the last), one after the
+## other, counting each done in [param progress] and stopping when it's cancelled
+func _searches(start: int, end: int, voters: Array, progress: WorkProgress) -> Array[Transform2D]:
+	var found: Array[Transform2D] = []
+	for r in range(start, end):
+		if progress.cancelled:
+			break
+		progress.advance()
+		found.append_array(_search(r, voters))
+	return found
 
 
 ## Where region [param r] lands best on the other key, at each turn: places are voted for
@@ -461,28 +480,31 @@ func _search(r: int, voters: Array) -> Array[Transform2D]:
 	return _search_pixels(regions.pixels[r], voters)
 
 
-## [method _search] for any [param pixels] of the key
-func _search_pixels(pixels: PackedInt32Array, voters: Array) -> Array[Transform2D]:
+## [method _search] for any [param pixels] of the key. Places that can't be among the best
+## kept are given up on as soon as that's clear, unless [param pruned] is false.
+func _search_pixels(pixels: PackedInt32Array, voters: Array, pruned := true) -> Array[Transform2D]:
+	if NativeKernels.kernels:
+		return NativeKernels.search_pixels(self, pixels, voters)
 	var center := Vector2.ZERO
 	for p in pixels:
 		center += regions.point_of(p)
 	center /= maxi(pixels.size(), 1)
-	var points: PackedInt32Array = voters[0]
+	var places_of: PackedVector2Array = voters[0]
 	var colours: PackedVector3Array = voters[1]
 	# Anchors spread through the region, and the other key's pixels of their colours
 	var anchors := PackedVector2Array()
-	var anchor_voters: Array[PackedInt32Array] = []
+	var anchor_voters: Array[PackedVector2Array] = []
 	var step := maxi(1, pixels.size() / ANCHORS)
 	for k in range(0, pixels.size(), step):
 		var p := pixels[k]
 		var colour := _colour_at(p)
-		var near := PackedInt32Array()
-		for v in points.size():
+		var near := PackedVector2Array()
+		for v in places_of.size():
 			var apart := colours[v] - colour
 			if absf(apart.x) + absf(apart.y) + absf(apart.z) <= ANCHOR_COLOR:
-				near.append(points[v])
+				near.append(places_of[v])
 		if near.size() > VOTERS:
-			var thinned := PackedInt32Array()
+			var thinned := PackedVector2Array()
 			var every := float(near.size()) / VOTERS
 			for n in VOTERS:
 				thinned.append(near[int(n * every)])
@@ -493,27 +515,60 @@ func _search_pixels(pixels: PackedInt32Array, voters: Array) -> Array[Transform2
 			break
 	var expected := center + shift
 	var reach := side * 0.75 + 4.0
+	# Votes counted on a grid round where the region is expected, which places within
+	# reach always fall on, and the places (their cells) in the order first voted for
+	var grid_left := floori(expected.x - reach) - 2
+	var grid_top := floori(expected.y - reach) - 2
+	var grid_width := ceili(2.0 * reach) + 5
+	var votes := PackedInt32Array()
+	votes.resize(grid_width * (ceili(2.0 * reach) + 5))
 	var found: Array[Array] = []
+	var places := PackedInt32Array()
+	var by_votes := PackedVector3Array()
+	# Every score worked out whole, and whether any place was given up on
+	var scores := PackedFloat64Array()
+	var gave_up := false
 	for turn in TURNS:
 		var angle := TAU * turn / TURNS
-		var votes := {}
+		places.clear()
 		for k in anchors.size():
 			var offset := anchors[k].rotated(angle)
-			for q in anchor_voters[k]:
-				var at := other_point(q) - offset
+			for spot in anchor_voters[k]:
+				var at := spot - offset
 				if at.distance_to(expected) > reach:
 					continue
-				var key := Vector2i(roundi(at.x), roundi(at.y))
-				votes[key] = votes.get(key, 0) + 1
-		var places: Array = votes.keys()
-		places.sort_custom(func(x: Vector2i, y: Vector2i) -> bool: return votes[x] > votes[y])
+				var cell := (roundi(at.y) - grid_top) * grid_width + roundi(at.x) - grid_left
+				if votes[cell] == 0:
+					places.append(cell)
+				votes[cell] += 1
+		# The places, most voted first, sorted natively much faster than with sort_custom:
+		# a vector's x is the votes, and as y is NaN, places with as many votes compare as
+		# neither first, as when comparing votes alone, so ties come out in the same order
+		by_votes.resize(places.size())
+		for n in places.size():
+			var cell := places[n]
+			by_votes[n] = Vector3(-votes[cell], NAN, cell)
+			votes[cell] = 0
+		by_votes.sort()
 		var scored: Array[Array] = []
-		for place: Vector2i in places.slice(0, VOTED):
+		# Once enough are kept, a place scoring worse than the best few kept so far can't be
+		# among them: it's given up on as soon as that's clear
+		var worst := _nth_score(found, KEPT) if pruned else INF
+		for n in mini(by_votes.size(), VOTED):
+			var cell := int(by_votes[n].z)
+			var place := Vector2i(cell % grid_width + grid_left, cell / grid_width + grid_top)
 			var motion := about(center, angle, Vector2(place) - center)
-			var score: float = (
-				cost_of(pixels, motion) + DISTANCE_COST * Vector2(place).distance_to(expected)
-			)
+			var distance_cost := DISTANCE_COST * Vector2(place).distance_to(expected)
+			var limit := worst - distance_cost
+			var place_cost := cost_below(pixels, motion, limit)
+			var score: float = place_cost + distance_cost
+			if score > worst:
+				gave_up = true
+				continue
+			if place_cost > limit:
+				score = cost_of(pixels, motion) + distance_cost
 			scored.append([score, motion, Vector2(place)])
+			scores.append(score)
 		scored.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
 		var kept: Array[Vector2] = []
 		for entry in scored:
@@ -529,10 +584,39 @@ func _search_pixels(pixels: PackedInt32Array, voters: Array) -> Array[Transform2
 			if kept.size() >= KEPT_PER_TURN:
 				break
 	found.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
+	# Places given up on scored worse than the best kept, which come out as when every
+	# place is scored, unless some of them score alike: their order could differ then
+	if gave_up and _tied(scores, found[KEPT - 1][0]):
+		return _search_pixels(pixels, voters, false)
 	var best: Array[Transform2D] = []
 	for entry: Array in found.slice(0, KEPT):
 		best.append(entry[1])
 	return best
+
+
+## The [param n]th lowest score of [param entries] (each starting with its score), or INF
+## when there are fewer
+static func _nth_score(entries: Array[Array], n: int) -> float:
+	if entries.size() < n:
+		return INF
+	var scores := PackedFloat64Array()
+	for entry in entries:
+		scores.append(entry[0])
+	scores.sort()
+	return scores[n - 1]
+
+
+## Whether two of [param scores] at most [param most] are the same
+static func _tied(scores: PackedFloat64Array, most: float) -> bool:
+	var low := PackedFloat64Array()
+	for score in scores:
+		if score <= most:
+			low.append(score)
+	low.sort()
+	for k in range(1, low.size()):
+		if low[k] == low[k - 1]:
+			return true
+	return false
 
 
 ## The middle of the other key's canvas pixel [param q]
@@ -617,161 +701,3 @@ static func _spread_along(
 		var d := of_regions.point_of(p) - center
 		spread += Vector2(d.dot(axis) ** 2, d.dot(across) ** 2)
 	return spread / maxi(of_regions.pixels[r].size(), 1)
-
-
-## Each region's motion, chosen together from [param candidates], see [RegionMotions]
-func _choose(candidates: Array[Transform2D]) -> Array[Transform2D]:
-	var count := regions.count()
-	# Each region's own best few
-	var own: Array[Array] = []
-	for r in count:
-		var scored: Array[Array] = []
-		for motion in candidates:
-			scored.append([cost(r, motion), motion])
-		scored.sort_custom(func(x: Array, y: Array) -> bool: return x[0] < y[0])
-		var best: Array[Transform2D] = []
-		for entry: Array in scored.slice(0, OWN_CHOICES):
-			best.append(entry[1])
-		own.append(best)
-	var neighbours: Array[Array] = []
-	for r in count:
-		neighbours.append(regions.neighbours_of(r))
-	# Each region's choices: its own and its neighbours' best, and what each costs
-	var choices: Array[Array] = []
-	var costs: Array[PackedFloat32Array] = []
-	for r in count:
-		var list: Array[Transform2D] = []
-		list.append_array(own[r])
-		for k: int in neighbours[r]:
-			list.append_array((own[k] as Array).slice(0, SHARED_CHOICES))
-		choices.append(list)
-		var size := regions.pixels[r].size()
-		var row := PackedFloat32Array()
-		for motion in list:
-			row.append(cost(r, motion) * size)
-		costs.append(row)
-	# What each two neighbours' choices cost together
-	var pair_costs := {}
-	for key in regions.borders:
-		pair_costs[key] = _apart_costs(key.x, key.y, choices[key.x], choices[key.y])
-	# Messages from each region to each neighbour, about the neighbour's choices
-	var messages := {}
-	for key in regions.borders:
-		messages[Vector2i(key.x, key.y)] = _zeros(choices[key.y].size())
-		messages[Vector2i(key.y, key.x)] = _zeros(choices[key.x].size())
-	for _round in ROUNDS:
-		var updated := {}
-		for edge: Vector2i in messages:
-			var r := edge.x
-			var s := edge.y
-			var belief := costs[r].duplicate()
-			for k: int in neighbours[r]:
-				if k != s:
-					var incoming: PackedFloat32Array = messages[Vector2i(k, r)]
-					for i in belief.size():
-						belief[i] += incoming[i]
-			var table: Array = pair_costs[Vector2i(mini(r, s), maxi(r, s))]
-			var flipped := r > s
-			var message := PackedFloat32Array()
-			message.resize(choices[s].size())
-			var lowest := INF
-			for j in message.size():
-				var best := INF
-				for i in belief.size():
-					var together: float = (
-						(table[j] as PackedFloat32Array)[i]
-						if flipped
-						else (table[i] as PackedFloat32Array)[j]
-					)
-					best = minf(best, belief[i] + together)
-				message[j] = best
-				lowest = minf(lowest, best)
-			var old: PackedFloat32Array = messages[edge]
-			for j in message.size():
-				message[j] = 0.5 * old[j] + 0.5 * (message[j] - lowest)
-			updated[edge] = message
-		messages = updated
-	var picked: Array[Transform2D] = []
-	for r in count:
-		var belief := costs[r].duplicate()
-		for k: int in neighbours[r]:
-			var incoming: PackedFloat32Array = messages[Vector2i(k, r)]
-			for i in belief.size():
-				belief[i] += incoming[i]
-		var best := 0
-		for i in belief.size():
-			if belief[i] < belief[best]:
-				best = i
-		picked.append(choices[r][best])
-	return picked
-
-
-## What neighbours [param r] and [param s] moving by each of their choices costs: how far
-## each one's border, moved, ends up from the other's pixels, moved, times the border's
-## length. Rows are [param r]'s choices.
-func _apart_costs(r: int, s: int, r_choices: Array, s_choices: Array) -> Array[PackedFloat32Array]:
-	var border := _spread(regions.borders[Vector2i(r, s)], BORDER_POINTS)
-	var r_points := _spread(_points_of(r), REGION_POINTS)
-	var s_points := _spread(_points_of(s), REGION_POINTS)
-	var r_border: Array[PackedVector2Array] = []
-	var r_moved: Array[PackedVector2Array] = []
-	for motion: Transform2D in r_choices:
-		r_border.append(motion * border)
-		r_moved.append(motion * r_points)
-	var s_border: Array[PackedVector2Array] = []
-	var s_moved: Array[PackedVector2Array] = []
-	for motion: Transform2D in s_choices:
-		s_border.append(motion * border)
-		s_moved.append(motion * s_points)
-	var a := regions.colors[r] - regions.colors[s]
-	var alike := exp(-(absf(a.x) + absf(a.y) + absf(a.z)) / ALIKE)
-	var weight := (
-		(APART_COST + (ALIKE_APART_COST - APART_COST) * alike)
-		* regions.borders[Vector2i(r, s)].size()
-	)
-	var table: Array[PackedFloat32Array] = []
-	for i in r_choices.size():
-		var row := PackedFloat32Array()
-		row.resize(s_choices.size())
-		for j in s_choices.size():
-			var gap := (
-				0.5
-				* (_mean_nearest(r_border[i], s_moved[j]) + _mean_nearest(s_border[j], r_moved[i]))
-			)
-			row[j] = weight * clampf(gap - 1.0, 0.0, GAP_CAP)
-		table.append(row)
-	return table
-
-
-## The average, over [param points], of how far each is from the nearest of [param others]
-static func _mean_nearest(points: PackedVector2Array, others: PackedVector2Array) -> float:
-	var total := 0.0
-	for point in points:
-		var nearest := INF
-		for spot in others:
-			nearest = minf(nearest, point.distance_squared_to(spot))
-		total += sqrt(nearest)
-	return total / maxi(points.size(), 1)
-
-
-func _points_of(r: int) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for p in regions.pixels[r]:
-		points.append(regions.point_of(p))
-	return points
-
-
-## At most [param most] of [param points], spread evenly through them
-static func _spread(points: PackedVector2Array, most: int) -> PackedVector2Array:
-	if points.size() <= most:
-		return points
-	var spread := PackedVector2Array()
-	for k in most:
-		spread.append(points[int(float(k) * (points.size() - 1) / (most - 1))])
-	return spread
-
-
-static func _zeros(size: int) -> PackedFloat32Array:
-	var zeros := PackedFloat32Array()
-	zeros.resize(size)
-	return zeros

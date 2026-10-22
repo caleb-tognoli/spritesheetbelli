@@ -52,8 +52,6 @@ var _turns := PackedFloat32Array()
 var _stretches := PackedFloat32Array()
 ## Corners joined by triangle sides, each side once per triangle
 var _edges := PackedInt32Array()
-## For each pixel of the last [method sources], how much the key is grown there
-var magnified := PackedFloat32Array()
 
 
 ## The blend of [param a_data] into [param b_data], keys on a canvas [param canvas_width]
@@ -67,8 +65,13 @@ static func between(
 	shift: Vector2,
 	size: float
 ) -> ShapeBlend:
-	var a_mask := shape_of(a_data, canvas_width, canvas_height)
-	var b_mask := shape_of(b_data, canvas_width, canvas_height)
+	# Both shapes at once
+	var datas: Array[PackedByteArray] = [a_data, b_data]
+	var shaped := func(k: int) -> PackedByteArray:
+		return shape_of(datas[k], canvas_width, canvas_height)
+	var masks := Parallel.each(2, shaped)
+	var a_mask: PackedByteArray = masks[0]
+	var b_mask: PackedByteArray = masks[1]
 	if not a_mask.has(1) or not b_mask.has(1):
 		return null
 	var blend := ShapeBlend.new()
@@ -97,6 +100,26 @@ static func between(
 ## 1 for the pixels of [param data]'s biggest part (pixels at least half opaque, touching
 ## side by side), holes filled; 0 for the others
 static func shape_of(
+	data: PackedByteArray, canvas_width: int, canvas_height: int
+) -> PackedByteArray:
+	var result := PackedByteArray()
+	result.resize(canvas_width * canvas_height)
+	# Worked out round the pixels shown and a pixel more: all past them is outside the shape
+	var area := PixelCanvas.shown_rect(data, canvas_width, canvas_height, 1)
+	if not area.has_area():
+		return result
+	var w := area.size.x
+	var shape := _shape_in(PixelCanvas.region(data, canvas_width, area), w, area.size.y)
+	for y in area.size.y:
+		var row := (y + area.position.y) * canvas_width + area.position.x
+		for x in w:
+			result[row + x] = shape[y * w + x]
+	return result
+
+
+## [method shape_of] worked out on the whole of a canvas [param canvas_width] ×
+## [param canvas_height] pixels
+static func _shape_in(
 	data: PackedByteArray, canvas_width: int, canvas_height: int
 ) -> PackedByteArray:
 	var size := canvas_width * canvas_height
@@ -330,11 +353,17 @@ static func _matched(
 		starts[k * m / (STARTS / 2)] = true
 	var best_start := 0
 	var best_cost := INF
-	for start: int in starts:
-		var cost := _warp(costs, n, m, start, PackedByteArray())
+	# Each start tried on its own, so they're shared out among threads
+	var tried := PackedInt32Array(starts.keys())
+	var warps := []
+	var warping := _warps.bind(tried, costs, n, m)
+	for part: PackedFloat64Array in Parallel.split(tried.size(), 1, warping):
+		warps.append_array(part)
+	for k in tried.size():
+		var cost: float = warps[k]
 		if cost < best_cost:
 			best_cost = cost
-			best_start = start
+			best_start = tried[k]
 	var moves := PackedByteArray()
 	moves.resize(n * m)
 	_warp(costs, n, m, best_start, moves)
@@ -389,12 +418,25 @@ static func _matched(
 	return result
 
 
+## [method _warp] from each of the starts [param tried] [param first] to [param end] (past
+## the last)
+static func _warps(
+	first: int, end: int, tried: PackedInt32Array, costs: PackedFloat32Array, n: int, m: int
+) -> PackedFloat64Array:
+	var found := PackedFloat64Array()
+	for k in range(first, end):
+		found.append(_warp(costs, n, m, tried[k], PackedByteArray()))
+	return found
+
+
 ## The cost of warping outline A onto outline B starting at B's point [param start] (see
 ## [method _matched]), writing each step's move into [param moves] unless it's empty: 0
 ## both on, 1 A on, 2 B on
 static func _warp(
 	costs: PackedFloat32Array, n: int, m: int, start: int, moves: PackedByteArray
 ) -> float:
+	if NativeKernels.kernels:
+		return NativeKernels.warp(costs, n, m, start, moves)
 	var writing := not moves.is_empty()
 	var above := PackedFloat32Array()
 	above.resize(m)
@@ -447,10 +489,11 @@ func _mesh(shape: PackedByteArray, outline: PackedVector2Array) -> void:
 	var found := Geometry2D.triangulate_delaunay(points)
 	# Only triangles over the shape (a pixel round it counting)
 	var grown := shape.duplicate()
+	var sides := PixelParts.sides_of(width)
 	for p in shape.size():
 		if shape[p] == 0:
 			continue
-		for side in PixelParts.sides_of(width):
+		for side in sides:
 			var q: int = p + side
 			if q >= 0 and q < grown.size():
 				grown[q] = 1
@@ -679,8 +722,12 @@ func at(t: float) -> PackedVector2Array:
 ## [param t] (key A's when [param from_b] is false, else B's), on that bigger canvas;
 ## [code]Vector2(-1, -1)[/code] where the triangles don't cover it. Triangles flipped over
 ## by then are left out, as they'd fold over others; gaps a few pixels across, theirs or
-## between triangles, take the points round them, carried on.
-func sources(t: float, from_b: bool, scale := 1) -> PackedVector2Array:
+## between triangles, take the points round them, carried on. Writes into
+## [param magnified] how much the key is grown at each pixel. Can be called on several
+## threads at once.
+func sources(
+	t: float, from_b: bool, scale := 1, magnified := PackedFloat32Array()
+) -> PackedVector2Array:
 	var big_width := width * scale
 	var big_height := height * scale
 	var result := PackedVector2Array()
@@ -690,6 +737,9 @@ func sources(t: float, from_b: bool, scale := 1) -> PackedVector2Array:
 	magnified.fill(1.0)
 	var positions := at(t)
 	var from := target if from_b else rest
+	# Where the pixels covered are
+	var low := Vector2i(big_width, big_height)
+	var high := Vector2i(-1, -1)
 	for k in range(0, triangles.size(), 3):
 		var c0 := positions[triangles[k]] * scale
 		var c1 := positions[triangles[k + 1]] * scale
@@ -725,17 +775,32 @@ func sources(t: float, from_b: bool, scale := 1) -> PackedVector2Array:
 					continue
 				result[py * big_width + px] = s0 + (s1 - s0) * u + (s2 - s0) * v
 				magnified[py * big_width + px] = grown
+				low = low.min(Vector2i(px, py))
+				high = high.max(Vector2i(px, py))
+	if high.x < 0:
+		return result
+	# Gaps are filled round the pixels covered only: the area round holds every one, so
+	# the nearest are as on the whole canvas (see PixelCanvas.distances), and those farther
+	# out than a gap stay uncovered
+	var around := Rect2i(low, high - low + Vector2i.ONE).grow(GAP * scale + 1)
+	around = around.intersection(Rect2i(0, 0, big_width, big_height))
+	var w := around.size.x
 	var covered := PackedByteArray()
-	covered.resize(result.size())
-	for p in result.size():
-		covered[p] = 1 if result[p].x >= 0.0 else 0
-	var nearest: Array = PixelCanvas.distances(covered, big_width, big_height, 1)
+	covered.resize(w * around.size.y)
+	for y in range(around.position.y, around.end.y):
+		var row := (y - around.position.y) * w - around.position.x
+		for x in range(around.position.x, around.end.x):
+			covered[row + x] = 1 if result[y * big_width + x].x >= 0.0 else 0
+	var far := (big_width + big_height) * 4
+	var nearest: Array = PixelCanvas.distances(covered, w, around.size.y, 1, far)
 	var apart: PackedInt32Array = nearest[0]
 	var from_pixel: PackedInt32Array = nearest[1]
-	for p in result.size():
-		if covered[p] == 1 or from_pixel[p] < 0 or apart[p] > GAP * scale * 3:
+	for i in covered.size():
+		if covered[i] == 1 or from_pixel[i] < 0 or apart[i] > GAP * scale * 3:
 			continue
-		var q := from_pixel[p]
+		var p := (i / w + around.position.y) * big_width + i % w + around.position.x
+		var n := from_pixel[i]
+		var q := (n / w + around.position.y) * big_width + n % w + around.position.x
 		var step := Vector2(p % big_width - q % big_width, p / big_width - q / big_width)
 		result[p] = result[q] + step
 		magnified[p] = magnified[q]

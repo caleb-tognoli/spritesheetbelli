@@ -9,6 +9,18 @@ How to build spritesheetbelli, run its tests, translate it and publish a release
 3. To make builds, install the export templates and use Project > Export; the presets
    in `export_presets.cfg` are ready for Windows, macOS, Linux and the web.
 
+### The native library
+
+`native/` is a small Rust library (with [godot-rust](https://godot-rust.github.io)) that
+does the slowest loops of making in-betweens much faster (see
+`scripts/inbetween/native_kernels.gd`). Each gives exactly what the GDScript it stands in
+for gives, which the web build and builds without the library use; `test_native_kernels.gd`
+checks they match. Without it the app works the same, only slower, and Godot prints that
+the library is missing when it starts. To build it, install [Rust](https://rustup.rs) and
+run `python native/build.py`, which puts the library and the licenses of the crates in it
+in `extension/bin/` (not committed). CI builds it for Windows, macOS and Linux and ships it
+with the exports; browsers don't need it.
+
 ### Tests and style
 
 ```sh

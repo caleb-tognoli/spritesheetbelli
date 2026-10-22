@@ -1,0 +1,14 @@
+; Native parts of spritesheetbelli, built from native/ with `python native/build.py`.
+; Without the library the app works the same, minus what it adds.
+
+[configuration]
+
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = 4.7
+reloadable = false
+
+[libraries]
+
+windows.x86_64 = "res://extension/bin/sbelli_native.windows.x86_64.dll"
+linux.x86_64 = "res://extension/bin/libsbelli_native.linux.x86_64.so"
+macos = "res://extension/bin/libsbelli_native.macos.dylib"

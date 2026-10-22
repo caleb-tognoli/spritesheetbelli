@@ -1,0 +1,40 @@
+name: Native library
+
+# Builds native/ (see native/build.py) for each desktop platform and uploads the
+# libraries as native-<OS> artifacts, laid out like extension/bin. Used by CI and Release.
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        # Linux on the oldest runner, so the library loads on older systems too
+        os: [windows-latest, macos-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add the Intel target to build for both Macs
+        if: runner.os == 'macOS'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+
+      - name: Lint
+        working-directory: native
+        run: cargo clippy --locked --release -- -D warnings
+
+      - name: Build
+        run: python native/build.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ runner.os }}
+          path: extension/bin/
+

@@ -6,6 +6,8 @@ const REPOSITORY := "https://github.com/caleb-tognoli/spritesheetbelli"
 # L10n.mark
 ## The project's description in project.godot, here to be translated
 const DESCRIPTION := "Combine sprites into spritesheets and cut spritesheets into sprites."
+## The licenses of the crates in the native library, written with it by native/build.py
+const NATIVE_LICENSES := "res://extension/bin/native_licenses.txt"
 
 var _engine := Label.new()
 var _licenses := AcceptDialog.new()
@@ -78,8 +80,9 @@ static func get_version() -> String:
 	return ProjectSettings.get_setting("application/config/version", "")
 
 
-## The app's license, Godot's, and those of the libraries in Godot, which every copy of
-## the app has to show. Left in English, as licenses are.
+## The app's license, Godot's, those of the libraries in Godot, and those of the native
+## extension's when it's there (see [constant NATIVE_LICENSES]), which every copy of the
+## app has to show. Left in English, as licenses are.
 static func get_license_text() -> String:
 	var sections := PackedStringArray()
 	var own := FileAccess.get_file_as_string("res://LICENSE").strip_edges()
@@ -98,6 +101,9 @@ static func get_license_text() -> String:
 	var licenses := Engine.get_license_info()
 	for license: String in licenses:
 		sections.append("%s\n\n%s" % [license, (licenses[license] as String).strip_edges()])
+	var native := FileAccess.get_file_as_string(NATIVE_LICENSES).strip_edges()
+	if native:
+		sections.append(native)
 	return "\n\n\n".join(sections)
 
 

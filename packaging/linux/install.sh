@@ -16,6 +16,11 @@ if [ "$1" = "--uninstall" ]; then
 	rm -f "$bin" "$desktop" "$mime" "$icon"
 else
 	install -Dm755 "$here/spritesheetbelli.x86_64" "$app"
+	# The native library goes next to the app, where it looks for it
+	lib=libsbelli_native.linux.x86_64.so
+	if [ -f "$here/$lib" ]; then
+		install -Dm755 "$here/$lib" "$(dirname "$app")/$lib"
+	fi
 	mkdir -p "$(dirname "$bin")"
 	ln -sf "$app" "$bin"
 	install -Dm644 "$here/spritesheetbelli.svg" "$icon"

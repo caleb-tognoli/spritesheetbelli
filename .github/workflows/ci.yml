@@ -24,10 +24,19 @@ jobs:
         continue-on-error: true
         run: gdformat --check scripts ui tests
 
+  native:
+    uses: ./.github/workflows/native.yml
+
   test:
+    needs: native
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: extension/bin
+          merge-multiple: true
       - name: Install Godot
         run: |
           curl -sSLo godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"

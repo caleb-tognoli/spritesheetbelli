@@ -58,10 +58,19 @@ func _init(data: PackedByteArray, data_width: int, data_height: int, times: int)
 
 
 ## How far outside (positive) or inside (negative) [param mask] each pixel of a canvas
-## [param w] × [param h] pixels is, in pixels, the edge half a pixel either side
-static func sides_of(mask: PackedByteArray, w: int, h: int) -> PackedFloat32Array:
-	var outside: PackedInt32Array = PixelCanvas.distances(mask, w, h, 1)[0]
-	var inside: PackedInt32Array = PixelCanvas.distances(mask, w, h, 0)[0]
+## [param w] × [param h] pixels is, in pixels, the edge half a pixel either side; see
+## [method PixelCanvas.distances] for [param far]
+static func sides_of(mask: PackedByteArray, w: int, h: int, far := 0) -> PackedFloat32Array:
+	var outside: PackedInt32Array = PixelCanvas.distances(mask, w, h, 1, far)[0]
+	var inside: PackedInt32Array = PixelCanvas.distances(mask, w, h, 0, far)[0]
+	return sides_from(mask, outside, inside)
+
+
+## [method sides_of] from how far each pixel is from [param mask]'s pixels,
+## [param outside], and from the others, [param inside] (see [method PixelCanvas.distances])
+static func sides_from(
+	mask: PackedByteArray, outside: PackedInt32Array, inside: PackedInt32Array
+) -> PackedFloat32Array:
 	var sides := PackedFloat32Array()
 	sides.resize(mask.size())
 	for p in mask.size():

@@ -47,6 +47,35 @@ var borders: Dictionary[Vector2i, PackedVector2Array] = {}
 static func of(
 	data: PackedByteArray, canvas_width: int, split_colors: PackedInt32Array
 ) -> KeyRegions:
+	var canvas_height := split_colors.size() / canvas_width
+	var found_labels := PackedInt32Array()
+	found_labels.resize(split_colors.size())
+	found_labels.fill(-1)
+	# Cut round the pixels shown, with a transparent pixel all round: regions are found
+	# from the pixels shown and those touching them alone, so as on the whole canvas
+	var area := PixelCanvas.shown_rect(data, canvas_width, canvas_height, 1)
+	if not area.has_area():
+		return from_labels(data, canvas_width, found_labels)
+	var w := area.size.x
+	var cut_colors := PackedInt32Array()
+	cut_colors.resize(w * area.size.y)
+	for y in area.size.y:
+		var row := (y + area.position.y) * canvas_width + area.position.x
+		for x in w:
+			cut_colors[y * w + x] = split_colors[row + x]
+	var cut := _cut(PixelCanvas.region(data, canvas_width, area), w, cut_colors)
+	for y in area.size.y:
+		var row := (y + area.position.y) * canvas_width + area.position.x
+		for x in w:
+			found_labels[row + x] = cut[y * w + x]
+	return from_labels(data, canvas_width, found_labels, area)
+
+
+## The labels (see [member labels]) of the regions [method of] finds in [param data], a
+## canvas [param canvas_width] pixels wide, split by [param split_colors]
+static func _cut(
+	data: PackedByteArray, canvas_width: int, split_colors: PackedInt32Array
+) -> PackedInt32Array:
 	var found := PixelParts.find(split_colors, canvas_width, PixelParts.sides_of(canvas_width))
 	var part_of := found.part_of
 	var part_count := found.parts.size()
@@ -63,7 +92,7 @@ static func of(
 		part_of, canvas_width, sizes, part_colors, maxi(MIN_PIXELS, int(shown * MIN_SHARE))
 	)
 	_dissolve_lines(part_of, canvas_width, data.size() / 4 / canvas_width, part_colors)
-	return from_labels(data, canvas_width, _renumbered(part_of))
+	return _renumbered(part_of)
 
 
 ## [param a_data] and [param b_data]'s colours (see [method PixelCanvas.colors]) to split
@@ -85,45 +114,58 @@ static func split_colors_of(
 
 
 ## Regions of [param data] as [param region_labels] says (see [member labels]): numbered
-## from 0 with none missing
+## from 0 with none missing. Every pixel with a region is in [param area], when it's given.
 static func from_labels(
-	data: PackedByteArray, canvas_width: int, region_labels: PackedInt32Array
+	data: PackedByteArray, canvas_width: int, region_labels: PackedInt32Array, area := Rect2i()
 ) -> KeyRegions:
+	if NativeKernels.kernels:
+		return NativeKernels.regions_from_labels(data, canvas_width, region_labels)
 	var regions := KeyRegions.new()
 	regions.width = canvas_width
 	regions.height = region_labels.size() / canvas_width
 	regions.labels = region_labels
+	if area == Rect2i():
+		area = Rect2i(0, 0, canvas_width, regions.height)
+	# The pixels with a region, in order
+	var labelled := PackedInt32Array()
+	for y in range(area.position.y, area.end.y):
+		for p in range(y * canvas_width + area.position.x, y * canvas_width + area.end.x):
+			if region_labels[p] >= 0:
+				labelled.append(p)
 	var region_count := 0
-	for label in region_labels:
-		region_count = maxi(region_count, label + 1)
+	for p in labelled:
+		region_count = maxi(region_count, region_labels[p] + 1)
 	for r in region_count:
 		regions.pixels.append(PackedInt32Array())
-	for p in region_labels.size():
-		if region_labels[p] >= 0:
-			regions.pixels[region_labels[p]].append(p)
+	for p in labelled:
+		regions.pixels[region_labels[p]].append(p)
 	regions.centers.resize(region_count)
-	regions.colors = _average_colors(data, region_labels, region_count)
+	regions.colors = _average_colors(data, region_labels, region_count, labelled)
 	regions.axes.resize(region_count)
 	regions.elongations.resize(region_count)
 	for r in region_count:
 		regions._shape(r)
 	# Borders: midway between pixels of two regions side by side
-	for p in region_labels.size():
+	var size := region_labels.size()
+	for p in labelled:
 		var label := region_labels[p]
-		if label < 0:
-			continue
-		for side: int in [1, canvas_width]:
-			var q: int = p + side
-			if q >= region_labels.size():
-				continue
-			var other := region_labels[q]
-			if other < 0 or other == label:
-				continue
-			var key := Vector2i(mini(label, other), maxi(label, other))
-			if not regions.borders.has(key):
-				regions.borders[key] = PackedVector2Array()
-			regions.borders[key].append((regions.point_of(p) + regions.point_of(q)) / 2.0)
+		if p + 1 < size:
+			_add_border(regions, label, p, p + 1)
+		if p + canvas_width < size:
+			_add_border(regions, label, p, p + canvas_width)
 	return regions
+
+
+## Adds the border between pixel [param p], of region [param label], and [param q] to
+## [param regions]' borders, when [param q] is of another region
+static func _add_border(regions: KeyRegions, label: int, p: int, q: int) -> void:
+	var other := regions.labels[q]
+	if other < 0 or other == label:
+		return
+	var key := Vector2i(mini(label, other), maxi(label, other))
+	if not regions.borders.has(key):
+		regions.borders[key] = PackedVector2Array()
+	regions.borders[key].append((regions.point_of(p) + regions.point_of(q)) / 2.0)
 
 
 ## The average colour, red, green and blue from 0 to 1, of [param region_pixels] of [param data]
@@ -179,18 +221,28 @@ func _shape(r: int) -> void:
 	elongations[r] = sqrt(maxf(big, 1e-6) / small)
 
 
+## The average colour of each of [param region_count] regions of [param region_labels],
+## going over [param labelled], the pixels with a region in order, when given
 static func _average_colors(
-	data: PackedByteArray, region_labels: PackedInt32Array, region_count: int
+	data: PackedByteArray,
+	region_labels: PackedInt32Array,
+	region_count: int,
+	labelled := PackedInt32Array()
 ) -> PackedVector3Array:
 	var sums := PackedVector3Array()
 	sums.resize(region_count)
 	var sizes := PackedInt32Array()
 	sizes.resize(region_count)
-	for p in region_labels.size():
+	var over := labelled
+	if over.is_empty():
+		over = PackedInt32Array()
+		for p in region_labels.size():
+			if region_labels[p] >= 0:
+				over.append(p)
+	for p in over:
 		var r := region_labels[p]
-		if r >= 0:
-			sums[r] += Vector3(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) / 255.0
-			sizes[r] += 1
+		sums[r] += Vector3(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) / 255.0
+		sizes[r] += 1
 	for r in region_count:
 		if sizes[r] > 0:
 			sums[r] /= sizes[r]

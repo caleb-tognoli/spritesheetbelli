@@ -3,6 +3,16 @@
 All notable changes to spritesheetbelli. The version is set in `project.godot`
 (`application/config/version`) and shown in Help > About.
 
+## Unreleased
+
+### Changed
+- In-betweens are made much faster on Windows, macOS and Linux, by a small native library
+  in the app: keys are prepared about twice as fast and frames three to four times as
+  fast, and they come out exactly as before. The web version works as before.
+- The Windows installer has a cleaner, modern look, in the style of Windows 10 and 11. It
+  still installs for you alone, with no administrator rights, and sets up the same file
+  types.
+
 ## 1.0.0
 
 The first public release. spritesheetbelli sits between your drawing program and your

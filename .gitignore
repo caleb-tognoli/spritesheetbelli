@@ -20,3 +20,7 @@ build/
 
 # Claude Code
 .claude/
+
+# Native library, see native/build.py
+native/target/
+extension/bin/

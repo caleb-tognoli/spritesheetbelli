@@ -32,6 +32,11 @@ const SMOOTHNESS := 0.5
 const SMOOTH_CUT := 20.0
 ## Rounds of neighbours telling each other where they'd go
 const ROUNDS := 8
+## Movements or pixels worked out on each thread at least, see [method _match]
+const PARALLEL_LEAST := 16
+## Keys and frames at least this many pixels are worked on by several threads at once, see
+## [method frame]
+const PARALLEL_PIXELS := 20000
 ## How much a pixel's colour (red, green and blue times opacity), opacity and depth can each
 ## differ at most (0 to 1)
 const FEATURE_CUT := 1.0
@@ -53,10 +58,9 @@ const MOST_STRETCH := 8
 const TIDY_ALPHA := 128
 ## Numbers worked out for each pixel matched: colour (3), opacity and depth
 const FEATURES := 5
-## The corners of a pixel, round it, and the pixels sharing each
-const CORNERS: Array[Vector2i] = [
-	Vector2i(-1, -1), Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1)
-]
+## How far outside a pixel's square (in pixels times its sides) a point still counts as in
+## it, see [method _moved]
+const CLOSE := 1e-4
 
 ## The canvas both keys are on
 var width := 0
@@ -75,6 +79,8 @@ var b_doubt := PackedFloat32Array()
 ## jags out of frames, see [method PixelCleanup.smooth_jags]
 var key_shapes := PackedInt32Array()
 var key_wide_shapes := {}
+## Where either key shows any pixel
+var _keys_area := Rect2i()
 
 
 ## Whether keys [param a] and [param b] (RGBA8 images) are painted with soft edges: most
@@ -135,6 +141,7 @@ static func between(
 		return null
 	var size := float(maxi(high.x - low.x, high.y - low.y) + 1)
 	var morph := FlowMorph.new()
+	morph._keys_area = Rect2i(low, high - low + Vector2i.ONE)
 	morph.width = canvas_width
 	morph.height = canvas_height
 	morph.a_data = a_bytes
@@ -193,22 +200,45 @@ static func between(
 func frame(
 	t: float, pin_from := PackedVector2Array(), pin_to := PackedVector2Array()
 ) -> PackedByteArray:
-	var count := width * height
-	var from_a := _moved(a_data, _pinned(a_data, a_flow, t, pin_from, pin_to), a_doubt, t)
-	var from_b := _moved(
-		b_data, _pinned(b_data, b_flow, 1.0 - t, pin_from, pin_to), b_doubt, 1.0 - t
-	)
+	# Both keys moved at once, on threads of their own for big keys
+	var big := _keys_area.get_area() >= PARALLEL_PIXELS
+	var move := func(k: int) -> PackedByteArray:
+		var data := a_data if k == 0 else b_data
+		var flow := a_flow if k == 0 else b_flow
+		var along := t if k == 0 else 1.0 - t
+		var doubt := a_doubt if k == 0 else b_doubt
+		return _moved(data, _pinned(data, flow, along, pin_from, pin_to), doubt, along)
+	var moved := Parallel.each(2, move, big)
+	var from_a: PackedByteArray = moved[0]
+	var from_b: PackedByteArray = moved[1]
+	# Put together round what the moved keys show only, which gives what the whole canvas
+	# would (see PixelCanvas.distances), with room for tidying up to grow it
+	var far_away := (width + height) * 4
+	var area := PixelCanvas.shown_rect_of(from_a, from_b, width, height, PieceMorph.AREA_MARGIN)
+	from_a = PixelCanvas.region(from_a, width, area)
+	from_b = PixelCanvas.region(from_b, width, area)
+	var w := area.size.x
+	var h := area.size.y
+	var count := w * h
 	var near_first := t <= 0.5
 	var near := from_a if near_first else from_b
 	var far := from_b if near_first else from_a
 	var a_mask := _mask(from_a)
 	var b_mask := _mask(from_b)
-	var a_sides := _sides(a_mask)
-	var b_sides := _sides(b_mask)
+	# How far from each moved key's pixels and from the rest each pixel is, all at once on
+	# threads of their own for big frames
+	var masks: Array[PackedByteArray] = [a_mask, a_mask, b_mask, b_mask]
+	var measure := func(k: int) -> Array[PackedInt32Array]:
+		return PixelCanvas.distances(masks[k], w, h, 1 - k % 2, far_away)
+	var measured := Parallel.each(4, measure, count >= PARALLEL_PIXELS)
+	var a_to: Array[PackedInt32Array] = measured[0]
+	var b_to: Array[PackedInt32Array] = measured[2]
+	var a_sides := FlowLevel.sides_from(a_mask, a_to[0], measured[1][0])
+	var b_sides := FlowLevel.sides_from(b_mask, b_to[0], measured[3][0])
 	var near_mask := a_mask if near_first else b_mask
 	var far_mask := b_mask if near_first else a_mask
-	var near_nearest: PackedInt32Array = PixelCanvas.distances(near_mask, width, height, 1)[1]
-	var far_nearest: PackedInt32Array = PixelCanvas.distances(far_mask, width, height, 1)[1]
+	var near_nearest: PackedInt32Array = (a_to if near_first else b_to)[1]
+	var far_nearest: PackedInt32Array = (b_to if near_first else a_to)[1]
 	var out := PixelCanvas.blank(count)
 	for p in count:
 		var from := near
@@ -232,9 +262,9 @@ func frame(
 			continue
 		for c in 4:
 			out[p * 4 + c] = from[source * 4 + c]
-	PixelCleanup.tidy_data(out, width, height)
-	PixelCleanup.smooth_jags(out, width, height, key_shapes, TIDY_ALPHA, key_wide_shapes)
-	return out
+	PixelCleanup.tidy_data(out, w, h)
+	PixelCleanup.smooth_jags(out, w, h, key_shapes, TIDY_ALPHA, key_wide_shapes)
+	return PixelCanvas.placed(out, area, width, height)
 
 
 ## [param flow], the movements of [param data]'s pixels, bent so that at [param t] of the
@@ -255,30 +285,37 @@ func _pinned(
 		return flow
 	var froms := PackedVector2Array()
 	var tos := PackedVector2Array()
+	# Only where the keys show anything
+	var area := _keys_area
 	for k in pin_from.size():
 		# Pixels' middles are at whole numbers here
 		var at := pin_from[k] - Vector2(0.5, 0.5)
 		var best := -1
 		var nearest := INF
-		for p in width * height:
-			if data[p * 4 + 3] == 0:
-				continue
-			var apart := (Vector2(p % width, p / width) + flow[p] * 0.5).distance_squared_to(at)
-			if apart < nearest:
-				nearest = apart
-				best = p
+		for y in range(area.position.y, area.end.y):
+			for x in range(area.position.x, area.end.x):
+				var p := y * width + x
+				if data[p * 4 + 3] == 0:
+					continue
+				var apart := (Vector2(x, y) + flow[p] * 0.5).distance_squared_to(at)
+				if apart < nearest:
+					nearest = apart
+					best = p
 		var now := at + (flow[best] * (t - 0.5) if best >= 0 else Vector2.ZERO)
 		froms.append(now)
 		tos.append(now + (pin_to[k] - pin_from[k]) * amount)
 	# Where the pixels are at t, holding themselves still away from the pins
 	var shape := PackedVector2Array()
 	var shown := PackedInt32Array()
-	for p in width * height:
-		if data[p * 4 + 3] > 0:
-			shape.append(Vector2(p % width, p / width) + flow[p] * t)
-			shown.append(p)
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
+			var p := y * width + x
+			if data[p * 4 + 3] > 0:
+				shape.append(Vector2(x, y) + flow[p] * t)
+				shown.append(p)
 	var bend := PinWarp.Bend.new(froms, tos, shape)
-	bend.lay(width, height)
+	# Sampled only where the pixels are
+	bend.lay(width, height, shape)
 	var result := flow.duplicate()
 	for s in shown.size():
 		result[shown[s]] += (bend.sampled(shape[s]) - shape[s]) / t
@@ -291,69 +328,121 @@ func _pinned(
 func _moved(
 	data: PackedByteArray, flow: PackedVector2Array, doubt: PackedFloat32Array, t: float
 ) -> PackedByteArray:
+	if NativeKernels.kernels:
+		return NativeKernels.flow_moved(self, data, flow, doubt, t)
 	var out := PixelCanvas.blank(width * height)
 	var best := PackedFloat32Array()
 	best.resize(width * height)
 	best.fill(INF)
-	var corners := PackedVector2Array()
-	corners.resize(4)
-	for y in height:
-		for x in width:
+	var last_x := width - 1
+	var last_y := height - 1
+	# Only where the keys show anything
+	var area := _keys_area
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
 			var p := y * width + x
 			if data[p * 4 + 3] == 0:
 				continue
+			# Each corner moves as the pixels sharing it, shown, on average: the pixel itself,
+			# the one beside it, the one above or below it, then the one across the corner
 			var own := flow[p]
-			for k in 4:
-				var o := CORNERS[k]
-				var sum := own
-				var n := 1
-				var x_in := x + o.x >= 0 and x + o.x < width
-				var y_in := y + o.y >= 0 and y + o.y < height
-				if x_in and data[(p + o.x) * 4 + 3] > 0:
-					sum += flow[p + o.x]
-					n += 1
-				if y_in and data[(p + o.y * width) * 4 + 3] > 0:
-					sum += flow[p + o.y * width]
-					n += 1
-				if x_in and y_in and data[(p + o.y * width + o.x) * 4 + 3] > 0:
-					sum += flow[p + o.y * width + o.x]
-					n += 1
-				corners[k] = Vector2(x + 0.5 * o.x, y + 0.5 * o.y) + sum * (t / n)
-			var lowest := corners[0].min(corners[1]).min(corners[2].min(corners[3]))
-			var highest := corners[0].max(corners[1]).max(corners[2].max(corners[3]))
+			var up := p - width
+			var down := p + width
+			var has_left := x > 0 and data[(p - 1) * 4 + 3] > 0
+			var has_right := x < last_x and data[(p + 1) * 4 + 3] > 0
+			var has_up := y > 0 and data[up * 4 + 3] > 0
+			var has_down := y < last_y and data[down * 4 + 3] > 0
+			var sum := own
+			var n := 1
+			if has_left:
+				sum += flow[p - 1]
+				n += 1
+			if has_up:
+				sum += flow[up]
+				n += 1
+			if x > 0 and y > 0 and data[(up - 1) * 4 + 3] > 0:
+				sum += flow[up - 1]
+				n += 1
+			var c0 := Vector2(x - 0.5, y - 0.5) + sum * (t / n)
+			sum = own
+			n = 1
+			if has_right:
+				sum += flow[p + 1]
+				n += 1
+			if has_up:
+				sum += flow[up]
+				n += 1
+			if x < last_x and y > 0 and data[(up + 1) * 4 + 3] > 0:
+				sum += flow[up + 1]
+				n += 1
+			var c1 := Vector2(x + 0.5, y - 0.5) + sum * (t / n)
+			sum = own
+			n = 1
+			if has_right:
+				sum += flow[p + 1]
+				n += 1
+			if has_down:
+				sum += flow[down]
+				n += 1
+			if x < last_x and y < last_y and data[(down + 1) * 4 + 3] > 0:
+				sum += flow[down + 1]
+				n += 1
+			var c2 := Vector2(x + 0.5, y + 0.5) + sum * (t / n)
+			sum = own
+			n = 1
+			if has_left:
+				sum += flow[p - 1]
+				n += 1
+			if has_down:
+				sum += flow[down]
+				n += 1
+			if x > 0 and y < last_y and data[(down - 1) * 4 + 3] > 0:
+				sum += flow[down - 1]
+				n += 1
+			var c3 := Vector2(x - 0.5, y + 0.5) + sum * (t / n)
+			var lowest := c0.min(c1).min(c2.min(c3))
+			var highest := c0.max(c1).max(c2.max(c3))
 			var x0 := maxi(0, floori(lowest.x))
 			var y0 := maxi(0, floori(lowest.y))
-			var x1 := mini(mini(width - 1, ceili(highest.x)), x0 + MOST_STRETCH)
-			var y1 := mini(mini(height - 1, ceili(highest.y)), y0 + MOST_STRETCH)
+			var x1 := mini(mini(last_x, ceili(highest.x)), x0 + MOST_STRETCH)
+			var y1 := mini(mini(last_y, ceili(highest.y)), y0 + MOST_STRETCH)
 			var own_doubt := doubt[p]
+			# The square as two triangles, c0 c1 c2 and c0 c2 c3: a point is in one when it's
+			# on the same side of its three sides, either way round, or on them
+			var side_01 := c1 - c0
+			var side_12 := c2 - c1
+			var side_20 := c0 - c2
+			var side_02 := c2 - c0
+			var side_23 := c3 - c2
+			var side_30 := c0 - c3
+			var i := p * 4
 			for py in range(y0, y1 + 1):
 				for px in range(x0, x1 + 1):
 					var q := py * width + px
 					if own_doubt > best[q]:
 						continue
 					var at := Vector2(px, py)
+					var d1 := side_01.cross(at - c0)
+					var d2 := side_12.cross(at - c1)
+					var d3 := side_20.cross(at - c2)
 					if not (
-						_in_triangle(at, corners[0], corners[1], corners[2])
-						or _in_triangle(at, corners[0], corners[2], corners[3])
+						(d1 >= -CLOSE and d2 >= -CLOSE and d3 >= -CLOSE)
+						or (d1 <= CLOSE and d2 <= CLOSE and d3 <= CLOSE)
 					):
-						continue
+						d1 = side_02.cross(at - c0)
+						d2 = side_23.cross(at - c2)
+						d3 = side_30.cross(at - c3)
+						if not (
+							(d1 >= -CLOSE and d2 >= -CLOSE and d3 >= -CLOSE)
+							or (d1 <= CLOSE and d2 <= CLOSE and d3 <= CLOSE)
+						):
+							continue
 					best[q] = own_doubt
-					for c in 4:
-						out[q * 4 + c] = data[p * 4 + c]
+					out[q * 4] = data[i]
+					out[q * 4 + 1] = data[i + 1]
+					out[q * 4 + 2] = data[i + 2]
+					out[q * 4 + 3] = data[i + 3]
 	return out
-
-
-## Whether [param at] is inside the triangle [param a], [param b], [param c], either way
-## round, its sides included
-static func _in_triangle(at: Vector2, a: Vector2, b: Vector2, c: Vector2) -> bool:
-	const CLOSE := 1e-4
-	var d1 := (b - a).cross(at - a)
-	var d2 := (c - b).cross(at - b)
-	var d3 := (a - c).cross(at - c)
-	return (
-		(d1 >= -CLOSE and d2 >= -CLOSE and d3 >= -CLOSE)
-		or (d1 <= CLOSE and d2 <= CLOSE and d3 <= CLOSE)
-	)
 
 
 ## 1 where [param data] is shown, at least half opaque
@@ -363,12 +452,6 @@ static func _mask(data: PackedByteArray) -> PackedByteArray:
 	for p in result.size():
 		result[p] = 1 if data[p * 4 + 3] >= 128 else 0
 	return result
-
-
-## How far outside (positive) or inside (negative) [param mask] each pixel is, in pixels,
-## the edge half a pixel either side
-func _sides(mask: PackedByteArray) -> PackedFloat32Array:
-	return FlowLevel.sides_of(mask, width, height)
 
 
 ## How far each pixel's [param flow] is from coming back by the other key's [param back]
@@ -479,21 +562,63 @@ static func _match(
 		return PackedVector2Array()
 	var x0 := maxi(0, low.x - PATCH)
 	var y0 := maxi(0, low.y - PATCH)
-	var area_width := mini(w - 1, high.x + PATCH) - x0 + 1
-	var area_height := mini(h - 1, high.y + PATCH) - y0 + 1
-	var stride := area_width + 1
+	var area := Rect2i(
+		x0, y0, mini(w - 1, high.x + PATCH) - x0 + 1, mini(h - 1, high.y + PATCH) - y0 + 1
+	)
 	var side := 2 * reach + 1
 	var labels := side * side
 	var costs := PackedFloat32Array()
 	costs.resize(nodes.size() * labels)
+	# Each movement's costs on their own, so they're shared out among threads, each writing
+	# only its own
+	var label_costs := _label_costs.bind(from, to, guess, nodes, area, reach, costs)
+	Parallel.split(labels, PARALLEL_LEAST, label_costs)
+	var chosen := _agree(costs, nodes, node_of, w, h, side)
+	var moves := PackedVector2Array()
+	moves.resize(w * h)
+	for p in w * h:
+		moves[p] = Vector2(guess[p * 2], guess[p * 2 + 1])
+	for n in nodes.size():
+		moves[nodes[n]] += Vector2(chosen[n] % side - reach, chosen[n] / side - reach)
+	return moves
+
+
+## Writes into [param costs] (see [method _match]) what moving each of [param nodes] of
+## [param from] by labels [param start] to [param end] (past the last) round its
+## [param guess], up to [param reach] each way, costs: how unlike [param to] its patch is
+## there, over [param area], the part of [param from] the patches cover
+static func _label_costs(
+	start: int,
+	end: int,
+	from: FlowLevel,
+	to: FlowLevel,
+	guess: PackedInt32Array,
+	nodes: PackedInt32Array,
+	area: Rect2i,
+	reach: int,
+	costs: PackedFloat32Array
+) -> void:
+	var w := from.width
+	var h := from.height
+	var x0 := area.position.x
+	var y0 := area.position.y
+	var area_width := area.size.x
+	var area_height := area.size.y
+	var stride := area_width + 1
+	var side := 2 * reach + 1
+	var labels := side * side
 	# Differences summed over the area from its top left, for patch sums
 	var summed := PackedFloat32Array()
 	summed.resize(stride * (area_height + 1))
 	var window := float((2 * PATCH + 1) * (2 * PATCH + 1))
 	var f_from := from.features
 	var f_to := to.features
-	var empty := FlowLevel.EMPTY
-	for label in labels:
+	var empty_0: float = FlowLevel.EMPTY[0]
+	var empty_1: float = FlowLevel.EMPTY[1]
+	var empty_2: float = FlowLevel.EMPTY[2]
+	var empty_3: float = FlowLevel.EMPTY[3]
+	var empty_4: float = FlowLevel.EMPTY[4]
+	for label in range(start, end):
 		var lx := label % side - reach
 		var ly := label / side - reach
 		for ay in area_height:
@@ -507,12 +632,18 @@ static func _match(
 				var i := p * FEATURES
 				var d := 0.0
 				if tx < 0 or ty < 0 or tx >= w or ty >= h:
-					for c in FEATURES:
-						d += minf(absf(f_from[i + c] - empty[c]), FEATURE_CUT)
+					d += minf(absf(f_from[i] - empty_0), FEATURE_CUT)
+					d += minf(absf(f_from[i + 1] - empty_1), FEATURE_CUT)
+					d += minf(absf(f_from[i + 2] - empty_2), FEATURE_CUT)
+					d += minf(absf(f_from[i + 3] - empty_3), FEATURE_CUT)
+					d += minf(absf(f_from[i + 4] - empty_4), FEATURE_CUT)
 				else:
 					var j := (ty * w + tx) * FEATURES
-					for c in FEATURES:
-						d += minf(absf(f_from[i + c] - f_to[j + c]), FEATURE_CUT)
+					d += minf(absf(f_from[i] - f_to[j]), FEATURE_CUT)
+					d += minf(absf(f_from[i + 1] - f_to[j + 1]), FEATURE_CUT)
+					d += minf(absf(f_from[i + 2] - f_to[j + 2]), FEATURE_CUT)
+					d += minf(absf(f_from[i + 3] - f_to[j + 3]), FEATURE_CUT)
+					d += minf(absf(f_from[i + 4] - f_to[j + 4]), FEATURE_CUT)
 				row += d
 				var s := (ay + 1) * stride + ax + 1
 				summed[s] = summed[s - stride] + row
@@ -530,14 +661,6 @@ static func _match(
 				+ summed[top * stride + left]
 			)
 			costs[n * labels + label] = sum / window
-	var chosen := _agree(costs, nodes, node_of, w, h, side)
-	var moves := PackedVector2Array()
-	moves.resize(w * h)
-	for p in w * h:
-		moves[p] = Vector2(guess[p * 2], guess[p * 2 + 1])
-	for n in nodes.size():
-		moves[nodes[n]] += Vector2(chosen[n] % side - reach, chosen[n] / side - reach)
-	return moves
 
 
 ## The label each node settles on, of [param side] × [param side] (movements round its
@@ -566,42 +689,12 @@ static func _agree(
 	# What each node heard from each side
 	var heard := PackedFloat32Array()
 	heard.resize(count * 4 * labels)
-	var total := PackedFloat32Array()
-	total.resize(labels)
-	var message := PackedFloat32Array()
-	message.resize(labels)
-	var cut := SMOOTHNESS * SMOOTH_CUT
 	for _round in ROUNDS:
+		# Each node tells its neighbours on its own, so they're shared out among threads,
+		# each writing only what its nodes tell
 		var next := PackedFloat32Array()
 		next.resize(count * 4 * labels)
-		for n in count:
-			var base := n * labels
-			var at := n * 4 * labels
-			for k in labels:
-				total[k] = (
-					costs[base + k]
-					+ heard[at + k]
-					+ heard[at + labels + k]
-					+ heard[at + 2 * labels + k]
-					+ heard[at + 3 * labels + k]
-				)
-			for to_side in 4:
-				var other := neighbours[n * 4 + to_side]
-				if other < 0:
-					continue
-				# Leaving out what that neighbour said
-				var own := at + to_side * labels
-				for k in labels:
-					message[k] = total[k] - heard[own + k]
-				var top := _spread_costs(message, side) + cut
-				var settled := INF
-				for k in labels:
-					message[k] = minf(message[k], top)
-					settled = minf(settled, message[k])
-				# The neighbour hears it from the opposite side
-				var into := (other * 4 + (to_side ^ 1)) * labels
-				for k in labels:
-					next[into + k] = message[k] - settled
+		Parallel.split(count, PARALLEL_LEAST, _tell.bind(costs, heard, next, neighbours, side))
 		heard = next
 	var chosen := PackedInt32Array()
 	chosen.resize(count)
@@ -620,6 +713,54 @@ static func _agree(
 				best = belief
 				chosen[n] = k
 	return chosen
+
+
+## Writes into [param next] what nodes [param start] to [param end] (past the last) tell
+## their [param neighbours] in a round of [method _agree], from their [param costs] and what
+## they [param heard], of [param side] × [param side] labels
+static func _tell(
+	start: int,
+	end: int,
+	costs: PackedFloat32Array,
+	heard: PackedFloat32Array,
+	next: PackedFloat32Array,
+	neighbours: PackedInt32Array,
+	side: int
+) -> void:
+	var labels := side * side
+	var total := PackedFloat32Array()
+	total.resize(labels)
+	var message := PackedFloat32Array()
+	message.resize(labels)
+	var cut := SMOOTHNESS * SMOOTH_CUT
+	for n in range(start, end):
+		var base := n * labels
+		var at := n * 4 * labels
+		for k in labels:
+			total[k] = (
+				costs[base + k]
+				+ heard[at + k]
+				+ heard[at + labels + k]
+				+ heard[at + 2 * labels + k]
+				+ heard[at + 3 * labels + k]
+			)
+		for to_side in 4:
+			var other := neighbours[n * 4 + to_side]
+			if other < 0:
+				continue
+			# Leaving out what that neighbour said
+			var own := at + to_side * labels
+			for k in labels:
+				message[k] = total[k] - heard[own + k]
+			var top := _spread_costs(message, side) + cut
+			var settled := INF
+			for k in labels:
+				message[k] = minf(message[k], top)
+				settled = minf(settled, message[k])
+			# The neighbour hears it from the opposite side
+			var into := (other * 4 + (to_side ^ 1)) * labels
+			for k in labels:
+				next[into + k] = message[k] - settled
 
 
 ## Lowers each of [param costs], [param side] × [param side] labels, to the cheapest other

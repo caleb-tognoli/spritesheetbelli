@@ -24,6 +24,8 @@ const LEAST_SPACING := 2.0
 const STEP_SHARE := 0.02
 ## Nearer than this (squared) to a pin, a point goes with the pin alone
 const ON_PIN := 1e-8
+## Rows of a bend worked out on each thread at least, see [method Bend.lay]
+const ROWS_LEAST := 8
 
 
 ## How much a pin's move counts [param t] of the way from key A to key B: all of it
@@ -118,26 +120,35 @@ class Bend:
 
 	## Where [param point] goes
 	func moved(point: Vector2) -> Vector2:
-		var count := froms.size()
+		var pin_from := froms
+		var pin_to := tos
+		var held := holds
+		var count := pin_from.size()
+		var held_count := held.size()
 		var weights := PackedFloat32Array()
-		weights.resize(count + holds.size())
+		weights.resize(count + held_count)
 		var total := 0.0
 		var from_middle := Vector2.ZERO
 		var to_middle := Vector2.ZERO
 		for i in count:
-			var apart := froms[i].distance_squared_to(point)
+			var apart := pin_from[i].distance_squared_to(point)
 			if apart < ON_PIN:
-				return point + tos[i] - froms[i]
+				return point + pin_to[i] - pin_from[i]
 			weights[i] = strengths[i] / (apart * apart)
-			total += weights[i]
-			from_middle += froms[i] * weights[i]
-			to_middle += tos[i] * weights[i]
-		for j in holds.size():
-			var w := 1.0 / (holds[j].distance_squared_to(point) + soft)
+			var w: float = weights[i]
+			total += w
+			from_middle += pin_from[i] * w
+			to_middle += pin_to[i] * w
+		var spread := soft
+		for j in held_count:
+			var spot := held[j]
+			var w := 1.0 / (spot.distance_squared_to(point) + spread)
 			weights[count + j] = w
 			total += w
-			from_middle += holds[j] * w
-			to_middle += holds[j] * w
+			# Held spots go nowhere: they pull both middles alike
+			var pulled := spot * w
+			from_middle += pulled
+			to_middle += pulled
 		if total <= 0.0:
 			return point
 		from_middle /= total
@@ -146,28 +157,54 @@ class Bend:
 		var along := 0.0
 		var across := 0.0
 		for i in count:
-			var p := froms[i] - from_middle
-			var q := tos[i] - to_middle
-			along += weights[i] * p.dot(q)
-			across += weights[i] * p.cross(q)
-		for j in holds.size():
-			var p := holds[j] - from_middle
-			var q := holds[j] - to_middle
-			along += weights[count + j] * p.dot(q)
-			across += weights[count + j] * p.cross(q)
+			var p := pin_from[i] - from_middle
+			var q := pin_to[i] - to_middle
+			var w: float = weights[i]
+			along += w * p.dot(q)
+			across += w * p.cross(q)
+		for j in held_count:
+			var spot := held[j]
+			var p := spot - from_middle
+			var q := spot - to_middle
+			var w: float = weights[count + j]
+			along += w * p.dot(q)
+			across += w * p.cross(q)
 		var turn := atan2(across, along) if absf(along) + absf(across) > 1e-12 else 0.0
 		return (point - from_middle).rotated(turn) + to_middle
 
 	## Works the bend out over a canvas [param width] × [param height], for
-	## [method sampled]
-	func lay(width: int, height: int) -> void:
+	## [method sampled]: all of it, or only round [param points] when given, for sampling
+	## only them
+	func lay(width: int, height: int, points := PackedVector2Array()) -> void:
 		_columns = ceili(width / _step) + 2
 		_rows = ceili(height / _step) + 2
 		_moves.resize(_columns * _rows)
-		for row in _rows:
+		var needed := PackedByteArray()
+		if not points.is_empty():
+			# What sampled reads for each
+			needed.resize(_columns * _rows)
+			for point in points:
+				var grid := point / _step
+				var x := clampf(grid.x, 0.0, _columns - 1.001)
+				var y := clampf(grid.y, 0.0, _rows - 1.001)
+				var i := floori(y) * _columns + floori(x)
+				needed[i] = 1
+				needed[i + 1] = 1
+				needed[i + _columns] = 1
+				needed[i + _columns + 1] = 1
+		# Each point on its own, so rows are shared out among threads
+		Parallel.split(_rows, ROWS_LEAST, _lay_rows.bind(needed))
+
+	## [method lay] for rows [param start] to [param end] (past the last), only the points
+	## [param needed] says when it isn't empty
+	func _lay_rows(start: int, end: int, needed: PackedByteArray) -> void:
+		for row in range(start, end):
 			for column in _columns:
+				var i := row * _columns + column
+				if not needed.is_empty() and needed[i] == 0:
+					continue
 				var at := Vector2(column, row) * _step
-				_moves[row * _columns + column] = moved(at) - at
+				_moves[i] = moved(at) - at
 
 	## Where [param point] goes, smoothly between the points [method lay] worked out
 	func sampled(point: Vector2) -> Vector2:

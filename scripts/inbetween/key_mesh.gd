@@ -73,6 +73,10 @@ const SOLVER_CLOSE := 1e-4
 ## for so many rounds of turning the triangles and laying them again
 const PIN_PULL := 20.0
 const PIN_ROUNDS := 6
+## Pixels and edges matched on each thread at least, see [method _match_round]
+const PARALLEL_LEAST := 256
+## How many frames' corners [method at] keeps
+const AT_KEPT := 64
 
 ## The canvas the key is on, as worked out
 var width := 0
@@ -106,20 +110,31 @@ var _turns := PackedFloat32Array()
 var _stretches := PackedFloat32Array()
 var _frame_weights := PackedFloat32Array()
 var _frame_matrix: MeshMatrix
+## How the triangles hold together while they're laid, each counting its weight, and the
+## weights summed, three times each, see [method _lay]
+var _laplacian: MeshMatrix
+var _stiff_total := 0.0
 ## The key drawn in frames, see [method draw_from]
 var _drawing: MeshDrawing
+## The corners [method at] worked out, by how far along, kept for frames drawn again (at
+## most [constant AT_KEPT]); frames drawn at once share them
+var _at_known := {}
+var _at_lock := Mutex.new()
 
 
 ## The mesh of [param data] laid onto [param other] (keys on canvases [param canvas_width]
 ## × [param canvas_height] pixels), its pieces moving as [param side] says; null when the
 ## key shows nothing. [param progress] tells how far it got, and stops it when cancelled.
+## [param colors] are the keys' colours (see [method key_colors]), worked out when not
+## given.
 static func lay(
 	data: PackedByteArray,
 	other: PackedByteArray,
 	canvas_width: int,
 	canvas_height: int,
 	side: KeySide,
-	progress: WorkProgress = null
+	progress: WorkProgress = null,
+	colors: MeshTools.Colors = null
 ) -> KeyMesh:
 	var mesh := KeyMesh.new()
 	mesh.width = canvas_width
@@ -138,20 +153,43 @@ static func lay(
 	mesh._depths(side)
 	var corner_pieces := mesh._split(side)
 	mesh._anchor(side, corner_pieces)
+	# How the triangles hold together, the same for every round of laying them
+	mesh._laplacian = MeshMatrix.new(mesh.rest.size(), mesh._side_from, mesh._side_to)
+	mesh._add_laplacian(mesh._laplacian, mesh.weights, 0.0)
+	for k in mesh.weights.size():
+		mesh._stiff_total += mesh.weights[k] * 3.0
 	mesh._follow_pieces(located, side, corner_pieces)
-	var colors := MeshTools.Colors.new()
-	colors.own = MeshTools.premultiplied(data)
-	colors.other = MeshTools.premultiplied(other)
-	colors.own_edges = MeshTools.edges(colors.own, canvas_width, canvas_height, EDGE_STEP)
-	colors.other_edges = MeshTools.edges(colors.other, canvas_width, canvas_height, EDGE_STEP)
+	if colors == null:
+		var both := key_colors(data, other, canvas_width, canvas_height)
+		colors = MeshTools.Colors.new()
+		colors.own = both[0]
+		colors.other = both[1]
+		colors.own_edges = both[2]
+		colors.other_edges = both[3]
 	for r in REACHES.size():
 		if progress and progress.cancelled:
 			return null
 		mesh._match_round(colors, located, REACHES[r] * unit, STIFFNESS[r])
 		if progress:
-			progress.done += 1
+			progress.advance()
 	mesh._find_turns()
 	return mesh
+
+
+## Keys [param first] and [param second] (on canvases [param canvas_width] ×
+## [param canvas_height] pixels) premultiplied, and their edges, see [MeshTools.Colors]:
+## [code][first's colours, second's, first's edges, second's][/code]
+static func key_colors(
+	first: PackedByteArray, second: PackedByteArray, canvas_width: int, canvas_height: int
+) -> Array:
+	var first_colors := MeshTools.premultiplied(first)
+	var second_colors := MeshTools.premultiplied(second)
+	return [
+		first_colors,
+		second_colors,
+		MeshTools.edges(first_colors, canvas_width, canvas_height, EDGE_STEP),
+		MeshTools.edges(second_colors, canvas_width, canvas_height, EDGE_STEP),
+	]
 
 
 ## How many steps [method lay] reports to its progress
@@ -168,8 +206,11 @@ func _cut(data: PackedByteArray, spacing: float) -> bool:
 	var size := width * height
 	var shown := PackedByteArray()
 	shown.resize(size)
-	for p in size:
-		shown[p] = 1 if data[p * 4 + 3] >= 128 else 0
+	# Only where the key shows anything, as it's nothing elsewhere
+	var used := MeshTools.used_rect(data, width)
+	for row in range(used.position.y, used.end.y):
+		for p in range(row * width + used.position.x, row * width + used.end.x):
+			shown[p] = 1 if data[p * 4 + 3] >= 128 else 0
 	if not shown.has(1):
 		return false
 	var whole := ShapeBlend.shape_of(data, width, height)
@@ -191,26 +232,29 @@ func _cut(data: PackedByteArray, spacing: float) -> bool:
 		near.add(points[k])
 	# Thin parts the grid missed
 	var extra := MeshTools.Spots.new(maxf(spacing, 1.0))
-	for p in size:
-		if shown[p] == 0:
-			continue
-		var place := Vector2(p % width + 0.5, p / width + 0.5)
-		if near.any_within(place, spacing * 0.9) or extra.any_within(place, spacing * 0.7):
-			continue
-		extra.add(place)
-		points.append(place)
+	for row in range(used.position.y, used.end.y):
+		for p in range(row * width + used.position.x, row * width + used.end.x):
+			if shown[p] == 0:
+				continue
+			var place := Vector2(p % width + 0.5, p / width + 0.5)
+			if near.any_within(place, spacing * 0.9) or extra.any_within(place, spacing * 0.7):
+				continue
+			extra.add(place)
+			points.append(place)
 	if points.size() < 3:
 		return false
 	var found := Geometry2D.triangulate_delaunay(points)
 	# Over the sprite (a pixel round it counting), or bridging a gap
 	var grown := shown.duplicate()
-	for p in size:
-		if shown[p] == 0:
-			continue
-		for side in PixelParts.sides_of(width):
-			var q: int = p + side
-			if q >= 0 and q < size and absi(q % width - p % width) <= 1:
-				grown[q] = 1
+	var sides := PixelParts.sides_of(width)
+	for row in range(used.position.y, used.end.y):
+		for p in range(row * width + used.position.x, row * width + used.end.x):
+			if shown[p] == 0:
+				continue
+			for side in sides:
+				var q: int = p + side
+				if q >= 0 and q < size and absi(q % width - p % width) <= 1:
+					grown[q] = 1
 	for k in range(0, found.size(), 3):
 		var i0 := found[k]
 		var i1 := found[k + 1]
@@ -254,21 +298,47 @@ func _cut(data: PackedByteArray, spacing: float) -> bool:
 ## triangles of several pieces are copied for each, and the copies tied together. Returns
 ## each corner's piece.
 func _split(side: KeySide) -> PackedInt32Array:
+	# The pixel at each triangle's middle, and the nearest pixel of a piece to it, worked out
+	# round the pieces' pixels and those middles only, which gives what the whole canvas
+	# would there (see PixelCanvas.distances)
+	var middles := PackedInt32Array()
+	var low := Vector2i(width, height)
+	var high := Vector2i(-1, -1)
+	for k in range(0, triangles.size(), 3):
+		var middle := (rest[triangles[k]] + rest[triangles[k + 1]] + rest[triangles[k + 2]]) / 3.0
+		var spot := Vector2i(
+			clampi(floori(middle.x), 0, width - 1), clampi(floori(middle.y), 0, height - 1)
+		)
+		middles.append(spot.y * width + spot.x)
+		low = low.min(spot)
+		high = high.max(spot)
+	var drawing := side.drawing
+	for p in mini(width * height, drawing.size()):
+		if drawing[p] >= 0:
+			var spot := Vector2i(p % width, p / width)
+			low = low.min(spot)
+			high = high.max(spot)
+	var area := Rect2i(low, high - low + Vector2i.ONE)
 	var labelled := PackedByteArray()
-	labelled.resize(width * height)
-	for p in mini(labelled.size(), side.drawing.size()):
-		labelled[p] = 1 if side.drawing[p] >= 0 else 0
-	var nearest: PackedInt32Array = PixelCanvas.distances(labelled, width, height, 1)[1]
+	labelled.resize(area.get_area())
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
+			var p := y * width + x
+			if p < drawing.size() and drawing[p] >= 0:
+				labelled[(y - low.y) * area.size.x + x - low.x] = 1
+	var nearest: PackedInt32Array = (
+		PixelCanvas.distances(labelled, area.size.x, area.size.y, 1, (width + height) * 4)[1]
+	)
 	var copies := {}
 	var first := {}
 	var corners := PackedVector2Array()
 	var pieces := PackedInt32Array()
 	for k in range(0, triangles.size(), 3):
-		var middle := (rest[triangles[k]] + rest[triangles[k + 1]] + rest[triangles[k + 2]]) / 3.0
-		var x := clampi(floori(middle.x), 0, width - 1)
-		var y := clampi(floori(middle.y), 0, height - 1)
-		var q := nearest[y * width + x]
-		var piece := side.drawing[q] if q >= 0 else -1
+		var middle := middles[k / 3]
+		var q := nearest[(middle / width - low.y) * area.size.x + middle % width - low.x]
+		if q >= 0:
+			q = (q / area.size.x + low.y) * width + q % area.size.x + low.x
+		var piece := drawing[q] if q >= 0 else -1
 		for e in 3:
 			var corner := triangles[k + e]
 			var key := Vector2i(corner, piece)
@@ -302,12 +372,17 @@ func _split(side: KeySide) -> PackedInt32Array:
 	return pieces
 
 
-## Where each of [param points] (on the canvas [param scale] times bigger) is in the
-## triangles where they rest: the triangle it's in, or the nearest, and how far along
-## each of its corners
-func locate(points: PackedVector2Array, scale: int) -> MeshTools.Located:
-	var big_width := width * scale
-	var big_height := height * scale
+## Where each of [param points] (on a canvas [param canvas] pixels, [param scale] times
+## as big as the one worked out, give or take a few pixels; just that much bigger when
+## not given) is in the triangles where they rest: the triangle it's in, or the nearest,
+## and how far along each of its corners
+func locate(
+	points: PackedVector2Array, scale: int, canvas := Vector2i.ZERO
+) -> MeshTools.Located:
+	if canvas == Vector2i.ZERO:
+		canvas = Vector2i(width, height) * scale
+	var big_width := canvas.x
+	var big_height := canvas.y
 	var best := PackedFloat32Array()
 	best.resize(big_width * big_height)
 	best.fill(-INF)
@@ -358,9 +433,11 @@ func _depths(side: KeySide) -> void:
 	for k in side.order.size():
 		rank[side.order[k]] = k + 1
 	depth.resize(width * height)
-	for p in mini(depth.size(), side.drawing.size()):
-		var r := side.drawing[p]
-		depth[p] = rank[r] if r >= 0 and r < rank.size() else 0
+	var drawing := side.drawing
+	for p in mini(depth.size(), drawing.size()):
+		var r := drawing[p]
+		if r >= 0 and r < rank.size():
+			depth[p] = rank[r]
 
 
 # --- Laying onto the other key
@@ -403,7 +480,7 @@ func _follow_pieces(
 		var r := corner_pieces[i]
 		target[i] = side.motions[r] * rest[i] if r >= 0 and r < side.motions.size() else rest[i]
 	_lay(located, goals, pulls, PackedInt32Array(), PackedVector2Array(), PackedFloat32Array(),
-		weights, PIECE_STIFFNESS, PIECE_ROUNDS)
+		PIECE_STIFFNESS, PIECE_ROUNDS)
 
 
 ## A round of matching the key's pixels ([param located]) to the other key's (both in
@@ -412,135 +489,32 @@ func _follow_pieces(
 func _match_round(
 	colors: MeshTools.Colors, located: MeshTools.Located, reach: float, stiffness: float
 ) -> void:
-	var count := located.pixels.size()
-	var turns := _triangle_turns(target)
-	var landed := located.at(target, triangles)
-	var own := colors.own
-	var others := colors.other
-	var own_edges := colors.own_edges
-	var goals := PackedVector2Array()
-	goals.resize(count)
-	var pulls := PackedFloat32Array()
-	pulls.resize(count)
-	# Candidate spots round where a pixel landed, nearest first
-	var r := ceili(reach)
-	var spots: Array[Vector2i] = []
-	for dy in range(-r, r + 1):
-		for dx in range(-r, r + 1):
-			if dx * dx + dy * dy <= reach * reach + 0.5:
-				spots.append(Vector2i(dx, dy))
-	spots.sort_custom(
-		func(m: Vector2i, n: Vector2i) -> bool: return m.length_squared() < n.length_squared()
+	var matching := MeshMatching.new(
+		colors, located, _triangle_turns(target), located.at(target, triangles), reach, self
 	)
-	var near_cost := NEARNESS * LIKENESS / maxf(reach * reach, 1.0)
-	var patch := PackedFloat32Array()
-	patch.resize(36)
-	for s in count:
-		var p := located.pixels[s]
-		var px := p % width
-		var py := p / width
-		# The pixel and those round it, as they are in the key
-		var k := 0
-		for oy in range(-1, 2):
-			for ox in range(-1, 2):
-				var q := PixelCanvas.index_at(px + ox, py + oy, width, height)
-				for c in 4:
-					patch[k * 4 + c] = own[q * 4 + c] if q >= 0 else 0.0
-				k += 1
-		# Turned as its triangle is, a whole pixel each
-		var turn := turns[located.triangles[s]]
-		var ways := PackedInt32Array()
-		for oy in range(-1, 2):
-			for ox in range(-1, 2):
-				var turned := Vector2(ox, oy).rotated(turn)
-				ways.append(floori(turned.x + 0.5))
-				ways.append(floori(turned.y + 0.5))
-		var place := landed[s]
-		var base := Vector2i(floori(place.x), floori(place.y))
-		var best := INF
-		var best_cost := 0.0
-		var best_spot := base
-		for spot in spots:
-			var cx := base.x + spot.x
-			var cy := base.y + spot.y
-			# Spots are nearest first, give or take where in its pixel it landed
-			var least := maxf(Vector2(spot).length() - 0.71, 0.0)
-			if near_cost * least * least >= best:
-				break
-			var apart := Vector2(cx + 0.5, cy + 0.5) - place
-			var prior := near_cost * apart.length_squared()
-			if prior >= best:
-				continue
-			var cost := 0.0
-			var limit := (best - prior) * 9.0
-			for j in 9:
-				var qx := cx + ways[j * 2]
-				var qy := cy + ways[j * 2 + 1]
-				var q := qy * width + qx
-				if qx < 0 or qy < 0 or qx >= width or qy >= height:
-					for c in 4:
-						cost += absf(patch[j * 4 + c])
-				else:
-					for c in 4:
-						cost += absf(others[q * 4 + c] - patch[j * 4 + c])
-				if cost >= limit:
-					break
-			if cost >= limit:
-				continue
-			cost /= 9.0
-			if cost + prior < best:
-				best = cost + prior
-				best_cost = cost
-				best_spot = Vector2i(cx, cy)
-		goals[s] = Vector2(best_spot) + Vector2(0.5, 0.5)
-		pulls[s] = (1.0 if own_edges[p] == 1 else FLAT_PULL) * exp(-best_cost / LIKENESS)
-	# The other key's edges each pull the landed pixel nearest and most like it
-	var other_edges := colors.other_edges
-	var cell := maxf(reach + 1.0, 1.0)
-	var buckets := {}
-	for s in count:
-		var key := Vector2i(floori(landed[s].x / cell), floori(landed[s].y / cell))
-		if not buckets.has(key):
-			buckets[key] = []
-		(buckets[key] as Array).append(s)
+	# Each pixel looks for its match on its own, and each edge for its pixel, so they're
+	# shared out among threads
+	var goals := PackedVector2Array()
+	var pulls := PackedFloat32Array()
+	var count := located.pixels.size()
+	goals.resize(count)
+	pulls.resize(count)
+	matching.all_pixel_matches(goals, pulls, PARALLEL_LEAST)
 	var edge_samples := PackedInt32Array()
 	var edge_goals := PackedVector2Array()
 	var edge_pulls := PackedFloat32Array()
-	for q in other_edges.size():
-		if other_edges[q] == 0:
-			continue
-		var spot := Vector2(q % width + 0.5, q / width + 0.5)
-		var home := Vector2i(floori(spot.x / cell), floori(spot.y / cell))
-		var best := INF
-		var best_cost := 0.0
-		var best_sample := -1
-		for by in range(home.y - 1, home.y + 2):
-			for bx in range(home.x - 1, home.x + 2):
-				for s: int in buckets.get(Vector2i(bx, by), []):
-					var apart := landed[s].distance_squared_to(spot)
-					if apart > cell * cell:
-						continue
-					var o := located.pixels[s] * 4
-					var cost := 0.0
-					for c in 4:
-						cost += absf(own[o + c] - others[q * 4 + c])
-					var total := cost + near_cost * apart
-					if total < best:
-						best = total
-						best_cost = cost
-						best_sample = s
-		if best_sample >= 0:
-			edge_samples.append(best_sample)
-			edge_goals.append(spot)
-			edge_pulls.append(EDGE_PULL * exp(-best_cost / LIKENESS))
-	_lay(located, goals, pulls, edge_samples, edge_goals, edge_pulls, weights, stiffness,
-		INNER_ROUNDS)
+	var edges := matching.edges.size()
+	for part: Array in Parallel.split(edges, PARALLEL_LEAST, matching.edge_pulls):
+		edge_samples.append_array(part[0])
+		edge_goals.append_array(part[1])
+		edge_pulls.append_array(part[2])
+	_lay(located, goals, pulls, edge_samples, edge_goals, edge_pulls, stiffness, INNER_ROUNDS)
 
 
-## Lays the triangles as rigidly as [param stiffness] says ([param stiff], how much each
-## triangle counts), the pixels of [param located] pulled to [param goals] by
-## [param pulls], and the ones [param extra] says to [param extra_goals] by
-## [param extra_pulls], [param rounds] times turning the triangles and laying them again
+## Lays the triangles as rigidly as [param stiffness] says (each counting its weight), the
+## pixels of [param located] pulled to [param goals] by [param pulls], and the ones
+## [param extra] says to [param extra_goals] by [param extra_pulls], [param rounds] times
+## turning the triangles and laying them again
 func _lay(
 	located: MeshTools.Located,
 	goals: PackedVector2Array,
@@ -548,10 +522,14 @@ func _lay(
 	extra: PackedInt32Array,
 	extra_goals: PackedVector2Array,
 	extra_pulls: PackedFloat32Array,
-	stiff: PackedFloat32Array,
 	stiffness: float,
 	rounds: int
 ) -> void:
+	if NativeKernels.kernels:
+		NativeKernels.lay(
+			self, located, goals, pulls, extra, extra_goals, extra_pulls, stiffness, rounds
+		)
+		return
 	var n := rest.size()
 	var matrix := MeshMatrix.new(n, _side_from, _side_to)
 	var data_side := PackedVector2Array()
@@ -559,21 +537,20 @@ func _lay(
 	var pulled := 0.0
 	for s in located.pixels.size():
 		pulled += pulls[s]
-		_add_pull(matrix, data_side, located, s, goals[s], pulls[s])
+	matrix.add_pulls(
+		triangles, _triangle_sides, located, PackedInt32Array(), goals, pulls, data_side
+	)
 	for e in extra.size():
 		pulled += extra_pulls[e]
-		_add_pull(matrix, data_side, located, extra[e], extra_goals[e], extra_pulls[e])
-	var stiff_total := 0.0
-	for k in stiff.size():
-		stiff_total += stiff[k] * 3.0
-	var scale := stiffness * pulled / maxf(stiff_total, 1e-9) * 3.0
-	var laplacian := MeshMatrix.new(n, _side_from, _side_to)
-	_add_laplacian(laplacian, stiff, 0.0)
-	matrix.add_scaled(laplacian, scale)
+	matrix.add_pulls(
+		triangles, _triangle_sides, located, extra, extra_goals, extra_pulls, data_side
+	)
+	var scale := stiffness * pulled / maxf(_stiff_total, 1e-9) * 3.0
+	matrix.add_scaled(_laplacian, scale)
 	matrix.add_diagonal(1e-6)
 	for _round in rounds:
 		var turns := _triangle_turns(target)
-		var wanted := _pulls(turns, PackedFloat32Array(), stiff, 1.0)
+		var wanted := _pulls(turns, PackedFloat32Array(), weights, 1.0)
 		var right := PackedVector2Array()
 		right.resize(n)
 		for i in n:
@@ -593,16 +570,23 @@ func _add_pull(
 ) -> void:
 	if pull <= 0.0:
 		return
-	var k := located.triangles[s]
+	var k := located.triangles[s] * 3
 	var w := located.weights[s]
-	var amounts := [w.x, w.y, w.z]
-	for e in 3:
-		var i := triangles[k * 3 + e]
-		var a: float = amounts[e]
-		matrix.diagonal[i] += pull * a * a
-		right[i] += goal * (pull * a)
-		var b: float = amounts[(e + 1) % 3]
-		matrix.sides[_triangle_sides[k * 3 + e]] += pull * a * b
+	var diagonal := matrix.diagonal
+	var sides := matrix.sides
+	# Each corner, and the side from it to the next round
+	var i := triangles[k]
+	diagonal[i] += pull * w.x * w.x
+	right[i] += goal * (pull * w.x)
+	sides[_triangle_sides[k]] += pull * w.x * w.y
+	i = triangles[k + 1]
+	diagonal[i] += pull * w.y * w.y
+	right[i] += goal * (pull * w.y)
+	sides[_triangle_sides[k + 1]] += pull * w.y * w.z
+	i = triangles[k + 2]
+	diagonal[i] += pull * w.z * w.z
+	right[i] += goal * (pull * w.z)
+	sides[_triangle_sides[k + 2]] += pull * w.z * w.x
 
 
 ## Adds the triangles' sides to [param matrix], each triangle counting [param stiff], and
@@ -810,6 +794,11 @@ func at(t: float) -> PackedVector2Array:
 		return rest.duplicate()
 	if t >= 1.0:
 		return target.duplicate()
+	_at_lock.lock()
+	var known: Variant = _at_known.get(t)
+	_at_lock.unlock()
+	if known != null:
+		return (known as PackedVector2Array).duplicate()
 	var count := triangles.size() / 3
 	var turns := PackedFloat32Array()
 	turns.resize(count)
@@ -853,6 +842,11 @@ func at(t: float) -> PackedVector2Array:
 		offset /= total
 	for i in n:
 		positions[i] += offset
+	_at_lock.lock()
+	if _at_known.size() >= AT_KEPT:
+		_at_known.clear()
+	_at_known[t] = positions.duplicate()
+	_at_lock.unlock()
 	return positions
 
 
@@ -962,10 +956,10 @@ func _nearest_place(positions: PackedVector2Array, point: Vector2) -> Vector3:
 
 
 ## Frames are drawn from [param full_data], the key drawn [param scale] times bigger than
-## worked out, on a canvas that much bigger (see [MeshDrawing]). Call before
-## [method drawn], once.
-func draw_from(full_data: PackedByteArray, scale: int) -> void:
-	_drawing = MeshDrawing.new(self, full_data, scale)
+## worked out, on a canvas [param full_width] pixels wide: the one worked out that much
+## bigger, give or take a few pixels (see [MeshDrawing]). Call before [method drawn], once.
+func draw_from(full_data: PackedByteArray, scale: int, full_width: int) -> void:
+	_drawing = MeshDrawing.new(self, full_data, scale, full_width)
 
 
 ## The key [param t] of the way to the other key, drawn as [method draw_from] says: each

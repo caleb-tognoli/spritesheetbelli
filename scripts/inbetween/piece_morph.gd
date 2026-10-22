@@ -41,6 +41,9 @@ const LOST_TURNS_APART := 2.0
 ## and drawn at their own: finding pieces and how they move works best at sizes like
 ## pixel art's, and much faster
 const ANALYSIS_SIZE := 160.0
+## Frames are put together and tidied up round what they show only, with this many pixels
+## round: more than tidying up and outlining can grow them by, and than they look round
+const AREA_MARGIN := 8
 
 ## The canvases' place, the same for both keys
 var rect := Rect2i()
@@ -109,32 +112,41 @@ static func find(
 	morph.zoom = shrink
 	var small_width := ceili(float(width) / shrink)
 	var small_height := ceili(float(height) / shrink)
-	var a_small := _shrunk(a_data, width, height, shrink)
-	var b_small := _shrunk(b_data, width, height, shrink)
+	# What's worked out for each key on its own is worked out for both at once
+	var datas: Array[PackedByteArray] = [a_data, b_data]
+	var shrunk := func(k: int) -> PackedByteArray: return _shrunk(datas[k], width, height, shrink)
+	var smalls: Array[PackedByteArray] = []
+	smalls.assign(Parallel.each(2, shrunk))
+	var a_small := smalls[0]
+	var b_small := smalls[1]
 	var small_size := size / shrink
 	var depth := clampf(roundf(small_size / 12.0), 2.0, 12.0)
-	var a_features := KeyFeatures.of(a_small, small_width, small_height, depth)
-	var b_features := KeyFeatures.of(b_small, small_width, small_height, depth)
+	var featured := func(k: int) -> KeyFeatures:
+		return KeyFeatures.of(smalls[k], small_width, small_height, depth)
+	var features: Array[KeyFeatures] = []
+	features.assign(Parallel.each(2, featured))
 	var split := KeyRegions.split_colors_of(a_small, b_small)
 	var painted := (
 		split[0] != PixelCanvas.colors(a_small)
 		or split[1] != PixelCanvas.colors(b_small)
 		or shrink > 1
 	)
-	var a_regions := KeyRegions.of(a_small, small_width, split[0])
-	var b_regions := KeyRegions.of(b_small, small_width, split[1])
-	progress.total += a_regions.count() + b_regions.count() + 2 * KeyMesh.steps()
+	var cut := func(k: int) -> KeyRegions: return KeyRegions.of(smalls[k], small_width, split[k])
+	var regions: Array[KeyRegions] = []
+	regions.assign(Parallel.each(2, cut))
+	progress.total += regions[0].count() + regions[1].count() + 2 * KeyMesh.steps()
 	var small_shift := morph.shift / shrink
-	var forward := RegionMotions.find(
-		a_regions, a_features, b_regions, b_features, small_shift, small_size, progress
-	)
+	# How each key moves to the other
+	var follow := func(k: int) -> RegionMotions:
+		var whole := small_shift if k == 0 else -small_shift
+		return RegionMotions.find(
+			regions[k], features[k], regions[1 - k], features[1 - k], whole, small_size, progress
+		)
+	var followers := Parallel.each(2, follow)
 	if progress.cancelled:
 		return null
-	var backward := RegionMotions.find(
-		b_regions, b_features, a_regions, a_features, -small_shift, small_size, progress
-	)
-	if progress.cancelled:
-		return null
+	var forward: RegionMotions = followers[0]
+	var backward: RegionMotions = followers[1]
 	for _pass in AGREEING:
 		forward.agree(backward)
 		backward.agree(forward)
@@ -166,25 +178,35 @@ static func find(
 					morph.smallest_part = mini(morph.smallest_part, part.size())
 		for k in b_shapes.size():
 			morph.key_shapes[k] += b_shapes[k]
-	for follower: RegionMotions in [forward, backward]:
+	# Each key's pieces, both at once
+	var settle := func(k: int) -> KeySide:
 		var side := KeySide.new()
 		side.painted = painted
-		side.data = a_small if follower == forward else b_small
-		side.merge(follower, small_width)
-		side.settle(b_small if follower == forward else a_small)
-		side.choose_layers(morph.blend, follower == backward, follower)
-		morph.sides.append(side)
+		side.data = smalls[k]
+		side.merge(followers[k], small_width)
+		side.settle(smalls[1 - k])
+		side.choose_layers(morph.blend, k == 1, followers[k])
+		return side
+	morph.sides.assign(Parallel.each(2, settle))
 	# Bent unless the pieces alone land well, laid with the pieces as worked out, before
 	# they're made the keys' size
 	if _fit_of(morph.sides[0]) > PIECES_FIT or _fit_of(morph.sides[1]) > PIECES_FIT:
-		var a_mesh := KeyMesh.lay(
-			a_small, b_small, small_width, small_height, morph.sides[0], progress
-		)
-		var b_mesh := KeyMesh.lay(
-			b_small, a_small, small_width, small_height, morph.sides[1], progress
-		)
+		# The keys' colours, the same for both
+		var known := KeyMesh.key_colors(a_small, b_small, small_width, small_height)
+		var lay := func(k: int) -> KeyMesh:
+			var colors := MeshTools.Colors.new()
+			colors.own = known[k]
+			colors.other = known[1 - k]
+			colors.own_edges = known[2 + k]
+			colors.other_edges = known[3 - k]
+			return KeyMesh.lay(
+				smalls[k], smalls[1 - k], small_width, small_height, morph.sides[k], progress, colors
+			)
+		var laid := Parallel.each(2, lay)
 		if progress.cancelled:
 			return null
+		var a_mesh: KeyMesh = laid[0]
+		var b_mesh: KeyMesh = laid[1]
 		var lost := morph.sides[0].lost or morph.sides[1].lost
 		if (
 			a_mesh
@@ -195,14 +217,19 @@ static func find(
 				> LOST_TURNS_APART
 			)
 		):
-			a_mesh.draw_from(a_data, shrink)
-			b_mesh.draw_from(b_data, shrink)
 			morph.meshes = [a_mesh, b_mesh]
+			var draw_from := func(k: int) -> void:
+				morph.meshes[k].draw_from(datas[k], shrink, width)
+			Parallel.each(2, draw_from)
 	else:
 		progress.done += 2 * KeyMesh.steps()
 	if shrink > 1:
-		morph.sides[0].enlarge(a_data, width, shrink)
-		morph.sides[1].enlarge(b_data, width, shrink)
+		var enlarge := func(k: int) -> void: morph.sides[k].enlarge(datas[k], width, shrink)
+		Parallel.each(2, enlarge)
+	elif morph.meshes.is_empty():
+		# Drawn as their pieces
+		for side in morph.sides:
+			side.make_smooth()
 	return morph
 
 
@@ -292,6 +319,8 @@ static func _pair_leftovers(
 static func _shrunk(data: PackedByteArray, width: int, height: int, shrink: int) -> PackedByteArray:
 	if shrink == 1:
 		return data
+	if NativeKernels.kernels:
+		return NativeKernels.shrunk(data, width, height, shrink)
 	var small_width := ceili(float(width) / shrink)
 	var small_height := ceili(float(height) / shrink)
 	var out := PixelCanvas.blank(small_width * small_height)
@@ -370,11 +399,23 @@ func frame(t: float, pins: Array[Dictionary] = []) -> Dictionary:
 		for k in mesh_from.size():
 			mesh_from[k] /= zoom
 			mesh_to[k] /= zoom
-		from_a = meshes[0].drawn(t, mesh_from, mesh_to)
-		from_b = meshes[1].drawn(1.0 - t, mesh_from, mesh_to)
+		# Both at once, on threads of their own for big frames
+		var draw := func(k: int) -> PackedByteArray:
+			return meshes[k].drawn(t if k == 0 else 1.0 - t, mesh_from, mesh_to)
+		var drawn := Parallel.each(2, draw, width * height >= FlowMorph.PARALLEL_PIXELS)
+		from_a = drawn[0]
+		from_b = drawn[1]
 	else:
 		from_a = sides[0].drawn(t, width, height)
 		from_b = sides[1].drawn(1.0 - t, width, height)
+	# Put together round what the drawings show only, which gives what the whole canvas
+	# would (see PixelCanvas.distances), with room for tidying up to grow it
+	var far_away := (width + height) * 4
+	var area := PixelCanvas.shown_rect_of(from_a, from_b, width, height, AREA_MARGIN)
+	from_a = PixelCanvas.region(from_a, width, area)
+	from_b = PixelCanvas.region(from_b, width, area)
+	width = area.size.x
+	height = area.size.y
 	var near_first := t <= 0.5
 	var near := from_a if near_first else from_b
 	var far := from_b if near_first else from_a
@@ -382,10 +423,16 @@ func frame(t: float, pins: Array[Dictionary] = []) -> Dictionary:
 	var far_mask := _mask(far)
 	var a_mask := near_mask if near_first else far_mask
 	var b_mask := far_mask if near_first else near_mask
-	var a_inside := PixelCanvas.distances(a_mask, width, height, 1)
-	var b_inside := PixelCanvas.distances(b_mask, width, height, 1)
-	var a_outside: PackedInt32Array = PixelCanvas.distances(a_mask, width, height, 0)[0]
-	var b_outside: PackedInt32Array = PixelCanvas.distances(b_mask, width, height, 0)[0]
+	# How far from each drawing's pixels and from the rest each pixel is, all at once on
+	# threads of their own for big frames
+	var masks: Array[PackedByteArray] = [a_mask, b_mask, a_mask, b_mask]
+	var measure := func(k: int) -> Array[PackedInt32Array]:
+		return PixelCanvas.distances(masks[k], width, height, 1 if k < 2 else 0, far_away)
+	var measured := Parallel.each(4, measure, width * height >= FlowMorph.PARALLEL_PIXELS)
+	var a_inside: Array[PackedInt32Array] = measured[0]
+	var b_inside: Array[PackedInt32Array] = measured[1]
+	var a_outside: PackedInt32Array = measured[2][0]
+	var b_outside: PackedInt32Array = measured[3][0]
 	var a_to_inside: PackedInt32Array = a_inside[0]
 	var b_to_inside: PackedInt32Array = b_inside[0]
 	var near_nearest: PackedInt32Array = (a_inside if near_first else b_inside)[1]
@@ -420,9 +467,14 @@ func frame(t: float, pins: Array[Dictionary] = []) -> Dictionary:
 			continue
 		for c in 4:
 			out[p * 4 + c] = from[source * 4 + c]
-	if not bent:
-		out = _pinned(out, t, pin_from, pin_to)
-	return _finished(out)
+	if not bent and not pin_from.is_empty():
+		# Pins bend the whole canvas
+		out = _pinned(PixelCanvas.placed(out, area, rect.size.x, rect.size.y), t, pin_from, pin_to)
+		area = PixelCanvas.shown_rect(out, rect.size.x, rect.size.y, AREA_MARGIN)
+		if not area.has_area():
+			area = Rect2i(0, 0, 1, 1)
+		out = PixelCanvas.region(out, rect.size.x, area)
+	return _finished(out, area)
 
 
 ## [param data], the frame [param t] of the way on the canvas, bent round the pins
@@ -444,17 +496,22 @@ func _pinned(
 	return PinWarp.warped(data, rect.size.x, rect.size.y, froms, tos)
 
 
-## [param out], a frame on the canvas, tidied up, outlined and cut to what it shows
-func _finished(out: PackedByteArray) -> Dictionary:
-	var width := rect.size.x
-	var height := rect.size.y
+## [param out], a frame on the part [param area] of the canvas round what it shows (see
+## [constant AREA_MARGIN]), tidied up, outlined and cut to what it shows
+func _finished(out: PackedByteArray, area: Rect2i) -> Dictionary:
+	var width := area.size.x
+	var height := area.size.y
 	PixelCleanup.tidy_data(out, width, height)
 	if not key_shapes.is_empty():
 		PixelCleanup.clear_floating(out, width, smallest_part, jag_alpha)
 		PixelCleanup.smooth_jags(out, width, height, key_shapes, jag_alpha, key_wide_shapes)
 	if outline:
 		outline.draw_data(out, width, height)
-	return PixelCanvas.cropped(out, rect)
+	var cut := PixelCanvas.cropped(out, Rect2i(rect.position + area.position, area.size))
+	if (cut.image as Image).is_invisible():
+		# Placed as an empty frame of the whole canvas is
+		cut.origin = rect.get_center()
+	return cut
 
 
 ## 1 where [param data] is shown, at least half opaque

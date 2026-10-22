@@ -2,6 +2,11 @@ class_name MeshTools
 extends RefCounted
 ## Helpers for [KeyMesh]: reading keys' pixels, and small containers
 
+## Rows of [method drawn_over] drawn on each thread at least
+const OVER_ROWS := 16
+## Pixels of [method premultiplied] and [method edges] worked out on each thread at least
+const PARALLEL_PIXELS := 16384
+
 
 ## The middles of the pixels of [param data] (a canvas [param canvas_width] wide) at least
 ## [param least_alpha] opaque
@@ -9,22 +14,50 @@ static func shown_points(
 	data: PackedByteArray, canvas_width: int, least_alpha: int
 ) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	for p in data.size() / 4:
-		if data[p * 4 + 3] >= least_alpha:
-			points.append(Vector2(p % canvas_width + 0.5, p / canvas_width + 0.5))
+	var count := data.size() / 4
+	var used := used_rect(data, canvas_width)
+	for y in range(used.position.y, used.end.y):
+		for p in range(y * canvas_width + used.position.x, y * canvas_width + used.end.x):
+			if p < count and data[p * 4 + 3] >= least_alpha:
+				points.append(Vector2(p % canvas_width + 0.5, p / canvas_width + 0.5))
 	return points
+
+
+## Where the pixels of [param data], read as a canvas [param canvas_width] pixels wide, that
+## aren't fully transparent are; its last row may be part of one
+static func used_rect(data: PackedByteArray, canvas_width: int) -> Rect2i:
+	var rows := ceili(float(data.size() / 4) / canvas_width)
+	var whole := data
+	if rows * canvas_width * 4 != data.size():
+		whole = data.duplicate()
+		whole.resize(rows * canvas_width * 4)
+	var img := Image.create_from_data(canvas_width, rows, false, Image.FORMAT_RGBA8, whole)
+	return img.get_used_rect()
 
 
 ## [param data]'s pixels premultiplied, 0 to 1, four numbers each
 static func premultiplied(data: PackedByteArray) -> PackedFloat32Array:
 	var result := PackedFloat32Array()
 	result.resize(data.size())
-	for p in data.size() / 4:
-		var alpha := data[p * 4 + 3] / 255.0
-		for c in 3:
-			result[p * 4 + c] = data[p * 4 + c] / 255.0 * alpha
-		result[p * 4 + 3] = alpha
+	# Shared out among threads, each writing its own pixels
+	Parallel.split(data.size() / 4, PARALLEL_PIXELS, _premultiplied_run.bind(data, result))
 	return result
+
+
+## [method premultiplied] for pixels [param start] to [param end] (past the last) of
+## [param data], into [param result]; those not shown stay 0
+static func _premultiplied_run(
+	start: int, end: int, data: PackedByteArray, result: PackedFloat32Array
+) -> void:
+	for p in range(start, end):
+		var i := p * 4
+		if data[i + 3] == 0:
+			continue
+		var alpha := data[i + 3] / 255.0
+		result[i] = data[i] / 255.0 * alpha
+		result[i + 1] = data[i + 1] / 255.0 * alpha
+		result[i + 2] = data[i + 2] / 255.0 * alpha
+		result[i + 3] = alpha
 
 
 ## 1 for each pixel of [param colors] (premultiplied, a canvas [param width] ×
@@ -34,32 +67,67 @@ static func premultiplied(data: PackedByteArray) -> PackedFloat32Array:
 static func edges(
 	colors: PackedFloat32Array, width: int, height: int, least_step: float
 ) -> PackedByteArray:
+	if NativeKernels.kernels:
+		return NativeKernels.edges(colors, width, height, least_step)
 	var result := PackedByteArray()
 	result.resize(width * height)
-	for y in height:
-		for x in width:
-			var p := y * width + x
-			if colors[p * 4 + 3] < 0.5:
-				continue
-			for side: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var q := PixelCanvas.index_at(x + side.x, y + side.y, width, height)
-				if q < 0 or colors[q * 4 + 3] < 0.5:
-					result[p] = 1
-					break
-				var step := 0.0
-				for c in 4:
-					step += absf(colors[q * 4 + c] - colors[p * 4 + c])
-				if step > least_step:
-					result[p] = 1
-					break
+	# Shared out among threads by rows, each writing its own
+	var rows := _edges_rows.bind(colors, width, height, least_step, result)
+	Parallel.split(height, ceili(float(PARALLEL_PIXELS) / maxi(width, 1)), rows)
 	return result
 
 
-## [param mask] closed: grown by a pixel to the sides, then shrunk back
-static func closed(mask: PackedByteArray, mask_width: int, mask_height: int) -> PackedByteArray:
+## [method edges] for rows [param start] to [param end] (past the last), into
+## [param result]
+static func _edges_rows(
+	start: int,
+	end: int,
+	colors: PackedFloat32Array,
+	width: int,
+	height: int,
+	least_step: float,
+	result: PackedByteArray
+) -> void:
+	# Right, left, down and up
+	var across := PackedInt32Array([1, -1, 0, 0])
+	var down := PackedInt32Array([0, 0, 1, -1])
+	for y in range(start, end):
+		for x in width:
+			var p := y * width + x
+			var i := p * 4
+			if colors[i + 3] < 0.5:
+				continue
+			for k in 4:
+				var qx := x + across[k]
+				var qy := y + down[k]
+				if qx < 0 or qy < 0 or qx >= width or qy >= height:
+					result[p] = 1
+					break
+				var j := (qy * width + qx) * 4
+				if colors[j + 3] < 0.5:
+					result[p] = 1
+					break
+				var step := 0.0
+				step += absf(colors[j] - colors[i])
+				step += absf(colors[j + 1] - colors[i + 1])
+				step += absf(colors[j + 2] - colors[i + 2])
+				step += absf(colors[j + 3] - colors[i + 3])
+				if step > least_step:
+					result[p] = 1
+					break
+
+
+## [param mask] closed: grown by a pixel to the sides, then shrunk back. Only worked out in
+## [param area] when given, which must hold every pixel of the mask with 2 round, or the
+## canvas's edge.
+static func closed(
+	mask: PackedByteArray, mask_width: int, mask_height: int, area := Rect2i()
+) -> PackedByteArray:
+	if not area.has_area():
+		area = Rect2i(0, 0, mask_width, mask_height)
 	var grown := mask.duplicate()
-	for y in mask_height:
-		for x in mask_width:
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
 			var p := y * mask_width + x
 			if mask[p] == 1:
 				continue
@@ -71,8 +139,8 @@ static func closed(mask: PackedByteArray, mask_width: int, mask_height: int) -> 
 			):
 				grown[p] = 1
 	var result := grown.duplicate()
-	for y in mask_height:
-		for x in mask_width:
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
 			var p := y * mask_width + x
 			if grown[p] == 0:
 				continue
@@ -87,10 +155,51 @@ static func closed(mask: PackedByteArray, mask_width: int, mask_height: int) -> 
 				or grown[p + mask_width] == 0
 			):
 				result[p] = 0
-	for p in mask.size():
-		if mask[p] == 1:
-			result[p] = 1
+	for y in range(area.position.y, area.end.y):
+		for p in range(y * mask_width + area.position.x, y * mask_width + area.end.x):
+			if mask[p] == 1:
+				result[p] = 1
 	return result
+
+
+## Pixel [param p] (in [param area]) of [param mask] closed, as [method closed] gives it
+## for [param area], worked out for it alone
+static func closed_at(
+	mask: PackedByteArray, mask_width: int, mask_height: int, area: Rect2i, p: int
+) -> int:
+	if mask[p] == 1:
+		return 1
+	if _grown_at(mask, mask_width, mask_height, area, p) == 0:
+		return 0
+	var x := p % mask_width
+	var y := p / mask_width
+	if x == 0 or x == mask_width - 1 or y == 0 or y == mask_height - 1:
+		return 0
+	for q: int in [p - 1, p + 1, p - mask_width, p + mask_width]:
+		if _grown_at(mask, mask_width, mask_height, area, q) == 0:
+			return 0
+	return 1
+
+
+## Pixel [param p] of [param mask] grown by a pixel to the sides in [param area], as in
+## [method closed]
+static func _grown_at(
+	mask: PackedByteArray, mask_width: int, mask_height: int, area: Rect2i, p: int
+) -> int:
+	if mask[p] == 1:
+		return 1
+	var x := p % mask_width
+	var y := p / mask_width
+	if x < area.position.x or y < area.position.y or x >= area.end.x or y >= area.end.y:
+		return 0
+	if (
+		(x > 0 and mask[p - 1] == 1)
+		or (x < mask_width - 1 and mask[p + 1] == 1)
+		or (y > 0 and mask[p - mask_width] == 1)
+		or (y < mask_height - 1 and mask[p + mask_width] == 1)
+	):
+		return 1
+	return 0
 
 
 ## The pixel of [param full_data] (a canvas [param big_width] x [param big_height]) at
@@ -144,23 +253,30 @@ static func largest_stretch(map: Transform2D) -> float:
 
 
 ## The triangles of [param mesh] over the sprite drawn with their corners at
-## [param positions] (on the canvas [param scale] times bigger), each pixel the nearest of
-## [param full_data] where it rests; triangles flipped over by then left out. Triangles
-## turned or grown much (see [constant KeyMesh.MAGNIFIED]) are drawn with their outline
-## smooth (where the key's pixels round the point it rests at, weighted by how near, are
-## at least half shown) rather than their pixels' stairs, and marked 1 in [param grown].
+## [param positions] (on [param full_data]'s canvas, [param canvas] pixels, [param scale]
+## times as big as the one worked out), each pixel the nearest of [param full_data] where it
+## rests; triangles flipped over by then left out. Triangles turned or grown much (see
+## [constant KeyMesh.MAGNIFIED]) are drawn with their outline smooth (where the key's
+## pixels round the point it rests at, weighted by how near, are at least half shown)
+## rather than their pixels' stairs, and marked 1 in [param grown].
 static func drawn_over(
 	mesh: KeyMesh,
 	positions: PackedVector2Array,
 	full_data: PackedByteArray,
 	scale: int,
+	canvas: Vector2i,
 	grown: PackedByteArray
 ) -> PackedByteArray:
-	var big_width := mesh.width * scale
-	var big_height := mesh.height * scale
+	var big_width := canvas.x
+	var big_height := canvas.y
 	var out := PixelCanvas.blank(big_width * big_height)
 	grown.resize(big_width * big_height)
 	grown.fill(0)
+	# Each triangle drawn: where it is, and where it rests; then drawn in rows shared out
+	# among threads, each drawing every triangle in turn over its own rows
+	var drawing := Overs.new()
+	var top := big_height
+	var bottom := 0
 	for k in range(0, mesh.triangles.size(), 3):
 		if mesh.weights[k / 3] < 1.0:
 			continue
@@ -183,10 +299,59 @@ static func drawn_over(
 			magnified = (
 				largest_stretch(growth) >= KeyMesh.MAGNIFIED or absf(turn) >= KeyMesh.TURNED
 			)
-		var x0 := maxi(floori(minf(c0.x, minf(c1.x, c2.x))), 0)
 		var y0 := maxi(floori(minf(c0.y, minf(c1.y, c2.y))), 0)
-		var x1 := mini(ceili(maxf(c0.x, maxf(c1.x, c2.x))) + 1, big_width)
 		var y1 := mini(ceili(maxf(c0.y, maxf(c1.y, c2.y))) + 1, big_height)
+		if y1 <= y0:
+			continue
+		var x0 := maxi(floori(minf(c0.x, minf(c1.x, c2.x))), 0)
+		var x1 := mini(ceili(maxf(c0.x, maxf(c1.x, c2.x))) + 1, big_width)
+		drawing.corners.append_array([c0, e1, e2, s0, s1 - s0, s2 - s0])
+		drawing.areas.append(area)
+		drawing.boxes.append_array([x0, y0, x1, y1])
+		drawing.magnified.append(1 if magnified else 0)
+		top = mini(top, y0)
+		bottom = maxi(bottom, y1)
+	if bottom > top:
+		var rows := _drawn_over_rows.bind(top, drawing, full_data, canvas, out, grown)
+		Parallel.split(bottom - top, OVER_ROWS, rows)
+	return out
+
+
+## Draws rows [param top] + [param start] to [param top] + [param end] (past the last) of
+## [method drawn_over], the triangles [param drawing] says, into [param out] and
+## [param grown]
+static func _drawn_over_rows(
+	start: int,
+	end: int,
+	top: int,
+	drawing: Overs,
+	full_data: PackedByteArray,
+	canvas: Vector2i,
+	out: PackedByteArray,
+	grown: PackedByteArray
+) -> void:
+	var big_width := canvas.x
+	var big_height := canvas.y
+	var corners := drawing.corners
+	var areas := drawing.areas
+	var boxes := drawing.boxes
+	var band_top := top + start
+	var band_bottom := top + end
+	for t in areas.size():
+		var y0 := maxi(boxes[t * 4 + 1], band_top)
+		var y1 := mini(boxes[t * 4 + 3], band_bottom)
+		if y1 <= y0:
+			continue
+		var x0 := boxes[t * 4]
+		var x1 := boxes[t * 4 + 2]
+		var c0 := corners[t * 6]
+		var e1 := corners[t * 6 + 1]
+		var e2 := corners[t * 6 + 2]
+		var s0 := corners[t * 6 + 3]
+		var side1 := corners[t * 6 + 4]
+		var side2 := corners[t * 6 + 5]
+		var area := areas[t]
+		var magnified := drawing.magnified[t] == 1
 		for py in range(y0, y1):
 			for px in range(x0, x1):
 				var d := Vector2(px + 0.5, py + 0.5) - c0
@@ -194,20 +359,34 @@ static func drawn_over(
 				var v := e1.cross(d) / area
 				if u < -0.02 or v < -0.02 or u + v > 1.02:
 					continue
-				var source := s0 + (s1 - s0) * u + (s2 - s0) * v
-				var q := (
-					smooth_covering(source, full_data, big_width, big_height)
-					if magnified
-					else nearest_covering(source, full_data, big_width, big_height)
-				)
+				var source := s0 + side1 * u + side2 * v
 				var p := py * big_width + px
+				var q := -1
 				if magnified:
+					q = smooth_covering(source, full_data, big_width, big_height)
 					grown[p] = 1
+				else:
+					q = (
+						clampi(floori(source.y), 0, big_height - 1) * big_width
+						+ clampi(floori(source.x), 0, big_width - 1)
+					)
+					if full_data[q * 4 + 3] == 0:
+						q = -1
 				if q < 0:
 					continue
-				for c in 4:
-					out[p * 4 + c] = full_data[q * 4 + c]
-	return out
+				out.encode_u32(p * 4, full_data.decode_u32(q * 4))
+
+
+## The triangles [method drawn_over] draws: for each, its first corner where it's drawn,
+## its sides from it there, its first corner where it rests and its sides from it there;
+## how big it is where it's drawn (twice its area); the rows and columns it covers (first
+## column, first row, past the last column, past the last row); and 1 when it's drawn
+## with its outline smooth
+class Overs:
+	var corners := PackedVector2Array()
+	var areas := PackedFloat64Array()
+	var boxes := PackedInt32Array()
+	var magnified := PackedByteArray()
 
 
 ## Both keys' pixels premultiplied, 0 to 1, four numbers each, and 1 for each pixel on
