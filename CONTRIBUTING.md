@@ -86,7 +86,7 @@ a constant.
    at the end, and the macOS `short_version` and `version`).
 2. Rename `## Unreleased` in `CHANGELOG.md` to `## <version>`: that section becomes the
    release notes.
-3. Push a tag such as `v1.0.0`.
+3. Push a tag such as `v1.1.0`.
 
 The Release workflow stops if the tag doesn't match those versions or the changelog has
 no section for it. Otherwise it builds every platform, attaches the builds to a GitHub

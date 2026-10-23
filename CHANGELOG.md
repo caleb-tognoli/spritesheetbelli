@@ -3,14 +3,18 @@
 All notable changes to spritesheetbelli. The version is set in `project.godot`
 (`application/config/version`) and shown in Help > About.
 
-## Unreleased
+## 1.1.0
+
+In-betweens are made three to four times faster and remember how they were made, so they
+can be made again when a key changes. Export offers ready-made exports for each engine,
+dropping files shows where they'll go, and many smaller parts of the app are clearer.
 
 ### Added
 - The start screen's drop zone lights up in the accent colour and says "Drop to open"
   while files are dragged over the window, and with a document open the canvas does,
-  saying "Drop to add", on Windows, macOS, Linux with X11 and in browsers. Godot doesn't tell, so a small native library in the app does (not on
-  Wayland, where dropping works as before).
-
+  saying "Drop to add", on Windows, macOS, Linux with X11 and in browsers. Godot doesn't
+  tell, so a small native library in the app does (not on Wayland, where dropping works
+  as before).
 - In-betweens remember how they were made: their keys, how many, the spacing, the movement
   and the pins, saved with the project. When a key changes (redrawn and reloaded, flipped,
   moved in its cell…) they show a warning in their corner and the status bar says they're

@@ -1,6 +1,6 @@
 ; Windows installer, built by the Release workflow with Inno Setup 6:
 ;   python wizard_images.py <images>
-;   iscc /DVersion=1.0.0 /DBuild=<folder of the exported app> /DImages=<images> /O<output folder> installer.iss
+;   iscc /DVersion=1.1.0 /DBuild=<folder of the exported app> /DImages=<images> /O<output folder> installer.iss
 ; Installs for the current user (no administrator rights needed), makes spritesheetbelli
 ; the app that opens .sbelli projects, and offers it in "Open with" for the files it can
 ; import, without taking them over. The native library is installed when the export has it.

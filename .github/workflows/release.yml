@@ -1,6 +1,6 @@
 name: Release
 
-# Push a tag like v1.0.0 to build every platform, attach the builds to a GitHub
+# Push a tag like v1.1.0 to build every platform, attach the builds to a GitHub
 # release and publish the web version to GitHub Pages. The tag must match the version
 # in project.godot and export_presets.cfg, and the release notes are the CHANGELOG.md
 # section of that version (see .github/scripts/release_notes.py). Run it by hand to
