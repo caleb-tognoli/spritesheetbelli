@@ -3,6 +3,8 @@ extends Node
 ## translate it first.
 
 const ERROR_ICON := preload("res://assets/icons/StatusWarning.svg")
+const DONE_ICON := preload("res://assets/icons/StatusSuccess.svg")
+const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
 
 var message_dialog := AcceptDialog.new()
 ## The text of [member message_dialog], below [member message_icon]
@@ -12,6 +14,15 @@ var message_icon := TextureRect.new()
 var confirm_dialog := ConfirmationDialog.new()
 var _confirm_action: Callable
 var _toasts := VBoxContainer.new()
+## Toasts stack at the bottom middle of this, like the canvas, so they don't cover the
+## panels around it, or of the window while it's null or hidden
+var toast_area: Control:
+	set(value):
+		toast_area = value
+		if value and not value.resized.is_connected(_place_toasts):
+			value.resized.connect(_place_toasts)
+			value.visibility_changed.connect(_place_toasts)
+		_place_toasts()
 ## Holds the overlay, over the window on top, see [method _show_overlay]. It's made again
 ## when it was freed with that window.
 var _progress_layer: OverlayLayer
@@ -40,16 +51,14 @@ func _ready() -> void:
 	)
 	confirm_dialog.canceled.connect(func() -> void: _confirm_action = Callable())
 
-	# Toasts stack at the bottom-right of the main window, above everything
+	# Toasts go over everything in the main window, see [member toast_area]
 	var layer := CanvasLayer.new()
 	layer.layer = 100
 	add_child(layer)
-	_toasts.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	_toasts.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_toasts.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_toasts.position -= Vector2(16, 40)
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toasts.alignment = BoxContainer.ALIGNMENT_END
+	_toasts.resized.connect(_place_toasts)
+	get_viewport().size_changed.connect(_place_toasts)
 	layer.add_child(_toasts)
 	_build_progress_overlay()
 
@@ -85,19 +94,75 @@ func _build_message(dialog: AcceptDialog) -> void:
 	box.add_child(message_label)
 
 
-## A short message that fades away on its own, for things that went well
-func toast(text: String, seconds := 3.0) -> void:
+## A short message that fades away on its own, for things that went well. With
+## [param done], it starts with a check mark, for work finished, like an export. With
+## [param on_show], a Show button with a folder icon after it runs it, like showing the
+## files in the file manager; the message then stays while the mouse is over it.
+func toast(text: String, seconds := 3.0, done := false, on_show := Callable()) -> void:
 	var panel := PanelContainer.new()
 	panel.theme_type_variation = &"Toast"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override(&"separation", 8)
+	panel.add_child(row)
+	if done:
+		var check := TextureRect.new()
+		check.texture = DONE_ICON
+		check.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
+		row.add_child(check)
 	var label := Label.new()
 	label.text = text
-	panel.add_child(label)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(label)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_toasts.add_child(panel)
+	_fade(panel, seconds)
+	if not on_show.is_valid():
+		return
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	var button := Button.new()
+	button.text = tr("Show")
+	button.icon = FOLDER_ICON
+	button.flat = true
+	button.tooltip_text = "Show in File Manager"
+	button.focus_mode = Control.FOCUS_NONE
+	# On the last line, when the message has more
+	button.size_flags_vertical = Control.SIZE_SHRINK_END
+	button.pressed.connect(on_show)
+	row.add_child(button)
+	# Kept while the mouse is on it, so the button can be reached
+	panel.mouse_entered.connect(
+		func() -> void:
+			panel.modulate.a = 1.0
+			_fade(panel, -1)
+	)
+	panel.mouse_exited.connect(_fade.bind(panel, 2.0))
+
+
+## Fades [param panel], a toast, away after [param seconds], or stops it fading when -1
+func _fade(panel: Control, seconds: float) -> void:
+	if panel.has_meta(&"fade"):
+		(panel.get_meta(&"fade") as Tween).kill()
+	if seconds < 0:
+		return
 	var tween := panel.create_tween()
 	tween.tween_interval(seconds)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.4)
 	tween.tween_callback(panel.queue_free)
+	panel.set_meta(&"fade", tween)
+
+
+## Puts the toasts at the bottom middle of [member toast_area], or of the window
+func _place_toasts() -> void:
+	const MARGIN := 16.0
+	var area := Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
+	if is_instance_valid(toast_area) and toast_area.is_visible_in_tree():
+		area = toast_area.get_global_rect()
+	_toasts.size = _toasts.get_combined_minimum_size()
+	_toasts.position = Vector2(
+		area.get_center().x - _toasts.size.x / 2, area.end.y - _toasts.size.y - MARGIN
+	)
 
 
 ## Shows a progress bar over the window, which also blocks clicks. Nothing appears for
@@ -208,7 +273,7 @@ func get_toasts() -> PackedStringArray:
 	var texts: PackedStringArray = []
 	for panel in _toasts.get_children():
 		if not panel.is_queued_for_deletion():
-			texts.append((panel.get_child(0) as Label).text)
+			texts.append((panel.find_children("*", "Label", true, false)[0] as Label).text)
 	return texts
 
 

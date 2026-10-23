@@ -178,6 +178,7 @@ func set_cell(coord: Vector2i, data: Dictionary) -> void:
 	set_frame(coord, img, data.get("source", {}), data.get("origin"))
 	_set_or_erase(_pivots, coord, data.get("pivot"))
 	_set_or_erase(_placements, coord, data.get("placement"))
+	_set_or_erase(_inbetweens, coord, data.get("inbetween"))
 	end_batch()
 
 
@@ -235,6 +236,7 @@ func get_state() -> Dictionary:
 		"sources": _sources.duplicate(),
 		"pivots": _pivots.duplicate(),
 		"placements": _placements.duplicate(),
+		"inbetweens": _inbetweens.duplicate(true),
 		"layout": _layout,
 		"atlas": _atlas.duplicate(),
 		"sprite_size": _sprite_size,
@@ -258,6 +260,7 @@ func set_state(state: Dictionary) -> void:
 	_sources.assign(state.get("sources", {}))
 	_pivots.assign(state.get("pivots", {}))
 	_placements.assign(state.get("placements", {}))
+	_inbetweens.assign(state.get("inbetweens", {}).duplicate(true))
 	_layout = state.get("layout", Layout.GRID)
 	_atlas = state.get("atlas", {}).duplicate()
 	_sprite_size = state.get("sprite_size", Vector2i.ZERO)
@@ -301,9 +304,7 @@ func set_grid_size(size: Vector2i) -> void:
 			_frames.erase(coord)
 			_erase_cell_data(coord)
 	_locked.assign(_locked.filter(is_inside))
-	_remap_animation_cells(
-		func(cell: Vector2i) -> Vector2i: return cell if is_inside(cell) else NO_CELL
-	)
+	_remap_references(func(cell: Vector2i) -> Vector2i: return cell if is_inside(cell) else NO_CELL)
 	_changed()
 
 
@@ -479,7 +480,7 @@ func move_frame(from: Vector2i, to: Vector2i, copy := false) -> void:
 			_frames[from] = other
 			_restore_cell_data(from, saved, to)
 	set_frame(to, img)
-	_restore_cell_data(to, saved, from)
+	_restore_cell_data(to, saved, from, copy)
 	end_batch()
 
 
@@ -507,7 +508,7 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 			_erase_cell_data(coord)
 	for coord in moving:
 		set_frame(coord + offset, moving[coord])
-		_restore_cell_data(coord + offset, saved, coord)
+		_restore_cell_data(coord + offset, saved, coord, copy)
 	# Frames that were in the way go to the cells that were freed
 	if not copy:
 		var freed: Array[Vector2i] = []
@@ -523,7 +524,7 @@ func move_frames(coords: Array[Vector2i], offset: Vector2i, copy := false) -> Ar
 			moved[coord] = coord + offset
 		for i in mini(displaced_cells.size(), freed.size()):
 			moved[displaced_cells[i]] = freed[i]
-		_remap_animation_cells(func(cell: Vector2i) -> Vector2i: return moved.get(cell, cell))
+		_remap_references(func(cell: Vector2i) -> Vector2i: return moved.get(cell, cell))
 	end_batch()
 	return targets
 
@@ -618,7 +619,7 @@ func _remap_cells(map: Callable) -> void:
 			moved_frames[moved] = _frames[cell]
 	_frames = moved_frames
 	_remap_cell_data(map)
-	_remap_animation_cells(map)
+	_remap_references(map)
 
 
 #endregion
@@ -701,8 +702,9 @@ func get_animation_names() -> PackedStringArray:
 
 
 ## Changes the cells of every animation with [param map], which returns a new cell or
-## NO_CELL to drop it
-func _remap_animation_cells(map: Callable) -> void:
+## NO_CELL to drop it, and the keys of every in-between, which follow their frames too
+func _remap_references(map: Callable) -> void:
+	_remap_inbetween_keys(map)
 	for data in _animations:
 		var cells: Array[Vector2i] = []
 		var durations: Array[float] = []

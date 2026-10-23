@@ -42,6 +42,34 @@ func set_offset_and_spacing(offset: int, spacing: int) -> void:
 		field.value = spacing
 
 
+func zoom_key(keycode: Key, ctrl := false) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.ctrl_pressed = ctrl
+	event.pressed = true
+	return event
+
+
+func test_zoom_keys_work_as_on_the_main_canvas() -> void:
+	window.setup(trailing_spacing_sheet())
+	var grid := window.preview_area.spritesheet_preview
+	grid.set_zoom(1.0)
+	grid._unhandled_input(zoom_key(KEY_EQUAL, true))
+	assert_true(grid.camera.zoom.x > 1.0, "Ctrl+= zooms in on the grid")
+	grid._unhandled_input(zoom_key(KEY_0, true))
+	assert_eq(grid.camera.zoom.x, PixelZoom.actual_size(grid), "Ctrl+0")
+
+	window.show()
+	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
+	var boxes := window.box_editor.view
+	boxes.set_zoom(1.0)
+	# Whatever has the focus, unless it takes the key
+	boxes._unhandled_key_input(zoom_key(KEY_EQUAL, true))
+	assert_true(boxes.zoom > 1.0, "and on the sprites found")
+	boxes._unhandled_key_input(zoom_key(KEY_F))
+	assert_true(boxes._fitted, "F fits")
+
+
 func test_the_cell_size_sets_the_grid() -> void:
 	window.setup(trailing_spacing_sheet())
 	set_offset_and_spacing(4, 2)
@@ -120,6 +148,24 @@ func test_the_last_pair_set_is_kept() -> void:
 	window.set_cut(AddSpritesheetWindow.Cut.DETECT)
 	window.set_cut(AddSpritesheetWindow.Cut.GRID)
 	assert_eq(get_grid(), Vector2i(2, 2), "the same grid after cutting another way")
+
+
+func test_spacing_after_every_cell_is_guessed() -> void:
+	# 16 px tiles with 1 px after each, like Kenney's sheets: 6×3 of 17 px
+	var img := Image.create_empty(102, 51, false, Image.FORMAT_RGBA8)
+	for row in 3:
+		for column in 6:
+			img.fill_rect(Rect2i(Vector2i(column, row) * 17, Vector2i(16, 16)), Color.RED)
+	window.setup(img)
+	assert_eq(get_grid(), Vector2i(6, 3))
+	assert_eq(get_cell_size(), Vector2i(16, 16), "not 17×17 with an empty edge")
+	assert_eq(Vector2i(int(window.spacing_x.value), int(window.spacing_y.value)), Vector2i.ONE)
+	assert_eq(window.spritesheet.frames.size(), 18)
+	for coord: Vector2i in window.spritesheet.frames:
+		assert_eq(window.spritesheet.frames[coord].get_size(), Vector2i(16, 16))
+
+	window.setup(trailing_spacing_sheet())
+	assert_eq(window.spacing_x.value, 0.0, "a new sheet is guessed again")
 
 
 func test_a_sprite_size_in_the_name_is_kept() -> void:

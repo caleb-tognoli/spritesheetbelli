@@ -9,7 +9,7 @@ extends ConfirmationDialog
 ## listed beside it: clicking one shows it in the player. A line at the bottom says what's
 ## being worked on. Generate adds the frames once they're all made: right away, or as soon
 ## as they are. Opened from the sheet with two frames selected, or from an animation's
-## timeline.
+## timeline, or to make in-betweens again in their places, see [method remake].
 
 ## Emitted with the frames made, to add between keys [param a] and [param b], see
 ## [method InBetween.add]
@@ -18,9 +18,12 @@ signal inbetweens_chosen(
 	b: Vector2i,
 	frames: Array[Dictionary],
 	place: int,
-	to_animations: bool,
-	keep_length: bool,
+	animations: Dictionary,
+	how: Dictionary,
 )
+## Emitted with the frames made again for the in-betweens at [param cells], see
+## [method InBetween.replace]
+signal inbetweens_remade(cells: Array[Vector2i], frames: Array[Dictionary], how: Dictionary)
 
 ## Side of each frame in the list
 const TILE := 72
@@ -40,10 +43,12 @@ var find_motion_button := Button.new()
 var count_spin := SpinBox.new()
 var spacing_option := OptionButton.new()
 var place_option := OptionButton.new()
-var animations_check := CheckBox.new()
-## Whether the new frames share the time of the key before them, see
-## [method SheetAnimation.insert_between]
-var keep_length_check := CheckBox.new()
+## The animations playing the keys one after the other, in either order: whether the new
+## frames go in each, and whether they share the time of the key before them, keeping its
+## length (see [method SheetAnimation.insert_between])
+var animation_rows := GridContainer.new()
+## Says so, in place of the rows, when no animation plays the keys one after the other
+var no_animations_label := Label.new()
 ## How fast the preview plays, as the animation of the keys does
 var preview_fps := DEFAULT_FPS
 ## The keys with the frames between them, in order, see [InBetweenTile]
@@ -77,6 +82,13 @@ var _found_motion: Variant = null
 var _motion_edited := false
 ## Whether Generate was pressed before every frame was made: they're added once they are
 var _adding := false
+## The rows of [member animation_rows]: the animation's [code]index[/code], and its
+## [code]add[/code] and [code]keep[/code] check boxes
+var _rows: Array[Dictionary] = []
+## Whether new rows keep their animation's length, as chosen last
+var _keep_length := false
+## The in-betweens being made again, see [method remake], or none
+var _remaking: Array[Vector2i] = []
 var _status_spinner := BusySpinner.new()
 ## What can't change once Generate is pressed
 var _settings: Array[Control] = []
@@ -160,7 +172,6 @@ func _init() -> void:
 			_ask()
 	)
 	spacing_option.item_selected.connect(func(_index: int) -> void: _ask())
-	animations_check.toggled.connect(func(on: bool) -> void: keep_length_check.disabled = not on)
 	confirmed.connect(_on_confirmed)
 	visibility_changed.connect(
 		func() -> void:
@@ -252,30 +263,7 @@ func _build_settings() -> Control:
 		[place_label, place_option]
 	)
 
-	animations_check.text = "Add to animations"
-	settings.add_child(animations_check)
-	HelpTooltip.explain(
-		L10n.mark("Add to animations"),
-		L10n.mark(
-			(
-				"Play the new frames between the keys wherever an animation plays them one "
-				+ "after the other"
-			)
-		),
-		[animations_check]
-	)
-	keep_length_check.text = "Keep animation length"
-	settings.add_child(keep_length_check)
-	HelpTooltip.explain(
-		L10n.mark("Keep animation length"),
-		L10n.mark(
-			(
-				"The new frames share the time of the key before them, so the animations last "
-				+ "as long as before"
-			)
-		),
-		[keep_length_check]
-	)
+	settings.add_child(_build_animations())
 	clear_pins_button.text = "Clear pins"
 	clear_pins_button.icon = preload("res://assets/icons/Clear.svg")
 	clear_pins_button.tooltip_text = "Take every pin away"
@@ -287,9 +275,89 @@ func _build_settings() -> Control:
 	LabelLink.link(motion_label, motion_x)
 	LabelLink.link(place_label, place_option)
 	_settings.append_array([count_spin, spacing_option, motion_x, motion_y, find_motion_button])
-	_settings.append_array([place_option, animations_check, keep_length_check])
+	_settings.append(place_option)
 	_settings.append_array([pins_view, clear_pins_button])
 	return settings
+
+
+## The animations to add the new frames to, with a heading over each column, explained
+## when hovered: filled in by [method _fill_animations]
+func _build_animations() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	animation_rows.columns = 2
+	animation_rows.add_theme_constant_override("h_separation", 16)
+	box.add_child(animation_rows)
+	var add_heading := _option_label("Add to animations", animation_rows)
+	add_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	HelpTooltip.explain(
+		L10n.mark("Add to animations"),
+		L10n.mark(
+			(
+				"Play the new frames between the keys wherever an animation plays them one "
+				+ "after the other"
+			)
+		),
+		[add_heading]
+	)
+	var keep_heading := _option_label(L10n.mark("Keep length"), animation_rows)
+	HelpTooltip.explain(
+		L10n.mark("Keep animation length"),
+		L10n.mark(
+			(
+				"The new frames share the time of the key before them, so the animations last "
+				+ "as long as before"
+			)
+		),
+		[keep_heading]
+	)
+	no_animations_label.text = "No animation plays these two frames one after the other."
+	no_animations_label.theme_type_variation = &"StatusLabel"
+	no_animations_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	no_animations_label.custom_minimum_size.x = SIDE
+	box.add_child(no_animations_label)
+	return box
+
+
+## Lists the animations playing keys [param a] and [param b] of [param sheet] one after the
+## other, in either order, each ticked to get the new frames
+func _fill_animations(sheet: Spritesheet, a: Vector2i, b: Vector2i) -> void:
+	for row in _rows:
+		for check: CheckBox in [row.add, row.keep]:
+			animation_rows.remove_child(check)
+			check.queue_free()
+	_rows.clear()
+	_keep_length = Settings.get_value(&"inbetween_keep_length")
+	var headings := animation_rows.get_children()
+	var animations := sheet.animations
+	for i in animations.size():
+		if animations[i].count_between(a, b) == 0:
+			continue
+		var add := CheckBox.new()
+		add.text = animations[i].name
+		add.icon = AppTheme.swatch(animations[i].color)
+		# In its own colour, as buttons tint their icons
+		for state: StringName in [&"normal", &"pressed", &"hover", &"hover_pressed", &"focus"]:
+			add.add_theme_color_override("icon_%s_color" % state, Color.WHITE)
+		add.button_pressed = true
+		add.clip_text = true
+		add.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		add.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var keep := CheckBox.new()
+		keep.button_pressed = _keep_length
+		keep.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		# Explained like their column's heading
+		for pair: Array in [[add, headings[0]], [keep, headings[1]]]:
+			var heading: Control = pair[1]
+			var title: String = heading.get_meta(HelpTooltip.TITLE_META)
+			HelpTooltip.explain(title, heading.tooltip_text, [pair[0]])
+		add.toggled.connect(func(on: bool) -> void: keep.disabled = not on)
+		keep.toggled.connect(func(on: bool) -> void: _keep_length = on)
+		animation_rows.add_child(add)
+		animation_rows.add_child(keep)
+		_rows.append({"index": i, "add": add, "keep": keep})
+	animation_rows.visible = not _rows.is_empty()
+	no_animations_label.visible = _rows.is_empty()
 
 
 ## A label saying [param text], added to [param grid]
@@ -304,6 +372,8 @@ func _option_label(text: String, grid: GridContainer) -> Label:
 ## used last and the movement found, played at [param fps], or else as fast as an
 ## animation of the keys plays
 func open(sheet: Spritesheet, a: Vector2i, b: Vector2i, fps := 0.0) -> void:
+	_remaking.clear()
+	_show_mode()
 	_sheet = sheet
 	_a = a
 	_b = b
@@ -326,15 +396,7 @@ func open(sheet: Spritesheet, a: Vector2i, b: Vector2i, fps := 0.0) -> void:
 	var spacing_index := spacing_option.get_item_index(Settings.get_value(&"inbetween_spacing"))
 	spacing_option.select(maxi(spacing_index, 0))
 	_fill_places()
-	var played_by_animations := false
-	for animation in sheet.animations:
-		if animation.count_between(a, b) > 0:
-			played_by_animations = true
-	animations_check.visible = played_by_animations
-	animations_check.button_pressed = true
-	keep_length_check.visible = played_by_animations
-	keep_length_check.disabled = false
-	keep_length_check.button_pressed = Settings.get_value(&"inbetween_keep_length")
+	_fill_animations(sheet, a, b)
 	for tile in _tiles:
 		frame_list.remove_child(tile)
 		tile.queue_free()
@@ -347,6 +409,44 @@ func open(sheet: Spritesheet, a: Vector2i, b: Vector2i, fps := 0.0) -> void:
 	# Frames are made once the movement is found, see _on_motion_found
 	maker.start(_keys[0], _keys[1])
 	popup_centered()
+
+
+## Opens to make the in-betweens at [param cells] of [param sheet] again, in their
+## places (see [method InBetween.run_of]): from their keys as they are now, made as they
+## were, as many, spread and moved the same way and with the same pins, any of which but
+## how many can be changed
+func remake(sheet: Spritesheet, cells: Array[Vector2i]) -> void:
+	var recipe: Dictionary = sheet.inbetweens[cells[0]]
+	open(sheet, recipe.keys[0], recipe.keys[1])
+	_remaking = cells.duplicate()
+	_show_mode()
+	count_spin.set_value_no_signal(cells.size())
+	spacing_option.select(maxi(spacing_option.get_item_index(recipe.spacing), 0))
+	motion_x.set_value_no_signal(recipe.motion.x)
+	motion_y.set_value_no_signal(recipe.motion.y)
+	_motion_edited = true
+	pins_view.pins.assign(recipe.pins.duplicate(true))
+	pins_view.queue_redraw()
+	clear_pins_button.disabled = pins_view.pins.is_empty()
+	_fill_list()
+	_ask()
+
+
+## Shows what's being done: making new in-betweens, with where they go, or making some
+## again, which stay where they are, in as many frames
+func _show_mode() -> void:
+	var remaking := not _remaking.is_empty()
+	title = "Regenerate In-Betweens" if remaking else "Generate In-Betweens"
+	ok_button_text = "Regenerate" if remaking else "Generate"
+	place_option.disabled = remaking
+	count_spin.editable = not remaking
+	animation_rows.visible = animation_rows.visible and not remaking
+	no_animations_label.text = (
+		L10n.mark("They stay where they are, in their animations")
+		if remaking
+		else "No animation plays these two frames one after the other."
+	)
+	no_animations_label.visible = remaking or _rows.is_empty()
 
 
 ## Whether every frame is made, so Generate adds them right away
@@ -574,12 +674,16 @@ func _lock(locked: bool) -> void:
 			(control as BaseButton).disabled = locked
 		elif control is SpinBox:
 			(control as SpinBox).editable = not locked
+	for row in _rows:
+		row.add.disabled = locked
+		row.keep.disabled = locked or not row.add.button_pressed
 	pins_view.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
-	ok_button_text = "Generating…" if locked else "Generate"
 	if not locked:
+		_show_mode()
 		find_motion_button.disabled = not _motion_edited or _found_motion == null
 		clear_pins_button.disabled = pins_view.pins.is_empty()
-		keep_length_check.disabled = not animations_check.button_pressed
+	else:
+		ok_button_text = "Generating…"
 
 
 ## Adds the frames once they're all made
@@ -591,14 +695,27 @@ func _on_confirmed() -> void:
 
 func _add() -> void:
 	var frames := maker.get_frames()
+	var how := {
+		"spacing": spacing_option.get_selected_id(),
+		"motion": _motion(),
+		"pins": maker.get_pins().duplicate(true),
+	}
+	if not _remaking.is_empty():
+		var cells := _remaking.duplicate()
+		hide()
+		_lock(false)
+		inbetweens_remade.emit(cells, frames, how)
+		return
 	var place := place_option.get_selected_id()
 	Settings.set_value(&"inbetween_count", int(count_spin.value))
 	Settings.set_value(&"inbetween_place", place)
 	Settings.set_value(&"inbetween_spacing", spacing_option.get_selected_id())
-	var to_animations := animations_check.visible and animations_check.button_pressed
-	if to_animations:
-		Settings.set_value(&"inbetween_keep_length", keep_length_check.button_pressed)
-	var keep_length := to_animations and keep_length_check.button_pressed
+	var animations := {}
+	for row in _rows:
+		if row.add.button_pressed:
+			animations[row.index] = row.keep.button_pressed
+	if not animations.is_empty():
+		Settings.set_value(&"inbetween_keep_length", _keep_length)
 	hide()
 	_lock(false)
-	inbetweens_chosen.emit(_a, _b, frames, place, to_animations, keep_length)
+	inbetweens_chosen.emit(_a, _b, frames, place, animations, how)

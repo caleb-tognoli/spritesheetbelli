@@ -5,7 +5,9 @@ extends ConfirmationDialog
 ## Emitted with the chosen outline
 signal outline_chosen(color: Color, thickness: int, corners: bool)
 
-var picker := ColorPickerButton.new()
+## The colour, with its code, like the other colour fields
+var picker_field := ColorField.new()
+var picker := picker_field.picker
 var thickness := SpinBox.new()
 var corners := CheckBox.new()
 
@@ -24,9 +26,9 @@ func _init() -> void:
 	var color_label := Label.new()
 	color_label.text = "Colour"
 	grid.add_child(color_label)
-	picker.custom_minimum_size = Vector2(80, 0)
-	picker.color = Color.BLACK
-	grid.add_child(picker)
+	picker_field.custom_minimum_size.x = 140
+	picker_field.color = Color.BLACK
+	grid.add_child(picker_field)
 
 	var thickness_label := Label.new()
 	thickness_label.text = "Thickness"
@@ -40,7 +42,7 @@ func _init() -> void:
 	corners.text = "Fill corners"
 	corners.tooltip_text = "Also outline diagonally, for square corners instead of round ones"
 	grid.add_child(corners)
-	LabelLink.link(color_label, picker)
+	LabelLink.link(color_label, picker_field)
 	LabelLink.link(thickness_label, thickness)
 
 	confirmed.connect(

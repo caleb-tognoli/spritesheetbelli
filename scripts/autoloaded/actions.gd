@@ -38,6 +38,8 @@ func add(
 	action.is_checked = checked
 	action.is_available = available
 	_actions[id] = action
+	# Controls given its tooltip before it was added, like the canvases' zoom buttons
+	_update_tooltips(id, false)
 	refresh()
 	return action
 
@@ -139,9 +141,11 @@ func get_shortcut_texts(id: StringName) -> PackedStringArray:
 
 
 ## Tooltip for a button that runs the action: its name and shortcut, like "Save (Ctrl+S)",
-## then its description on the next line. [param text] replaces both, for a button that
-## says it differently, like a close button: "Hide the history (Ctrl+H)".
-func get_tooltip(id: StringName, text := "") -> String:
+## then why it can't run when it can't (see [method get_disabled_reason]), then its
+## description. [param text] replaces the name and description, for a button that says
+## it differently, like a close button: "Hide the history (Ctrl+H)". Without
+## [param reason], it doesn't say why, as while the window that runs it is being made.
+func get_tooltip(id: StringName, text := "", reason := true) -> String:
 	var action: AppAction = _actions.get(id)
 	if text.is_empty() and action == null:
 		return ""
@@ -149,27 +153,38 @@ func get_tooltip(id: StringName, text := "") -> String:
 	var shortcut := get_shortcut_text(id)
 	if shortcut:
 		tooltip += " (%s)" % shortcut
+	var why := get_disabled_reason(id) if action and reason else ""
+	if why:
+		tooltip += "\n" + why
 	if text.is_empty() and action.description:
 		tooltip += "\n" + tr(action.description)
 	return tooltip
 
 
 ## Gives [param control] the tooltip of the action [param id] (see [method get_tooltip],
-## with [param text] untranslated), again in the new language when it changes
+## with [param text] untranslated), again in the new language and when the action can or
+## can't run any more
 func set_tooltip(control: Control, id: StringName, text := "") -> void:
-	control.tooltip_text = get_tooltip(id, text)
+	control.tooltip_text = get_tooltip(id, text, false)
 	_tooltips[control.get_instance_id()] = [id, text]
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED:
-		for control_id: int in _tooltips.keys():
-			var control := instance_from_id(control_id) as Control
-			if control == null:
-				_tooltips.erase(control_id)
-				continue
-			var tooltip: Array = _tooltips[control_id]
-			control.tooltip_text = get_tooltip(tooltip[0], tooltip[1])
+		_update_tooltips()
+
+
+## Gives the controls of [method set_tooltip] their tooltips again: those of the action
+## [param id], or all of them, saying why they can't run with [param reasons]
+func _update_tooltips(id := &"", reasons := true) -> void:
+	for control_id: int in _tooltips.keys():
+		var control := instance_from_id(control_id) as Control
+		if control == null:
+			_tooltips.erase(control_id)
+			continue
+		var tooltip: Array = _tooltips[control_id]
+		if not id or tooltip[0] == id:
+			control.tooltip_text = get_tooltip(tooltip[0], tooltip[1], reasons)
 
 
 ## Notifies menus and buttons that enabled states may have changed. Coalesced per frame.
@@ -181,4 +196,6 @@ func refresh() -> void:
 
 func _emit_state_changed() -> void:
 	_refresh_queued = false
+	# They say why their actions can't run, which may have changed
+	_update_tooltips()
 	state_changed.emit()

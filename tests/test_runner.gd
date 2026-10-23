@@ -72,6 +72,8 @@ func _ready() -> void:
 			await test.after_each()
 			# Tabs a test opened don't stay open for the next one
 			Global.reset_documents()
+			# Nor does what its exports were, which new sheets' exports start as
+			Settings.set_value(&"export_kind", {})
 			test_count += 1
 
 			if test.failures.is_empty():

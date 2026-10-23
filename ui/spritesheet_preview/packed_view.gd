@@ -174,6 +174,8 @@ func draw(
 		if canvas.show_grid:
 			canvas.draw_rect(rect, OUTLINE_COLOR, false, pixel)
 		_draw_marks(canvas, coord, rect, pixel)
+		if InBetween.is_stale(sheet, coord):
+			GridView.draw_stale_mark(canvas, rect, pixel, true)
 
 
 ## The frame's packed pixels in [param rect], turned like they're stored

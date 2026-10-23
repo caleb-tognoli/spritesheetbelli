@@ -269,6 +269,12 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 
 
+## Zoom keys work wherever the focus is, as on the main canvas, unless a field takes them
+func _unhandled_key_input(event: InputEvent) -> void:
+	if is_visible_in_tree() and _drag == Drag.NONE and PixelZoom.handle_key(self, event):
+		get_viewport().set_input_as_handled()
+
+
 func _handle_key(event: InputEventKey) -> bool:
 	if event.keycode == KEY_SPACE:
 		_pan_key_held = event.pressed
@@ -285,14 +291,6 @@ func _handle_key(event: InputEventKey) -> bool:
 		remove_selected()
 	elif event.is_action(&"select_all", true):
 		select_all()
-	elif event.is_action(&"zoom_in", true):
-		zoom_by(1.25)
-	elif event.is_action(&"zoom_out", true):
-		zoom_by(0.8)
-	elif event.is_action(&"zoom_fit", true):
-		fit_to_view()
-	elif event.is_action(&"zoom_reset", true):
-		reset_zoom()
 	else:
 		return false
 	return true

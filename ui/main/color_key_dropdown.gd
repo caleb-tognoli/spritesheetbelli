@@ -34,7 +34,9 @@ const STRIP_HEIGHT := 3.0
 ## [method _init].
 var enabled_check := CheckBox.new()
 ## The colour, across the panel with its hex code on it. Clicking it opens the picker.
-var swatch := ColorPickerButton.new()
+## The colour, with its code, like the other colour fields
+var swatch_field := ColorField.new()
+var swatch := swatch_field.picker
 var eyedropper := Button.new()
 ## How different a pixel can be from the colour, in percent
 var tolerance_field := SpinBox.new()
@@ -80,18 +82,16 @@ func _init(optional := false) -> void:
 	content.add_child(enabled_check)
 	content.move_child(enabled_check, 0)
 
-	swatch.custom_minimum_size = Vector2(180, 0)
-	swatch.edit_alpha = false
-	swatch.color_changed.connect(
+	swatch_field.custom_minimum_size.x = 180
+	swatch_field.color_changed.connect(
 		func(_color: Color) -> void:
 			enabled_check.set_pressed_no_signal(true)
 			_update_state()
 			changed.emit()
 	)
-	swatch.draw.connect(_draw_hex)
 	var slot := add_field(
 		L10n.mark("Colour"),
-		swatch,
+		swatch_field,
 		L10n.mark("The colour to make transparent. Click to choose it.")
 	)
 	eyedropper.icon = EYEDROPPER_ICON
@@ -177,7 +177,7 @@ func set_key(
 	on: bool, color: Color, tolerance := SheetBackground.DEFAULT_TOLERANCE, contiguous := true
 ) -> void:
 	enabled_check.set_pressed_no_signal(on)
-	swatch.color = Color(color, 1.0)
+	swatch_field.color = Color(color, 1.0)
 	tolerance_field.set_value_no_signal(roundf(tolerance * 100.0))
 	contiguous_check.set_pressed_no_signal(contiguous)
 	update_text()
@@ -323,25 +323,8 @@ func _escape() -> void:
 func _update_state() -> void:
 	tolerance_field.editable = is_on()
 	contiguous_check.disabled = not is_on()
+	swatch_field.label.modulate.a = 1.0 if is_on() else 0.5
 	queue_redraw()
-
-
-## The hex code of the colour, over it, in black or white, whichever shows
-func _draw_hex() -> void:
-	var font := swatch.get_theme_font(&"font")
-	var font_size := swatch.get_theme_font_size(&"font_size")
-	var hex := "#" + get_color().to_html(false)
-	var ink := Color.BLACK if get_color().get_luminance() > 0.5 else Color.WHITE
-	var baseline := (swatch.size.y + font.get_ascent(font_size) - font.get_descent(font_size)) / 2
-	swatch.draw_string(
-		font,
-		Vector2(0, baseline),
-		hex,
-		HORIZONTAL_ALIGNMENT_CENTER,
-		swatch.size.x,
-		font_size,
-		Color(ink, 0.85 if is_on() else 0.4)
-	)
 
 
 func _draw() -> void:

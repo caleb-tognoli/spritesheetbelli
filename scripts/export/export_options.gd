@@ -128,6 +128,16 @@ static func from_sheet(sheet: Spritesheet) -> ExportOptions:
 	return options
 
 
+## What kind of export these are, without where or how the frames are named: the type,
+## image and data formats and frame size, which a new sheet's first export starts from
+## (the export_kind setting)
+func get_kind() -> Dictionary:
+	var kind := {}
+	for key: String in ["target", "image_format", "grid_data", "atlas_data", "atlas_frame_size"]:
+		kind[key] = get(key)
+	return kind
+
+
 ## Takes the defaults that depend on [param sheet]: frames are named by animation when it
 ## has animations, else by number. A pattern that's set is applied after, over it.
 func use_defaults_of(sheet: Spritesheet) -> void:

@@ -5,6 +5,21 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 
 ## Unreleased
 
+### Added
+- The start screen's drop zone lights up in the accent colour and says "Drop to open"
+  while files are dragged over the window, and with a document open the canvas does,
+  saying "Drop to add", on Windows, macOS, Linux with X11 and in browsers. Godot doesn't tell, so a small native library in the app does (not on
+  Wayland, where dropping works as before).
+
+- In-betweens remember how they were made: their keys, how many, the spacing, the movement
+  and the pins, saved with the project. When a key changes (redrawn and reloaded, flipped,
+  moved in its cell…) they show a warning in their corner and the status bar says they're
+  out of date. Frame > Regenerate In-Betweens (also when right-clicking them) makes them
+  again from the keys as they are, with the same settings, in the same cells and
+  animations; it asks first when they were changed by hand since.
+- Export's Add button offers exports set up for an engine: Godot, Unity, GameMaker, Phaser,
+  Defold, libGDX / Spine, Cocos2d-x and CSS.
+
 ### Changed
 - In-betweens are made much faster on Windows, macOS and Linux, by a small native library
   in the app: keys are prepared about twice as fast and frames three to four times as
@@ -12,6 +27,58 @@ All notable changes to spritesheetbelli. The version is set in `project.godot`
 - The Windows installer has a cleaner, modern look, in the style of Windows 10 and 11. It
   still installs for you alone, with no administrator rights, and sets up the same file
   types.
+- In the command palette, the best match comes first: typing "regenerate" lists
+  Regenerate In-Betweens before Generate In-Betweens, even when that was run last. Commands
+  run lately still win between matches about as good.
+- The message after exporting is one short line, like "Exported hero.png (+1 file)", with a
+  Show button that opens the folder, and stays while the mouse is over it.
+- A new sheet's first export is the same kind as the last one written, like a Godot
+  SpriteFrames, instead of always a plain PNG.
+- Greyed-out menu items and toolbar buttons say why on hover, like the command palette:
+  "No frames selected", "Select two frames", "Already the top row"…
+- In Add Spritesheet, the zoom buttons have tooltips, and F, Ctrl+=, Ctrl+- and Ctrl+0
+  zoom in both Grid and Find sprites wherever the focus is, as on the main canvas.
+- The toolbar's Rulers and Guides button says its shortcut in its tooltip, like the others.
+- A dropped folder names its tab ("tiles" instead of "tile_0000.png"), and Export and Save
+  suggest "tiles.png" beside it instead of writing the sheet over its first image.
+- Packed pages are no longer long strips when a squarer page costs at most 15% more space:
+  7 frames of one size make a 4 × 2 page instead of a single column.
+- In a small window, the animation panel's hint wraps instead of being cut off behind a
+  scroll bar, and the timeline's frames get wide enough to show "× 1.0" instead of ".0".
+- Crash recovery copies are written 3 seconds after you stop editing (at most one every
+  30 seconds while you keep going) instead of every 2 minutes, so a crash loses half a
+  minute of work at most. Settings > General > Recovery copies turns them on or off, in
+  place of "Recovery copy every … min".
+- Generate In-Betweens lists every animation playing the two keys one after the other (in
+  either order), each ticked to get the new frames and with its own Keep length, and says
+  so when there's none. Before, one box added them to all of those animations, and it was
+  hidden when there were none, so nothing said the new frames would go in no animation.
+- Sheets with the same empty strip after every cell, like Kenney's 16 px tiles with 1 px
+  between them, are cut with that spacing (in the Add Spritesheet window and with `--cut`)
+  instead of in cells 1 px bigger with an empty edge in every frame. Only when every cell
+  has it on the right and at the bottom, so a sprite's own margin isn't taken for spacing.
+- Resizing the window, or opening and closing the animation panel, fits the sheet again
+  when it was fitted, and otherwise keeps the middle of the view where it was; before, a
+  smaller window cut the sheet off. The animation's name, speed, type and colour wrap onto
+  a second line when the panel is narrow, instead of going past its edge.
+- Messages that fade on their own, like "Saved", show at the bottom middle of the canvas
+  (or of the start screen) instead of the window's corner, where they covered the
+  animation panel.
+- The Export dialog's colours (Background, and Fill transparency with for JPG) are fields
+  like the others: a swatch, the colour's code or "Transparent", and for the background a
+  button that makes it transparent again. Before, "Transparent" was written over a
+  checkerboard as wide as the dialog, and going back to it took dragging alpha to 0.
+- The start screen has the window to itself: the sidebar, with nothing to set in it yet,
+  shows again with the editor.
+- Settings: checkboxes say On or Off as they are, instead of always On, and colours are
+  fields like the Export dialog's, with the colour's code. So are the colours of Add
+  Outline and Remove Background Colour.
+- The app describes itself as the README does: "Cut, pack, animate and export spritesheets
+  for any engine", in About, the Windows file details and the Linux launcher.
+
+### Fixed
+- On Windows, files dragged from apps that hand over their contents in memory instead of
+  as a file open now; before, dropping them did nothing.
 
 ## 1.0.0
 

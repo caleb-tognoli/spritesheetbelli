@@ -2,10 +2,18 @@ class_name DropZone
 extends MarginContainer
 ## A box with a dashed outline where files can be dropped, like the upload zones of web
 ## pages. Files dropped anywhere in the window are opened too; the zone shows where to.
+## While files are dragged over the window it's [member highlighted].
 
 const DASH := 6.0
 const RADIUS := 8.0
 const WIDTH := 1.0
+
+## Drawn filled and outlined in the accent colour, like where frames would go when dropped
+## on a timeline
+var highlighted := false:
+	set(value):
+		highlighted = value
+		queue_redraw()
 
 
 func _notification(what: int) -> void:
@@ -14,6 +22,14 @@ func _notification(what: int) -> void:
 
 
 func _draw() -> void:
+	if highlighted:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(Global.accent_color, 0.2)
+		box.border_color = Global.accent_color
+		box.set_border_width_all(int(WIDTH))
+		box.set_corner_radius_all(int(RADIUS))
+		draw_style_box(box, Rect2(Vector2.ZERO, size))
+		return
 	var color := get_theme_color(&"font_color", &"StatusLabel")
 	var rect := Rect2(Vector2.ONE * WIDTH / 2, size - Vector2.ONE * WIDTH)
 	var r := minf(RADIUS, minf(rect.size.x, rect.size.y) / 2)

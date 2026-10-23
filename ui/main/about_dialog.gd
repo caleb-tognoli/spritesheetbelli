@@ -5,7 +5,7 @@ extends AcceptDialog
 const REPOSITORY := "https://github.com/caleb-tognoli/spritesheetbelli"
 # L10n.mark
 ## The project's description in project.godot, here to be translated
-const DESCRIPTION := "Combine sprites into spritesheets and cut spritesheets into sprites."
+const DESCRIPTION := "Cut, pack, animate and export spritesheets for any engine."
 ## The licenses of the crates in the native library, written with it by native/build.py
 const NATIVE_LICENSES := "res://extension/bin/native_licenses.txt"
 

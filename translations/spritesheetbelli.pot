@@ -30,6 +30,17 @@ msgid "Error"
 msgstr ""
 
 #: res://scripts/autoloaded/notify.gd
+msgid "Show"
+msgstr ""
+
+#: res://scripts/autoloaded/notify.gd
+#: res://ui/main/document_tabs.gd
+#: res://ui/main/linked_folders.gd
+#: res://ui/main/start_screen.gd
+msgid "Show in File Manager"
+msgstr ""
+
+#: res://scripts/autoloaded/notify.gd
 msgid "%s %d of %d"
 msgstr ""
 
@@ -265,6 +276,18 @@ msgstr ""
 msgid "In a new row"
 msgstr ""
 
+#: res://scripts/inbetween/inbetween.gd
+msgid "In-between %d of %d"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "a key frame was removed"
+msgstr ""
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "out of date: a key frame changed"
+msgstr ""
+
 #: res://scripts/project_file.gd
 msgid "Not a spritesheetbelli project."
 msgstr ""
@@ -309,6 +332,10 @@ msgstr ""
 
 #: res://scripts/resources/sheet_animation.gd
 msgid "Ping-pong"
+msgstr ""
+
+#: res://scripts/ui/color_field.gd
+msgid "Transparent"
 msgstr ""
 
 #: res://scripts/ui/command_palette.gd
@@ -1118,7 +1145,7 @@ msgid "Take the frame out"
 msgstr ""
 
 #: res://ui/main/about_dialog.gd
-msgid "Combine sprites into spritesheets and cut spritesheets into sprites."
+msgid "Cut, pack, animate and export spritesheets for any engine."
 msgstr ""
 
 #: res://ui/main/about_dialog.gd
@@ -1164,6 +1191,14 @@ msgstr ""
 
 #: res://ui/main/action_reasons.gd
 msgid "Select two frames"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "No in-betweens selected"
+msgstr ""
+
+#: res://ui/main/action_reasons.gd
+msgid "A key frame was removed"
 msgstr ""
 
 #: res://ui/main/action_reasons.gd
@@ -1421,13 +1456,11 @@ msgstr ""
 #: res://ui/main/document_tabs.gd
 #: res://ui/main/linked_folders.gd
 #: res://ui/main/start_screen.gd
-msgid "Show in File Manager"
+msgid "Copy Path"
 msgstr ""
 
-#: res://ui/main/document_tabs.gd
-#: res://ui/main/linked_folders.gd
-#: res://ui/main/start_screen.gd
-msgid "Copy Path"
+#: res://ui/main/drop_overlay.gd
+msgid "Drop to add"
 msgstr ""
 
 #: res://ui/main/export_controller.gd
@@ -1451,6 +1484,16 @@ msgid "Exporting"
 msgstr ""
 
 #: res://ui/main/export_controller.gd
+msgid "Exported %s"
+msgstr ""
+
+#: res://ui/main/export_controller.gd
+msgid "(+%d file)"
+msgid_plural "(+%d files)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: res://ui/main/export_controller.gd
 msgid "No frames are selected. Select frames or turn off \"Only selected frames\" when exporting."
 msgstr ""
 
@@ -1459,8 +1502,8 @@ msgid "Could not save: %s."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
-msgid "Saved %d image to %s."
-msgid_plural "Saved %d images to %s."
+msgid "Exported %d sprite"
+msgid_plural "Exported %d sprites"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1473,8 +1516,8 @@ msgid "Could not export to %s (%s)."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
-msgid "Saved %d strip to %s."
-msgid_plural "Saved %d strips to %s."
+msgid "Exported %d strip"
+msgid_plural "Exported %d strips"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1487,12 +1530,6 @@ msgid "The animation has no frames."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
-msgid "Exported %s (%d frame)."
-msgid_plural "Exported %s (%d frames)."
-msgstr[0] ""
-msgstr[1] ""
-
-#: res://ui/main/export_controller.gd
 msgid "Making the GIFs"
 msgstr ""
 
@@ -1501,8 +1538,8 @@ msgid "No animation has frames."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
-msgid "Saved %d GIF to %s."
-msgid_plural "Saved %d GIFs to %s."
+msgid "Exported %d GIF"
+msgid_plural "Exported %d GIFs"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1511,15 +1548,7 @@ msgid "Make the sprites smaller or use fewer cells."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
-msgid "Exported %s in %s."
-msgstr ""
-
-#: res://ui/main/export_controller.gd
 msgid "Could not write the metadata (%s)."
-msgstr ""
-
-#: res://ui/main/export_controller.gd
-msgid "Also wrote %s."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
@@ -1531,30 +1560,12 @@ msgid "JPG doesn't support transparency, so transparent areas were filled with t
 msgstr ""
 
 #: res://ui/main/export_controller.gd
-msgid "Exported %d page, from %s."
-msgid_plural "Exported %d pages, from %s."
-msgstr[0] ""
-msgstr[1] ""
-
-#: res://ui/main/export_controller.gd
 msgid "The frames don't fit in a %d px atlas."
 msgstr ""
 
 #: res://ui/main/export_controller.gd
 msgid "Could not export the atlas (%s)."
 msgstr ""
-
-#: res://ui/main/export_controller.gd
-msgid "Packed %d frame on %d pages, from %s, and %s."
-msgid_plural "Packed %d frames on %d pages, from %s, and %s."
-msgstr[0] ""
-msgstr[1] ""
-
-#: res://ui/main/export_controller.gd
-msgid "Packed %d frame into %s (%d×%d px) and %s."
-msgid_plural "Packed %d frames into %s (%d×%d px) and %s."
-msgstr[0] ""
-msgstr[1] ""
 
 #: res://ui/main/export_controller.gd
 msgid "Frames from %s are no longer linked to it, since the export wrote over it."
@@ -1619,7 +1630,7 @@ msgid "Add"
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
-msgid "Add an export, to write more than one at once"
+msgid "Add an export, to write more than one at once, or one for an engine"
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
@@ -1668,7 +1679,7 @@ msgid "A colour behind the sprites. Fully transparent (the default) leaves the b
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
-msgid "Transparent"
+msgid "Make the background transparent again"
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
@@ -1764,6 +1775,14 @@ msgstr ""
 
 #: res://ui/main/export_dialog.gd
 msgid "When a file exists"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "New Export"
+msgstr ""
+
+#: res://ui/main/export_dialog.gd
+msgid "For a game engine"
 msgstr ""
 
 #: res://ui/main/export_dialog.gd
@@ -2091,11 +2110,23 @@ msgid "Where the new frames go in the sheet"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
+msgid "Clear pins"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Take every pin away"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
 msgid "Add to animations"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
 msgid "Play the new frames between the keys wherever an animation plays them one after the other"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Keep length"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
@@ -2107,11 +2138,21 @@ msgid "The new frames share the time of the key before them, so the animations l
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
-msgid "Clear pins"
+msgid "No animation plays these two frames one after the other."
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
-msgid "Take every pin away"
+#: res://ui/main/main_ui.gd
+msgid "Regenerate In-Betweens"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+#: res://ui/main/main_ui.gd
+msgid "Regenerate"
+msgstr ""
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "They stay where they are, in their animations"
 msgstr ""
 
 #: res://ui/main/inbetween_dialog.gd
@@ -2452,6 +2493,10 @@ msgid "Frames between the two selected frames, to smooth an animation"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
+msgid "The selected in-betweens made again from their keys as they are now"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
 #: res://ui/main/menu_bar.gd
 msgid "Click a ruler to add a guide, repeated in every cell"
 msgstr ""
@@ -2559,6 +2604,10 @@ msgstr ""
 
 #: res://ui/main/main_actions.gd
 msgid "Add Outline…"
+msgstr ""
+
+#: res://ui/main/main_actions.gd
+msgid "Regenerate In-Betweens…"
 msgstr ""
 
 #: res://ui/main/main_actions.gd
@@ -2716,6 +2765,14 @@ msgstr ""
 
 #: res://ui/main/main_ui.gd
 msgid "Generate in-betweens"
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Some of these in-betweens were changed since they were made. Regenerating them loses that."
+msgstr ""
+
+#: res://ui/main/main_ui.gd
+msgid "Regenerate in-betweens"
 msgstr ""
 
 #: res://ui/main/main_ui.gd
@@ -3103,6 +3160,10 @@ msgid "Dec"
 msgstr ""
 
 #: res://ui/main/start_screen.gd
+msgid "Drop to open"
+msgstr ""
+
+#: res://ui/main/start_screen.gd
 msgid "Files you open will appear here"
 msgstr ""
 
@@ -3185,11 +3246,7 @@ msgid "Reopen last projects"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
-msgid "Recovery copy every"
-msgstr ""
-
-#: res://ui/settings/settings_window.gd
-msgid "min"
+msgid "Recovery copies"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
@@ -3337,7 +3394,7 @@ msgid "Open the projects that were open in tabs again when the app starts"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd
-msgid "How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes unexpectedly. 0 turns it off."
+msgid "Keep a copy of unsaved work, written a few seconds after each change, to recover it if spritesheetbelli closes unexpectedly"
 msgstr ""
 
 #: res://ui/settings/settings_window.gd

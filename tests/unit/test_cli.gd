@@ -158,6 +158,20 @@ func test_cut_a_grid_and_find_sprites() -> void:
 	assert_eq((await run(["--cut", path, "--grid", "3", "--out", "x.png"]))[0], "2")
 
 
+func test_cut_guesses_spacing_after_every_cell() -> void:
+	var sheet := Image.create_empty(68, 34, false, Image.FORMAT_RGBA8)
+	for row in 2:
+		for column in 4:
+			sheet.fill_rect(Rect2i(Vector2i(column, row) * 17, Vector2i(16, 16)), Color.RED)
+	var path := dir.path_join("tiles.png")
+	sheet.save_png(path)
+	var result := await run(["--cut", path, "--sprites", dir.path_join("tiles")])
+	assert_eq(result[0], "0", str(result))
+	assert_eq(DirAccess.get_files_at(dir.path_join("tiles")).size(), 8)
+	var first := Image.load_from_file(dir.path_join("tiles/0.png"))
+	assert_eq(first.get_size(), Vector2i(16, 16), "the empty pixel after every tile left out")
+
+
 func test_cut_removes_a_background_colour() -> void:
 	# Three sprites on magenta, 16 px apart, with a magenta notch in their top-left corner
 	var sheet := Image.create_empty(48, 16, false, Image.FORMAT_RGBA8)

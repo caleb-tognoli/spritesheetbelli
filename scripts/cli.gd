@@ -459,11 +459,14 @@ static func _cut(path: String, options: Dictionary) -> Dictionary:
 		return {"sheet": data.to_spritesheet(cut_from, "", "", keep, others)}
 
 	var grid := GridGuesser.guess(keyed, path)
+	var spacing := Vector2i.ZERO
 	if options.has("--grid"):
 		grid = _parse_size(options["--grid"])
 		if grid.x <= 0 or grid.y <= 0:
 			return {"error": "--grid must look like 8x2.", "code": 2}
-	var sliced := Slicer.slice(cut_from, grid)
+	elif GridGuesser.guess_cell_size_from_file_name(path, keyed.get_size()) == Vector2i.ZERO:
+		spacing = GridGuesser.guess_spacing(keyed, grid)
+	var sliced := Slicer.slice(cut_from, grid, Vector2i.ZERO, spacing)
 	var sheet := Spritesheet.new()
 	sheet.begin_batch()
 	sheet.set_grid_size(grid)

@@ -478,7 +478,8 @@ func test_in_betweens_from_the_timeline() -> void:
 
 	var dialog: InBetweenDialog = main.inbetween_dialog
 	assert_true(dialog.visible, "opens Generate In-Betweens")
-	assert_true(dialog.animations_check.visible, "the animation plays the keys in a row")
+	var add: CheckBox = dialog.animation_rows.get_child(2)
+	assert_true(add.button_pressed, "the animation plays the keys in a row")
 	assert_eq(dialog.preview_fps, 6.0, "played as fast as the animation")
 	# Working the frames out takes a while, on another thread
 	var waiting := Time.get_ticks_msec()
@@ -486,7 +487,7 @@ func test_in_betweens_from_the_timeline() -> void:
 		await get_tree().process_frame
 	var before := steps()
 	dialog.place_option.select(dialog.place_option.get_item_index(InBetween.Place.APPEND))
-	dialog.keep_length_check.button_pressed = true
+	(dialog.animation_rows.get_child(3) as CheckBox).button_pressed = true
 	dialog.get_ok_button().pressed.emit()
 	assert_eq(steps(), before + 1, "one step")
 	assert_eq(animation().cells, cells([0, 1, 4, 2]), "added between the keys")

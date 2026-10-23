@@ -26,7 +26,7 @@ const CATEGORIES := [  # L10n.mark
 			[&"use_pivots", "Pivots", &"check"],
 			[&"confirm_grid_shrink", "Confirm grid shrinking", &"check"],
 			[&"restore_session", "Reopen last projects", &"check"],
-			[&"recovery_minutes", "Recovery copy every", &"spin", [0, 60, 1, "min"]],
+			[&"recovery", "Recovery copies", &"check"],
 		]
 	],
 	[
@@ -101,10 +101,10 @@ const DETAILS := {  # L10n.mark
 	),
 	&"confirm_grid_shrink": "Ask before making the grid smaller deletes sprites",
 	&"restore_session": "Open the projects that were open in tabs again when the app starts",
-	&"recovery_minutes":
+	&"recovery":
 	(
-		"How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes "
-		+ "unexpectedly. 0 turns it off."
+		"Keep a copy of unsaved work, written a few seconds after each change, to recover it "
+		+ "if spritesheetbelli closes unexpectedly"
 	),
 	&"show_checkerboard": "A checkerboard behind sprites shows their transparent pixels",
 	&"checker_size": "The size of the checkerboard's squares",
@@ -247,7 +247,7 @@ func _build() -> void:
 func _add_row(category: String, row: Array) -> void:
 	var key: StringName = row[0]
 	# A browser keeps no recovery copies, see Recovery
-	if key == &"recovery_minutes" and not Recovery.enabled:
+	if key == &"recovery" and not Recovery.enabled:
 		return
 	var box := HBoxContainer.new()
 	box.custom_minimum_size.y = 32
@@ -303,16 +303,18 @@ func _create_control(key: StringName, kind: String, options: Array) -> Control:
 	match kind:
 		"check":
 			var check := CheckBox.new()
-			check.text = "On"
 			check.toggled.connect(func(on: bool) -> void: Settings.set_value(key, on))
-			_refreshers[key] = func() -> void: check.set_pressed_no_signal(Settings.get_value(key))
+			# Says what it is, not what ticking it does
+			_refreshers[key] = func() -> void:
+				check.set_pressed_no_signal(Settings.get_value(key))
+				check.text = "On" if check.button_pressed else "Off"
 			return check
 		"color":
-			var picker := ColorPickerButton.new()
-			picker.custom_minimum_size = Vector2(60, 0)
-			picker.color_changed.connect(func(color: Color) -> void: Settings.set_value(key, color))
-			_refreshers[key] = func() -> void: picker.color = Settings.get_value(key)
-			return picker
+			var field := ColorField.new()
+			field.picker.edit_alpha = true
+			field.color_changed.connect(func(color: Color) -> void: Settings.set_value(key, color))
+			_refreshers[key] = func() -> void: field.color = Settings.get_value(key)
+			return field
 		"language":
 			_language_option = OptionButton.new()
 			_fill_languages()

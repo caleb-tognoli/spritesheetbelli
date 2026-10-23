@@ -139,7 +139,8 @@ func test_dragging_a_selected_frame_moves_the_selection() -> void:
 	preview.set_selected_coords(some)
 	mouse(MOUSE_BUTTON_LEFT, true, at(Vector2i(2, 0)))
 	assert_true(preview._get_lifted_coords().is_empty(), "not lifted before the mouse moves")
-	move_to(at(Vector2i(2, 0)) + Vector2(0, 30))
+	# Below every frame, where the selection fits
+	move_to(at(Vector2i(2, 0)) + Vector2(0, 200))
 	assert_eq(preview._get_lifted_coords(), some, "the selection")
 	assert_eq(preview.get_cursor_hint(), CanvasCursor.Hint.MOVE)
 

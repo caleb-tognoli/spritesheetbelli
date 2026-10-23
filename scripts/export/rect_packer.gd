@@ -4,6 +4,11 @@ class_name RectPacker
 ## Pages are filled in order; a rectangle that fits on no page starts a new one.
 ## Everything is deterministic: the same sizes and settings always give the same places.
 
+## A page longer than this many times its width (or the other way round) is a strip, and
+## a squarer layout taking up to [constant SQUARE_AREA_SHARE] more area is kept instead
+const STRIP_RATIO := 2.0
+const SQUARE_AREA_SHARE := 0.15
+
 
 ## A page being filled
 class Bin:
@@ -80,7 +85,8 @@ class Bin:
 ## Places rectangles of [param sizes] (the frames' own pixels) on pages, with the space
 ## [param settings] asks for around them. [param occupied] are places already taken, as
 ## [code]{"page": int, "rect": Rect2i}[/code] with the frame's own pixels; with them, every
-## page is as big as allowed, else a few page widths are tried and the tightest is kept.
+## page is as big as allowed, else a few page widths are tried and the tightest is kept,
+## or a squarer one when it's a strip, see [constant STRIP_RATIO].
 ## Returns [code]{"placements": Array[Dictionary], "pages": int, "oversize": Array[int]}[/code]
 ## with [code]{"page": int, "position": Vector2i, "rotated": bool}[/code] for each size in
 ## order. Rectangles too big for a page get a page of their own and are listed in oversize.
@@ -110,19 +116,36 @@ static func pack(
 			widths.append(width)
 	if largest.x not in widths:
 		widths.append(largest.x)
-	var best := {}
-	var best_score := Vector2i.ZERO
+	# The fewest pages, then the smallest area, unless that's a strip: a single column has
+	# no gaps when, say, 7 frames of one size can't make a rectangle
+	var tries: Array[Dictionary] = []
 	for width in widths:
 		var result := _pack_on(sizes, settings, occupied, Vector2i(width, largest.y))
 		var used_area := 0
+		var longest := 0
+		var ratio := 1.0
 		for page_rects: Array[Rect2i] in rects_by_page(sizes, result.placements, result.pages):
 			var page := page_size(page_rects, settings)
 			used_area += page.x * page.y
+			longest = maxi(longest, maxi(page.x, page.y))
+			ratio = maxf(ratio, float(maxi(page.x, page.y)) / mini(page.x, page.y))
 		var score := Vector2i(result.pages, used_area)
-		if best.is_empty() or score < best_score:
-			best = result
-			best_score = score
-	return best
+		tries.append({"result": result, "score": score, "longest": longest, "ratio": ratio})
+	var tightest: Dictionary = tries[0]
+	for t in tries:
+		if t.score < tightest.score:
+			tightest = t
+	if tightest.ratio <= STRIP_RATIO:
+		return tightest.result
+	var best := tightest
+	for t in tries:
+		if t.score.x != tightest.score.x:
+			continue
+		if t.score.y > tightest.score.y * (1.0 + SQUARE_AREA_SHARE):
+			continue
+		if Vector2i(t.longest, t.score.y) < Vector2i(best.longest, best.score.y):
+			best = t
+	return best.result
 
 
 ## The frames' rectangles on each page, from [method pack]'s placements

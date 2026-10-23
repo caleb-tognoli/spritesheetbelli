@@ -67,6 +67,8 @@ func _init() -> void:
 	duration_spin.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	duration_spin.tooltip_text = "How long it's shown: 2 is twice as long as a frame"
 	duration_spin.get_line_edit().theme_type_variation = &"TimelineDurationEdit"
+	# As wide as its value, so a narrow tile grows instead of cutting it to ".0"
+	duration_spin.get_line_edit().expand_to_text_length = true
 	duration_spin.value_changed.connect(duration_changed.emit)
 	duration_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var controls := HBoxContainer.new()

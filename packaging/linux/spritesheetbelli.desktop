@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=spritesheetbelli
-Comment=Combine sprites into spritesheets and cut spritesheets into sprites
+Comment=Cut, pack, animate and export spritesheets for any engine
 Comment[it]=Unisci sprite in spritesheet e taglia spritesheet in sprite
 Exec=spritesheetbelli %F
 Icon=spritesheetbelli

@@ -249,7 +249,7 @@ func test_align_shortcuts() -> void:
 func test_toolbar_buttons_follow_their_actions() -> void:
 	var area: PreviewArea = main.preview_area
 	var flip: Button = area._action_buttons[&"flip_h"]
-	assert_eq(flip.tooltip_text, "Flip Horizontally (H)")
+	assert_eq(flip.tooltip_text, "Flip Horizontally (H)\nNo frames selected")
 	main.preview.set_selected_coords([] as Array[Vector2i])
 	await get_tree().process_frame
 	assert_true(flip.disabled, "nothing selected")
@@ -324,6 +324,12 @@ func test_pin_and_sprites_shortcuts() -> void:
 
 
 func test_tooltip_format() -> void:
+	assert_eq(
+		Actions.get_tooltip(&"flip_h"),
+		"Flip Horizontally (H)\nNo frames selected",
+		"why it can't run, under its name"
+	)
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
 	assert_eq(Actions.get_tooltip(&"flip_h"), "Flip Horizontally (H)", "no description")
 	assert_eq(Actions.get_tooltip(&"save_as"), "Save As (Ctrl+Shift+S)", "without the dots")
 	assert_eq(Actions.get_tooltip(&"about"), "About spritesheetbelli", "no shortcut")
@@ -338,7 +344,8 @@ func test_tooltip_format() -> void:
 	assert_eq(Actions.get_tooltip(&"toggle_sprites"), "Sprites (Ctrl+L)")
 	assert_eq(
 		Actions.get_tooltip(&"pin_toggle"),
-		"Pinned (K)\n" + Actions.get_action(&"pin_toggle").description
+		"Pinned (K)\nOnly in the packed layout\n" + Actions.get_action(&"pin_toggle").description,
+		"the reason before the description"
 	)
 	assert_eq(Actions.get_tooltip(&"no_such_action"), "")
 
@@ -361,6 +368,11 @@ func test_buttons_have_the_tooltips_of_their_actions() -> void:
 	}
 	for id: StringName in area._action_buttons:
 		buttons[area._action_buttons[id]] = id
+	# Add Spritesheet's canvas zooms like the main one, and says so
+	var add_area: PreviewArea = main.files.add_spritesheet_window.preview_area
+	buttons[add_area.center_view_btn] = &"zoom_fit"
+	buttons[add_area.zoom_in_btn] = &"zoom_in"
+	assert_eq(add_area.center_view_btn.tooltip_text.get_slice("\n", 0), "Fit to View (F)")
 	for button: Button in buttons:
 		var id: StringName = buttons[button]
 		assert_eq(button.tooltip_text, Actions.get_tooltip(id), id)
@@ -376,8 +388,12 @@ func test_buttons_have_the_tooltips_of_their_actions() -> void:
 	for id: StringName in [&"align_menu", &"pivot_menu"]:
 		var tooltip := area._submenu_buttons[id].tooltip_text
 		assert_true(tooltip.contains("every frame when none are selected"), id)
+		assert_false(tooltip.get_slice("\n", 0).ends_with(")"), "%s has no shortcut" % id)
 	var rulers_tooltip := area._submenu_buttons[&"rulers_menu"].tooltip_text
-	assert_true(rulers_tooltip.begins_with("Rulers and Guides\nClick a ruler"))
+	assert_true(
+		rulers_tooltip.begins_with("Rulers and Guides (Y)\nClick a ruler"),
+		"the shortcut of the toggle it shows"
+	)
 
 
 func test_add_actions_are_in_the_same_order_everywhere() -> void:
@@ -409,6 +425,26 @@ func test_add_folder_has_a_shortcut() -> void:
 	main.files.open_folder_dialog.hide()
 
 
+func test_greyed_out_commands_say_why() -> void:
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	await get_tree().process_frame
+	var menu := ActionPopupMenu.new()
+	add_child(menu)
+	menu.set_actions([&"generate_inbetweens", &"duplicate"] as Array[StringName])
+	assert_eq(menu.get_item_tooltip(0), "Select two frames", "on hover in menus")
+	assert_eq(menu.get_item_tooltip(1), "", "nothing when it can run")
+	menu.free()
+
+	main.preview.clear_selection()
+	await get_tree().process_frame
+	var flip: Button = main.preview_area._action_buttons[&"flip_h"]
+	assert_true(flip.disabled)
+	assert_eq(flip.tooltip_text.get_slice("\n", 1), "No frames selected", "after its name")
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	await get_tree().process_frame
+	assert_false(flip.tooltip_text.contains("No frames selected"), "gone once it can run")
+
+
 func test_generate_inbetweens() -> void:
 	assert_false(Actions.is_enabled(&"generate_inbetweens"))
 	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
@@ -417,7 +453,8 @@ func test_generate_inbetweens() -> void:
 	assert_true(Actions.run(&"generate_inbetweens"))
 	var dialog: InBetweenDialog = main.inbetween_dialog
 	assert_true(dialog.visible)
-	assert_false(dialog.animations_check.visible, "no animation plays the keys")
+	assert_false(dialog.animation_rows.visible, "no animation plays the keys")
+	assert_true(dialog.no_animations_label.visible, "says so")
 	assert_eq(dialog.place_option.get_selected_id(), InBetween.Place.AFTER_FIRST, "by default")
 	dialog.count_spin.value = 2
 	assert_eq(dialog.frame_list.get_child_count(), 4, "the keys and the two frames between them")
@@ -447,6 +484,115 @@ func test_generate_inbetweens() -> void:
 		&"inbetween_spacing",
 		&"inbetween_keep_length",
 	]:
+		Settings.set_value(key, Settings.DEFAULTS[key])
+
+
+func test_inbetweens_list_the_animations_playing_the_keys() -> void:
+	var cells: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)]
+	var sheet := Global.spritesheet
+	sheet.add_animation(SheetAnimation.create("walk", cells))
+	sheet.add_animation(SheetAnimation.create("skip", [cells[0], cells[2]] as Array[Vector2i]))
+	var back := SheetAnimation.create("back", [cells[2], cells[1], cells[0]] as Array[Vector2i])
+	back.mode = SheetAnimation.Mode.ONCE
+	sheet.add_animation(back)
+	main.preview.set_selected_coords([cells[0], cells[1]] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	assert_true(dialog.animation_rows.visible)
+	assert_false(dialog.no_animations_label.visible)
+	var rows := dialog.animation_rows.get_children().slice(2)  # After the headings
+	assert_eq(rows.size(), 4, "two animations, each with its two boxes")
+	var walk: CheckBox = rows[0]
+	var walk_keep: CheckBox = rows[1]
+	var back_add: CheckBox = rows[2]
+	var back_keep: CheckBox = rows[3]
+	assert_eq([walk.text, back_add.text], ["walk", "back"], "the other way round too")
+	assert_true(walk.button_pressed and back_add.button_pressed, "ticked")
+	assert_false(walk_keep.button_pressed or walk_keep.disabled)
+	walk_keep.button_pressed = true
+	back_add.button_pressed = false
+	assert_true(back_keep.disabled, "only for animations getting the frames")
+	dialog.count_spin.value = 1
+	await _wait_for_frames(dialog)
+	dialog.get_ok_button().pressed.emit()
+	var new_cell := Vector2i(1, 0)
+	assert_eq(sheet.animations[0].cells, [cells[0], new_cell, Vector2i(2, 0), Vector2i(0, 1)])
+	assert_eq(sheet.animations[0].durations, [0.5, 0.5, 1.0, 1.0], "keeping its length")
+	assert_eq(sheet.animations[1].cells, [cells[0], Vector2i(0, 1)], "not played in a row")
+	assert_eq(sheet.animations[2].cells, [Vector2i(0, 1), Vector2i(2, 0), cells[0]], "unticked")
+	assert_true(Settings.get_value(&"inbetween_keep_length"), "remembered")
+	dialog.open(sheet, new_cell, Vector2i(2, 0))
+	walk_keep = dialog.animation_rows.get_child(3)
+	assert_true(walk_keep.button_pressed, "as chosen last")
+	dialog.hide()
+	for key: StringName in [
+		&"inbetween_count",
+		&"inbetween_place",
+		&"inbetween_spacing",
+		&"inbetween_keep_length",
+	]:
+		Settings.set_value(key, Settings.DEFAULTS[key])
+
+
+func test_regenerate_inbetweens() -> void:
+	var sheet := Global.spritesheet
+	main.preview.set_selected_coords([Vector2i(0, 0)] as Array[Vector2i])
+	assert_eq(Actions.get_disabled_reason(&"regenerate_inbetweens"), "No in-betweens selected")
+	main.preview.set_selected_coords([Vector2i(0, 0), Vector2i(1, 0)] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	var dialog: InBetweenDialog = main.inbetween_dialog
+	dialog.count_spin.value = 2
+	var ease_out := dialog.spacing_option.get_item_index(InBetween.Spacing.EASE_OUT)
+	dialog.spacing_option.select(ease_out)
+	dialog.spacing_option.item_selected.emit(ease_out)
+	await _wait_for_frames(dialog)
+	dialog.get_ok_button().pressed.emit()
+	var cells: Array[Vector2i] = main.preview.get_selected_coords()
+	assert_eq(cells.size(), 2, "the new frames are selected")
+
+	assert_true(Actions.run(&"regenerate_inbetweens"))
+	assert_true(dialog.visible)
+	assert_eq(dialog.title, "Regenerate In-Betweens")
+	assert_eq(dialog.count_spin.value, 2.0, "as many as before")
+	assert_false(dialog.count_spin.editable)
+	assert_true(dialog.place_option.disabled, "they stay where they are")
+	assert_eq(dialog.spacing_option.get_selected_id(), InBetween.Spacing.EASE_OUT, "as made")
+	assert_true(dialog.no_animations_label.visible)
+	assert_false(dialog.animation_rows.visible)
+	await _wait_for_frames(dialog)
+	var count := sheet.frames.size()
+	dialog.get_ok_button().pressed.emit()
+	assert_false(dialog.visible)
+	assert_eq(sheet.frames.size(), count, "in their places")
+	assert_eq(Global.document.get_history()[-1], "Regenerate in-betweens")
+	assert_eq(main.preview.get_selected_coords(), cells)
+
+	sheet.edit_frames(
+		cells,
+		func(img: Image) -> Image:
+			img.set_pixel(0, 0, Color.BLUE)
+			return img
+	)
+	Actions.run(&"regenerate_inbetweens")
+	assert_false(dialog.visible, "asks first, as changes made since are lost")
+	assert_true(Notify.confirm_dialog.visible)
+	Notify.confirm_dialog.confirmed.emit()
+	Notify.confirm_dialog.hide()
+	assert_true(dialog.visible)
+	dialog.hide()
+
+	# Back to making new ones
+	main.preview.set_selected_coords([Vector2i(0, 0), cells[0]] as Array[Vector2i])
+	Actions.run(&"generate_inbetweens")
+	assert_eq(dialog.title, "Generate In-Betweens")
+	assert_true(dialog.count_spin.editable)
+	assert_false(dialog.place_option.disabled)
+	dialog.hide()
+
+	sheet.remove_frames([Vector2i(0, 0)] as Array[Vector2i])
+	main.preview.set_selected_coords(cells)
+	assert_eq(Actions.get_disabled_reason(&"regenerate_inbetweens"), "A key frame was removed")
+	for key: StringName in [&"inbetween_count", &"inbetween_spacing"]:
 		Settings.set_value(key, Settings.DEFAULTS[key])
 
 

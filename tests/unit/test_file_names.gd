@@ -61,6 +61,19 @@ func test_sprites_name_the_document() -> void:
 	assert_eq(FileController.suggested_project_path(), Y + "/run_1.sbelli", "after New")
 
 
+func test_a_followed_folder_names_the_document() -> void:
+	# Not its first tile, which exporting would write the whole sheet over
+	add_linked([X + ".v2/walk_0.png", X + ".v2/walk_1.png"])
+	Global.document.perform("Link", Global.spritesheet.link_folder.bind(X + ".v2"))
+	assert_eq(Global.document.get_display_name(), "walk.v2")
+	assert_eq(export_path(), X + ".v2.png", "beside the folder, not in it")
+	assert_eq(FileController.suggested_project_path(), X + ".v2.sbelli")
+	assert_eq(DocumentTabs._icon_of(Global.document), DocumentTabs.FOLDER_ICON)
+
+	Global.document.export_path = Y + "/run.png"
+	assert_eq(Global.document.get_display_name(), "run.png", "the export comes first")
+
+
 func test_a_new_row_after_unlinked_frames() -> void:
 	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
 	add_linked([Y + "/run_1.png"], Spritesheet.AddMode.NEW_ROW)

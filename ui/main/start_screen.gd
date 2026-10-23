@@ -48,6 +48,9 @@ const MONTHS := ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", 
 const CLOSE_ICON := preload("res://assets/icons/Close.svg")
 const LOGO := preload("res://icon.svg")
 const DROP_ICON := preload("res://assets/icons/Load.svg")
+const DROP_HINT := "Drop images, folders or a .sbelli project here"  # L10n.mark
+## Said instead while files are dragged over the window
+const DROPPING_HINT := "Drop to open"  # L10n.mark
 const FOLDER_ICON := preload("res://assets/icons/Folder.svg")
 const COPY_ICON := preload("res://assets/icons/ActionCopy.svg")
 ## Shown until a recent file has a thumbnail, or when it's missing
@@ -432,7 +435,7 @@ func _build_drop_zone() -> void:
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	icon.modulate.a = 0.6
 	box.add_child(icon)
-	drop_hint.text = "Drop images, folders or a .sbelli project here"
+	drop_hint.text = DROP_HINT
 	drop_hint.theme_type_variation = &"EmptyHint"
 	drop_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	drop_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -455,6 +458,16 @@ func _build_drop_zone() -> void:
 		else:
 			buttons.add_child(action_buttons[id])
 	box.add_child(buttons)
+	FileDrag.entered.connect(_show_dragging.bind(true, icon))
+	FileDrag.exited.connect(_show_dragging.bind(false, icon))
+	_show_dragging(FileDrag.dragging, icon)
+
+
+## Highlights the drop zone while files are dragged over the window, see [FileDrag]
+func _show_dragging(dragging: bool, icon: TextureRect) -> void:
+	drop_zone.highlighted = dragging
+	drop_hint.text = DROPPING_HINT if dragging else DROP_HINT
+	icon.modulate.a = 1.0 if dragging else 0.6
 
 
 ## A button running action [param id], with its name and icon, or only its icon for Add

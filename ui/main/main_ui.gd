@@ -21,6 +21,7 @@ const CONTEXT_ACTIONS: Array[StringName] = [
 	&"paste",
 	&"duplicate",
 	&"generate_inbetweens",
+	&"regenerate_inbetweens",
 	&"",
 	&"transform_menu",
 	&"align_menu",
@@ -78,6 +79,8 @@ var source_watcher := SourceWatcher.new()
 var layout_controller := LayoutController.new()
 var animation_commands := AnimationCommands.new()
 var start_screen := StartScreen.new()
+## Over the canvas while files are dragged over the window and a document is open
+var drop_overlay := DropOverlay.new()
 ## The linked folders, under Add Sprite(s)
 var linked_folders := LinkedFolders.new()
 ## The tabs of the open documents, over the canvas
@@ -191,6 +194,7 @@ func _ready() -> void:
 	animation_panel.setup(preview)
 	outline_dialog.outline_chosen.connect(add_outline)
 	inbetween_dialog.inbetweens_chosen.connect(add_inbetweens)
+	inbetween_dialog.inbetweens_remade.connect(replace_inbetweens)
 	# Played as fast as the animation whose timeline they're on
 	animation_panel.detail.timeline.inbetweens_requested.connect(
 		func(a: Vector2i, b: Vector2i) -> void:
@@ -338,6 +342,7 @@ func get_view_state() -> Dictionary:
 ## Puts the tabs over the canvas, and the start screen over the canvas and the docks
 ## under it, which stay laid out under it so that a sheet opened from it is shown where it
 ## was, fitting the canvas. Its text is sized like the canvas's. The sidebars stay, empty.
+## The drop overlay goes over them too, see [DropOverlay].
 func _add_start_screen() -> void:
 	editor = %CanvasSplit
 	var column := VBoxContainer.new()
@@ -354,14 +359,21 @@ func _add_start_screen() -> void:
 	editor.reparent(body)
 	start_screen.theme = preview_area.theme
 	body.add_child(start_screen)
+	drop_overlay.theme = preview_area.theme
+	drop_overlay.start_screen = start_screen
+	body.add_child(drop_overlay)
 	start_screen.visibility_changed.connect(_cover_editor)
 	start_screen.cover_actions()
 	_cover_editor()
 
 
-## While the start screen shows, the editor under it and the sidebars can't take focus
+## While the start screen shows, the sidebar is hidden, as there's nothing to set in it
+## yet, the editor under it and the side panels can't take focus, and toasts show over the
+## start screen instead of the canvas
 func _cover_editor() -> void:
 	var covered := start_screen.visible
+	%Sidebar.visible = not covered
+	Notify.toast_area = start_screen if covered else preview_area.stage
 	var focused := get_viewport().gui_get_focus_owner()
 	for part: Control in [editor, %Sidebar, layout_controller.side_split]:
 		part.focus_behavior_recursive = (
@@ -464,8 +476,8 @@ func add_inbetweens(
 	b: Vector2i,
 	frames: Array[Dictionary],
 	place: int,
-	to_animations: bool,
-	keep_length := false,
+	animations := {},
+	how := {},
 ) -> void:
 	var sheet := Global.spritesheet
 	# The keys changed while the frames were made
@@ -473,9 +485,51 @@ func add_inbetweens(
 		return
 	var coords: Array[Vector2i] = Global.document.perform(
 		L10n.mark("Generate in-betweens"),
-		InBetween.add.bind(sheet, a, b, frames, place, to_animations, keep_length)
+		InBetween.add.bind(sheet, a, b, frames, place, animations, how)
 	)
 	preview.set_selected_coords(coords)
+
+
+## The in-betweens made together with the first selected one (see
+## [method InBetween.run_of]) whose keys are still there, or none
+func get_selected_inbetweens() -> Array[Vector2i]:
+	for coord in preview.get_selected_coords():
+		if InBetween.has_keys(Global.spritesheet, coord):
+			return InBetween.run_of(Global.spritesheet, coord)
+	return [] as Array[Vector2i]
+
+
+## Opens Regenerate In-Betweens for the in-betweens made with the selected one, after
+## asking when some were changed since, which making them again loses
+func open_regenerate() -> void:
+	var cells := get_selected_inbetweens()
+	if cells.is_empty():
+		return
+	var sheet := Global.spritesheet
+	var regenerate := inbetween_dialog.remake.bind(sheet, cells)
+	if not InBetween.is_edited(sheet, cells):
+		regenerate.call()
+		return
+	var text := tr(
+		(
+			"Some of these in-betweens were changed since they were made. Regenerating them "
+			+ "loses that."
+		)
+	)
+	Notify.confirm(tr("Regenerate In-Betweens"), text, regenerate, tr("Regenerate"))
+
+
+## Makes the in-betweens at [param cells] again with [param frames], as one undoable step,
+## and selects them, see [method InBetween.replace]
+func replace_inbetweens(cells: Array[Vector2i], frames: Array[Dictionary], how: Dictionary) -> void:
+	var sheet := Global.spritesheet
+	# They changed while the frames were made
+	if InBetween.run_of(sheet, cells[0]) != cells or frames.size() != cells.size():
+		return
+	Global.document.perform(
+		L10n.mark("Regenerate in-betweens"), InBetween.replace.bind(sheet, cells, frames, how)
+	)
+	preview.set_selected_coords(cells)
 
 
 ## Replaces each selected frame (or each of [param coords]) with

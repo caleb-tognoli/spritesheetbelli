@@ -556,14 +556,16 @@ func save_as() -> void:
 ## Where to suggest saving the project: next to the file the document is named after, see
 ## [method Document.get_name_path], with its name
 static func suggested_project_path() -> String:
-	var base := Global.document.get_name_path()
-	return base.get_base_dir().path_join(suggested_name(base) + "." + ProjectFile.EXTENSION)
+	var document := Global.document
+	var base := document.get_name_path()
+	var base_name := suggested_name(base, document.is_named_after_folder())
+	return base.get_base_dir().path_join(base_name + "." + ProjectFile.EXTENSION)
 
 
 ## The name to suggest for a file named after [param base]: its name without the
-## extension, or "spritesheet"
-static func suggested_name(base: String) -> String:
-	var base_name := base.get_file().get_basename()
+## extension (all of it for a [param folder]), or "spritesheet"
+static func suggested_name(base: String, folder := false) -> String:
+	var base_name := base.get_file() if folder else base.get_file().get_basename()
 	return base_name if base_name else "spritesheet"
 
 

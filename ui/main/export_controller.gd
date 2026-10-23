@@ -61,14 +61,15 @@ static func get_output_path(target: ExportTarget) -> String:
 	return WebFiles.output_path(suggested)
 
 
-## Where to suggest exporting: next to the last export, else the file the document is
-## named after (see [method Document.get_name_path]), with its name and the export's
-## extension (see [method SpritesheetExporter.with_extension])
+## Where to suggest exporting: next to the last export, else the file or folder the
+## document is named after (see [method Document.get_name_path]), with its name and the
+## export's extension (see [method SpritesheetExporter.with_extension]). Never in a
+## followed folder, where the export would be added as a sprite.
 static func suggested_path(options: ExportOptions) -> String:
 	var document := Global.document
 	var base := document.export_path if document.export_path else document.get_name_path()
 	var folder := base.get_base_dir()
-	var base_name := FileController.suggested_name(base)
+	var base_name := FileController.suggested_name(base, document.is_named_after_folder())
 	if options.target == ExportOptions.Target.ATLAS and not base_name.ends_with("_atlas"):
 		base_name += "_atlas"
 	if options.target == ExportOptions.Target.STRIPS:
@@ -87,8 +88,8 @@ static func suggested_path(options: ExportOptions) -> String:
 	return SpritesheetExporter.with_extension(path, extension)
 
 
-## Writes one export. Returns [code]{"message": String}[/code] saying what was written,
-## or [code]{"error": String}[/code].
+## Writes one export. Returns [code]{"message": String, "path": String}[/code] saying what
+## was written and where the first file or folder went, or [code]{"error": String}[/code].
 func _export(path: String, options: ExportOptions) -> Dictionary:
 	if options.get_file_extension():
 		path = SpritesheetExporter.with_extension(path, options.get_file_extension())
@@ -97,7 +98,11 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 		return {"error": options.get_error()}
 	# Every scale's strips go in the one folder, written at once, see [StripExporter]
 	if options.target == ExportOptions.Target.STRIPS:
-		return await _export_at_scale(path, options)
+		var strips := await _export_at_scale(path, options)
+		if not strips.has("error"):
+			_remember_kind(options)
+			strips.path = path
+		return strips
 	var messages := PackedStringArray()
 	for scale in options.get_scales():
 		var result := await _export_at_scale(
@@ -106,7 +111,15 @@ func _export(path: String, options: ExportOptions) -> Dictionary:
 		if result.has("error"):
 			return result
 		messages.append(result.message)
-	return {"message": "\n".join(messages)}
+	_remember_kind(options)
+	var first := options.scaled_path(path, options.get_scales()[0])
+	return {"message": "\n".join(messages), "path": first}
+
+
+## A new sheet's first export starts as the last one written, see
+## [method ExportDialog.new_target]
+static func _remember_kind(options: ExportOptions) -> void:
+	Settings.set_value(&"export_kind", options.get_kind())
 
 
 ## Writes one scale of an export, see [member ExportOptions.scale]
@@ -131,19 +144,36 @@ static func _sheet_copy() -> Spritesheet:
 	return copy
 
 
+## What an export says it wrote: [param file], and how many more files were written with
+## it, like "Exported hero.png (+1 file)"
+func _exported(file: String, more := 0) -> String:
+	var text := tr("Exported %s") % file.get_file()
+	if more > 0:
+		text += " " + tr_n("(+%d file)", "(+%d files)", more) % more
+	return text
+
+
 ## Says what [param results] of [method _export] wrote, and what went wrong. Returns
 ## whether nothing did.
 static func _report(results: Array[Dictionary]) -> bool:
 	var written := PackedStringArray()
 	var errors := PackedStringArray()
+	var first_path := ""
 	for result in results:
 		if result.has("error"):
 			errors.append(result.error)
 		elif result.get("message"):
 			written.append(result.message)
+			if not first_path:
+				first_path = result.get("path", "")
 	if not written.is_empty():
 		var text := "\n".join(written)
-		Notify.toast(text, 7.0 if "\n" in text else 3.0)
+		var seconds := 7.0 if "\n" in text else 3.0
+		# Browsers download exports, so there's no folder to show
+		var show := Callable()
+		if first_path and not in_browser:
+			show = OS.shell_show_in_file_manager.bind(first_path)
+		Notify.toast(text, seconds, true, show)
 	if not errors.is_empty():
 		Notify.error("\n\n".join(errors))
 	return errors.is_empty()
@@ -182,10 +212,7 @@ func _save_sprites(folder: String, options: ExportOptions) -> Dictionary:
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
 	return {
 		"message":
-		(
-			tr_n("Saved %d image to %s.", "Saved %d images to %s.", written.size())
-			% [written.size(), folder.get_file()]
-		)
+		tr_n("Exported %d sprite", "Exported %d sprites", written.size()) % written.size()
 	}
 
 
@@ -207,10 +234,7 @@ func _save_strips(folder: String, options: ExportOptions) -> Dictionary:
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
 	return {
 		"message":
-		(
-			tr_n("Saved %d strip to %s.", "Saved %d strips to %s.", result.paths.size())
-			% [result.paths.size(), folder.get_file()]
-		)
+		tr_n("Exported %d strip", "Exported %d strips", result.paths.size()) % result.paths.size()
 	}
 
 
@@ -234,13 +258,7 @@ func _export_gif(path: String, options: ExportOptions) -> Dictionary:
 		}
 	unlink_overwritten([result.path])
 	WebFiles.download(result.path)
-	return {
-		"message":
-		(
-			tr_n("Exported %s (%d frame).", "Exported %s (%d frames).", result.frames)
-			% [result.path.get_file(), result.frames]
-		)
-	}
+	return {"message": _exported(result.path)}
 
 
 ## Writes a GIF of each animation into [param folder]
@@ -263,10 +281,7 @@ func _export_gifs(folder: String, options: ExportOptions) -> Dictionary:
 	WebFiles.download_folder(folder, folder.get_file() + ".zip")
 	return {
 		"message":
-		(
-			tr_n("Saved %d GIF to %s.", "Saved %d GIFs to %s.", result.paths.size())
-			% [result.paths.size(), folder.get_file()]
-		)
+		tr_n("Exported %d GIF", "Exported %d GIFs", result.paths.size()) % result.paths.size()
 	}
 
 
@@ -305,22 +320,22 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 		return {"error": tr("Could not export to %s (%s).") % [path, error_string(written.error)]}
 	unlink_overwritten([path])
 
-	var message := tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
 	if written.metadata_error != OK:
 		return {
 			"error": tr("Could not write the metadata (%s).") % error_string(written.metadata_error)
 		}
 	WebFiles.download(path)
+	var data_files := 0
 	if options.get_image_data():
 		var data_path := Metadata.get_path_for_image(path, options)
 		unlink_overwritten([data_path])
-		message += "\n" + tr("Also wrote %s.") % data_path.get_file()
+		data_files = 1
 		WebFiles.download(data_path)
 	if written.transparent and not warned_about_jpg_transparency:
 		warned_about_jpg_transparency = true
-		message += (
-			"\n"
-			+ (
+		# A message of its own, after the one saying what was written
+		Notify.toast.call_deferred(
+			(
 				tr("JPG doesn't support transparency, so transparent areas were filled with white.")
 				if options.opaque_background == Color.WHITE
 				else tr(
@@ -329,11 +344,12 @@ func _export_image(path: String, options: ExportOptions) -> Dictionary:
 						+ "the background colour."
 					)
 				)
-			)
+			),
+			7.0
 		)
 	if options.scale == 1:
 		Global.document.export_path = path
-	return {"message": message}
+	return {"message": _exported(path, data_files)}
 
 
 ## Writes each page of the packed sheet as an image, numbered when there are more
@@ -368,17 +384,7 @@ func _export_pages(path: String, options: ExportOptions) -> Dictionary:
 	unlink_overwritten(paths)
 	if options.scale == 1:
 		Global.document.export_path = path
-	if paths.size() == 1:
-		return {
-			"message": tr("Exported %s in %s.") % [path.get_file(), path.get_base_dir().get_file()]
-		}
-	return {
-		"message":
-		(
-			tr_n("Exported %d page, from %s.", "Exported %d pages, from %s.", paths.size())
-			% [paths.size(), paths[0].get_file()]
-		)
-	}
+	return {"message": _exported(paths[0], paths.size() - 1)}
 
 
 ## Packs trimmed frames tightly and writes the atlas's pages with a data file
@@ -395,30 +401,7 @@ func _export_atlas(path: String, options: ExportOptions) -> Dictionary:
 	unlink_overwritten(result.paths)
 	for written: String in result.paths:
 		WebFiles.download(written)
-	var size: Vector2i = result.size
-	if result.pages > 1:
-		return {
-			"message":
-			(
-				tr_n(
-					"Packed %d frame on %d pages, from %s, and %s.",
-					"Packed %d frames on %d pages, from %s, and %s.",
-					result.frames
-				)
-				% [result.frames, result.pages, result.path.get_file(), result.json_path.get_file()]
-			)
-		}
-	return {
-		"message":
-		(
-			tr_n(
-				"Packed %d frame into %s (%d×%d px) and %s.",
-				"Packed %d frames into %s (%d×%d px) and %s.",
-				result.frames
-			)
-			% [result.frames, result.path.get_file(), size.x, size.y, result.json_path.get_file()]
-		)
-	}
+	return {"message": _exported(result.path, result.paths.size() - 1)}
 
 
 ## Frames linked to files that were just written over would be cut from what

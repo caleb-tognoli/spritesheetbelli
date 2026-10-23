@@ -117,3 +117,46 @@ func test_file_name_cell_size() -> void:
 		GridGuesser.guess_cell_size_from_file_name("hero_80x80.png", size), Vector2i.ZERO, "too big"
 	)
 	assert_eq(GridGuesser.guess_cell_size_from_file_name("hero.png", size), Vector2i.ZERO)
+
+
+## Tiles filling cells of [param cell] pixels with [param spacing] empty pixels after every
+## one, the last column and row too unless [param trailing] is false, like Kenney's sheets
+func make_spaced_sheet(grid: Vector2i, cell: int, spacing: int, trailing := true) -> Image:
+	var size := grid * (cell + spacing) - (Vector2i.ZERO if trailing else Vector2i.ONE * spacing)
+	var img := Image.create_empty(size.x, size.y, false, Image.FORMAT_RGBA8)
+	for y in grid.y:
+		for x in grid.x:
+			img.fill_rect(Rect2i(Vector2i(x, y) * (cell + spacing), Vector2i.ONE * cell), Color.RED)
+	return img
+
+
+func test_spacing_after_every_cell() -> void:
+	var img := make_spaced_sheet(Vector2i(8, 3), 16, 1)
+	assert_eq(GridGuesser.guess(img), Vector2i(8, 3))
+	assert_eq(GridGuesser.guess_spacing(img, Vector2i(8, 3)), Vector2i(1, 1))
+	img = make_spaced_sheet(Vector2i(8, 3), 16, 1, false)
+	assert_eq(GridGuesser.guess(img), Vector2i(8, 3))
+	assert_eq(GridGuesser.guess_spacing(img, Vector2i(8, 3)), Vector2i(1, 1), "none after the last")
+	img = make_spaced_sheet(Vector2i(4, 2), 32, 2)
+	assert_eq(GridGuesser.guess_spacing(img, Vector2i(4, 2)), Vector2i(2, 2))
+
+
+func test_margins_of_the_sprites_are_not_spacing() -> void:
+	var grid := Vector2i(8, 2)
+	assert_eq(
+		GridGuesser.guess_spacing(make_sheet(grid, Vector2i(16, 16), 1), grid),
+		Vector2i.ZERO,
+		"empty on every side: sprites centred in their cells"
+	)
+	# Facing left, standing on the bottom: empty on the right only
+	var img := Image.create_empty(8 * 16, 2 * 16, false, Image.FORMAT_RGBA8)
+	for y in grid.y:
+		for x in grid.x:
+			img.fill_rect(Rect2i(x * 16, y * 16 + 3, 14, 13), Color.RED)
+	assert_eq(GridGuesser.guess_spacing(img, grid), Vector2i.ZERO, "on one axis only")
+	var strip := make_spaced_sheet(Vector2i(8, 1), 16, 1)
+	assert_eq(GridGuesser.guess_spacing(strip, Vector2i(8, 1)), Vector2i.ZERO, "a single row")
+	var wide := make_spaced_sheet(Vector2i(4, 2), 16, 4)
+	assert_eq(
+		GridGuesser.guess_spacing(wide, Vector2i(4, 2)), Vector2i.ZERO, "too wide for spacing"
+	)

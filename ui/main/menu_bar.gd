@@ -105,6 +105,7 @@ const MENUS := {  # L10n.mark
 		&"color_key",
 		&"add_outline",
 		&"generate_inbetweens",
+		&"regenerate_inbetweens",
 		&"replace_image",
 		&"reload_source",
 		&"",

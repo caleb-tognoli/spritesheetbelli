@@ -5,6 +5,9 @@ name: Native library
 on:
   workflow_call:
 
+env:
+  GODOT_VERSION: 4.7.2
+
 jobs:
   build:
     strategy:
@@ -38,3 +41,12 @@ jobs:
           name: native-${{ runner.os }}
           path: extension/bin/
 
+      - name: Drag a file over Godot on X11
+        if: runner.os == 'Linux'
+        # Until it has passed here: it was written without an X11 desktop to try it on
+        continue-on-error: true
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq xvfb xdotool python3-gi gir1.2-gtk-3.0 libgl1-mesa-dri
+          curl -sSLo godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP"
+          GODOT="$RUNNER_TEMP/Godot_v${GODOT_VERSION}-stable_linux.x86_64" timeout 120 native/tests/x11_drag_test.sh

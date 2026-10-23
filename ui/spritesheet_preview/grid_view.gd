@@ -1,13 +1,17 @@
 class_name GridView
 extends RefCounted
 ## How a [SpritesheetPreview] shows the grid layout: the cells where the export puts them,
-## with their frames, extruded edges, locks and lines.
+## with their frames, extruded edges, locks and lines, and a warning on in-betweens whose
+## keys changed since they were made.
 
 const LOCKED_COLOR := Color(0.85, 0.85, 0.85, 0.9)
 ## On-screen size of the lock icon on locked cells
 const LOCK_ICON_SIZE := 28.0
+## On-screen size of the warning on out-of-date in-betweens
+const STALE_ICON_SIZE := 16.0
 
 static var _lock_icon := CanvasIcon.new(preload("res://assets/icons/Lock.svg"))
+static var _stale_icon := CanvasIcon.new(preload("res://assets/icons/StatusWarning.svg"))
 
 ## The sheet shown, an empty one until [method update]
 var sheet := Spritesheet.new()
@@ -85,6 +89,8 @@ func draw(
 					drawn.append(coord)
 					if extrude > 0:
 						_draw_extrusion(canvas, coord, rect)
+					if InBetween.is_stale(sheet, coord):
+						draw_stale_mark(canvas, rect, pixel)
 			elif sheet.is_locked(coord):
 				_draw_lock(canvas, rect, pixel)
 			if coord == hovered:
@@ -135,6 +141,22 @@ func _draw_extrusion(canvas: SpritesheetPreview, coord: Vector2i, cell: Rect2) -
 		[Rect2(frame.end, Vector2.ONE * amount), Rect2(last, Vector2.ONE)],
 	]:
 		canvas.draw_texture_rect_region(texture, part[0], part[1])
+
+
+## A warning in the top-right corner of [param rect], or the bottom-right one
+## [param at_bottom], saying the in-betweens there are out of date (see
+## [method InBetween.is_stale]): the same size on screen at any zoom, but never bigger than
+## half the frame
+static func draw_stale_mark(
+	canvas: SpritesheetPreview, rect: Rect2, pixel: float, at_bottom := false
+) -> void:
+	var mark := minf(STALE_ICON_SIZE * pixel, minf(rect.size.x, rect.size.y) / 2)
+	var y := rect.end.y - mark - pixel * 2 if at_bottom else rect.position.y + pixel * 2
+	var corner := Rect2(rect.end.x - mark - pixel * 2, y, mark, mark)
+	# A shadow keeps it visible on light frames
+	var shadow := Rect2(corner.position + Vector2.ONE * pixel, corner.size)
+	_stale_icon.draw(canvas, shadow, Color(0, 0, 0, 0.7))
+	_stale_icon.draw(canvas, corner)
 
 
 ## A dimmed cell with a lock in the middle, kept small when zoomed out

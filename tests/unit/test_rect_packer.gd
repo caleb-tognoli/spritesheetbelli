@@ -115,6 +115,26 @@ func test_taken_places_are_left_alone() -> void:
 	assert_true(pages[0].size() > 0, "fills the free space of the first page")
 
 
+func packed_page(count: int, size: Vector2i) -> Vector2i:
+	var sizes: Array[Vector2i] = []
+	for i in count:
+		sizes.append(size)
+	var settings := AtlasSettings.new()
+	var result := RectPacker.pack(sizes, settings)
+	assert_valid(sizes, result, settings)
+	var rects: Array[Rect2i] = []
+	rects.assign(RectPacker.rects_by_page(sizes, result.placements, 1)[0])
+	return RectPacker.page_size(rects, settings)
+
+
+func test_strips_give_way_to_squarer_pages() -> void:
+	# 7 frames of one size only make a rectangle with no gaps as a single column
+	assert_eq(packed_page(7, Vector2i(14, 22)), Vector2i(56, 44), "not 14×154, for 14% more")
+	assert_eq(packed_page(13, Vector2i(14, 22)), Vector2i(98, 44), "not 14×286")
+	assert_eq(packed_page(5, Vector2i(14, 22)), Vector2i(70, 22), "4 × 2 would cost 20% more")
+	assert_eq(packed_page(6, Vector2i(14, 22)), Vector2i(42, 44), "already square")
+
+
 func test_packing_is_deterministic() -> void:
 	var sizes := random_sizes(50, 11)
 	var settings := settings_with({"allow_rotation": true, "max_size": 128})

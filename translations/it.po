@@ -1122,8 +1122,8 @@ msgid "How long it's shown: 2 is twice as long as a frame"
 msgstr "Per quanto è mostrato: 2 è il doppio di un frame"
 
 #: res://ui/main/about_dialog.gd
-msgid "Combine sprites into spritesheets and cut spritesheets into sprites."
-msgstr "Unisci sprite in spritesheet e taglia spritesheet in sprite."
+msgid "Cut, pack, animate and export spritesheets for any engine."
+msgstr "Taglia, compatta, anima ed esporta spritesheet per ogni motore di gioco."
 
 #: res://ui/main/about_dialog.gd
 #: res://ui/main/main_actions.gd
@@ -1434,10 +1434,10 @@ msgid "Could not save: %s."
 msgstr "Impossibile salvare: %s."
 
 #: res://ui/main/export_controller.gd
-msgid "Saved %d image to %s."
-msgid_plural "Saved %d images to %s."
-msgstr[0] "Salvata %d immagine in %s."
-msgstr[1] "Salvate %d immagini in %s."
+msgid "Exported %d sprite"
+msgid_plural "Exported %d sprites"
+msgstr[0] "Esportato %d sprite"
+msgstr[1] "Esportati %d sprite"
 
 #: res://ui/main/export_controller.gd
 msgid "The spritesheet is empty."
@@ -1448,10 +1448,10 @@ msgid "Could not export to %s (%s)."
 msgstr "Impossibile esportare in %s (%s)."
 
 #: res://ui/main/export_controller.gd
-msgid "Saved %d strip to %s."
-msgid_plural "Saved %d strips to %s."
-msgstr[0] "Salvata %d striscia in %s."
-msgstr[1] "Salvate %d strisce in %s."
+msgid "Exported %d strip"
+msgid_plural "Exported %d strips"
+msgstr[0] "Esportata %d striscia"
+msgstr[1] "Esportate %d strisce"
 
 #: res://ui/main/export_controller.gd
 msgid "Making the GIF"
@@ -1462,10 +1462,8 @@ msgid "The animation has no frames."
 msgstr "L'animazione non ha frame."
 
 #: res://ui/main/export_controller.gd
-msgid "Exported %s (%d frame)."
-msgid_plural "Exported %s (%d frames)."
-msgstr[0] "Esportato %s (%d frame)."
-msgstr[1] "Esportato %s (%d frame)."
+msgid "Exported %s"
+msgstr "Esportato %s"
 
 #: res://ui/main/export_controller.gd
 msgid "Making the GIFs"
@@ -1476,26 +1474,28 @@ msgid "No animation has frames."
 msgstr "Nessuna animazione ha frame."
 
 #: res://ui/main/export_controller.gd
-msgid "Saved %d GIF to %s."
-msgid_plural "Saved %d GIFs to %s."
-msgstr[0] "Salvata %d GIF in %s."
-msgstr[1] "Salvate %d GIF in %s."
+msgid "Exported %d GIF"
+msgid_plural "Exported %d GIFs"
+msgstr[0] "Esportata %d GIF"
+msgstr[1] "Esportate %d GIF"
 
 #: res://ui/main/export_controller.gd
 msgid "Make the sprites smaller or use fewer cells."
 msgstr "Rimpicciolisci gli sprite o usa meno celle."
 
 #: res://ui/main/export_controller.gd
-msgid "Exported %s in %s."
-msgstr "Esportato %s in %s."
+msgid "(+%d file)"
+msgid_plural "(+%d files)"
+msgstr[0] "(+%d file)"
+msgstr[1] "(+%d file)"
 
 #: res://ui/main/export_controller.gd
 msgid "Could not write the metadata (%s)."
 msgstr "Impossibile scrivere i metadati (%s)."
 
 #: res://ui/main/export_controller.gd
-msgid "Also wrote %s."
-msgstr "Scritto anche %s."
+msgid "Show"
+msgstr "Mostra"
 
 #: res://ui/main/export_controller.gd
 msgid "JPG doesn't support transparency, so transparent areas were filled with white."
@@ -1506,30 +1506,12 @@ msgid "JPG doesn't support transparency, so transparent areas were filled with t
 msgstr "JPG non supporta la trasparenza, quindi le aree trasparenti sono state riempite col colore di sfondo."
 
 #: res://ui/main/export_controller.gd
-msgid "Exported %d page, from %s."
-msgid_plural "Exported %d pages, from %s."
-msgstr[0] "Esportata %d pagina, da %s."
-msgstr[1] "Esportate %d pagine, da %s."
-
-#: res://ui/main/export_controller.gd
 msgid "The frames don't fit in a %d px atlas."
 msgstr "I frame non entrano in un atlante di %d px."
 
 #: res://ui/main/export_controller.gd
 msgid "Could not export the atlas (%s)."
 msgstr "Impossibile esportare l'atlante (%s)."
-
-#: res://ui/main/export_controller.gd
-msgid "Packed %d frame on %d pages, from %s, and %s."
-msgid_plural "Packed %d frames on %d pages, from %s, and %s."
-msgstr[0] "Compattato %d frame su %d pagine, da %s, e %s."
-msgstr[1] "Compattati %d frame su %d pagine, da %s, e %s."
-
-#: res://ui/main/export_controller.gd
-msgid "Packed %d frame into %s (%d×%d px) and %s."
-msgid_plural "Packed %d frames into %s (%d×%d px) and %s."
-msgstr[0] "Compattato %d frame in %s (%d×%d px) e %s."
-msgstr[1] "Compattati %d frame in %s (%d×%d px) e %s."
 
 #: res://ui/main/export_controller.gd
 msgid "Frames from %s are no longer linked to it, since the export wrote over it."
@@ -1594,8 +1576,14 @@ msgid "Add"
 msgstr "Aggiungi"
 
 #: res://ui/main/export_dialog.gd
-msgid "Add an export, to write more than one at once"
-msgstr "Aggiungi un'esportazione, per scriverne più di una alla volta"
+msgid "Add an export, to write more than one at once, or one for an engine"
+msgstr "Aggiungi un'esportazione, per scriverne più di una alla volta, o una per un motore"
+
+msgid "New Export"
+msgstr "Nuova esportazione"
+
+msgid "For a game engine"
+msgstr "Per un motore di gioco"
 
 #: res://ui/main/export_dialog.gd
 msgid "Duplicate the selected export"
@@ -1642,9 +1630,13 @@ msgstr "Riempi la trasparenza con"
 msgid "A colour behind the sprites. Fully transparent (the default) leaves the background transparent."
 msgstr "Un colore dietro gli sprite. Completamente trasparente (il predefinito) lascia lo sfondo trasparente."
 
-#: res://ui/main/export_dialog.gd
+#: res://scripts/ui/color_field.gd
 msgid "Transparent"
 msgstr "Trasparente"
+
+#: res://ui/main/export_dialog.gd
+msgid "Make the background transparent again"
+msgstr "Rendi di nuovo trasparente lo sfondo"
 
 #: res://ui/main/export_dialog.gd
 msgid "Background"
@@ -2037,6 +2029,10 @@ msgid "Take every pin away"
 msgstr "Toglie tutte le puntine"
 
 #: res://ui/main/inbetween_dialog.gd
+msgid "No animation plays these two frames one after the other."
+msgstr "Nessuna animazione riproduce questi due frame uno dopo l'altro."
+
+#: res://ui/main/inbetween_dialog.gd
 msgid "Movement"
 msgstr "Movimento"
 
@@ -2111,6 +2107,10 @@ msgstr "Quanto si sposta tutto lo sprite dal primo frame chiave al secondo, in o
 #: res://ui/main/inbetween_dialog.gd
 msgid "Keep animation length"
 msgstr "Mantieni la durata dell'animazione"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Keep length"
+msgstr "Mantieni durata"
 
 #: res://ui/main/inbetween_dialog.gd
 msgid "Click a frame below to see it here."
@@ -3098,6 +3098,14 @@ msgid "Dec"
 msgstr "dic"
 
 #: res://ui/main/start_screen.gd
+msgid "Drop to open"
+msgstr "Rilascia per aprire"
+
+#: res://ui/main/drop_overlay.gd
+msgid "Drop to add"
+msgstr "Rilascia per aggiungere"
+
+#: res://ui/main/start_screen.gd
 msgid "Files you open will appear here"
 msgstr "Qui compariranno i file che apri"
 
@@ -3180,12 +3188,8 @@ msgid "Reopen last projects"
 msgstr "Riapri gli ultimi progetti"
 
 #: res://ui/settings/settings_window.gd
-msgid "Recovery copy every"
-msgstr "Copia di recupero ogni"
-
-#: res://ui/settings/settings_window.gd
-msgid "min"
-msgstr "min"
+msgid "Recovery copies"
+msgstr "Copie di recupero"
 
 #: res://ui/settings/settings_window.gd
 msgid "Number frames from"
@@ -3332,8 +3336,8 @@ msgid "Open the projects that were open in tabs again when the app starts"
 msgstr "Riapri all'avvio dell'app i progetti che erano aperti nelle schede"
 
 #: res://ui/settings/settings_window.gd
-msgid "How often a copy of unsaved work is kept, to recover it if spritesheetbelli closes unexpectedly. 0 turns it off."
-msgstr "Ogni quanto si tiene una copia del lavoro non salvato, per recuperarlo se spritesheetbelli si chiude all'improvviso. 0 la disattiva."
+msgid "Keep a copy of unsaved work, written a few seconds after each change, to recover it if spritesheetbelli closes unexpectedly"
+msgstr "Tiene una copia del lavoro non salvato, scritta pochi secondi dopo ogni modifica, per recuperarlo se spritesheetbelli si chiude all'improvviso"
 
 #: res://ui/settings/settings_window.gd
 msgid "A checkerboard behind sprites shows their transparent pixels"
@@ -3646,3 +3650,51 @@ msgstr "Scheda successiva"
 #: res://ui/main/main_actions.gd
 msgid "Previous Tab"
 msgstr "Scheda precedente"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "In-between %d of %d"
+msgstr "Intermedio %d di %d"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "a key frame was removed"
+msgstr "un frame chiave è stato rimosso"
+
+#: res://scripts/inbetween/inbetween.gd
+msgid "out of date: a key frame changed"
+msgstr "non aggiornato: un frame chiave è cambiato"
+
+#: res://ui/main/action_reasons.gd
+msgid "No in-betweens selected"
+msgstr "Nessun frame intermedio selezionato"
+
+#: res://ui/main/action_reasons.gd
+msgid "A key frame was removed"
+msgstr "Un frame chiave è stato rimosso"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Regenerate In-Betweens"
+msgstr "Rigenera frame intermedi"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "Regenerate"
+msgstr "Rigenera"
+
+#: res://ui/main/main_actions.gd
+msgid "The selected in-betweens made again from their keys as they are now"
+msgstr "I frame intermedi selezionati rifatti dai loro frame chiave come sono ora"
+
+#: res://ui/main/main_actions.gd
+msgid "Regenerate In-Betweens…"
+msgstr "Rigenera frame intermedi…"
+
+#: res://ui/main/main_ui.gd
+msgid "Some of these in-betweens were changed since they were made. Regenerating them loses that."
+msgstr "Alcuni di questi frame intermedi sono stati modificati da quando sono stati creati. Rigenerandoli si perdono le modifiche."
+
+#: res://ui/main/main_ui.gd
+msgid "Regenerate in-betweens"
+msgstr "Rigenera frame intermedi"
+
+#: res://ui/main/inbetween_dialog.gd
+msgid "They stay where they are, in their animations"
+msgstr "Restano dove sono, nelle loro animazioni"

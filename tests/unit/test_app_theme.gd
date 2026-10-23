@@ -89,7 +89,7 @@ func test_the_settings_window_hides_the_accent_while_the_system_s_is_used() -> v
 	add_child(window)
 	window.popup_centered()
 	window.show_category("Interface")
-	var picker := window.get_control(&"accent_color") as ColorPickerButton
+	var picker := window.get_control(&"accent_color") as ColorField
 	var check := window.get_control(&"system_accent") as CheckBox
 	var theme_option := window.get_control(&"theme") as OptionButton
 	assert_eq(theme_option.get_item_text(theme_option.selected), "System")

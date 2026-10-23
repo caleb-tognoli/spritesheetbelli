@@ -88,6 +88,12 @@ const PACKED_TYPES: Array[ExportOptions.Target] = [
 	ExportOptions.Target.STRIPS,
 	ExportOptions.Target.CUSTOM,
 ]
+## Exports set up for a game engine, on Add's menu, by the data format they write: a sheet
+## and data file for a grid, a packed atlas for a packed sheet, and strips for GameMaker
+const ENGINE_FORMATS: Array[String] = [
+	"godot", "unity", STRIPS_FORMAT, "phaser", "defold", "atlas", "cocos2d", "css"
+]
+const STRIPS_FORMAT := "strips"
 const LABEL_WIDTH := 170
 const EXPORT_ALL := &"export_all"
 ## Files named in the list of what an export writes, before "… 3 more"
@@ -104,6 +110,8 @@ var target_list := ItemList.new()
 ## The list's side of the dialog, as wide as it was last dragged
 var list_split: SidebarSplit
 var add_target := Button.new()
+## Add's menu: a new export, or one set up for an engine, see [constant ENGINE_FORMATS]
+var add_menu := PopupMenu.new()
 var duplicate_target := Button.new()
 var remove_target := Button.new()
 var export_all: Button
@@ -114,10 +122,10 @@ var about := Label.new()
 var output := OutputPathField.new()
 var image_format := OptionButton.new()
 var jpg_quality := SpinBox.new()
-var jpg_background := ColorPickerButton.new()
-var background_picker := ColorPickerButton.new()
-## Says "Transparent" on [member background_picker] when it's fully transparent
-var transparent_label := Label.new()
+var jpg_background_field := ColorField.new()
+var jpg_background := jpg_background_field.picker
+var background_field := ColorField.new()
+var background_picker := background_field.picker
 var pattern := NamePatternField.new()
 var pattern_example := Label.new()
 var only_selected := CheckBox.new()
@@ -188,7 +196,8 @@ func _init() -> void:
 	left.add_child(list_buttons)
 	add_target.text = "Add"
 	add_target.icon = preload("res://assets/icons/Add.svg")
-	add_target.tooltip_text = "Add an export, to write more than one at once"
+	add_target.tooltip_text = "Add an export, to write more than one at once, or one for an engine"
+	add_target.add_child(add_menu)
 	duplicate_target.icon = preload("res://assets/icons/Duplicate.svg")
 	duplicate_target.tooltip_text = "Duplicate the selected export"
 	remove_target.icon = preload("res://assets/icons/Remove.svg")
@@ -230,27 +239,21 @@ func _init() -> void:
 	jpg_quality.max_value = 100
 	jpg_quality.suffix = "%"
 	add_row(_settings, L10n.mark("JPG quality"), jpg_quality, [T.IMAGE], "jpg")
-	jpg_background.edit_alpha = false
-	jpg_background.custom_minimum_size = Vector2(60, 0)
-	jpg_background.tooltip_text = "JPG has no transparency, so transparent areas get this colour"
-	add_row(_settings, L10n.mark("Fill transparency with"), jpg_background, [T.IMAGE], "jpg")
+	jpg_background_field.tooltip_text = (
+		"JPG has no transparency, so transparent areas get this colour"
+	)
+	add_row(
+		_settings, L10n.mark("Fill transparency with"), jpg_background_field, [T.IMAGE], "jpg"
+	)
 
-	background_picker.tooltip_text = (
+	background_field.tooltip_text = (
 		"A colour behind the sprites. Fully transparent (the default) leaves the "
 		+ "background transparent."
 	)
-	background_picker.custom_minimum_size = Vector2(60, 0)
-	transparent_label.text = "Transparent"
-	transparent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	transparent_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	transparent_label.add_theme_color_override("font_color", Color.WHITE)
-	transparent_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	transparent_label.add_theme_constant_override("outline_size", 4)
-	transparent_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	transparent_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background_picker.add_child(transparent_label)
+	background_field.clearable = true
+	background_field.clear_button.tooltip_text = "Make the background transparent again"
 	add_row(
-		_settings, L10n.mark("Background"), background_picker, [T.IMAGE, T.DATA, T.GIF, T.STRIPS]
+		_settings, L10n.mark("Background"), background_field, [T.IMAGE, T.DATA, T.GIF, T.STRIPS]
 	)
 	gif_animation.tooltip_text = "Which animation the GIF plays"
 	add_row(_settings, L10n.mark("Animation"), gif_animation, [T.GIF])
@@ -335,7 +338,7 @@ func _init() -> void:
 
 	type.item_selected.connect(_changed.unbind(1))
 	image_format.item_selected.connect(_changed.unbind(1))
-	background_picker.color_changed.connect(_changed.unbind(1))
+	background_field.color_changed.connect(_changed.unbind(1))
 	pattern.text_changed.connect(_changed.unbind(1))
 	only_selected.toggled.connect(_changed.unbind(1))
 	existing.item_selected.connect(_changed.unbind(1))
@@ -351,9 +354,17 @@ func _init() -> void:
 	templates_folder.pressed.connect(open_templates_folder)
 	for spin: SpinBox in [jpg_quality, animation_fps, gif_scale]:
 		spin.value_changed.connect(_changed.unbind(1))
-	jpg_background.color_changed.connect(_changed.unbind(1))
+	jpg_background_field.color_changed.connect(_changed.unbind(1))
 	target_list.item_selected.connect(select)
-	add_target.pressed.connect(add)
+	add_target.pressed.connect(open_add_menu)
+	add_menu.index_pressed.connect(
+		func(index: int) -> void:
+			var format: String = add_menu.get_item_metadata(index)
+			if format:
+				add_for_engine(format)
+			else:
+				add()
+	)
 	duplicate_target.pressed.connect(duplicate_selected)
 	remove_target.pressed.connect(remove_selected)
 	confirmed.connect(export_selected)
@@ -412,12 +423,18 @@ func refresh() -> void:
 	select(_selected)
 
 
-## A target to add: like the sheet's own export settings, like how it was imported. Packed
-## sheets are usually exported as atlases, until another export is picked.
+## A target to add: like the sheet's own export settings, like how it was imported, else
+## the same kind as the last export written (the export_kind setting). Packed sheets are
+## usually exported as atlases, until another export is picked.
 static func new_target() -> ExportTarget:
 	var sheet := Global.spritesheet
-	var target := ExportTarget.create(sheet, ExportOptions.from_sheet(sheet).to_dictionary())
-	var chosen := sheet.export_settings.has("target")
+	var kind: Dictionary = Settings.get_value(&"export_kind")
+	var options := ExportOptions.from_settings()
+	options.use_defaults_of(sheet)
+	options.apply(kind)
+	options.apply(sheet.export_settings)
+	var target := ExportTarget.create(sheet, options.to_dictionary())
+	var chosen := sheet.export_settings.has("target") or kind.has("target")
 	if _is_packed() and (target.options.target not in PACKED_TYPES or not chosen):
 		target.options.target = T.ATLAS
 	return target
@@ -447,6 +464,48 @@ func select(index: int) -> void:
 func add() -> void:
 	_draft = false
 	_targets.append(new_target())
+	_fill_list()
+	select(_targets.size() - 1)
+
+
+## Shows Add's menu under it: a new export like the others, then one for each engine, those
+## whose format doesn't take the sheet's layout greyed out
+func open_add_menu() -> void:
+	add_menu.clear()
+	add_menu.add_icon_item(add_target.icon, tr("New Export"))
+	add_menu.set_item_metadata(0, "")
+	add_menu.add_separator(tr("For a game engine"))
+	var layout := "packed" if _is_packed() else "grid"
+	for format in ENGINE_FORMATS:
+		var index := add_menu.item_count
+		if format == STRIPS_FORMAT:
+			add_menu.add_icon_item(TYPES[_type_index(T.STRIPS)].icon, tr("GameMaker strips"))
+		else:
+			var data_type := T.ATLAS if _is_packed() else T.DATA
+			var icon: Texture2D = TYPES[_type_index(data_type)].icon
+			add_menu.add_icon_item(icon, AtlasFormats.get_format_name(format))
+			if not AtlasFormats.has_format(format, layout):
+				add_menu.set_item_disabled(index, true)
+				add_menu.set_item_tooltip(index, tr("Only in the grid layout"))
+		add_menu.set_item_metadata(index, format)
+	var below := add_target.get_screen_transform() * Vector2(0, add_target.size.y)
+	add_menu.popup(Rect2i(Vector2i(below), Vector2i.ZERO))
+
+
+## Adds an export for an engine, writing [param format] (see [constant ENGINE_FORMATS]):
+## the sheet and a data file for a grid, a packed atlas for a packed sheet
+func add_for_engine(format: String) -> void:
+	var target := new_target()
+	if format == STRIPS_FORMAT:
+		target.options.target = T.STRIPS
+	elif _is_packed():
+		target.options.target = T.ATLAS
+		target.options.atlas_data = format
+	else:
+		target.options.target = T.DATA
+		target.options.grid_data = format
+	_draft = false
+	_targets.append(target)
 	_fill_list()
 	select(_targets.size() - 1)
 
@@ -534,8 +593,8 @@ func _show(target: ExportTarget) -> void:
 	type.select(_type_index(options.target))
 	image_format.select(ExportOptions.IMAGE_FORMATS.find(options.image_format))
 	jpg_quality.set_value_no_signal(roundi(options.jpg_quality * 100))
-	jpg_background.color = options.opaque_background
-	background_picker.color = options.background
+	jpg_background_field.color = options.opaque_background
+	background_field.color = options.background
 	pattern.text = options.sprite_name_pattern
 	pattern.line_edit.placeholder_text = options.default_name_pattern
 	only_selected.button_pressed = options.only_selected
@@ -655,7 +714,6 @@ func _update_labels(options: ExportOptions) -> void:
 		if example + ".png" not in examples:
 			examples.append(example + ".png")
 	pattern_example.text = tr("For example: %s") % ", ".join(examples) if examples else ""
-	transparent_label.visible = is_zero_approx(options.background.a)
 	var files := _files(options)
 	files_info.visible = files.size() > 1
 	files_info.text = tr("Files: %s") % _list_files(files)

@@ -6,6 +6,9 @@ var dir := temp_path("recovery_test")
 
 
 func before_each() -> void:
+	# Copies are due as soon as anything changed, so the timer writes them right away
+	Recovery.idle_seconds = 0.0
+	Recovery.min_gap_seconds = 0.0
 	DirAccess.make_dir_recursive_absolute(dir)
 	Global.document.reset()
 	await start()
@@ -18,6 +21,8 @@ func after_each() -> void:
 	Settings.reset_to_defaults()
 	Settings.set_value(&"last_session", [])
 	Recovery.is_process_running = OS.is_process_running
+	Recovery.idle_seconds = 3.0
+	Recovery.min_gap_seconds = 30.0
 	remove_dir(dir)
 	if DirAccess.dir_exists_absolute(Recovery.folder):
 		remove_dir(Recovery.folder)
@@ -60,15 +65,15 @@ func read_copy() -> Dictionary:
 	return Recovery.read_info(recovery.copy_dir())
 
 
-func test_copied_every_few_minutes_when_unsaved() -> void:
-	assert_eq(recovery.timer.wait_time, 120.0, "every 2 minutes")
-	assert_false(recovery.timer.is_stopped())
+func test_copied_soon_after_changes_when_unsaved() -> void:
+	assert_true(recovery.timer.is_stopped(), "nothing to copy")
 	recovery.timer.timeout.emit()
 	recovery.wait()
 	assert_false(recovery.has_copy(), "nothing unsaved")
 
 	add_frames(1)
 	assert_false(recovery.has_copy(), "a small change waits for the timer")
+	assert_false(recovery.timer.is_stopped())
 	recovery.timer.timeout.emit()
 	recovery.wait()
 	assert_true(recovery.has_copy(), "written")
@@ -90,11 +95,25 @@ func test_copied_every_few_minutes_when_unsaved() -> void:
 	assert_false(recovery.has_copy(), "nothing new to copy")
 
 
-func test_interval_setting() -> void:
-	Settings.set_value(&"recovery_minutes", 5)
-	assert_eq(recovery.timer.wait_time, 300.0)
-	Settings.set_value(&"recovery_minutes", 0)
-	assert_true(recovery.timer.is_stopped(), "off")
+func test_when_copies_are_due() -> void:
+	Recovery.idle_seconds = 3.0
+	Recovery.min_gap_seconds = 30.0
+	assert_eq(Recovery.due_time(1000, 1000, -1), 4000, "3 s after a change")
+	assert_eq(Recovery.due_time(5000, 1000, -1), 8000, "3 s after the last one")
+	assert_eq(Recovery.due_time(29000, 1000, -1), 31000, "30 s after the first, editing on")
+	assert_eq(Recovery.due_time(41000, 41000, 31000), 61000, "30 s after the last copy")
+	assert_eq(Recovery.due_time(100000, 100000, 31000), 103000, "long after it")
+
+	add_frames(1)
+	assert_true(absf(recovery.timer.time_left - 3.0) < 0.5, "waits for editing to stop")
+	recovery.save_copy()
+	recovery.wait()
+	add_frames(1)
+	assert_true(absf(recovery.timer.time_left - 30.0) < 0.5, "not sooner than 30 s after it")
+
+
+func test_setting_turns_copies_off() -> void:
+	Settings.set_value(&"recovery", false)
 	add_frames(Recovery.BIG_CHANGE_FRAMES)
 	await get_tree().process_frame
 	recovery.save_copy()
@@ -308,7 +327,7 @@ func test_a_run_says_its_running() -> void:
 func test_web() -> void:
 	Recovery.enabled = false
 	var window := SettingsWindow.new()
-	assert_true(window.get_control(&"recovery_minutes") == null, "no setting in a browser")
+	assert_true(window.get_control(&"recovery") == null, "no setting in a browser")
 	window.free()
 	var other := Recovery.new()
 	add_child(other)
@@ -319,5 +338,5 @@ func test_web() -> void:
 	other.queue_free()
 	Recovery.enabled = true
 	window = SettingsWindow.new()
-	assert_true(window.get_control(&"recovery_minutes") != null)
+	assert_true(window.get_control(&"recovery") != null)
 	window.free()

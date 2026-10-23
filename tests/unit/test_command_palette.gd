@@ -255,6 +255,14 @@ func test_recent_first() -> void:
 	assert_eq(listed().slice(0, 3), ["View › Zoom In", "View › Fit to View", "File › New"])
 	type("fi")
 	assert_eq(listed()[0], "View › Fit to View", "the recent ones that match")
+	palette.hide()
+
+	# A better match comes first, run lately or not: "Frame" has the r and e
+	CommandPalette.remember("generate_inbetweens")
+	palette.open(main.preview_area)
+	type("regenerate")
+	var first_two := ["Frame › Regenerate In-Betweens…", "Frame › Generate In-Betweens…"]
+	assert_eq(listed().slice(0, 2), first_two)
 	for i in 20:
 		CommandPalette.remember("action_%d" % i)
 	assert_eq(CommandPalette.get_recent().size(), CommandPalette.MAX_RECENT, "only the last few")

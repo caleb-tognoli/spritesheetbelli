@@ -178,13 +178,21 @@ func get_display_name() -> String:
 
 
 ## The file the document is named after: the project, else the image it came from or was
-## exported to, else the file its first linked frame came from
+## exported to, else the first folder it follows, else the file its first linked frame
+## came from
 func get_name_path() -> String:
 	if path:
 		return path
 	if export_path:
 		return export_path
+	if is_named_after_folder():
+		return spritesheet.linked_folders[0]
 	return FrameSource.get_first_path(spritesheet)
+
+
+## Whether [method get_name_path] is a folder the sheet follows, as after dropping one
+func is_named_after_folder() -> bool:
+	return not path and not export_path and not spritesheet.linked_folders.is_empty()
 
 
 ## Whether nothing is open: no file, no frames and no history, as after New. The start

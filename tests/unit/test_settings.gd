@@ -71,6 +71,21 @@ func test_window_edits_settings() -> void:
 	window.queue_free()
 
 
+func test_checks_say_their_state_and_colours_their_code() -> void:
+	var window := SettingsWindow.new()
+	add_child(window)
+	window.popup_centered()
+	window.show_category("Atlas")
+	var dedupe := window.get_control(&"atlas_dedupe") as CheckBox
+	assert_eq(dedupe.text, "On", "says its state")
+	dedupe.button_pressed = false
+	assert_eq(dedupe.text, "Off")
+	var grid_color := window.get_control(&"grid_color") as ColorField
+	assert_eq(grid_color.label.text, "#d9d9d980", "colours say their code")
+	assert_eq(grid_color.picker.mouse_filter, Control.MOUSE_FILTER_IGNORE, "the field's tooltip")
+	window.queue_free()
+
+
 func test_index_start_used_in_export() -> void:
 	var sheet := Spritesheet.new()
 	sheet.add_frames([make_image(Color.RED)] as Array[Image])

@@ -137,6 +137,8 @@ static func get_titles(documents: Array[Document]) -> PackedStringArray:
 static func _icon_of(document: Document) -> Texture2D:
 	if ProjectFile.is_project_path(document.path):
 		return PROJECT_ICON
+	if document.is_named_after_folder():
+		return FOLDER_ICON
 	if document.get_name_path():
 		return IMAGE_ICON
 	return null

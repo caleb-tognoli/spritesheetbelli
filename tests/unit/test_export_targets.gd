@@ -49,6 +49,67 @@ func type_path(path: String) -> void:
 	dialog.output.line_edit.text_changed.emit(path)
 
 
+func test_add_sets_up_an_export_for_an_engine() -> void:
+	Actions.run(&"export")
+	dialog.open_add_menu()
+	var labels: Array[String] = []
+	for i in dialog.add_menu.item_count:
+		labels.append(dialog.add_menu.get_item_text(i))
+	var expected := ["New Export", "For a game engine", "Godot SpriteFrames"]
+	assert_eq(labels.slice(0, 3), expected, "a new one, then those for an engine")
+	assert_true("GameMaker strips" in labels)
+	dialog.add_menu.hide()
+	dialog.add_for_engine("godot")
+	var godot := dialog.get_target()
+	assert_eq(godot.options.target, ExportOptions.Target.DATA, "the sheet and a data file")
+	assert_eq(godot.options.grid_data, "godot")
+	dialog.add_for_engine(ExportDialog.STRIPS_FORMAT)
+	assert_eq(dialog.get_target().options.target, ExportOptions.Target.STRIPS)
+
+	sheet.set_layout(Spritesheet.Layout.PACKED)
+	dialog.add_for_engine("phaser")
+	assert_eq(dialog.get_target().options.target, ExportOptions.Target.ATLAS, "packed")
+	assert_eq(dialog.get_target().options.atlas_data, "phaser")
+	dialog.open_add_menu()
+	var defold := ExportDialog.ENGINE_FORMATS.find("defold") + 2
+	assert_true(dialog.add_menu.is_item_disabled(defold), "Defold takes only grids")
+	dialog.add_menu.hide()
+
+
+## The Show button on the newest message, or null
+func last_toast_button() -> Button:
+	var panels := Notify._toasts.get_children()
+	var buttons := panels[-1].find_children("*", "Button", true, false) if panels else []
+	return buttons[0] if buttons else null
+
+
+func test_the_export_message_shows_the_files() -> void:
+	var target := make_target(ExportOptions.Target.IMAGE, "hero.png")
+	assert_true(await main.files.exports.export_targets([target] as Array[ExportTarget]))
+	assert_eq(Notify.get_toasts()[-1], "Exported hero.png", "one line")
+	var button := last_toast_button()
+	assert_true(button != null, "a button on the message")
+	if button:
+		assert_eq([button.text, button.tooltip_text], ["Show", "Show in File Manager"])
+	assert_eq(Notify._toasts.get_child(-1).mouse_filter, Control.MOUSE_FILTER_PASS, "hovered")
+
+	ExportController.in_browser = true
+	target.path = ""
+	assert_true(await main.files.exports.export_targets([target] as Array[ExportTarget]))
+	assert_true(last_toast_button() == null, "downloads have no folder to show")
+
+
+func test_a_new_sheet_exports_as_the_last_export_did() -> void:
+	var target := make_target(ExportOptions.Target.DATA, "hero.png", {"grid_data": "godot"})
+	assert_true(await main.files.exports.export_targets([target] as Array[ExportTarget]))
+	Global.document.reset()
+	Global.spritesheet.add_frames([make_image(Color.RED)] as Array[Image])
+	var first := ExportDialog.new_target()
+	assert_eq(first.options.target, ExportOptions.Target.DATA)
+	assert_eq(first.options.grid_data, "godot")
+	assert_eq(first.path, "", "but not where")
+
+
 func test_targets_are_saved_with_the_project_relative_to_it() -> void:
 	var steps := Global.document.get_history().size()
 	Actions.run(&"export")
@@ -187,9 +248,9 @@ func test_export_all_writes_every_target() -> void:
 		assert_true(FileAccess.file_exists(dir.path_join("all").path_join(file)), file)
 	assert_false(Notify.message_dialog.visible, Notify.message_label.text)
 	var toasts := "\n".join(Notify.get_toasts())
-	assert_true("Exported hero.png in all." in toasts, toasts)
-	assert_true("Saved 3 images to sprites." in toasts, toasts)
-	assert_true("Exported walk.gif (3 frames)." in toasts, toasts)
+	assert_true("Exported hero.png" in toasts, toasts)
+	assert_true("Exported 3 sprites" in toasts, toasts)
+	assert_true("Exported walk.gif" in toasts, toasts)
 
 
 func test_a_gif_of_each_animation() -> void:
@@ -238,7 +299,7 @@ func test_a_gif_of_each_animation() -> void:
 	for file: String in ["hero_walk.gif", "hero_idle.gif"]:
 		assert_true(FileAccess.file_exists(dir.path_join("hero").path_join(file)), file)
 	var toasts := "\n".join(Notify.get_toasts())
-	assert_true("Saved 2 GIFs to hero." in toasts, toasts)
+	assert_true("Exported 2 GIFs" in toasts, toasts)
 
 	# In a browser, the folder is downloaded
 	ExportController.in_browser = true
@@ -279,7 +340,7 @@ func test_gamemaker_strips() -> void:
 	assert_eq(strip.get_size(), Vector2i(16, 8))
 	var twice := Image.load_from_file(dir.path_join("hero/spr_walk@2x_strip2.png"))
 	assert_eq(twice.get_size(), Vector2i(32, 16))
-	assert_true("Saved 2 strips to hero." in "\n".join(Notify.get_toasts()))
+	assert_true("Exported 2 strips" in "\n".join(Notify.get_toasts()))
 
 	# In a browser, the folder is downloaded, every scale in it
 	ExportController.in_browser = true
@@ -337,7 +398,7 @@ func test_scales() -> void:
 	assert_eq(twice.get_size(), Image.load_from_file(dir.path_join("hero.png")).get_size() * 2)
 	assert_true(FileAccess.file_exists(dir.path_join("hero@2x.json")))
 	var toasts := "\n".join(Notify.get_toasts())
-	assert_true("Also wrote hero@2x.json." in toasts, toasts)
+	assert_true("Exported hero@2x.png (+1 file)" in toasts, toasts)
 
 	# In a browser, each is downloaded
 	ExportController.in_browser = true

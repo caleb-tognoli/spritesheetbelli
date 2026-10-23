@@ -11,15 +11,20 @@ How to build spritesheetbelli, run its tests, translate it and publish a release
 
 ### The native library
 
-`native/` is a small Rust library (with [godot-rust](https://godot-rust.github.io)) that
-does the slowest loops of making in-betweens much faster (see
-`scripts/inbetween/native_kernels.gd`). Each gives exactly what the GDScript it stands in
-for gives, which the web build and builds without the library use; `test_native_kernels.gd`
-checks they match. Without it the app works the same, only slower, and Godot prints that
-the library is missing when it starts. To build it, install [Rust](https://rustup.rs) and
-run `python native/build.py`, which puts the library and the licenses of the crates in it
-in `extension/bin/` (not committed). CI builds it for Windows, macOS and Linux and ships it
-with the exports; browsers don't need it.
+`native/` is a small Rust library (with [godot-rust](https://godot-rust.github.io)) for
+what Godot can't do from GDScript, or not fast enough: telling when files are dragged over
+the window (see `scripts/autoloaded/file_drag.gd`), and the slowest loops of making
+in-betweens (see `scripts/inbetween/native_kernels.gd`). Each loop gives exactly what the
+GDScript it stands in for gives, which the web build and builds without the library use;
+`test_native_kernels.gd` checks they match. Without it the app works the same, only slower
+and without drags being shown, and Godot prints that the library is missing when it
+starts. To build it, install [Rust](https://rustup.rs) and run `python native/build.py`,
+which puts the library and the licenses of the crates in it in `extension/bin/` (not
+committed). CI builds it for Windows, macOS and Linux and ships it with the exports;
+browsers don't need it.
+
+`native/tests/` drags files over a window for real: `drag_source_windows.ps1` on Windows
+(it says how) and `x11_drag_test.sh` on Linux with X11, which CI runs.
 
 ### Tests and style
 

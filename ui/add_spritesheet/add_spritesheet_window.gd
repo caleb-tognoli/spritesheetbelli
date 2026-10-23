@@ -193,6 +193,7 @@ func _ready() -> void:
 
 	preview_area.spritesheet_preview.able_to_lock_spaces = false
 	preview_area.spritesheet_preview.able_to_move_frames = false
+	preview_area.spritesheet_preview.zoom_keys = true
 	# In the preview's place
 	box_editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box_editor.theme = preview_area.theme
@@ -263,7 +264,7 @@ func setup(img: Image, path := "", data: SheetData = null, data_file := "", prep
 	_set_max(cell_height, image_size.y)
 	# Guessed beforehand from the image as keyed, unless it was keyed differently
 	var keyed_before: bool = not prepared.is_empty() and spritesheet_image == prepared.keyed[0]
-	await _guess_grid(false, prepared.grid if keyed_before else Vector2i.ZERO)
+	await _guess_grid(false, prepared if keyed_before else {})
 	cut_option.clear()
 	cut_option.add_item("Grid", Cut.GRID)
 	cut_option.add_item("Find sprites", Cut.DETECT)
@@ -290,34 +291,48 @@ static func prepare(
 		for i in keyed.size():
 			if keyed[i]:
 				keyed[i] = await SheetBackground.remove_async(keyed[i], key[1], key[2], key[3])
+	var grid: Vector2i = await Parallel.run(GridGuesser.guess.bind(keyed[0], path))
 	return {
 		"pages": pages,
 		"background": found,
 		"key": key,
 		"keyed": keyed,
-		"grid": await Parallel.run(GridGuesser.guess.bind(keyed[0], path)),
+		"grid": grid,
+		"spacing": await Parallel.run(GridGuesser.guess_spacing.bind(keyed[0], grid)),
 	}
 
 
 ## Fills in the grid guessed from the name of the image and from the gaps between its
-## sprites, once its background is transparent. With [param or_keep], a guess of a single
-## cell, which finds nothing, keeps the grid there is. [param guessed] is the guess when
-## it was made beforehand.
-func _guess_grid(or_keep := false, guessed := Vector2i.ZERO) -> void:
+## sprites, once its background is transparent, and the spacing when every cell ends in
+## the same empty strip (see [method GridGuesser.guess_spacing]). With [param or_keep], a
+## guess of a single cell, which finds nothing, keeps the grid there is. [param prepared]
+## has the guesses when they were made beforehand, see [method prepare].
+func _guess_grid(or_keep := false, prepared := {}) -> void:
 	_grid_guessed = true
 	# A sprite size in the name is kept when the offset or spacing change
 	var image_size := spritesheet_image.get_size()
 	var cell_size := GridGuesser.guess_cell_size_from_file_name(image_path, image_size)
-	var guessed_size := guessed
+	var guessed_size: Vector2i = prepared.get("grid", Vector2i.ZERO)
 	if guessed_size == Vector2i.ZERO:
 		guessed_size = await _compute(GridGuesser.guess.bind(spritesheet_image, image_path))
 	if or_keep and guessed_size == Vector2i.ONE:
 		return
+	# A sprite size in the name already says where the cells are
+	var spacing := Vector2i.ZERO
+	if cell_size == Vector2i.ZERO:
+		spacing = prepared.get("spacing", Vector2i.ZERO)
+		if not prepared.has("spacing"):
+			spacing = await _compute(
+				GridGuesser.guess_spacing.bind(spritesheet_image, guessed_size)
+			)
 	_by_cell_size = cell_size != Vector2i.ZERO
 	grid_columns.set_value_no_signal(guessed_size.x)
 	grid_rows.set_value_no_signal(guessed_size.y)
 	cell_width.set_value_no_signal(cell_size.x)
 	cell_height.set_value_no_signal(cell_size.y)
+	spacing_x.set_value_no_signal(spacing.x)
+	spacing_y.set_value_no_signal(spacing.y)
+	_update_options_label()
 
 
 ## Makes the background colour transparent in the images that are cut, when it's on,

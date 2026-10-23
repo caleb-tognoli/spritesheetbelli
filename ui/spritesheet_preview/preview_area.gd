@@ -110,7 +110,14 @@ func _build_overlay() -> void:
 	row.add_theme_constant_override("separation", 2)
 	zoom.add_child(row)
 	zoom_label_btn.custom_minimum_size.x = 56
-	for button: Button in [center_view_btn, zoom_out_btn, zoom_label_btn, zoom_in_btn]:
+	for entry: Array in [
+		[center_view_btn, &"zoom_fit"],
+		[zoom_out_btn, &"zoom_out"],
+		[zoom_label_btn, &"zoom_reset"],
+		[zoom_in_btn, &"zoom_in"],
+	]:
+		var button: Button = entry[0]
+		Actions.set_tooltip(button, entry[1])
 		row.add_child(button)
 	overlay.add_child(zoom)
 	center_view_btn.pressed.connect(func() -> void: spritesheet_preview.fit_to_view())
@@ -193,10 +200,14 @@ func show_notice(text: String, tooltip := "") -> void:
 ## the stage's size in interface pixels, it would be blurred when the interface is scaled.
 ## It still shows the stage's size in interface pixels, so zoom and input don't change,
 ## and the container is scaled down to fit its pixels in the stage.
+## A new size keeps the middle of the view in place, or fits the sheet again when the view
+## was fitted to it, so a smaller window or a panel opened doesn't cut the sheet off.
 func _fit_viewport() -> void:
 	if not is_inside_tree():
 		return
 	var viewport := spritesheet_preview.get_viewport() as SubViewport
+	var old_size := spritesheet_preview.get_viewport_rect().size
+	var view := spritesheet_preview.get_view()
 	var ui_scale := get_viewport().get_final_transform().get_scale().x
 	var shown := Vector2i(stage.size.round())
 	shown = Vector2i(_exact_size(shown.x, ui_scale), _exact_size(shown.y, ui_scale))
@@ -206,6 +217,13 @@ func _fit_viewport() -> void:
 	viewport.size_2d_override = Vector2i.ZERO if is_equal_approx(ui_scale, 1) else shown
 	container.scale = Vector2.ONE / ui_scale
 	container.size = Vector2(pixels)
+	var new_size := spritesheet_preview.get_viewport_rect().size
+	if old_size.x <= 0 or old_size.y <= 0 or new_size.is_equal_approx(old_size):
+		return
+	if spritesheet_preview.fitted:
+		spritesheet_preview.fit_to_view()
+	else:
+		spritesheet_preview.set_view(view)
 
 
 ## The size from [param length] interface pixels up that is a whole number of screen pixels
@@ -231,6 +249,14 @@ func _get_minimum_size() -> Vector2:
 static func _update_menu_tooltip(button: Button) -> void:
 	var entry: Array = button.get_meta(&"menu_entry")
 	button.tooltip_text = TranslationServer.translate(entry[0])
+	# A menu starting with a toggle shows whether it's on, so it says the toggle's shortcut
+	var first: StringName = entry[1][0]
+	var shortcut := Actions.get_shortcut_text(first) if Actions.is_toggle(first) else ""
+	if shortcut:
+		button.tooltip_text += " (%s)" % shortcut
+	# Greyed out, it says why, as its first action does
+	if button.disabled:
+		button.tooltip_text += "\n" + Actions.get_disabled_reason(first)
 	if entry.size() > 3:
 		button.tooltip_text += "\n" + TranslationServer.translate(entry[3])
 
@@ -314,14 +340,6 @@ func update_ui() -> void:
 func set_toolbar_actions(
 	edit_groups: Array, view_ids: Array[StringName], submenus := {}, buttons := {}
 ) -> void:
-	for entry: Array in [
-		[center_view_btn, &"zoom_fit"],
-		[zoom_out_btn, &"zoom_out"],
-		[zoom_label_btn, &"zoom_reset"],
-		[zoom_in_btn, &"zoom_in"],
-	]:
-		var button: Button = entry[0]
-		Actions.set_tooltip(button, entry[1])
 	for group: Array in edit_groups:
 		_edit_bar.add_child(VSeparator.new())
 		for id: StringName in group:
@@ -385,6 +403,7 @@ func _refresh_action_buttons() -> void:
 		button.disabled = not ids.any(
 			func(id: StringName) -> bool: return not id.is_empty() and Actions.is_enabled(id)
 		)
+		_update_menu_tooltip(button)
 		if button.toggle_mode:
 			button.set_pressed_no_signal(Actions.is_checked(ids[0]))
 	_update_separators()
@@ -438,6 +457,9 @@ static func describe_cell(sheet: Spritesheet, coord: Vector2i, short_paths := fa
 		var text := "%s\n%d×%d px" % [cell_text, frame_size.x, frame_size.y]
 		if source.resource_name:
 			text += "\n" + source.resource_name
+		var inbetween := InBetween.describe(sheet, coord)
+		if inbetween:
+			text += "\n" + inbetween
 		var link: Dictionary = sheet.frame_sources.get(coord, {})
 		if link:
 			text += "\n" + describe_link(link, short_paths)
@@ -499,6 +521,9 @@ static func describe_packed_frame(
 			break
 	if notes:
 		lines.append(", ".join(notes))
+	var inbetween := InBetween.describe(sheet, coord)
+	if inbetween:
+		lines.append(inbetween)
 	var link: Dictionary = sheet.frame_sources.get(coord, {})
 	if link:
 		lines.append(describe_link(link, short_paths))

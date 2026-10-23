@@ -24,6 +24,8 @@ const SPACING_TOLERANCE := 0.25
 const CLEAN_CUT_SHARE := 0.4
 ## How far from square a cell guessed from the other axis may be
 const SQUARE_TOLERANCE := 0.05
+## Spacing guessed after every cell is at most this share of a cell and its spacing
+const MAX_SPACING_SHARE := 0.125
 
 
 static func guess(img: Image, file_name := "") -> Vector2i:
@@ -138,6 +140,44 @@ static func guess_from_image(img: Image) -> Vector2i:
 	if grid == Vector2i.ZERO:
 		return Vector2i.ZERO
 	return grid.maxi(1)
+
+
+## The empty pixels after every cell of [param grid] in [param img], like the 1 px gaps of
+## tile sheets exported with spacing: a strip as wide after every cell, with the sprites
+## reaching both the start of the cells and the strip. Only guessed when both axes have
+## one, as a sprite's own margin is rarely on the right and at the bottom of every frame
+## (feet stand on the bottom). Returns ZERO when there is none.
+static func guess_spacing(img: Image, grid: Vector2i) -> Vector2i:
+	if grid.x < 2 or grid.y < 2:
+		return Vector2i.ZERO
+	var spacing := Vector2i(
+		_spacing_after_cells(_visible_lines(img, true), grid.x),
+		_spacing_after_cells(_visible_lines(img, false), grid.y)
+	)
+	return spacing if spacing.x > 0 and spacing.y > 0 else Vector2i.ZERO
+
+
+## The lines after every one of [param count] cells that are empty in all of them, as in
+## [method guess_spacing], or 0
+static func _spacing_after_cells(used: PackedInt32Array, count: int) -> int:
+	# The strip after the last cell may be left out of the image
+	var period := ceili(float(used.size()) / count)
+	var spacing := 0
+	while spacing < period and _empty_in_every_cell(used, period, period - 1 - spacing):
+		spacing += 1
+	if spacing == 0 or spacing > period * MAX_SPACING_SHARE:
+		return 0
+	if period * count - used.size() > spacing or _empty_in_every_cell(used, period, 0):
+		return 0
+	return spacing
+
+
+## Whether the line [param at] lines into every cell [param period] lines long is empty
+static func _empty_in_every_cell(used: PackedInt32Array, period: int, at: int) -> bool:
+	for i in range(at, used.size(), period):
+		if used[i] > 0:
+			return false
+	return true
 
 
 ## 1 for every column or row of [param img] with a visible pixel, 0 for the others

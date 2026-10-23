@@ -2,9 +2,10 @@ class_name Recovery
 extends Node
 ## Crash recovery. While a document has unsaved changes, a copy of it is kept as a project
 ## in a folder of its own, in a folder of this run's own in [member folder], with the path
-## and name of its file and when it was written: every few minutes (the
-## [code]recovery_minutes[/code] setting, 0 for never) and right after big changes, like
-## adding a spritesheet or repacking. Each open tab has its own copy. It's written on a
+## and name of its file and when it was written: a few seconds after editing stops, at most
+## every half a minute while editing goes on (see [method due_time]), and right after big
+## changes, like adding a spritesheet or repacking. The [code]recovery[/code] setting turns
+## it off. Each open tab has its own copy. It's written on a
 ## worker thread, so editing goes on meanwhile. Saving, replacing the document or closing
 ## its tab deletes it, and so does quitting.
 ## A folder left by a run that's no longer running is from a crash or an unclean exit:
@@ -40,6 +41,11 @@ static var enabled := not WebFiles.is_web()
 static var _sessions: PackedStringArray = []
 ## Whether a process with the given ID is running. Tests stand in for it.
 static var is_process_running: Callable = OS.is_process_running
+## How long after the last change a copy is written, and the least time between two copies
+## of a document, so big sheets aren't saved over and over while they're edited, in
+## seconds. Tests shorten them.
+static var idle_seconds := 3.0
+static var min_gap_seconds := 30.0
 
 ## Copies left by runs that didn't quit cleanly, newest first: [code]{"dir": String,
 ## "path": String, "name": String, "time": int}[/code], with the folder the copy is in,
@@ -48,7 +54,7 @@ static var is_process_running: Callable = OS.is_process_running
 var leftovers: Array[Dictionary] = []
 ## This run's folder, with a folder for the copy of each document, see [method copy_dir]
 var session_dir := ""
-## Writes a copy every [code]recovery_minutes[/code]
+## Writes the copies that are due, see [method due_time]
 var timer := Timer.new()
 ## Writes the time in [member session_dir] every [constant ALIVE_SECONDS], see
 ## [constant ALIVE_FILE]
@@ -64,6 +70,7 @@ var _next_copy := 1
 
 func _init() -> void:
 	# Freed with it, also when it's never added, as in a browser or on the command line
+	timer.one_shot = true
 	add_child(timer)
 	add_child(alive_timer)
 
@@ -76,15 +83,9 @@ func _ready() -> void:
 	session_dir = folder.path_join("%d_%d_%d" % [OS.get_process_id(), started, _sessions.size()])
 	_sessions.append(session_dir)
 	find_leftovers()
-	timer.timeout.connect(save_copy_if_changed)
-	_update_timer()
+	timer.timeout.connect(save_due_copies)
 	alive_timer.timeout.connect(say_alive)
 	alive_timer.start(ALIVE_SECONDS)
-	Settings.changed.connect(
-		func(key: StringName) -> void:
-			if key == &"recovery_minutes":
-				_update_timer()
-	)
 	Global.documents_changed.connect(_follow_documents)
 	_follow_documents()
 
@@ -192,7 +193,7 @@ func is_needed(document: Document = null) -> bool:
 	document = _or_active(document)
 	return (
 		enabled
-		and Settings.get_value(&"recovery_minutes") > 0
+		and Settings.get_value(&"recovery")
 		and document.is_dirty
 		and not document.spritesheet.is_empty()
 	)
@@ -203,6 +204,40 @@ func save_copy_if_changed() -> void:
 	for document: Document in _copies.keys():
 		if _copies[document].changed_since_copy:
 			save_copy(document)
+
+
+## Writes the copies whose time came, see [method due_time]
+func save_due_copies() -> void:
+	var now := Time.get_ticks_msec()
+	for document: Document in _copies.keys():
+		var copy := _copies[document]
+		if copy.due >= 0 and copy.due <= now:
+			save_copy(document)
+	_start_timer()
+
+
+## When to write a copy, in msec like [method Time.get_ticks_msec], after a change at
+## [param now]: once there's been no change for [member idle_seconds], but not sooner than
+## [member min_gap_seconds] after the last copy, [param written] (-1 for none), and not
+## later than that after the first change since it, at [param since], so editing on and on
+## still gets copies
+static func due_time(now: int, since: int, written: int) -> int:
+	var gap := int(min_gap_seconds * 1000)
+	var earliest := written + gap if written >= 0 else 0
+	var due := maxi(now + int(idle_seconds * 1000), earliest)
+	return mini(due, maxi(since + gap, earliest))
+
+
+## Waits for the copy that's due soonest, if any
+func _start_timer() -> void:
+	var next := -1
+	for copy: DocumentCopy in _copies.values():
+		if copy.due >= 0 and (next < 0 or copy.due < next):
+			next = copy.due
+	if next < 0:
+		timer.stop()
+	else:
+		timer.start(maxf(0.05, (next - Time.get_ticks_msec()) / 1000.0))
 
 
 ## The folder of the copy of [param document] (the active one by default), in
@@ -221,6 +256,7 @@ func save_copy(document: Document = null) -> void:
 	if copy == null:
 		return
 	copy.queued = false
+	copy.due = -1
 	if not is_needed(document):
 		return
 	if copy.task >= 0:
@@ -245,6 +281,8 @@ func save_copy(document: Document = null) -> void:
 	)
 	set_process(true)
 	copy.changed_since_copy = false
+	copy.since = -1
+	copy.written = Time.get_ticks_msec()
 	copy.remember_frames(document.spritesheet)
 
 
@@ -318,14 +356,6 @@ func discard(leftover: Dictionary) -> void:
 	leftovers_changed.emit()
 
 
-func _update_timer() -> void:
-	var minutes: int = Settings.get_value(&"recovery_minutes")
-	if minutes > 0:
-		timer.start(minutes * 60.0)
-	else:
-		timer.stop()
-
-
 ## Keeps a copy for each open document, and deletes those of closed ones, whose changes
 ## were saved or given up
 func _follow_documents() -> void:
@@ -356,12 +386,21 @@ func _on_document_changed(document: Document) -> void:
 		if has_copy(document) or copy.task >= 0:
 			delete_copy(document)
 		copy.changed_since_copy = false
+		copy.since = -1
+		copy.due = -1
 		copy.remember_frames(document.spritesheet)
+		_start_timer()
 		return
 	copy.changed_since_copy = true
+	var now := Time.get_ticks_msec()
+	if copy.since < 0:
+		copy.since = now
 	if not copy.queued and count_changed_frames(document) >= BIG_CHANGE_FRAMES:
 		copy.queued = true
 		save_copy.call_deferred(document)
+		return
+	copy.due = due_time(now, copy.since, copy.written)
+	_start_timer()
 
 
 ## Another document replaced this one, whose changes were saved or given up
@@ -441,6 +480,11 @@ class DocumentCopy:
 	var queued := false
 	## Whether the document changed since the last copy
 	var changed_since_copy := false
+	## When the first change since the last copy was, when the last copy was written, and
+	## when the next is due (see [method Recovery.due_time]), in msec, or -1
+	var since := -1
+	var written := -1
+	var due := -1
 	## The frames and their places when the last copy was written, or the document was
 	## saved or opened, to tell big changes
 	var frames: Dictionary = {}

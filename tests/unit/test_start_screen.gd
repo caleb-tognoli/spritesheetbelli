@@ -16,6 +16,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	FileDrag.set_dragging(false)
 	main.queue_free()
 	await get_tree().process_frame
 	Global.document.reset()
@@ -302,6 +303,52 @@ func test_web() -> void:
 	Thumbnails.enabled = false
 	Thumbnails.make_for_sheet(project, Global.spritesheet)
 	assert_false(Thumbnails.is_making(project), "no thumbnails in a browser")
+
+
+func test_highlighted_while_files_are_dragged() -> void:
+	var entered := [0]
+	FileDrag.entered.connect(func() -> void: entered[0] += 1)
+	assert_false(start.drop_zone.highlighted)
+	FileDrag.set_dragging(true)
+	FileDrag.set_dragging(true)
+	assert_eq(entered[0], 1, "said once")
+	assert_true(start.drop_zone.highlighted, "while files are over the window")
+	assert_eq(start.drop_hint.text, StartScreen.DROPPING_HINT)
+	FileDrag.set_dragging(false)
+	assert_false(start.drop_zone.highlighted, "not once they leave")
+	assert_eq(start.drop_hint.text, StartScreen.DROP_HINT)
+
+	FileDrag.set_dragging(true)
+	FileDrag._on_files_dropped(PackedStringArray([dir.path_join("a.png")]))
+	assert_false(FileDrag.dragging, "dropped files aren't dragged anymore")
+	assert_false(start.drop_zone.highlighted)
+
+
+func test_highlighted_when_made_while_dragging() -> void:
+	FileDrag.set_dragging(true)
+	var other := StartScreen.new()
+	add_child(other)
+	assert_true(other.drop_zone.highlighted)
+	assert_eq(other.drop_hint.text, StartScreen.DROPPING_HINT)
+	other.free()
+
+
+func test_overlay_while_a_document_is_open() -> void:
+	var overlay: DropOverlay = main.drop_overlay
+	FileDrag.set_dragging(true)
+	assert_false(overlay.visible, "the start screen's drop zone shows instead")
+	FileDrag.set_dragging(false)
+	Global.document.perform(
+		"Add sprites", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	assert_false(overlay.visible, "only while files are dragged")
+	FileDrag.set_dragging(true)
+	assert_true(overlay.visible, "over the canvas")
+	assert_eq(overlay.mouse_filter, Control.MOUSE_FILTER_IGNORE, "not taking the mouse")
+	await get_tree().process_frame
+	assert_true(overlay.get_global_rect().is_equal_approx(main.editor.get_global_rect()))
+	FileDrag.set_dragging(false)
+	assert_false(overlay.visible, "gone once they leave")
 
 
 func test_covers_the_editor() -> void:

@@ -9,6 +9,10 @@ extends RefCounted
 ## can, and frames bend it part of the way, turning pieces about their joints (see
 ## [PieceMorph]). Painted keys with soft edges are followed pixel by pixel instead (see
 ## [FlowMorph]). Every pixel is taken from a key, so no new colours appear.
+##
+## In-betweens added to a sheet remember how they were made (see [method add]), so they can
+## tell when a key changed since (see [method is_stale]) and be made again in their place
+## (see [method replace]).
 
 ## How the frames are spread between the keys: evenly, or bunched up near a key so the
 ## sprite starts or ends slowly
@@ -34,6 +38,10 @@ const PLACE_NAMES := {  # L10n.mark
 	Place.NEW_ROW: "In a new row",
 }
 const MAX_COUNT := 16
+
+## Hashes of frame pixels by image, see [method fingerprint]: [code][WeakRef, int][/code],
+## as images are never changed once in a sheet
+static var _pixel_hashes: Dictionary[int, Array] = {}
 
 
 ## The frame at [param coord] of [param sheet] as a key: its image and where it's placed
@@ -137,18 +145,21 @@ static func _pivot(key: Dictionary) -> Vector2:
 
 
 ## Adds [param frames] (from [method generate]) between keys [param a] and [param b] of
-## [param sheet], put in cells as [param place] says. With [param to_animations], they're
-## also played between the keys wherever an animation plays them one after the other, see
-## [method SheetAnimation.insert_between], with [param keep_length] taking their time
-## from the key before them. Returns the cells they went to.
+## [param sheet], put in cells as [param place] says. They're also played between the keys
+## in the animations of [param animations], by index, wherever they play them one after
+## the other, see [method SheetAnimation.insert_between]: each index maps to whether they
+## take their time from the key before them, keeping the animation's length. Each
+## remembers how it was made, see [method replace]: the keys, and [param how] they were
+## made, [code]{"spacing": Spacing, "motion": Vector2i, "pins": Array[Dictionary]}[/code]
+## (see [method generate]). Returns the cells they went to.
 static func add(
 	sheet: Spritesheet,
 	a: Vector2i,
 	b: Vector2i,
 	frames: Array[Dictionary],
 	place: Place,
-	to_animations: bool,
-	keep_length := false,
+	animations := {},
+	how := {},
 ) -> Array[Vector2i]:
 	var coords: Array[Vector2i] = []
 	if frames.is_empty():
@@ -172,10 +183,142 @@ static func add(
 			Place.NEW_ROW: Spritesheet.AddMode.NEW_ROW,
 		}
 		coords = sheet.add_cells(frames, modes[place])
-	if to_animations:
-		var animations := sheet.animations
-		for i in animations.size():
-			if animations[i].insert_between(a, b, coords, keep_length) > 0:
-				sheet.set_animation(i, animations[i])
+	# Made together, so they're made again together
+	var run := 1
+	for recipe: Dictionary in sheet.inbetweens.values():
+		run = maxi(run, recipe.run + 1)
+	_remember(sheet, coords, a, b, run, how)
+	var all := sheet.animations
+	for i: int in animations:
+		if i < all.size() and all[i].insert_between(a, b, coords, animations[i]) > 0:
+			sheet.set_animation(i, all[i])
 	sheet.end_batch()
 	return coords
+
+
+## Makes the in-betweens at [param cells], made together (see [method run_of]), again with
+## [param frames] in their places, made [param how] (see [method add]) from their keys as
+## they are now. Everything else about them stays: their cells, the animations playing them
+## and how long they're shown.
+static func replace(
+	sheet: Spritesheet, cells: Array[Vector2i], frames: Array[Dictionary], how := {}
+) -> void:
+	if cells.is_empty() or cells.size() != frames.size():
+		return
+	var recipe: Dictionary = sheet.inbetweens.get(cells[0], {})
+	if recipe.is_empty():
+		return
+	sheet.begin_batch()
+	for i in cells.size():
+		sheet.set_cell(cells[i], frames[i])
+	_remember(sheet, cells, recipe.keys[0], recipe.keys[1], recipe.run, how)
+	sheet.end_batch()
+
+
+## Gives each of [param cells] how it was made: between keys [param a] and [param b] of
+## [param sheet] as they are now, [param how], in [param run] (see [method run_of])
+static func _remember(
+	sheet: Spritesheet, cells: Array[Vector2i], a: Vector2i, b: Vector2i, run: int, how: Dictionary
+) -> void:
+	var pins: Array = how.get("pins", [])
+	for i in cells.size():
+		var recipe := {
+			"run": run,
+			"index": i,
+			"count": cells.size(),
+			"keys": [a, b] as Array[Vector2i],
+			"fingerprints": [fingerprint(sheet, a), fingerprint(sheet, b)],
+			"spacing": how.get("spacing", Spacing.LINEAR),
+			"motion": how.get("motion", Vector2i.ZERO),
+			"pins": pins.duplicate(true),
+			"made": fingerprint(sheet, cells[i]),
+		}
+		sheet.set_inbetween(cells[i], recipe)
+
+
+## The in-betweens made together with the one at [param coord] of [param sheet], in order,
+## or none when it isn't one
+static func run_of(sheet: Spritesheet, coord: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	if not sheet.inbetweens.has(coord):
+		return cells
+	var run: int = sheet.inbetweens[coord].run
+	var by_index := {}
+	for cell in sheet.inbetweens:
+		if sheet.inbetweens[cell].run == run:
+			by_index[sheet.inbetweens[cell].index] = cell
+	var indices := by_index.keys()
+	indices.sort()
+	for index: int in indices:
+		cells.append(by_index[index])
+	return cells
+
+
+## Whether both keys of the in-between at [param coord] are still in [param sheet], so it
+## can be made again
+static func has_keys(sheet: Spritesheet, coord: Vector2i) -> bool:
+	var recipe: Dictionary = sheet.inbetweens.get(coord, {})
+	if recipe.is_empty():
+		return false
+	return recipe.keys.all(func(key: Vector2i) -> bool: return sheet.has_frame(key))
+
+
+## Whether a key of the in-between at [param coord] changed since it was made: its pixels,
+## where it's placed or its pivot. False when a key is gone.
+static func is_stale(sheet: Spritesheet, coord: Vector2i) -> bool:
+	if not has_keys(sheet, coord):
+		return false
+	var recipe: Dictionary = sheet.inbetweens[coord]
+	for i in 2:
+		if fingerprint(sheet, recipe.keys[i]) != recipe.fingerprints[i]:
+			return true
+	return false
+
+
+## Whether any in-between at [param cells] was changed since it was made, so making it
+## again loses that
+static func is_edited(sheet: Spritesheet, cells: Array[Vector2i]) -> bool:
+	for cell in cells:
+		var recipe: Dictionary = sheet.inbetweens.get(cell, {})
+		if recipe and fingerprint(sheet, cell) != recipe.made:
+			return true
+	return false
+
+
+## Says which in-between the frame at [param coord] is, like "In-between 2 of 3", and
+## whether it's out of date. Empty when it isn't one.
+static func describe(sheet: Spritesheet, coord: Vector2i) -> String:
+	var recipe: Dictionary = sheet.inbetweens.get(coord, {})
+	if recipe.is_empty():
+		return ""
+	var text := (
+		TranslationServer.translate("In-between %d of %d") % [recipe.index + 1, recipe.count]
+	)
+	if not has_keys(sheet, coord):
+		return text + " · " + TranslationServer.translate("a key frame was removed")
+	if is_stale(sheet, coord):
+		return text + " · " + TranslationServer.translate("out of date: a key frame changed")
+	return text
+
+
+## A number that changes when the frame at [param coord] of [param sheet] does, as a key
+## (see [method key_of]): its pixels, where it's placed and its pivot. 0 without a frame.
+static func fingerprint(sheet: Spritesheet, coord: Vector2i) -> int:
+	if not sheet.has_frame(coord):
+		return 0
+	var key := key_of(sheet, coord)
+	var img: Image = key.image
+	return [_pixels_hash(img), img.get_size(), key.origin, key.get("pivot")].hash()
+
+
+## The hash of [param img]'s pixels, worked out once for each image
+static func _pixels_hash(img: Image) -> int:
+	var id := img.get_instance_id()
+	var known: Array = _pixel_hashes.get(id, [])
+	if known and (known[0] as WeakRef).get_ref() == img:
+		return known[1]
+	if _pixel_hashes.size() > 1024:
+		_pixel_hashes.clear()
+	var hashed := hash(img.get_data())
+	_pixel_hashes[id] = [weakref(img), hashed]
+	return hashed

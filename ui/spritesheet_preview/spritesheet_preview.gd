@@ -77,6 +77,8 @@ const PRESS_HINTS: Dictionary[Press, CanvasCursor.Hint] = {
 @export var able_to_lock_spaces := true
 ## When off, frames can't be moved and dragging always selects
 @export var able_to_move_frames := true
+## When on, it zooms for the zoom shortcuts itself, where no View menu has them
+var zoom_keys := false
 ## When on, frames dragged out of the preview stop moving there and go with
 ## [signal frames_dragged_out] instead, e.g. into an animation's timeline
 var drag_frames_out := false
@@ -98,6 +100,9 @@ var grid_color := Color.WHITE
 var background_color := Color.BLACK
 var checker_size := 8
 var zoom_speed := 0.2
+## Whether the view is still as [method fit_to_view] left it, not zoomed or moved since:
+## then it fits the sheet again when the preview changes size
+var fitted := false
 var index_start := 0
 var selection_color := AppTheme.DEFAULT_ACCENT
 ## Opacity of the accent colour over selected frames
@@ -348,6 +353,7 @@ func _selection_updated() -> void:
 
 ## Zooms the camera keeping the point under [param anchor] (in viewport coordinates) in place
 func set_zoom(value: float, anchor := Vector2.ZERO) -> void:
+	fitted = false
 	value = clampf(value, MIN_ZOOM, MAX_ZOOM)
 	var anchor_in_world := screen_to_world(anchor)
 	camera.zoom = Vector2(value, value)
@@ -378,12 +384,14 @@ func fit_to_view() -> void:
 			var room := (view - Vector2.ONE * MARGIN * 2) / pages.size
 			set_zoom(PixelZoom.fitting(self, minf(room.x, room.y)))
 			camera.position = pages.get_center() - view / 2 / camera.zoom
+			fitted = true
 			return
 	if content.x <= 0 or content.y <= 0 or view.x <= MARGIN * 2 or view.y <= MARGIN * 2:
 		# An empty sheet is shown at 100%
 		if content.x <= 0 or content.y <= 0:
 			set_zoom(1)
 		camera.position = -Vector2(50, 50) / camera.zoom
+		fitted = true
 		queue_redraw()
 		return
 	# Names of animations in the margins stay the same size, so they get room of their own
@@ -393,6 +401,7 @@ func fit_to_view() -> void:
 	set_zoom(PixelZoom.fitting(self, minf(fit.x, fit.y)))
 	var corner := Vector2.ONE * MARGIN + Vector2(labels.x, labels.y)
 	camera.position = -(corner + (space - content * camera.zoom) / 2) / camera.zoom
+	fitted = true
 
 
 ## Where the view looks, to show the same place again with [method set_view]: the zoom
@@ -447,6 +456,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		update_cursor()
 	elif key and key.pressed and _handle_arrow_key(key):
 		get_viewport().set_input_as_handled()
+	elif key and zoom_keys and PixelZoom.handle_key(self, key):
+		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		_handle_mouse_button(event)
 	elif event is InputEventMouseMotion:
@@ -455,6 +466,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		set_zoom(camera.zoom.x * event.factor, event.position)
 	elif event is InputEventPanGesture:
 		camera.position += event.delta * 10 / camera.zoom
+		fitted = false
 		queue_redraw()
 
 
@@ -652,6 +664,7 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 			camera.position = (
 				_drag_start_camera - (event.position - _drag_start_screen) / camera.zoom
 			)
+			fitted = false
 			queue_redraw()
 		Drag.PENDING:
 			if event.position.distance_to(_drag_start_screen) >= DRAG_THRESHOLD:

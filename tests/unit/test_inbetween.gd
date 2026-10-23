@@ -125,7 +125,7 @@ func test_add_after_the_first_key() -> void:
 		InBetween.key_of(sheet, cells[0]), InBetween.key_of(sheet, cells[1]), 2
 	)
 	var coords := InBetween.add(
-		sheet, cells[0], cells[1], frames, InBetween.Place.AFTER_FIRST, true
+		sheet, cells[0], cells[1], frames, InBetween.Place.AFTER_FIRST, {0: false, 1: false}
 	)
 	assert_eq(coords, [Vector2i(1, 0), Vector2i(2, 0)])
 	# Like Insert Empty Cell, later frames move along in reading order, onto the next row
@@ -148,10 +148,10 @@ func test_add_elsewhere_without_animations() -> void:
 	var frames := InBetween.generate(
 		InBetween.key_of(sheet, cells[0]), InBetween.key_of(sheet, cells[1]), 1
 	)
-	var coords := InBetween.add(sheet, cells[0], cells[1], frames, InBetween.Place.NEW_ROW, false)
+	var coords := InBetween.add(sheet, cells[0], cells[1], frames, InBetween.Place.NEW_ROW)
 	assert_eq(coords, [Vector2i(0, 1)])
 	assert_eq(sheet.animations[0].cells, cells, "left alone")
-	coords = InBetween.add(sheet, cells[1], cells[0], frames, InBetween.Place.APPEND, true)
+	coords = InBetween.add(sheet, cells[1], cells[0], frames, InBetween.Place.APPEND, {0: false})
 	assert_eq(coords, [Vector2i(1, 1)])
 	assert_eq(sheet.animations[0].cells, [cells[0], Vector2i(1, 1), cells[1], Vector2i(1, 1)])
 

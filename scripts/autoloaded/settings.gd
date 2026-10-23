@@ -54,7 +54,7 @@ const DEFAULTS := {
 	&"restore_session": false,
 	# Minutes between copies of unsaved work to recover after a crash, 0 for none, see
 	# Recovery
-	&"recovery_minutes": 2,
+	&"recovery": true,
 	&"show_status_bar": true,
 	# Remembered between runs
 	# The projects open in tabs when last saved, opened or quit, and which was active, see
@@ -74,6 +74,9 @@ const DEFAULTS := {
 	&"animation_list_width": 0,
 	# Width of the Export dialog's list of exports, 0 for as narrow as it can be
 	&"export_list_width": 0,
+	# What the last export written was, which a new sheet's first export starts as, see
+	# ExportOptions.get_kind
+	&"export_kind": {},
 	# Whether the animation panel is "open" or "closed" in the docks under the preview.
 	# "auto" keeps it closed until the sheet has animations, then opens it once.
 	&"animation_panel": "auto",
@@ -122,6 +125,7 @@ const REMEMBERED: Array[StringName] = [
 	&"animation_preview_width",
 	&"animation_list_width",
 	&"export_list_width",
+	&"export_kind",
 	&"animation_panel",
 	&"animation_frames_text",
 	&"show_history",

@@ -308,11 +308,15 @@ func test_default_name_pattern_follows_the_sheet() -> void:
 func test_transparent_background_says_so() -> void:
 	Actions.run(&"export")
 	dialog.select_type(ExportOptions.Target.IMAGE)
-	assert_true(dialog.transparent_label.visible)
-	assert_eq(dialog.transparent_label.text, "Transparent")
+	assert_eq(dialog.background_field.label.text, "Transparent")
+	assert_false(dialog.background_field.clear_button.visible, "nothing to clear")
 	dialog.background_picker.color = Color.RED
 	dialog.background_picker.color_changed.emit(Color.RED)
-	assert_false(dialog.transparent_label.visible)
+	assert_eq(dialog.background_field.label.text, "#ff0000", "a colour says its code")
+	assert_true(dialog.background_field.clear_button.visible)
+	dialog.background_field.clear_button.pressed.emit()
+	assert_eq(dialog.background_field.label.text, "Transparent")
+	assert_eq(dialog.get_target().options.background.a, 0.0, "transparent again")
 
 
 func test_opens_on_the_export_last_selected() -> void:

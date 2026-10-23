@@ -3,7 +3,8 @@ extends PopupPanel
 ## Runs any action found by typing part of its name (see [method fuzzy_score]), plays the
 ## sheet's animations and writes its exports. Opens over the preview, see [method open].
 ## What it ran last comes first, remembered in the [code]command_palette_recent[/code]
-## setting. Actions that don't apply right now come last, greyed out, saying why.
+## setting, and wins between matches about as good (see [constant RECENT_SCORE]). Actions
+## that don't apply right now come last, greyed out, saying why.
 
 ## The action that opens it
 const ID := &"command_palette"
@@ -19,6 +20,9 @@ const WORD_START_SCORE := 6
 const NEXT_LETTER_SCORE := 8
 ## Added to the score of an entry whose own name matches, rather than its menu
 const NAME_SCORE := 4
+## Added to the score of an entry run lately, so it comes first between matches about as
+## good, but not before a better one: less than a letter next to the one before
+const RECENT_SCORE := 6
 
 
 ## Something the palette can run: an action, an animation to play or an export to write
@@ -217,7 +221,8 @@ func filter() -> void:
 
 
 ## [param entries] that match [param query], best first, those whose keys are in
-## [param recent] before the others, in its order. Unavailable ones (see
+## [param recent] winning between matches about as good, in its order (see
+## [constant RECENT_SCORE]); with no query, before the others. Unavailable ones (see
 ## [member Entry.unavailable]) come after all the others, even when run last.
 static func rank(entries: Array[Entry], query: String, recent: PackedStringArray) -> Array[Entry]:
 	var scored: Array[Array] = []
@@ -232,8 +237,11 @@ static func rank(entries: Array[Entry], query: String, recent: PackedStringArray
 			if name_score >= 0:
 				score = maxi(score, name_score + NAME_SCORE)
 		var recent_index := recent.find(entry.key)
-		recent_index = recent_index if recent_index >= 0 else recent.size()
-		scored.append([int(entry.unavailable), recent_index, -score, i, entry])
+		if recent_index >= 0:
+			score += RECENT_SCORE
+		else:
+			recent_index = recent.size()
+		scored.append([int(entry.unavailable), -score, recent_index, i, entry])
 	scored.sort()
 	var ranked: Array[Entry] = []
 	for item in scored:

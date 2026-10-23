@@ -111,6 +111,8 @@ func update_items() -> void:
 		var id: Variant = get_item_metadata(i)
 		if id is StringName:
 			set_item_disabled(i, not Actions.is_enabled(id))
+			# Greyed out, it says why on hover
+			set_item_tooltip(i, Actions.get_disabled_reason(id))
 			if is_item_checkable(i):
 				set_item_checked(i, Actions.is_checked(id))
 

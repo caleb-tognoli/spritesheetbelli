@@ -1,11 +1,12 @@
 class_name AnimationDetail
 extends ScrollContainer
 ## Where the animation chosen in the animation panel is edited: its name, speed, type and
-## colour on one line, and its frames below on an [AnimationTimeline], where they're
-## dragged into place, taken out and timed. Frames of the sheet are added by dragging them
-## there, from the sheet or the Sprites panel; dropped while no animation is chosen, they
-## make a new one, see [signal frames_dropped]. Frames as text shows them typed instead:
-## sprite numbers, names and ranges such as "0-3, 5, idle". Every change can be undone.
+## colour on one line, or two when the panel is narrow, and its frames below on an
+## [AnimationTimeline], where they're dragged into place, taken out and timed. Frames of the
+## sheet are added by dragging them there, from the sheet or the Sprites panel; dropped
+## while no animation is chosen, they make a new one, see [signal frames_dropped]. Frames
+## as text shows them typed instead: sprite numbers, names and ranges such as
+## "0-3, 5, idle". Every change can be undone.
 
 ## Frames of the sheet were dropped while no animation is chosen, to make one of them
 signal frames_dropped(cells: Array[Vector2i])
@@ -39,7 +40,8 @@ var empty_hint := Label.new()
 var _index := -1
 var _margin := MarginContainer.new()
 var _content := VBoxContainer.new()
-var _fields := HBoxContainer.new()
+## The name, speed, type and colour, wrapping onto a second line when they don't fit
+var _fields := HFlowContainer.new()
 ## The frames as text, and what they come to
 var _frames_text := HBoxContainer.new()
 var _updating := false
@@ -62,6 +64,9 @@ func _init() -> void:
 
 	empty_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	empty_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Wrapped to the panel, so a narrow one doesn't scroll sideways to read it
+	empty_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	empty_hint.custom_minimum_size.x = 120
 	empty_hint.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	empty_hint.theme_type_variation = &"StatusLabel"
 	box.add_child(empty_hint)
@@ -199,7 +204,8 @@ func _drop_frames(_at: Vector2, data: Variant) -> void:
 
 ## The name, speed, type and colour on one line, then the frames as text button
 func _build_fields() -> void:
-	_fields.add_theme_constant_override("separation", SEPARATION)
+	_fields.add_theme_constant_override("h_separation", SEPARATION)
+	_fields.add_theme_constant_override("v_separation", SEPARATION)
 	name_edit.placeholder_text = "walk"
 	name_edit.tooltip_text = "Name"
 	name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL

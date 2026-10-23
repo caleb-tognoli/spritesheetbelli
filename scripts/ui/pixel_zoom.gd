@@ -50,6 +50,25 @@ static func fitting(item: CanvasItem, zoom: float) -> float:
 	return round_down(zoom, screen_scale(item)) if is_on() else zoom
 
 
+## Zooms [param view] (with zoom_by, reset_zoom and fit_to_view) for the zoom shortcuts,
+## as the View menu does in the main window, where no menu has them. Returns whether
+## [param event] was one.
+static func handle_key(view: CanvasItem, event: InputEventKey) -> bool:
+	if not event.pressed:
+		return false
+	if event.is_action(&"zoom_in", true):
+		view.zoom_by(1.25)
+	elif event.is_action(&"zoom_out", true):
+		view.zoom_by(0.8)
+	elif event.is_action(&"zoom_fit", true):
+		view.fit_to_view()
+	elif event.is_action(&"zoom_reset", true):
+		view.reset_zoom()
+	else:
+		return false
+	return true
+
+
 ## [param zoom] times [param factor] for [param item]'s view, or the whole zoom a step
 ## that way when [method is_on], see [method step]
 static func zoom_by(item: CanvasItem, zoom: float, factor: float) -> float:

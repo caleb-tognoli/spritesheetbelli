@@ -1,8 +1,9 @@
 class_name FrameStore
 extends Resource
 ## The frames of a [Spritesheet] by grid coordinate, with what each cell holds besides its
-## frame: an origin, a link to a file, a pivot and a place in the packed layout. Everything
-## a cell holds moves along with its frame. The folders frames are added from are linked
+## frame: an origin, a link to a file, a pivot, a place in the packed layout and, for
+## generated in-betweens, how they were made. Everything a cell holds moves along with its
+## frame. The folders frames are added from are linked
 ## here too. Changes are batched into one [signal updated] each; [Spritesheet] has
 ## everything else.
 
@@ -10,7 +11,7 @@ signal updated
 
 const NO_CELL := Vector2i(-1, -1)
 ## What a cell can hold besides its frame, see [method get_cell_data]
-const CELL_DATA_KEYS: Array[String] = ["origin", "source", "pivot", "placement"]
+const CELL_DATA_KEYS: Array[String] = ["origin", "source", "pivot", "placement", "inbetween"]
 
 ## Frame images at their original size, by grid coordinate. Read only.
 var frames: Dictionary[Vector2i, Image]:
@@ -25,6 +26,11 @@ var frame_sources: Dictionary[Vector2i, Dictionary]:
 var placements: Dictionary[Vector2i, Dictionary]:
 	get:
 		return _placements
+## How generated in-betweens were made, by grid coordinate, see [method InBetween.add].
+## Read only: changes go through [method set_inbetween].
+var inbetweens: Dictionary[Vector2i, Dictionary]:
+	get:
+		return _inbetweens
 ## Folders whose new and deleted images are followed, see [FolderWatcher]. Read only:
 ## changes go through [method link_folder] and [method unlink_folder].
 var linked_folders: PackedStringArray:
@@ -44,6 +50,8 @@ var _sources: Dictionary[Vector2i, Dictionary] = {}
 var _pivots: Dictionary[Vector2i, Vector2] = {}
 ## Where frames are in the packed layout. Never changed in place, only replaced.
 var _placements: Dictionary[Vector2i, Dictionary] = {}
+## How in-betweens were made, see [member inbetweens]
+var _inbetweens: Dictionary[Vector2i, Dictionary] = {}
 var _folders: PackedStringArray = []
 ## Whether frames may need packing again
 var _layout_dirty := false
@@ -82,14 +90,15 @@ func get_pivot(coord: Vector2i) -> Vector2:
 
 
 ## Everything a cell holds: [code]{"image": Image}[/code], plus "origin", "source",
-## "pivot" and "placement" when it has them. Empty for a cell without a frame.
+## "pivot" and "placement" when it has them. Empty for a cell without a frame. How an
+## in-between was made is left out: a copy is a frame of its own, not made from the keys.
 func get_cell_data(coord: Vector2i) -> Dictionary:
 	if not _frames.has(coord):
 		return {}
 	var data := {"image": _frames[coord]}
 	var values := _cell_dicts()
 	for i in CELL_DATA_KEYS.size():
-		if values[i].has(coord):
+		if values[i].has(coord) and CELL_DATA_KEYS[i] != "inbetween":
 			data[CELL_DATA_KEYS[i]] = values[i][coord]
 	return data
 
@@ -117,6 +126,14 @@ func rename_frame(coord: Vector2i, new_name: String) -> void:
 	scaled_frames.alias(old, img)
 	_frames[coord] = img
 	_changed()
+
+
+## Remembers how the in-between at [param coord] was made (see [method InBetween.add]),
+## or forgets it for null
+func set_inbetween(coord: Vector2i, recipe: Variant) -> void:
+	if has_frame(coord) and _inbetweens.get(coord) != recipe:
+		_set_or_erase(_inbetweens, coord, recipe)
+		_changed(false)
 
 
 ## Changes where frames are in the packed layout without packing the rest again: each
@@ -214,7 +231,7 @@ static func _set_or_erase(dictionary: Dictionary, key: Variant, value: Variant) 
 
 ## What cells hold besides their frames, in the order of [constant CELL_DATA_KEYS]
 func _cell_dicts() -> Array[Dictionary]:
-	return [_origins, _sources, _pivots, _placements]
+	return [_origins, _sources, _pivots, _placements, _inbetweens]
 
 
 ## Clears what a cell holds besides its frame
@@ -231,11 +248,27 @@ func _save_cell_data() -> Array[Dictionary]:
 	return saved
 
 
-## Gives [param coord] what [param from] held in [param saved]
-func _restore_cell_data(coord: Vector2i, saved: Array[Dictionary], from: Vector2i) -> void:
+## Gives [param coord] what [param from] held in [param saved]. A [param copy] is a frame
+## of its own, not an in-between made from keys, see [method get_cell_data].
+func _restore_cell_data(
+	coord: Vector2i, saved: Array[Dictionary], from: Vector2i, copy := false
+) -> void:
 	var targets := _cell_dicts()
 	for i in targets.size():
 		_set_or_erase(targets[i], coord, saved[i].get(from))
+	if copy:
+		_inbetweens.erase(coord)
+
+
+## Changes the keys of every in-between (see [member inbetweens]) with [param map], which
+## returns where a key went, or NO_CELL when it's gone
+func _remap_inbetween_keys(map: Callable) -> void:
+	for coord in _inbetweens:
+		var recipe := _inbetweens[coord]
+		var keys: Array[Vector2i] = []
+		for key: Vector2i in recipe.keys:
+			keys.append(map.call(key))
+		recipe.keys = keys
 
 
 ## Moves what each cell holds to the cell [param map] returns, or drops it for NO_CELL

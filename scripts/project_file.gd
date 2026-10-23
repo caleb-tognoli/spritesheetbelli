@@ -56,6 +56,9 @@ static func save(sheet: Spritesheet, path: String, extra := {}) -> Error:
 			var placement: Dictionary = sheet.placements.get(coords[i], {})
 			if placement:
 				frame.placement = _placement_to_json(placement)
+			var inbetween: Dictionary = sheet.inbetweens.get(coords[i], {})
+			if inbetween:
+				frame.inbetween = _inbetween_to_json(inbetween)
 			frames.append(frame)
 		error = _write(zip, FRAMES_FILE, atlas.save_png_to_buffer())
 		if error != OK:
@@ -143,6 +146,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 	var sources: Dictionary[Vector2i, Dictionary] = {}
 	var pivots: Dictionary[Vector2i, Vector2] = {}
 	var placements: Dictionary[Vector2i, Dictionary] = {}
+	var inbetweens: Dictionary[Vector2i, Dictionary] = {}
 	for frame: Dictionary in data.get("frames", []):
 		var img := _read_frame(zip, atlas, frame)
 		if img == null:
@@ -167,6 +171,9 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		var placement := _placement_from_json(frame.get("placement"))
 		if placement:
 			placements[cell] = placement
+		var inbetween := _inbetween_from_json(frame.get("inbetween"))
+		if inbetween:
+			inbetweens[cell] = inbetween
 
 	var locked: Array[Vector2i] = []
 	for coord: Array in data.get("locked", []):
@@ -213,6 +220,7 @@ static func _read(zip: ZIPReader, folder: String) -> Dictionary:
 		"sources": sources,
 		"pivots": pivots,
 		"placements": placements,
+		"inbetweens": inbetweens,
 		"layout": layout,
 		"atlas": _read_export_settings(data.get("atlas", {})),
 		"locked": locked,
@@ -295,6 +303,54 @@ static func _placement_from_json(value: Variant) -> Dictionary:
 	}
 
 
+## How an in-between was made (see [method InBetween.add]), for a project
+static func _inbetween_to_json(recipe: Dictionary) -> Dictionary:
+	var pins: Array[Dictionary] = []
+	for pin: Dictionary in recipe.pins:
+		pins.append({"at": [pin.at.x, pin.at.y], "to": [pin.to.x, pin.to.y]})
+	var keys: Array[Array] = []
+	for key: Vector2i in recipe.keys:
+		keys.append([key.x, key.y])
+	return {
+		"run": recipe.run,
+		"index": recipe.index,
+		"count": recipe.count,
+		"keys": keys,
+		"fingerprints": recipe.fingerprints,
+		"spacing": recipe.spacing,
+		"motion": [recipe.motion.x, recipe.motion.y],
+		"pins": pins,
+		"made": recipe.made,
+	}
+
+
+## How an in-between was made from a project, or empty
+static func _inbetween_from_json(value: Variant) -> Dictionary:
+	if not value is Dictionary:
+		return {}
+	var keys: Variant = value.get("keys")
+	var fingerprints: Variant = value.get("fingerprints")
+	if not keys is Array or not fingerprints is Array:
+		return {}
+	if keys.size() != 2 or fingerprints.size() != 2:
+		return {}
+	var pins: Array[Dictionary] = []
+	for pin: Variant in value.get("pins", []):
+		if pin is Dictionary:
+			pins.append({"at": _to_vector2(pin.get("at")), "to": _to_vector2(pin.get("to"))})
+	return {
+		"run": int(value.get("run", 0)),
+		"index": int(value.get("index", 0)),
+		"count": int(value.get("count", 1)),
+		"keys": [_to_vector2i(keys[0]), _to_vector2i(keys[1])] as Array[Vector2i],
+		"fingerprints": [int(fingerprints[0]), int(fingerprints[1])],
+		"spacing": int(value.get("spacing", 0)),
+		"motion": _to_vector2i(value.get("motion")),
+		"pins": pins,
+		"made": int(value.get("made", 0)),
+	}
+
+
 ## Settings written with [method JSON.from_native], or empty when there are none, like the
 ## atlas settings of a sheet that was never packed
 static func _read_export_settings(value: Variant) -> Dictionary:
@@ -310,6 +366,12 @@ static func _write(zip: ZIPPacker, file: String, bytes: PackedByteArray) -> Erro
 		error = zip.write_file(bytes)
 		zip.close_file()
 	return error
+
+
+static func _to_vector2(value: Variant) -> Vector2:
+	if value is Array and value.size() >= 2:
+		return Vector2(float(value[0]), float(value[1]))
+	return Vector2.ZERO
 
 
 static func _to_vector2i(value: Variant) -> Vector2i:

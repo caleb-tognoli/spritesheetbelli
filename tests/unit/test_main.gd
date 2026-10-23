@@ -492,6 +492,26 @@ func test_empty_hint_and_toasts() -> void:
 	assert_true(Notify.get_toasts()[-1].begins_with("Exported toast.png"))
 
 
+func test_toasts_show_over_the_canvas_or_the_start_screen() -> void:
+	var toasts: Control = Notify._toasts
+	Notify.toast("over the start screen")
+	await get_tree().process_frame
+	assert_eq(Notify.toast_area, main.start_screen)
+	assert_false(main.get_node("%Sidebar").visible, "no sidebar on the start screen")
+	Global.document.perform(
+		"Add", Global.spritesheet.add_frames.bind([make_image(Color.RED)] as Array[Image])
+	)
+	await get_tree().process_frame
+	var stage: Control = main.preview_area.stage
+	assert_eq(Notify.toast_area, stage, "the canvas once there are frames")
+	assert_true(main.get_node("%Sidebar").visible, "the sidebar back with the editor")
+	Notify.toast("over the canvas")
+	await get_tree().process_frame
+	assert_true(stage.get_global_rect().encloses(toasts.get_global_rect()), "inside the canvas")
+	var middle := stage.get_global_rect().get_center().x
+	assert_true(absf(toasts.get_global_rect().get_center().x - middle) < 1, "in its middle")
+
+
 func test_zoom_buttons() -> void:
 	var area: PreviewArea = main.preview_area
 	Settings.set_value(&"pixel_perfect_zoom", "off")
@@ -681,6 +701,31 @@ func test_view_is_saved_with_the_project() -> void:
 	var view: Dictionary = main.preview.get_view()
 	assert_eq(view.zoom, 5.0)
 	assert_true(view.centre.is_equal_approx(saved.centre), "centred where it was saved")
+
+
+func test_resized_view_fits_again_or_keeps_its_middle() -> void:
+	var imgs: Array[Image] = []
+	for i in 6:
+		imgs.append(make_image(Color.RED))
+	Global.document.perform("Add", Global.spritesheet.add_frames.bind(imgs))
+	await get_tree().process_frame
+	var stage: Control = main.preview_area.stage
+	stage.size = Vector2(800, 500)
+	main.preview.fit_to_view()
+	var big_zoom: float = main.preview.camera.zoom.x
+	stage.size = Vector2(400, 300)
+	var fitted: Dictionary = main.preview.get_view()
+	main.preview.fit_to_view()
+	assert_eq(fitted, main.preview.get_view(), "a fitted view fits the smaller preview")
+	assert_true(fitted.zoom < big_zoom, "zoomed out")
+
+	main.preview.set_zoom(3)
+	main.preview.camera.position = Vector2(5, 9)
+	var moved: Dictionary = main.preview.get_view()
+	stage.size = Vector2(700, 450)
+	var kept: Dictionary = main.preview.get_view()
+	assert_eq(kept.zoom, 3.0, "a zoomed view keeps its zoom")
+	assert_true(kept.centre.is_equal_approx(moved.centre), "and its middle")
 
 
 func test_view_json() -> void:
