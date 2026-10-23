@@ -50,7 +50,7 @@ impl Area {
 
 /// `PixelCanvas.colors`
 pub fn colors(data: &[u8]) -> Vec<i32> {
-    data.chunks_exact(4)
+    data.as_chunks::<4>().0.iter()
         .map(|c| {
             if c[3] > 0 {
                 (u32::from(c[0]) << 24
@@ -90,7 +90,7 @@ fn shown_area(colors: &[i32], width: i64, height: i64) -> Area {
 /// `PixelCleanup._shown_area`: the used rect grown by a pixel, kept off the border
 fn used_area(data: &[u8], width: i64, height: i64) -> Area {
     let (mut low_x, mut low_y, mut high_x, mut high_y) = (width, height, -1i64, -1i64);
-    for (p, pixel) in data.chunks_exact(4).enumerate() {
+    for (p, pixel) in data.as_chunks::<4>().0.iter().enumerate() {
         if pixel[3] > 0 {
             let (x, y) = (p as i64 % width, p as i64 / width);
             low_x = low_x.min(x);
@@ -195,7 +195,7 @@ pub fn tidy_data(data: &mut [u8], width: i64, height: i64) {
 
 /// `PixelCleanup._shown`
 fn shown(data: &[u8], least_alpha: u8) -> Vec<u8> {
-    data.chunks_exact(4)
+    data.as_chunks::<4>().0.iter()
         .map(|c| u8::from(c[3] >= least_alpha))
         .collect()
 }

@@ -353,7 +353,7 @@ impl Drawing<'_> {
         }
         // Pixels off the triangles move with the nearest pixel on them
         let mut pixels: Vec<i64> = self.pixels.iter().map(|&p| p as i64).collect();
-        for pair in self.strays.chunks_exact(2) {
+        for pair in self.strays.as_chunks::<2>().0 {
             let (stray, on) = (pair[0] as i64, pair[1] as i64);
             let s = move_at[on as usize];
             // GDScript reads index -1 as the last

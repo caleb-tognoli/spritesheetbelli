@@ -1,6 +1,9 @@
 //! Native parts of spritesheetbelli: what Godot doesn't offer, see [`FileDragMonitor`],
 //! and the in-betweens' hottest loops, see [`inbetween`].
 
+// godot-rust's #[class(init)] writes `base: base`
+#![allow(clippy::redundant_field_names)]
+
 use godot::classes::{Engine, SceneTree, Window};
 use godot::prelude::*;
 
